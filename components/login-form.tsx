@@ -17,30 +17,53 @@ export function LoginForm({ notice }: { notice?: string }) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    if (!isSupabaseConfigured()) {
-      if (process.env.NODE_ENV !== "development") {
-        setError("Authentication is not configured. Add your Supabase URL and anon key to .env.local.");
+
+    setPending(true);
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        router.replace("/dashboard");
+        router.refresh();
         return;
       }
 
-      setPending(true);
-      try {
-        const response = await fetch("/api/mock-auth", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error ?? "Unable to sign in.");
-        router.replace("/dashboard");
-        router.refresh();
-      } catch (mockError) {
-        setError(mockError instanceof Error ? mockError.message : "Unable to sign in.");
-        setPending(false);
+      if (response.status === 503 || (response.status !== 401 && !response.ok)) {
+        throw new Error(result.error ?? "Unable to sign in.");
       }
+    } catch (adminError) {
+      setError(adminError instanceof Error ? adminError.message : "Unable to sign in.");
+      setPending(false);
       return;
     }
-    setPending(true);
+
+    if (!isSupabaseConfigured()) {
+      if (process.env.NODE_ENV === "development") {
+        try {
+          const response = await fetch("/api/mock-auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error ?? "Unable to sign in.");
+          router.replace("/dashboard");
+          router.refresh();
+        } catch (mockError) {
+          setError(mockError instanceof Error ? mockError.message : "Unable to sign in.");
+          setPending(false);
+        }
+        return;
+      }
+
+      setError("Authentication is not configured. Add your Supabase URL and anon key to .env.local.");
+      setPending(false);
+      return;
+    }
     const { error: signInError } = await createClient().auth.signInWithPassword({ email, password });
     if (signInError) {
       setError(signInError.message === "Invalid login credentials" ? "Email or password is incorrect." : signInError.message);
