@@ -18,7 +18,8 @@ export async function proxy(request: NextRequest) {
     },
   });
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  const hasAdminSession = Boolean(request.cookies.get("ai_store_admin_session")?.value);
+  if (!user && !hasAdminSession && request.nextUrl.pathname.startsWith("/dashboard")) {
     const target = request.nextUrl.clone();
     target.pathname = "/login";
     return NextResponse.redirect(target);

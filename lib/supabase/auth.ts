@@ -1,8 +1,8 @@
-import { supabase } from './client';
+import { createClient } from './client';
 
 // 1. User Sign Up
 export async function signUpUser(email: string, password: string) {
-  const { data, error } = await supabase.auth.signUp({
+  const { data, error } = await createClient().auth.signUp({
     email,
     password,
   });
@@ -11,7 +11,7 @@ export async function signUpUser(email: string, password: string) {
 
 // 2. User Sign In (Login)
 export async function signInUser(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await createClient().auth.signInWithPassword({
     email,
     password,
   });
@@ -20,12 +20,12 @@ export async function signInUser(email: string, password: string) {
 
 // 3. User Sign Out
 export async function signOutUser() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await createClient().auth.signOut();
   return { error };
 }
 
 // 4. Get Current Active User Session
 export async function getCurrentSession() {
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await createClient().auth.getSession();
   return { session, error };
 }

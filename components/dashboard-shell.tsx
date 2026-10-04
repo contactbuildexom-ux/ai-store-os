@@ -27,6 +27,7 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
   const initials = email.split("@")[0].slice(0, 2).toUpperCase();
 
   async function signOut() {
+    await fetch("/api/admin/logout", { method: "DELETE" });
     if (isSupabaseConfigured()) {
       await createClient().auth.signOut();
     } else {
