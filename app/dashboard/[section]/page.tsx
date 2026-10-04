@@ -1,43 +1,228 @@
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Download, Plus, Search } from "lucide-react";
+import { createClient } from '@supabase/supabase-js';
 
-type SectionData = { title: string; description: string; count: string; columns: string[]; rows: string[][] };
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-const sectionData: Record<string, SectionData> = {
-  sellers: { title: "Sellers", description: "Manage seller accounts and onboarding status.", count: "1,248 sellers", columns: ["Seller", "Store", "Email", "Joined", "Status"], rows: [["Jordan Mitchell|JM", "Northstar Goods", "jordan@northstar.co", "Oct 02, 2026", "Active"], ["Amara Chen|AC", "Atelier Chen", "amara@atelierchen.com", "Oct 01, 2026", "Active"], ["Elliot Rivera|ER", "Fieldwork Supply", "elliot@fieldwork.shop", "Sep 30, 2026", "Pending"], ["Sana Kapoor|SK", "Sunday Objects", "sana@sundayobjects.com", "Sep 29, 2026", "Active"], ["Theo Brooks|TB", "Morrow Studio", "theo@morrow.studio", "Sep 28, 2026", "Active"]] },
-  stores: { title: "Stores", description: "Review storefronts and their platform status.", count: "936 active stores", columns: ["Store", "Seller", "Products", "Created", "Status"], rows: [["Northstar Goods", "Jordan Mitchell", "248", "Oct 02, 2026", "Live"], ["Atelier Chen", "Amara Chen", "86", "Oct 01, 2026", "Live"], ["Fieldwork Supply", "Elliot Rivera", "132", "Sep 30, 2026", "Review"], ["Sunday Objects", "Sana Kapoor", "54", "Sep 29, 2026", "Live"]] },
-  products: { title: "Products", description: "Monitor catalog listings across every store.", count: "18,420 products", columns: ["Product", "Store", "Category", "Price", "Status"], rows: [["Everyday Canvas Tote", "Northstar Goods", "Accessories", "$38.00", "Active"], ["Hand-thrown Cup Set", "Atelier Chen", "Home", "$64.00", "Active"], ["Field Journal No. 4", "Fieldwork Supply", "Stationery", "$22.00", "Review"], ["Woven Table Runner", "Sunday Objects", "Home", "$78.00", "Active"]] },
-  orders: { title: "Orders", description: "Track order volume and fulfillment across the platform.", count: "12,684 orders", columns: ["Order", "Store", "Date", "Total", "Status"], rows: [["#BX-10482", "Northstar Goods", "Oct 03, 2026", "$128.00", "Processing"], ["#BX-10481", "Atelier Chen", "Oct 03, 2026", "$64.00", "Shipped"], ["#BX-10480", "Sunday Objects", "Oct 02, 2026", "$212.00", "Delivered"], ["#BX-10479", "Fieldwork Supply", "Oct 02, 2026", "$44.00", "Processing"]] },
-  subscriptions: { title: "Subscriptions", description: "Manage plan adoption and subscription health.", count: "782 active plans", columns: ["Seller", "Plan", "Billing cycle", "Next renewal", "Status"], rows: [["Jordan Mitchell", "Growth", "Monthly", "Nov 02, 2026", "Active"], ["Amara Chen", "Pro", "Annual", "Oct 01, 2027", "Active"], ["Elliot Rivera", "Starter", "Monthly", "Oct 30, 2026", "Trial"], ["Sana Kapoor", "Growth", "Monthly", "Oct 29, 2026", "Active"]] },
+const statusStyles: Record<string, string> = { 
+  Active: "bg-[#e9f5ed] text-[#286b49]", 
+  Live: "bg-[#e9f5ed] text-[#286b49]", 
+  pro: "bg-[#e9f5ed] text-[#286b49]",
+  free: "bg-[#edf0f5] text-[#596b88]",
+  verified: "bg-[#e9f5ed] text-[#286b49]",
+  Shipped: "bg-[#e9eff7] text-[#426488]", 
+  Delivered: "bg-[#e9f5ed] text-[#286b49]", 
+  Pending: "bg-[#fff2df] text-[#98621e]", 
+  pending: "bg-[#fff2df] text-[#98621e]",
+  Review: "bg-[#fff2df] text-[#98621e]", 
+  Processing: "bg-[#edf0f5] text-[#596b88]", 
+  Trial: "bg-[#f1ecfb] text-[#6f579b]" 
 };
 
-const statusStyles: Record<string, string> = { Active: "bg-[#e9f5ed] text-[#286b49]", Live: "bg-[#e9f5ed] text-[#286b49]", Shipped: "bg-[#e9eff7] text-[#426488]", Delivered: "bg-[#e9f5ed] text-[#286b49]", Pending: "bg-[#fff2df] text-[#98621e]", Review: "bg-[#fff2df] text-[#98621e]", Processing: "bg-[#edf0f5] text-[#596b88]", Trial: "bg-[#f1ecfb] text-[#6f579b]" };
-
-export default async function SectionPage({ params, searchParams }: { params: Promise<{ section: string }>; searchParams: Promise<{ q?: string }> }) {
+export default async function SectionPage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ section: string }>; 
+  searchParams: Promise<{ q?: string }> 
+}) {
   const { section } = await params;
   const { q = "" } = await searchParams;
+
   if (section === "settings") return <SettingsPage />;
   if (section === "analytics") return <AnalyticsPage />;
-  const data = sectionData[section];
-  if (!data) notFound();
-  const rows = data.rows.filter((row) => row.join(" ").toLowerCase().includes(q.toLowerCase()));
-  const addLabel = section === "sellers" ? "seller" : section === "stores" ? "store" : section === "products" ? "product" : "order";
 
-  return <div className="space-y-6">
-    <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs text-[#87928c]">Platform management</p><h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">{data.title}</h2><p className="mt-1 text-sm text-[#7d8983]">{data.description}</p></div><div className="flex gap-2"><button className="inline-flex h-9 items-center gap-2 rounded-md border border-[#dfe6e1] bg-white px-3 text-xs font-medium text-[#536159] hover:bg-[#f9fbf9]"><Download size={14} />Export</button><button className="inline-flex h-9 items-center gap-2 rounded-md bg-[#1d7555] px-3 text-xs font-medium text-white hover:bg-[#155d42]"><Plus size={14} />Add {addLabel}</button></div></div>
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{[{ label: "Total", value: data.count.split(" ")[0] }, { label: "Active this month", value: section === "sellers" ? "146" : section === "stores" ? "62" : section === "products" ? "1,284" : section === "orders" ? "2,108" : "96%" }, { label: "Needs attention", value: section === "sellers" || section === "stores" ? "18" : section === "orders" ? "24" : "6" }, { label: "Monthly change", value: "+8.4%" }].map((item) => <div key={item.label} className="rounded-lg border border-[#e9ede9] bg-white px-4 py-4"><p className="text-[11px] text-[#87928c]">{item.label}</p><p className="mt-2 text-xl font-semibold text-[#26342d]">{item.value}</p></div>)}</div>
-    <section className="overflow-hidden rounded-xl border border-[#e9ede9] bg-white shadow-[0_2px_8px_rgba(28,48,38,0.025)]"><div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0ed] px-5 py-4"><div><h3 className="text-sm font-semibold text-[#26342d]">All {data.title.toLowerCase()}</h3><p className="mt-1 text-[11px] text-[#8a958f]">{rows.length} records {q ? `matching “${q}”` : "shown"}</p></div><form className="flex h-9 w-full max-w-[250px] items-center gap-2 rounded-md border border-[#e5eae6] px-3" action={`/dashboard/${section}`}><Search size={15} className="text-[#89948e]" /><input name="q" defaultValue={q} placeholder={`Search ${data.title.toLowerCase()}...`} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[#9ba49f]" /></form></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[690px] text-left"><thead><tr className="bg-[#fafbfa] text-[10px] font-medium uppercase tracking-wide text-[#8a958f]">{data.columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}<th className="px-5 py-3"><span className="sr-only">Actions</span></th></tr></thead><tbody className="divide-y divide-[#f0f2f0]">{rows.map((row, rowIndex) => <tr key={`${row[0]}-${rowIndex}`} className="text-xs text-[#5c6962] hover:bg-[#fcfdfc]">{row.map((cell, index) => <td key={`${cell}-${index}`} className="whitespace-nowrap px-5 py-4">{index === 0 && section === "sellers" ? <span className="flex items-center gap-2.5"><span className="grid size-8 place-items-center rounded-full bg-[#e7ede1] text-[10px] font-semibold text-[#476449]">{cell.split("|")[1]}</span><span className="font-medium text-[#334139]">{cell.split("|")[0]}</span></span> : index === data.columns.length - 1 ? <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusStyles[cell] ?? "bg-[#f0f2f0] text-[#66736d]"}`}><span className="size-1.5 rounded-full bg-current opacity-60" />{cell}</span> : <span className={index === 0 ? "font-medium text-[#334139]" : ""}>{cell}</span>}</td>)}<td className="px-5 py-4"><button aria-label={`Open ${row[0]}`} className="grid size-7 place-items-center rounded text-[#929d96] hover:bg-[#f0f4f0] hover:text-[#2d7651]"><ArrowUpRight size={15} /></button></td></tr>)}</tbody></table>{rows.length === 0 && <p className="px-5 py-12 text-center text-sm text-[#87928c]">No records match this search.</p>}</div>
-      <div className="flex items-center justify-between border-t border-[#edf0ed] px-5 py-3 text-[11px] text-[#87928c]"><span>Showing {rows.length} of {data.count}</span><div className="flex gap-1"><button disabled className="rounded border border-[#e6ebe7] px-2.5 py-1.5 disabled:opacity-50">Previous</button><button className="rounded border border-[#e6ebe7] px-2.5 py-1.5 text-[#56645c]">Next</button></div></div>
-    </section><p className="text-[11px] text-[#929c96]">Sample records shown for preview. Connect your platform data source to enable live administration.</p>
-  </div>;
+  let title = "";
+  let description = "";
+  let columns: string[] = [];
+  let rows: string[][] = [];
+  let totalCount = "0";
+
+  // --- 1. STORES SECTION ---
+  if (section === "stores") {
+    title = "Stores";
+    description = "Review storefronts and their platform status from database.";
+    columns = ["Store Name", "Slug", "Owner Email", "Plan", "Payment Status", "Created"];
+    
+    let query = supabase.from('stores').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    if (q) query = query.ilike('name', `%${q}%`);
+    
+    const { data, count } = await query;
+    totalCount = `${count || 0} active stores`;
+    
+    rows = (data || []).map((store: any) => [
+      store.name || "N/A",
+      store.slug || "N/A",
+      store.owner_email || "N/A",
+      store.plan || "free",
+      store.payment_status || "pending",
+      new Date(store.created_at).toLocaleDateString()
+    ]);
+  } 
+  // --- 2. SELLERS SECTION (Using Stores table data) ---
+  else if (section === "sellers") {
+    title = "Sellers";
+    description = "Manage seller accounts and store owners.";
+    columns = ["Owner Name / Email", "Store Name", "Slug", "Plan", "Status", "Joined"];
+
+    let query = supabase.from('stores').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    if (q) query = query.ilike('owner_email', `%${q}%`);
+
+    const { data, count } = await query;
+    totalCount = `${count || 0} sellers`;
+
+    rows = (data || []).map((store: any) => [
+      store.owner_email || "Owner",
+      store.name || "N/A",
+      store.slug || "N/A",
+      store.plan || "free",
+      store.payment_status || "active",
+      new Date(store.created_at).toLocaleDateString()
+    ]);
+  }
+  // --- 3. PRODUCTS SECTION ---
+  else if (section === "products") {
+    title = "Products";
+    description = "Monitor catalog listings across store products.";
+    columns = ["Product Name", "Price", "Category ID", "Created At"];
+
+    let query = supabase.from('store_products').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    if (q) query = query.ilike('name', `%${q}%`);
+
+    const { data, count } = await query;
+    totalCount = `${count || 0} products`;
+
+    rows = (data || []).map((prod: any) => [
+      prod.name || "N/A",
+      `$${prod.price || 0}`,
+      prod.category_id ? prod.category_id.slice(0, 8) + "..." : "General",
+      new Date(prod.created_at).toLocaleDateString()
+    ]);
+  }
+  // --- 4. SUBSCRIPTIONS & PAYMENTS SECTION ---
+  else if (section === "subscriptions") {
+    title = "Subscriptions";
+    description = "Manage plan adoption and manual payment proofs.";
+    columns = ["Payment ID", "Store ID", "Method", "Transaction ID", "Amount", "Status", "Date"];
+
+    let query = supabase.from('store_payments').select('*', { count: 'exact' }).order('created_at', { ascending: false });
+    
+    const { data, count } = await query;
+    totalCount = `${count || 0} payment requests`;
+
+    rows = (data || []).map((pay: any) => [
+      pay.id.slice(0, 8) + "...",
+      pay.store_id ? pay.store_id.slice(0, 8) + "..." : "N/A",
+      pay.payment_method || "Easypaisa",
+      pay.transaction_id || "N/A",
+      `PKR ${pay.amount || 0}`,
+      pay.status || "pending",
+      new Date(pay.created_at).toLocaleDateString()
+    ]);
+  }
+  else {
+    notFound();
+  }
+
+  const addLabel = section === "sellers" ? "seller" : section === "stores" ? "store" : section === "products" ? "product" : "item";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs text-[#87928c]">Platform management</p>
+          <h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">{title}</h2>
+          <p className="mt-1 text-sm text-[#7d8983]">{description}</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="inline-flex h-9 items-center gap-2 rounded-md border border-[#dfe6e1] bg-white px-3 text-xs font-medium text-[#536159] hover:bg-[#f9fbf9]">
+            <Download size={14} />Export
+          </button>
+          <button className="inline-flex h-9 items-center gap-2 rounded-md bg-[#1d7555] px-3 text-xs font-medium text-white hover:bg-[#155d42]">
+            <Plus size={14} />Add {addLabel}
+          </button>
+        </div>
+      </div>
+
+      <section className="overflow-hidden rounded-xl border border-[#e9ede9] bg-white shadow-[0_2px_8px_rgba(28,48,38,0.025)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0ed] px-5 py-4">
+          <div>
+            <h3 className="text-sm font-semibold text-[#26342d]">All {title.toLowerCase()}</h3>
+            <p className="mt-1 text-[11px] text-[#8a958f]">{rows.length} records {q ? `matching “${q}”` : "from database"}</p>
+          </div>
+          <form className="flex h-9 w-full max-w-[250px] items-center gap-2 rounded-md border border-[#e5eae6] px-3" action={`/dashboard/${section}`}>
+            <Search size={15} className="text-[#89948e]" />
+            <input name="q" defaultValue={q} placeholder={`Search ${title.toLowerCase()}...`} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-[#9ba49f]" />
+          </form>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[690px] text-left">
+            <thead>
+              <tr className="bg-[#fafbfa] text-[10px] font-medium uppercase tracking-wide text-[#8a958f]">
+                {columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}
+                <th className="px-5 py-3"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f2f0]">
+              {rows.map((row, rowIndex) => (
+                <tr key={rowIndex} className="text-xs text-[#5c6962] hover:bg-[#fcfdfc]">
+                  {row.map((cell, index) => (
+                    <td key={index} className="whitespace-nowrap px-5 py-4">
+                      {index === columns.length - 2 && (statusStyles[cell] || cell === "active" || cell === "pro" || cell === "live") ? (
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusStyles[cell] ?? "bg-[#e9f5ed] text-[#286b49]"}`}>
+                          <span className="size-1.5 rounded-full bg-current opacity-60" />
+                          {cell}
+                        </span>
+                      ) : (
+                        <span className={index === 0 ? "font-medium text-[#334139]" : ""}>{cell}</span>
+                      )}
+                    </td>
+                  ))}
+                  <td className="px-5 py-4">
+                    <button aria-label="Open record" className="grid size-7 place-items-center rounded text-[#929d96] hover:bg-[#f0f4f0] hover:text-[#2d7651]">
+                      <ArrowUpRight size={15} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {rows.length === 0 && <p className="px-5 py-12 text-center text-sm text-[#87928c]">No records found in database.</p>}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-[#edf0ed] px-5 py-3 text-[11px] text-[#87928c]">
+          <span>Total records: {totalCount}</span>
+        </div>
+      </section>
+      <p className="text-[11px] text-[#929c96]">Connected live with Supabase database for Version 1 administration.</p>
+    </div>
+  );
 }
 
 function AnalyticsPage() {
-  const bars = [38, 45, 42, 56, 49, 66, 61, 73, 69, 82, 77, 94];
-  return <div className="space-y-6"><div><p className="text-xs text-[#87928c]">Platform performance</p><h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">Analytics</h2><p className="mt-1 text-sm text-[#7d8983]">A closer look at growth, activity, and revenue.</p></div><div className="grid gap-4 sm:grid-cols-3">{[{ label: "Gross revenue", value: "$45,890", change: "+9.4%" }, { label: "Orders processed", value: "12,684", change: "+6.8%" }, { label: "New sellers", value: "146", change: "+12%" }].map((item) => <div key={item.label} className="rounded-xl border border-[#e9ede9] bg-white p-5"><p className="text-xs text-[#7b8781]">{item.label}</p><p className="mt-3 text-2xl font-semibold tracking-tight text-[#1e2c25]">{item.value}</p><p className="mt-2 text-[11px] font-medium text-[#34845a]">{item.change} <span className="font-normal text-[#8a958f]">vs. last month</span></p></div>)}</div><section className="rounded-xl border border-[#e9ede9] bg-white p-5"><div className="flex items-center justify-between"><div><h3 className="text-sm font-semibold text-[#26342d]">Platform activity</h3><p className="mt-1 text-[11px] text-[#8a958f]">Monthly index, last 12 months</p></div><span className="text-xs text-[#75817b]">2026</span></div><div className="mt-8 flex h-56 items-end gap-2 border-b border-[#edf0ed] px-1 sm:gap-4">{bars.map((height, index) => <div key={index} className="flex h-full flex-1 flex-col justify-end"><div className={`w-full rounded-t-sm ${index === bars.length - 1 ? "bg-[#398660]" : "bg-[#d8e9dc]"}`} style={{ height: `${height}%` }} /></div>)}</div><div className="mt-3 flex justify-between text-[10px] text-[#929c96]"><span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Dec</span></div></section><p className="text-[11px] text-[#929c96]">Sample analytics shown for preview. Connect your platform data source for live reporting.</p></div>;
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs text-[#87928c]">Platform performance</p>
+        <h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">Analytics</h2>
+        <p className="mt-1 text-sm text-[#7d8983]">Live analytics overview from database.</p>
+      </div>
+    </div>
+  );
 }
 
 function SettingsPage() {
-  return <div className="space-y-6"><div><p className="text-xs text-[#87928c]">Workspace administration</p><h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">Settings</h2><p className="mt-1 text-sm text-[#7d8983]">Configure platform preferences and admin access.</p></div><div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]"><nav className="space-y-1 rounded-xl border border-[#e9ede9] bg-white p-2">{["General", "Team access", "Notifications", "Security"].map((item, index) => <button key={item} className={`w-full rounded-md px-3 py-2.5 text-left text-xs ${index === 0 ? "bg-[#edf4ee] font-medium text-[#286b49]" : "text-[#66736d] hover:bg-[#f6f8f6]"}`}>{item}</button>)}</nav><section className="rounded-xl border border-[#e9ede9] bg-white p-5 sm:p-7"><h3 className="text-sm font-semibold text-[#26342d]">General settings</h3><p className="mt-1 text-xs text-[#87928c]">Basic details about this workspace.</p><div className="mt-6 max-w-xl space-y-5"><label className="block text-xs font-medium text-[#4f5c55]">Platform name<input defaultValue="Buildexom AI" className="mt-2 block h-10 w-full rounded-md border border-[#e1e7e2] px-3 text-sm font-normal text-[#334139] outline-none focus:border-[#5d9a78]" /></label><label className="block text-xs font-medium text-[#4f5c55]">Support email<input type="email" defaultValue="support@buildexom.com" className="mt-2 block h-10 w-full rounded-md border border-[#e1e7e2] px-3 text-sm font-normal text-[#334139] outline-none focus:border-[#5d9a78]" /></label><div className="flex items-center justify-between border-t border-[#edf0ed] pt-5"><span><span className="block text-xs font-medium text-[#4f5c55]">Seller applications</span><span className="mt-1 block text-[11px] text-[#87928c]">Allow new sellers to apply to the platform</span></span><input type="checkbox" defaultChecked className="size-4 accent-[#28714f]" /></div><button disabled className="h-9 rounded-md bg-[#1d7555] px-4 text-xs font-medium text-white opacity-60">Save changes</button></div></section></div><p className="text-[11px] text-[#929c96]">Settings are a preview and are not persisted yet.</p></div>;
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs text-[#87928c]">Workspace administration</p>
+        <h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-[#1b2923]">Settings</h2>
+        <p className="mt-1 text-sm text-[#7d8983]">Configure platform preferences.</p>
+      </div>
+    </div>
+  );
 }
