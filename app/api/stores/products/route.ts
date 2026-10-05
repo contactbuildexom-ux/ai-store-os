@@ -1,75 +1,59 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkStoreLimits } from '@/lib/planLimits';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { store_id, category_id, title, description, price, image_url } = body;
+    const body = await req.json();
+    // Dobara 'name' use karein kyunki database column ka naam 'name' hai
+    const { store_id, category_id, name, description, price, image_url } = body;
 
-    if (!store_id || !title || price === undefined) {
-      return NextResponse.json({ error: 'Store ID, title, and price are required.' }, { status: 400 });
+    // 1. Plan Limits Validation
+    const limitCheck = await checkStoreLimits(store_id, 'product', category_id);
+    if (!limitCheck.allowed) {
+      return NextResponse.json({ error: limitCheck.message }, { status: 400 });
     }
 
-    // 1. Fetch store plan
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('plan')
-      .eq('id', store_id)
-      .single();
-
-    if (storeError || !store) {
-      return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
-    }
-
-    // 2. Count existing products for this store
-    const { count, error: countError } = await supabase
+    // 2. Insert Product into Database (using 'name')
+    const { data: product, error: insertError } = await supabase
       .from('store_products')
-      .select('*', { count: 'exact', head: true })
-      .eq('store_id', store_id);
-
-    if (countError) {
-      return NextResponse.json({ error: countError.message }, { status: 500 });
-    }
-
-    const currentCount = count || 0;
-    const planLimit = store.plan === 'pro' ? 20 : 10;
-
-    // 3. Enforce product limit
-    if (currentCount >= planLimit) {
-      return NextResponse.json({
-        error: `Product limit reached for ${store.plan.toUpperCase()} plan. Max allowed is ${planLimit}.`
-      }, { status: 403 });
-    }
-
-    // 4. Insert new product
-    const { data, error } = await supabase
-      .from('store_products')
-      .insert([{
-        store_id,
-        category_id: category_id || null,
-        title,
-        description,
-        price,
-        image_url
-      }])
+      .insert([{ store_id, category_id, name, description, price, image_url }])
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (insertError) throw insertError;
 
-    return NextResponse.json({
-      message: 'Product added successfully!',
-      product: data
-    }, { status: 201 });
+    // 3. Fetch Opted-in Customers for WhatsApp Broadcast
+    const { data: optIns } = await supabase
+      .from('store_customers_optin')
+      .select('whatsapp_number')
+      .eq('store_id', store_id);
+
+    // 4. Check Favorites / Wishlist match for this category
+    const { data: favorites } = await supabase
+      .from('store_favorites')
+      .select('customer_whatsapp')
+      .eq('store_id', store_id)
+      .eq('category_id', category_id);
+
+    // Combine unique WhatsApp numbers for broadcast
+    const recipientNumbers = Array.from(new Set([
+      ...(optIns?.map(o => o.whatsapp_number) || []),
+      ...(favorites?.map(f => f.customer_whatsapp) || [])
+    ]));
+
+    return NextResponse.json({ 
+      success: true, 
+      product, 
+      broadcastedTo: recipientNumbers.length 
+    });
 
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error.' }, { status: 500 });
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
