@@ -15,7 +15,7 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
 
   if (storeError || !store) throw new Error('Store not found');
 
-  const plan = store.plan; // 'basic', 'pro', 'business'
+  const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
 
   // 2. WhatsApp Integration Limit Check (Basic plan par restricted)
   if (type === 'whatsapp_order') {

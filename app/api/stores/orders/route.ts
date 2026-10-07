@@ -1,55 +1,91 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { checkStoreLimits } from '@/lib/planLimits';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { checkStoreLimits } from "@/lib/planLimits";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function textValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
-// POST: Create Order with Plan Limit Validation for WhatsApp
-export async function POST(req: Request) {
+function parseAmount(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const amount = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+}
+
+function getSupabase() {
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error("Store database is not configured.");
+  return supabase;
+}
+
+async function readOrdersFrom(table: "store_orders" | "orders", storeId: string) {
+  return getSupabase()
+    .from(table)
+    .select("*")
+    .eq("store_id", storeId)
+    .order("created_at", { ascending: false });
+}
+
+export async function GET(req: Request) {
   try {
-    const body = await req.json();
-    const { store_id, customer_name, customer_phone, items, total_amount, is_whatsapp_order } = body;
+    const { searchParams } = new URL(req.url);
+    const storeId = textValue(searchParams.get("store_id"));
 
-    if (!store_id || !customer_name || !customer_phone || !items) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!storeId) {
+      return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
-    // Agar order WhatsApp ke zariye ho raha hai, toh plan check validate karein
-    if (is_whatsapp_order) {
-      const whatsappLimitCheck = await checkStoreLimits(store_id, 'whatsapp_order');
+    let result = await readOrdersFrom("store_orders", storeId);
+    if (result.error && result.error.message.toLowerCase().includes("store_orders")) {
+      result = await readOrdersFrom("orders", storeId);
+    }
+
+    if (result.error) throw result.error;
+
+    return NextResponse.json({ success: true, orders: result.data ?? [] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load orders.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const body = await req.json();
+    const storeId = textValue(body?.store_id);
+    const customerName = textValue(body?.customer_name);
+    const customerPhone = textValue(body?.customer_phone);
+    const totalAmount = parseAmount(body?.total_amount);
+    const items = body?.items;
+    const isWhatsappOrder = Boolean(body?.is_whatsapp_order);
+
+    if (!storeId || !customerName || !customerPhone || !items || totalAmount === null) {
+      return NextResponse.json({ error: "Store, customer, items, and total amount are required." }, { status: 400 });
+    }
+
+    if (isWhatsappOrder) {
+      const whatsappLimitCheck = await checkStoreLimits(storeId, "whatsapp_order");
       if (!whatsappLimitCheck.allowed) {
         return NextResponse.json({ error: whatsappLimitCheck.message }, { status: 403 });
       }
     }
 
-    // Database mein order insert karein
-    const { data: order, error: insertError } = await supabase
-      .from('store_orders')
-      .insert([
-        { 
-          store_id, 
-          customer_name, 
-          customer_phone, 
-          items, 
-          total_amount, 
-          status: 'pending' 
-        }
-      ])
+    const { data: order, error } = await supabase
+      .from("store_orders")
+      .insert([{ store_id: storeId, customer_name: customerName, customer_phone: customerPhone, items, total_amount: totalAmount, status: "pending" }])
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (error) throw error;
 
-    return NextResponse.json({ 
-      success: true, 
-      order, 
-      message: is_whatsapp_order ? 'WhatsApp order placed successfully' : 'Standard order placed successfully' 
+    return NextResponse.json({
+      success: true,
+      order,
+      message: isWhatsappOrder ? "WhatsApp order placed successfully." : "Standard order placed successfully.",
     });
-
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to create order.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

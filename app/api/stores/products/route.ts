@@ -1,113 +1,170 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { checkStoreLimits } from '@/lib/planLimits';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { checkStoreLimits } from "@/lib/planLimits";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function textValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
-// GET: Store ke saare products fetch karne ke liye
+function optionalText(value: unknown) {
+  const text = textValue(value);
+  return text.length ? text : null;
+}
+
+function parsePrice(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const price = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : null;
+}
+
+function getSupabase() {
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error("Store database is not configured.");
+  return supabase;
+}
+
 export async function GET(req: Request) {
   try {
+    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
-    const store_id = searchParams.get('store_id');
+    const storeId = textValue(searchParams.get("store_id"));
 
-    if (!store_id) {
-      return NextResponse.json({ error: 'Store ID is required' }, { status: 400 });
+    if (!storeId) {
+      return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
     const { data, error } = await supabase
-      .from('store_products')
-      .select('*')
-      .eq('store_id', store_id);
+      .from("store_products")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, products: data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, products: data ?? [] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load products.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// POST: Naya product add karne ke liye (Plan Limit Check ke sath)
 export async function POST(req: Request) {
   try {
+    const supabase = getSupabase();
     const body = await req.json();
-    const { store_id, name, price, description, image_url, category_id } = body;
+    const storeId = textValue(body?.store_id);
+    const name = textValue(body?.name);
+    const price = parsePrice(body?.price);
+    const categoryId = optionalText(body?.category_id);
 
-    if (!store_id || !name || !price) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!storeId) {
+      return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
+    }
+    if (!name) {
+      return NextResponse.json({ error: "Product name is required." }, { status: 400 });
+    }
+    if (price === null) {
+      return NextResponse.json({ error: "Enter a valid product price." }, { status: 400 });
     }
 
-    // 1. Plan limit check karein (Maslan Basic plan par max 20 products)
-    const limitCheck = await checkStoreLimits(store_id, 'product', category_id);
+    const limitCheck = await checkStoreLimits(storeId, "product", categoryId ?? undefined);
     if (!limitCheck.allowed) {
       return NextResponse.json({ error: limitCheck.message }, { status: 403 });
     }
 
-    // 2. Product insert karein
     const { data, error } = await supabase
-      .from('store_products')
-      .insert([{ store_id, name, price, description, image_url, category_id }])
+      .from("store_products")
+      .insert([
+        {
+          store_id: storeId,
+          name,
+          price,
+          description: optionalText(body?.description),
+          image_url: optionalText(body?.image_url),
+          category_id: categoryId,
+        },
+      ])
       .select()
       .single();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, product: data, message: 'Product added successfully' });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, product: data, message: "Product added successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to save product.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// PUT: Existing product ko edit/update karne ke liye
 export async function PUT(req: Request) {
   try {
+    const supabase = getSupabase();
     const body = await req.json();
-    const { id, store_id, name, price, description, image_url } = body;
+    const id = textValue(body?.id);
+    const storeId = textValue(body?.store_id);
 
-    if (!id || !store_id) {
-      return NextResponse.json({ error: 'Product ID and Store ID are required' }, { status: 400 });
+    if (!id || !storeId) {
+      return NextResponse.json({ error: "Product ID and Store ID are required." }, { status: 400 });
+    }
+
+    const updates: Record<string, string | number | null> = {};
+    if ("name" in body) {
+      const name = textValue(body.name);
+      if (!name) return NextResponse.json({ error: "Product name cannot be empty." }, { status: 400 });
+      updates.name = name;
+    }
+    if ("price" in body) {
+      const price = parsePrice(body.price);
+      if (price === null) return NextResponse.json({ error: "Enter a valid product price." }, { status: 400 });
+      updates.price = price;
+    }
+    if ("description" in body) updates.description = optionalText(body.description);
+    if ("image_url" in body) updates.image_url = optionalText(body.image_url);
+    if ("category_id" in body) updates.category_id = optionalText(body.category_id);
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "No product fields were provided to update." }, { status: 400 });
     }
 
     const { data, error } = await supabase
-      .from('store_products')
-      .update({ name, price, description, image_url })
-      .eq('id', id)
-      .eq('store_id', store_id)
+      .from("store_products")
+      .update(updates)
+      .eq("id", id)
+      .eq("store_id", storeId)
       .select()
       .single();
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, product: data, message: 'Product updated successfully' });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, product: data, message: "Product updated successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update product.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
-// DELETE: Product ko delete karne ke liye
 export async function DELETE(req: Request) {
   try {
+    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const store_id = searchParams.get('store_id');
+    const id = textValue(searchParams.get("id"));
+    const storeId = textValue(searchParams.get("store_id"));
 
-    if (!id || !store_id) {
-      return NextResponse.json({ error: 'Product ID and Store ID are required' }, { status: 400 });
+    if (!id || !storeId) {
+      return NextResponse.json({ error: "Product ID and Store ID are required." }, { status: 400 });
     }
 
     const { error } = await supabase
-      .from('store_products')
+      .from("store_products")
       .delete()
-      .eq('id', id)
-      .eq('store_id', store_id);
+      .eq("id", id)
+      .eq("store_id", storeId);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, message: 'Product deleted successfully' });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ success: true, message: "Product deleted successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to delete product.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

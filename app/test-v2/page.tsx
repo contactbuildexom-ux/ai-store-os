@@ -88,40 +88,68 @@ export default function V2TestPage() {
     // Payment Methods
     const addPayment = async () => {
         if (!storeId) { alert('Pehle Store Create karein!'); return; }
-        try {
-            const res = await fetch('/api/stores/payments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    store_id: storeId,
-                    payment_method: "JazzCash",
-                    transaction_id: `TEST-${Date.now()}`,
-                    amount: 1500,
-                    status: "pending"
-                })
-            });
-            const contentType = res.headers.get('content-type') ?? '';
-            const data = contentType.includes('application/json')
-                ? await res.json()
-                : { error: await res.text() };
-            setOutput(JSON.stringify({ status: res.status, data }, null, 2));
-        } catch (error) {
-            setOutput(JSON.stringify({ error: error instanceof Error ? error.message : 'Request failed' }, null, 2));
-        }
+        const res = await fetch('/api/stores/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                store_id: storeId,
+                payment_method: "JazzCash",
+                transaction_id: "TXN_" + Date.now(), // Har click par unique ID banegi
+                amount: 1500
+            })
+        });
+        const data = await res.json();
+        setOutput(JSON.stringify(data, null, 2));
+    };
+    const createOrder = async () => {
+        if (!storeId) { alert('Pehle Store Create karein!'); return; }
+        const res = await fetch('/api/stores/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                store_id: storeId,
+                customer_name: "Ali Ahmed",
+                customer_phone: "03009876543",
+                customer_address: "House 123, Street 4, Lahore",
+                items: [{ product_id: productId || "sample-id", name: "Chocolate Fudge Cake", quantity: 1, price: 1500 }],
+                total_amount: 1500,
+                is_whatsapp_order: false
+            })
+        });
+        const data = await res.json();
+        setOutput(JSON.stringify(data, null, 2));
     };
 
     const getPayments = async () => {
         if (!storeId) { alert('Pehle Store Create karein!'); return; }
-        try {
-            const res = await fetch(`/api/stores/payments?store_id=${storeId}`);
-            const contentType = res.headers.get('content-type') ?? '';
-            const data = contentType.includes('application/json')
-                ? await res.json()
-                : { error: await res.text() };
-            setOutput(JSON.stringify({ status: res.status, data }, null, 2));
-        } catch (error) {
-            setOutput(JSON.stringify({ error: error instanceof Error ? error.message : 'Request failed' }, null, 2));
-        }
+        const res = await fetch(`/api/stores/payments?store_id=${storeId}`);
+        const data = await res.json();
+        setOutput(JSON.stringify(data, null, 2));
+    };
+
+    // Store Settings
+    const saveSettings = async () => {
+        if (!storeId) { alert('Pehle Store Create karein!'); return; }
+        const res = await fetch('/api/stores/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                store_id: storeId,
+                theme_color: "#1d7555",
+                banner_text: "Special Discount on All Cakes!",
+                font_style: "inter",
+                logo_url: "https://example.com/logo.png"
+            })
+        });
+        const data = await res.json();
+        setOutput(JSON.stringify(data, null, 2));
+    };
+
+    const getSettings = async () => {
+        if (!storeId) { alert('Pehle Store Create karein!'); return; }
+        const res = await fetch(`/api/stores/settings?store_id=${storeId}`);
+        const data = await res.json();
+        setOutput(JSON.stringify(data, null, 2));
     };
 
     return (
@@ -151,8 +179,11 @@ export default function V2TestPage() {
                     <button onClick={addProduct} className="px-3 py-2 bg-blue-600 text-white rounded text-xs font-medium">3. Add Product</button>
                     <button onClick={saveDelivery} className="px-3 py-2 bg-amber-600 text-white rounded text-xs font-medium">4. Save Delivery</button>
                     <button onClick={getDelivery} className="px-3 py-2 bg-gray-700 text-white rounded text-xs font-medium">5. Get Delivery</button>
-                    <button onClick={addPayment} className="px-3 py-2.5 bg-purple-600 text-white rounded text-xs font-medium">6. Add Payment</button>
-                    <button onClick={getPayments} className="px-3 py-2.5 bg-gray-700 text-white rounded text-xs font-medium">7. Get Payments</button>
+                    <button onClick={addPayment} className="px-3 py-2 bg-purple-600 text-white rounded text-xs font-medium">6. Add Payment</button>
+                    <button onClick={getPayments} className="px-3 py-2 bg-gray-700 text-white rounded text-xs font-medium">7. Get Payments</button>
+                    <button onClick={saveSettings} className="px-3 py-2 bg-indigo-600 text-white rounded text-xs font-medium">8. Save Settings</button>
+                    <button onClick={getSettings} className="px-3 py-2 bg-gray-700 text-white rounded text-xs font-medium">9. Get Settings</button>
+                    <button onClick={createOrder} className="px-3 py-2 bg-pink-600 text-white rounded text-xs font-medium">10. Create Order</button>
                 </div>
             </div>
 
