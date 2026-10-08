@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@supabase/supabase-js';
-import { uploadProductImage } from '@/lib/supabaseUpload';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Wallet } from 'lucide-react';
+import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
+import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,6 +53,7 @@ export default function MerchantDashboardMaster() {
     const [themeColor, setThemeColor] = useState('#1d7555');
     const [bannerText, setBannerText] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
+    const [logoFile, setLogoFile] = useState<File | null>(null);
     const [whatsappNumber, setWhatsappNumber] = useState('');
     const [jazzcashNumber, setJazzcashNumber] = useState('');
     const [easypaisaNumber, setEasypaisaNumber] = useState('');
@@ -64,6 +65,8 @@ export default function MerchantDashboardMaster() {
 
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
+    const [messageError, setMessageError] = useState(false);
+    const [savingSettings, setSavingSettings] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
 
     // Product Form States
@@ -130,7 +133,11 @@ export default function MerchantDashboardMaster() {
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
             const [settingsData] = await Promise.all([
-                fetch(`/api/stores/settings?store_id=${storeData.id}`).then((response) => response.json()),
+                fetch(`/api/stores/settings?store_id=${storeData.id}`).then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Unable to load storefront settings.');
+                    return data;
+                }),
                 fetchMeshData(storeData.id),
             ]);
             if (settingsData.settings) {
@@ -165,22 +172,38 @@ export default function MerchantDashboardMaster() {
     const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
-        const res = await fetch('/api/stores/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                store_id: resolvedStoreId,
-                theme_color: themeColor,
-                banner_text: bannerText,
-                logo_url: logoUrl,
-                whatsapp_number: canUseWhatsapp ? whatsappNumber : null,
-                jazzcash_number: jazzcashNumber,
-                easypaisa_number: easypaisaNumber
-            })
-        });
-        const data = await res.json();
-        if (data.success) setMessage('Settings saved successfully!');
-        else setMessage(data.error || 'Failed to save settings');
+        setMessageError(false);
+        setSavingSettings(true);
+        try {
+            if (!resolvedStoreId) throw new Error('Store is still loading. Please try again in a moment.');
+            const savedLogoUrl = logoFile ? await uploadStoreImage(logoFile, resolvedStoreId) : logoUrl;
+            const res = await fetch('/api/stores/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: resolvedStoreId,
+                    theme_color: themeColor,
+                    banner_text: bannerText,
+                    logo_url: savedLogoUrl,
+                    whatsapp_number: canUseWhatsapp ? whatsappNumber : null,
+                    jazzcash_number: jazzcashNumber,
+                    easypaisa_number: easypaisaNumber
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save settings.');
+            if (savedLogoUrl && data.settings?.logo_url !== savedLogoUrl) {
+                throw new Error('Settings were submitted, but the saved logo could not be confirmed. Please save again.');
+            }
+            setLogoUrl(savedLogoUrl);
+            setLogoFile(null);
+            setMessage(data.warning || data.message || 'Settings saved successfully!');
+        } catch (error) {
+            setMessage(error instanceof Error ? error.message : 'Failed to save settings.');
+            setMessageError(true);
+        } finally {
+            setSavingSettings(false);
+        }
     };
 
     // Save Product with Supabase Image Upload
@@ -192,7 +215,7 @@ export default function MerchantDashboardMaster() {
         try {
             let imageUrl = null;
             if (prodImageFile) {
-                imageUrl = await uploadProductImage(prodImageFile);
+                imageUrl = await uploadProductImage(prodImageFile, resolvedStoreId);
             }
 
             const method = editingProdId ? 'PUT' : 'POST';
@@ -327,7 +350,7 @@ export default function MerchantDashboardMaster() {
 
                 <div className="w-full max-w-7xl space-y-6 p-5 sm:p-8">
                     {message && (
-                        <div role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800">
+                        <div role={messageError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-xs font-medium ${messageError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
                             {message}
                         </div>
                     )}
@@ -440,14 +463,27 @@ export default function MerchantDashboardMaster() {
                                     <input type="text" value={bannerText} onChange={e => setBannerText(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold mb-1">Logo URL</label>
-                                    <input type="text" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
+                                    <label className="mb-1 block text-[11px] font-semibold text-slate-700">Store logo</label>
+                                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                                        {logoUrl && <Image src={logoUrl} alt={`${storeName} logo preview`} width={52} height={52} unoptimized className="size-13 rounded-lg border border-slate-200 bg-white object-cover" />}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs font-medium text-slate-700">{logoFile?.name || (logoUrl ? 'Current store logo' : 'Choose a logo image')}</p>
+                                            <p className="mt-1 text-[10px] text-slate-500">PNG, JPG, WebP or GIF · max 5 MB</p>
+                                        </div>
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-within:ring-2 focus-within:ring-blue-200">
+                                            <Upload size={14} /> Choose file
+                                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => setLogoFile(event.target.files?.[0] || null)} className="sr-only" />
+                                        </label>
+                                    </div>
+                                    <label className="mt-3 block text-[10px] font-medium text-slate-500">Or use an image URL
+                                        <input type="url" value={logoUrl} onChange={event => { setLogoUrl(event.target.value); setLogoFile(null); }} placeholder="https://example.com/logo.png" className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                    </label>
                                 </div>
                                 <div>
                                     <label className="block text-[11px] font-bold mb-1">Theme Color</label>
                                     <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 border rounded cursor-pointer" />
                                 </div>
-                                <button type="submit" className="px-4 py-2.5 text-white rounded-lg text-xs font-bold" style={{ backgroundColor: themeColor }}>Save Branding</button>
+                                <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>
                     )}
@@ -482,7 +518,7 @@ export default function MerchantDashboardMaster() {
                                     )}
                                 </div>
 
-                                <button type="submit" className="px-4 py-2.5 text-white rounded-lg text-xs font-bold" style={{ backgroundColor: themeColor }}>Save Payment Info</button>
+                                <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save payment settings'}</button>
                             </form>
                         </div>
                     )}
@@ -524,7 +560,12 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">Product image</label>
-                                        <input type="file" accept="image/*" onChange={e => setProdImageFile(e.target.files?.[0] || null)} className="w-full rounded-lg border border-slate-200 p-2 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-[10px]" />
+                                        <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
+                                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700"><Upload size={16} /></span>
+                                            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-slate-700">{prodImageFile?.name || 'Choose a product image'}</span><span className="mt-1 block text-[10px] text-slate-500">PNG, JPG, WebP or GIF · max 5 MB</span></span>
+                                            <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors group-hover:border-blue-300 group-hover:bg-blue-50 group-hover:text-blue-700">Choose file</span>
+                                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={event => setProdImageFile(event.target.files?.[0] || null)} className="sr-only" />
+                                        </label>
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">Description</label>

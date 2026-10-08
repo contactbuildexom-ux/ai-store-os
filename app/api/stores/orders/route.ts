@@ -26,6 +26,17 @@ async function readOrdersFrom(table: "store_orders" | "orders", storeId: string)
     .order("created_at", { ascending: false });
 }
 
+function isMissingTable(error: { message: string } | null, table: string) {
+  if (!error) return false;
+  const message = error.message.toLowerCase();
+  return message.includes(table) && (
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("could not find the table") ||
+    message.includes("relation")
+  );
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -35,14 +46,26 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
-    let result = await readOrdersFrom("store_orders", storeId);
-    if (result.error && result.error.message.toLowerCase().includes("store_orders")) {
-      result = await readOrdersFrom("orders", storeId);
+    const [storeOrders, legacyOrders] = await Promise.all([
+      readOrdersFrom("store_orders", storeId),
+      readOrdersFrom("orders", storeId),
+    ]);
+    const storeOrdersUnavailable = isMissingTable(storeOrders.error, "store_orders");
+    const legacyOrdersUnavailable = isMissingTable(legacyOrders.error, "orders");
+
+    if (storeOrders.error && !storeOrdersUnavailable) throw storeOrders.error;
+    if (legacyOrders.error && !legacyOrdersUnavailable) throw legacyOrders.error;
+    if (storeOrdersUnavailable && legacyOrdersUnavailable) throw storeOrders.error;
+
+    const ordersById = new Map<string, Record<string, unknown>>();
+    for (const order of [...(storeOrders.data ?? []), ...(legacyOrders.data ?? [])]) {
+      ordersById.set(String(order.id), order as Record<string, unknown>);
     }
+    const orders = [...ordersById.values()].sort((a, b) =>
+      new Date(String(b.created_at ?? 0)).getTime() - new Date(String(a.created_at ?? 0)).getTime()
+    );
 
-    if (result.error) throw result.error;
-
-    return NextResponse.json({ success: true, orders: result.data ?? [] });
+    return NextResponse.json({ success: true, orders });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load orders.";
     return NextResponse.json({ error: message }, { status: 500 });

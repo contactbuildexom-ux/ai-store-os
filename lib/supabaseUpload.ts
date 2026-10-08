@@ -1,32 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export async function uploadStoreImage(file: File, storeId: string): Promise<string> {
+  const formData = new FormData();
+  formData.set('file', file);
+  formData.set('store_id', storeId);
 
-export async function uploadProductImage(file: File): Promise<string | null> {
-  try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+  const { data: { session } } = await createClient().auth.getSession();
+  const response = await fetch('/api/stores/product-image', {
+    method: 'POST',
+    headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+    body: formData,
+  });
+  const result = await response.json();
 
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError.message);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  } catch (err) {
-    console.error('Unexpected error during image upload:', err);
-    return null;
+  if (!response.ok || typeof result.image_url !== 'string') {
+    throw new Error(result.error || 'Unable to upload image.');
   }
+
+  return result.image_url;
+}
+
+export async function uploadProductImage(file: File, storeId: string): Promise<string> {
+  return uploadStoreImage(file, storeId);
 }

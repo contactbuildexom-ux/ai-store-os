@@ -44,8 +44,8 @@ async function userOwnsStore(supabase: AdminSupabase, storeId: string, userId: s
     .eq("owner_id", userId)
     .maybeSingle();
 
-  if (!byOwner.error) return Boolean(byOwner.data);
-  if (!byOwner.error.message.toLowerCase().includes("owner_id")) throw byOwner.error;
+  if (byOwner.data) return true;
+  if (byOwner.error && !byOwner.error.message.toLowerCase().includes("owner_id")) throw byOwner.error;
 
   const byUser = await supabase
     .from("stores")

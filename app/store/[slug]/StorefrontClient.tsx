@@ -1,185 +1,203 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
+import { useMemo, useState } from 'react';
 
-export default function StorefrontClient({ store, settings, products, delivery }: any) {
+type Product = {
+    id: string;
+    name: string;
+    description?: string | null;
+    price: number | string;
+    image_url?: string | null;
+};
+
+type CartItem = Product & { quantity: number };
+type PaymentMethod = { provider_name: string; account_title: string; account_number: string };
+type DeliverySettings = {
+    delivery_fee?: number | string | null;
+    city_rate?: number | string | null;
+    other_city_rate?: number | string | null;
+    store_city?: string | null;
+    free_delivery_above?: number | string | null;
+    estimated_days?: string | null;
+};
+type Store = { id: string; name: string; slug: string; plan: string; whatsapp_number: string };
+type Props = {
+    store: Store;
+    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null } | null;
+    products: Product[];
+    delivery: DeliverySettings | null;
+    paymentMethods: PaymentMethod[];
+};
+
+function money(value: number | string) {
+    return `PKR ${Number(value || 0).toLocaleString()}`;
+}
+
+function whatsappPhone(value: string) {
+    let phone = value.replace(/\D/g, '');
+    if (phone.startsWith('00')) phone = phone.slice(2);
+    if (phone.startsWith('0')) phone = `92${phone.slice(1)}`;
+    else if (phone.length === 10) phone = `92${phone}`;
+    return phone;
+}
+
+export default function StorefrontClient({ store, settings, products, delivery, paymentMethods }: Props) {
     const themeColor = settings?.theme_color || '#1d7555';
     const bannerText = settings?.banner_text || `Welcome to ${store.name}`;
-
-    const [cart, setCart] = useState<any[]>([]);
+    const isPro = ['pro', 'business'].includes(store.plan.toLowerCase());
+    const [cart, setCart] = useState<CartItem[]>([]);
     const [customerName, setCustomerName] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
+    const [city, setCity] = useState(delivery?.store_city || '');
     const [orderStatus, setOrderStatus] = useState('');
+    const [orderError, setOrderError] = useState(false);
+    const [whatsappLink, setWhatsappLink] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const addToCart = (product: any) => {
-        setCart(prev => {
-            const existing = prev.find(item => item.id === product.id);
-            if (existing) {
-                return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-            }
-            return [...prev, { ...product, quantity: 1 }];
+    const subtotal = useMemo(() => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0), [cart]);
+    const sameCity = Boolean(delivery?.store_city && city.trim().toLowerCase() === delivery.store_city.trim().toLowerCase());
+    const baseDeliveryFee = Number(delivery?.delivery_fee ?? (sameCity ? delivery?.city_rate : delivery?.other_city_rate) ?? 0);
+    const freeDeliveryAbove = Number(delivery?.free_delivery_above || 0);
+    const deliveryFee = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove ? 0 : (Number.isFinite(baseDeliveryFee) ? baseDeliveryFee : 0);
+    const finalAmount = subtotal > 0 ? subtotal + deliveryFee : 0;
+
+    function addToCart(product: Product) {
+        setCart((current) => {
+            const existing = current.find((item) => item.id === product.id);
+            if (existing) return current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+            return [...current, { ...product, quantity: 1 }];
         });
-    };
-
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const deliveryFee = delivery?.delivery_fee || 0;
-    const finalAmount = totalAmount > 0 ? totalAmount + deliveryFee : 0;
-
-    const handleCheckout = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (cart.length === 0) { alert('Cart is empty!'); return; }
-        setLoading(true);
         setOrderStatus('');
+        setWhatsappLink('');
+    }
+
+    function changeQuantity(productId: string, amount: number) {
+        setCart((current) => current
+            .map((item) => item.id === productId ? { ...item, quantity: item.quantity + amount } : item)
+            .filter((item) => item.quantity > 0));
+    }
+
+    async function handleCheckout(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (cart.length === 0 || loading) return;
+        setLoading(true);
+        setOrderError(false);
+        setOrderStatus('');
+        setWhatsappLink('');
+
+        // Open the tab during the user gesture so the browser does not block WhatsApp after the async save.
+        const whatsappWindow = isPro ? window.open('about:blank', '_blank') : null;
+        if (whatsappWindow) whatsappWindow.opener = null;
 
         try {
-            const res = await fetch('/api/stores/orders', {
+            const response = await fetch(`/api/storefront/${encodeURIComponent(store.slug)}/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    store_id: store.id,
                     customer_name: customerName,
                     customer_phone: customerPhone,
-                    customer_address: customerAddress,
-                    items: cart,
-                    total_amount: finalAmount,
-                    is_whatsapp_order: false
-                })
+                    shipping_address: customerAddress,
+                    city,
+                    items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })),
+                    is_whatsapp_order: isPro,
+                }),
             });
-            const data = await res.json();
-            if (data.success) {
-                setOrderStatus('Order placed successfully! Thank you for shopping.');
-                setCart([]);
-                setCustomerName('');
-                setCustomerPhone('');
-                setCustomerAddress('');
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || 'Unable to place your order.');
+
+            if (isPro) {
+                const merchantPhone = whatsappPhone(String(result.whatsapp_number || store.whatsapp_number || ''));
+                if (!merchantPhone) throw new Error('This store has not configured a WhatsApp number yet. Please contact the store.');
+                const itemLines = (result.items as Array<{ name: string; quantity: number; price: number }>)
+                    .map((item) => `• ${item.name} × ${item.quantity} — ${money(item.price * item.quantity)}`)
+                    .join('\n');
+                const summary = [
+                    `New order for ${store.name}`,
+                    '',
+                    itemLines,
+                    '',
+                    `Customer: ${customerName}`,
+                    `Phone: ${customerPhone}`,
+                    `Delivery address: ${customerAddress}`,
+                    `City: ${city}`,
+                    '',
+                    `Subtotal: ${money(result.subtotal)}`,
+                    `Delivery: ${deliveryFee === 0 ? 'Free' : money(result.delivery_fee)}`,
+                    `Total: ${money(result.total_amount)}`,
+                    `Order reference: ${result.order.id}`,
+                ].join('\n');
+                const destination = `https://wa.me/${merchantPhone}?text=${encodeURIComponent(summary)}`;
+                if (whatsappWindow) whatsappWindow.location.href = destination;
+                else setWhatsappLink(destination);
+                setOrderStatus(`Order saved as pending. ${whatsappWindow ? 'WhatsApp opened in a new tab to send your order details.' : 'Your order is saved. Continue to WhatsApp to send the order details.'}`);
             } else {
-                setOrderStatus(data.error || 'Failed to place order.');
+                setOrderStatus(`Order ${result.order.id} placed successfully and saved as pending. Please use the payment details below to complete payment.`);
             }
-        } catch (err: any) {
-            setOrderStatus(err.message);
+
+            setCart([]);
+            setCustomerName('');
+            setCustomerPhone('');
+            setCustomerAddress('');
+        } catch (error) {
+            whatsappWindow?.close();
+            setOrderError(true);
+            setOrderStatus(error instanceof Error ? error.message : 'Unable to place your order. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
+    }
+
+    const jazzcash = paymentMethods.find((method) => method.provider_name.toLowerCase().includes('jazz'));
+    const easypaisa = paymentMethods.find((method) => method.provider_name.toLowerCase().includes('easy'));
 
     return (
-        <div className="min-h-screen bg-gray-50 font-sans">
-            {/* Banner / Announcement Bar */}
-            <div className="text-white text-xs py-2 px-4 text-center font-medium" style={{ backgroundColor: themeColor }}>
-                🎉 {bannerText}
-            </div>
-
-            {/* Header */}
-            <header className="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm">
-                <h1 className="text-lg font-bold" style={{ color: themeColor }}>{store.name}</h1>
-                <div className="text-xs bg-gray-100 px-3 py-1.5 rounded-full border">
-                    Delivery: <b>{delivery?.estimated_days || 'Standard'}</b> | Fee: <b>PKR {delivery?.delivery_fee || 0}</b>
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+            <div className="px-4 py-2 text-center text-xs font-medium text-white" style={{ backgroundColor: themeColor }}>{bannerText}</div>
+            <header className="border-b border-slate-200 bg-white">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+                    <div className="flex min-w-0 items-center gap-3">
+                        {settings?.logo_url && <Image src={settings.logo_url} alt={`${store.name} logo`} width={40} height={40} unoptimized className="size-10 rounded-lg object-cover" />}
+                        <div className="min-w-0"><h1 className="truncate text-lg font-bold" style={{ color: themeColor }}>{store.name}</h1><p className="text-[11px] text-slate-500">Official online store</p></div>
+                    </div>
+                    <div className="hidden rounded-lg bg-slate-50 px-3 py-2 text-right text-[11px] text-slate-600 sm:block"><p>Estimated delivery</p><p className="mt-0.5 font-semibold text-slate-800">{delivery?.estimated_days || 'Standard delivery'}</p></div>
                 </div>
             </header>
 
-            {/* Main Store Content */}
-            <div className="max-w-6xl mx-auto p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Products List */}
-                <div className="md:col-span-2 space-y-4">
-                    <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Our Products</h2>
-                    {products.length === 0 ? (
-                        <p className="text-xs text-gray-500 bg-white p-6 rounded-xl border">No products available in this store yet. Add products from your merchant dashboard!</p>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-4">
-                            {products.map((product: any) => (
-                                <div key={product.id} className="bg-white p-4 rounded-xl border shadow-sm flex flex-col justify-between">
-                                    <div>
-                                        <h3 className="text-xs font-bold text-gray-800">{product.name}</h3>
-                                        <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">{product.description}</p>
-                                    </div>
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <span className="text-xs font-bold" style={{ color: themeColor }}>PKR {product.price}</span>
-                                        <button 
-                                            onClick={() => addToCart(product)} 
-                                            className="px-3 py-1.5 text-white rounded text-[10px] font-medium hover:opacity-90 transition"
-                                            style={{ backgroundColor: themeColor }}
-                                        >
-                                            Add to Cart
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+            <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_390px]">
+                <section>
+                    <div className="mb-5 flex items-end justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Shop the collection</p><h2 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Our products</h2></div><span className="text-xs text-slate-500">{products.length} items</span></div>
+                    {products.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">No products available yet.</div> : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{products.map((product) => <article key={product.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        {product.image_url ? <Image src={product.image_url} alt={product.name} width={480} height={300} unoptimized className="h-40 w-full bg-slate-100 object-cover" /> : <div className="grid h-40 place-items-center bg-gradient-to-br from-slate-100 to-slate-200 text-3xl font-semibold text-slate-400">{product.name.slice(0, 1).toUpperCase()}</div>}
+                        <div className="p-4"><h3 className="text-sm font-semibold text-slate-900">{product.name}</h3><p className="mt-1 min-h-8 line-clamp-2 text-xs leading-5 text-slate-500">{product.description || 'Quality product, ready to order.'}</p><div className="mt-4 flex items-center justify-between gap-2"><span className="text-sm font-bold" style={{ color: themeColor }}>{money(product.price)}</span><button type="button" onClick={() => addToCart(product)} className="rounded-lg px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: themeColor }}>Add to cart</button></div></div>
+                    </article>)}</div>}
+                </section>
 
-                {/* Cart & Checkout Sidebar */}
-                <div className="bg-white p-6 rounded-xl border shadow-sm h-fit space-y-4">
-                    <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Shopping Cart</h2>
-                    {cart.length === 0 ? (
-                        <p className="text-xs text-gray-500">Your cart is empty.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {cart.map(item => (
-                                <div key={item.id} className="flex justify-between items-center text-xs border-b pb-2">
-                                    <div>
-                                        <p className="font-bold text-gray-800">{item.name}</p>
-                                        <p className="text-[10px] text-gray-500">Qty: {item.quantity}</p>
-                                    </div>
-                                    <p className="font-semibold" style={{ color: themeColor }}>PKR {item.price * item.quantity}</p>
-                                </div>
-                            ))}
+                <aside className="h-fit lg:sticky lg:top-5">
+                    <section id="checkout" className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-100 px-5 py-4"><div className="flex items-center justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your order</p><h2 className="mt-1 text-base font-semibold text-slate-900">Cart & checkout</h2></div><span className="grid size-9 place-items-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: themeColor }}>{cart.reduce((count, item) => count + item.quantity, 0)}</span></div></div>
+                        <div className="space-y-4 p-5">
+                            {cart.length === 0 ? <div className="rounded-lg bg-slate-50 px-4 py-6 text-center"><p className="text-sm font-medium text-slate-700">Your cart is empty</p><p className="mt-1 text-xs text-slate-500">Add products to get started.</p></div> : <div className="max-h-56 space-y-3 overflow-y-auto">{cart.map((item) => <div key={item.id} className="flex items-center gap-3"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{item.name}</p><p className="mt-1 text-[10px] text-slate-500">{money(item.price)} each</p></div><div className="flex items-center gap-2"><button type="button" onClick={() => changeQuantity(item.id, -1)} aria-label={`Remove one ${item.name}`} className="grid size-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">−</button><span className="w-4 text-center text-xs font-semibold">{item.quantity}</span><button type="button" onClick={() => changeQuantity(item.id, 1)} aria-label={`Add one ${item.name}`} className="grid size-7 place-items-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">+</button></div><span className="w-20 text-right text-xs font-semibold text-slate-800">{money(Number(item.price) * item.quantity)}</span></div>)}</div>}
 
-                            <div className="pt-2 text-xs space-y-1">
-                                <div className="flex justify-between text-gray-600">
-                                    <span>Delivery Fee:</span>
-                                    <span>PKR {deliveryFee}</span>
-                                </div>
-                                <div className="flex justify-between font-bold text-gray-900 text-sm pt-1 border-t">
-                                    <span>Total:</span>
-                                    <span style={{ color: themeColor }}>PKR {finalAmount}</span>
-                                </div>
-                            </div>
+                            <div className="space-y-2 border-t border-slate-100 pt-4 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{money(subtotal)}</span></div><div className="flex justify-between text-slate-500"><span>Delivery fee</span><span>{deliveryFee === 0 ? 'Free' : money(deliveryFee)}</span></div>{freeDeliveryAbove > 0 && <p className="text-[10px] text-emerald-700">Free delivery on orders over {money(freeDeliveryAbove)}.</p>}<div className="flex justify-between border-t border-slate-100 pt-3 text-sm font-bold text-slate-900"><span>Total</span><span style={{ color: themeColor }}>{money(finalAmount)}</span></div></div>
 
-                            <form onSubmit={handleCheckout} className="space-y-3 pt-4 border-t">
-                                <h3 className="text-xs font-bold text-gray-800">Checkout Details</h3>
-                                <input 
-                                    type="text" 
-                                    placeholder="Your Name" 
-                                    value={customerName} 
-                                    onChange={e => setCustomerName(e.target.value)} 
-                                    required 
-                                    className="w-full p-2 border rounded text-xs" 
-                                />
-                                <input 
-                                    type="text" 
-                                    placeholder="Phone Number (e.g. 03001234567)" 
-                                    value={customerPhone} 
-                                    onChange={e => setCustomerPhone(e.target.value)} 
-                                    required 
-                                    className="w-full p-2 border rounded text-xs" 
-                                />
-                                <textarea 
-                                    placeholder="Delivery Address" 
-                                    value={customerAddress} 
-                                    onChange={e => setCustomerAddress(e.target.value)} 
-                                    required 
-                                    className="w-full p-2 border rounded text-xs" 
-                                    rows={2}
-                                ></textarea>
-                                <button 
-                                    type="submit" 
-                                    disabled={loading} 
-                                    className="w-full py-2.5 text-white rounded text-xs font-bold hover:opacity-90 disabled:opacity-50 transition"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    {loading ? 'Placing Order...' : 'Place Order Now'}
-                                </button>
+                            {!isPro && <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-blue-900">Pay the merchant directly</p><div className="mt-2 space-y-2">{[jazzcash, easypaisa].filter((method) => method?.account_number).map((method) => <div key={method!.provider_name} className="flex items-center justify-between gap-2 text-xs"><span className="text-blue-800">{method!.provider_name}{method!.account_title ? ` · ${method!.account_title}` : ''}</span><span className="font-semibold text-blue-950">{method!.account_number}</span></div>)}{!jazzcash?.account_number && !easypaisa?.account_number && <p className="text-[11px] leading-5 text-blue-800">The merchant has not added JazzCash or Easypaisa account details. You can still submit your order.</p>}</div></div>}
+
+                            <form onSubmit={handleCheckout} className="space-y-3 border-t border-slate-100 pt-4">
+                                <p className="text-xs font-semibold text-slate-800">Delivery details</p>
+                                <input type="text" autoComplete="name" placeholder="Full name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <input type="tel" autoComplete="tel" placeholder="Phone number" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} required maxLength={40} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <input type="text" autoComplete="address-level2" placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <textarea autoComplete="street-address" placeholder="Full delivery address" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} required maxLength={500} rows={3} className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <button type="submit" disabled={loading || cart.length === 0} className="w-full rounded-lg px-4 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>{loading ? 'Saving order…' : isPro ? 'Place order & continue to WhatsApp' : 'Place order'}</button>
                             </form>
+                            {orderStatus && <div role={orderError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-[11px] leading-5 ${orderError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{orderStatus}{whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold underline">Open WhatsApp to send order</a>}</div>}
                         </div>
-                    )}
-                    {orderStatus && (
-                        <p className="text-[11px] font-medium p-2 bg-green-50 text-green-700 rounded border border-green-200 mt-2">{orderStatus}</p>
-                    )}
-                </div>
-            </div>
+                    </section>
+                </aside>
+            </main>
+            <footer className="border-t border-slate-200 bg-white px-5 py-5 text-center text-[10px] text-slate-500">Secure order request · {store.name}</footer>
         </div>
     );
 }
