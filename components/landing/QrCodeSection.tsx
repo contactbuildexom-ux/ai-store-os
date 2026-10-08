@@ -97,12 +97,11 @@ function CheckIcon() {
 export default function QrCodeSection() {
   return (
     <section
-      id="qr-code"
-      className="scroll-mt-20 bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      id="qr-code" className="scroll-mt-20 bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
     >
-      <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <div className="mx-auto grid max-w-6xl items-start gap-12 lg:grid-cols-2 lg:gap-16">
         {/* LEFT: QR visual */}
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-4 lg:pt-24">
           <div className="relative">
             <span className="absolute -right-4 -top-4 z-10 rounded-full bg-brand-blue px-3 py-1 text-xs font-semibold text-white shadow-md">
               Sample QR

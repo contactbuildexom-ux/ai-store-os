@@ -1,21 +1,20 @@
 ﻿"use client";
 
 import Logo from "@/components/landing/logo";
-import Image from "@/components/landing/logo";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 const navItems = [
-  { name: "Features", href: "#features" },
-  { name: "Pricing", href: "#pricing" },
-  { name: "Templates", href: "#templates" },
+  { name: "Features", href: "/#features" },
+  { name: "Pricing", href: "/#pricing" },
+  { name: "Templates", href: "/#templates" },
 ];
 
 const resources = [
   { name: "Help Center", text: "Guides to build and manage your store", href: "/help" },
   { name: "Blog", text: "E-commerce, online selling, and business tips", href: "/blog" },
   { name: "Tutorials", text: "Short how-to guides and videos", href: "/tutorials" },
-  { name: "FAQs", text: "Answers to common questions", href: "#faq" },
+  { name: "FAQs", text: "Answers to common questions", href: "/#faq" },
   { name: "E-commerce Guides", text: "Products, orders, WhatsApp selling, and more", href: "/guides" },
   { name: "AI Tools Guide", text: "How to use the AI chatbot and AI features", href: "/ai-guide" },
   { name: "Success Stories", text: "Real stores built with Buildexom", href: "/stories" },
@@ -41,7 +40,7 @@ export default function Navbar() {
   const [mobileRes, setMobileRes] = useState(false);
   const resRef = useRef<HTMLDivElement>(null);
 
-  // Dropdown ke bahar click ya Esc dabane par band ho jaye
+  
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (resRef.current && !resRef.current.contains(e.target as Node)) setResOpen(false);
@@ -56,13 +55,16 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
+    <header id="top" className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-5 sm:px-6 lg:px-8">
         {/* Logo + links */}
         <div className="flex items-center gap-10">
-          <Link href="/" aria-label="Buildexom home" className="flex shrink-0 items-center">
-              <Logo tagline scale={1.1} />
-          </Link>
+          <Link href="/#top" aria-label="Buildexom home" className="inline-flex flex-col">
+              <Logo />
+              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-700">
+                AI Powered Store Builder
+              </span>
+            </Link>
 
           <nav className="hidden items-center gap-8 md:flex">
             {navItems.map((item) => (
@@ -102,7 +104,7 @@ export default function Navbar() {
         {/* Desktop actions */}
         <div className="hidden items-center gap-6 md:flex">
           <button
-            type="button" aria-label="Search"
+            type="button"  aria-label="Search"
             className="cursor-pointer text-slate-700 transition-colors hover:text-blue-600"
           >
             <svg

@@ -10,6 +10,10 @@
   --green-soft: #e6f4ed;
   --navy: #132522;
 }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
 
 @theme inline {
   --color-background: var(--canvas);
