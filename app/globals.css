@@ -16,6 +16,12 @@
   --color-foreground: var(--ink);
 }
 
+@theme {
+  --color-brand-navy: #0b2545;
+  --color-brand-blue: #1a73d9;
+  --color-brand-blue-dark: #155bb0;
+}
+
 * { box-sizing: border-box; }
 html { min-height: 100%; background: var(--canvas); }
 body { min-height: 100vh; margin: 0; background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
