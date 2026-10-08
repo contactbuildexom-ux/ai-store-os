@@ -2,13 +2,13 @@
 
 :root {
   color-scheme: light;
-  --ink: #172421;
-  --muted: #78827f;
-  --canvas: #f4f6f3;
-  --line: #e8ece8;
-  --green: #1d7555;
-  --green-soft: #e6f4ed;
-  --navy: #132522;
+  --ink: #0f172a;
+  --muted: #64748b;
+  --canvas: #f8fafc;
+  --line: #e2e8f0;
+  --blue: #2563eb;
+  --blue-soft: #eff6ff;
+  --navy: #0f172a;
 }
 
 @theme inline {
@@ -21,7 +21,7 @@ html { min-height: 100%; background: var(--canvas); }
 body { min-height: 100vh; margin: 0; background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-::selection { background: #c8e8d8; color: #15382c; }
+::selection { background: #bfdbfe; color: #1e3a8a; }
 @media (prefers-reduced-motion: no-preference) {
   .rise-in { animation: rise-in 420ms ease-out both; }
   .rise-in-delay { animation: rise-in 500ms 100ms ease-out both; }
