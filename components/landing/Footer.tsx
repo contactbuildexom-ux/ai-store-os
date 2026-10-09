@@ -5,12 +5,12 @@ const columns = [
   {
     title: "Product",
     links: [
-      { name: "Features", href: "#features" },
-      { name: "Pricing", href: "#pricing" },
-      { name: "Templates", href: "#templates" },
-      { name: "WhatsApp Ordering", href: "#whatsapp-ordering" },
-      { name: "Smart Notifications", href: "#notifications" },
-      { name: "QR Code", href: "#qr-code" },
+      { name: "Features", href: "/#features" },
+      { name: "Pricing", href: "/#pricing" },
+      { name: "Templates", href: "/#templates" },
+      { name: "WhatsApp Ordering", href: "/#whatsapp-ordering" },
+      { name: "Smart Notifications", href: "/#notifications" },
+      { name: "QR Code", href: "/#qr-code" },
     ],
   },
   {
@@ -19,7 +19,7 @@ const columns = [
       { name: "Help Center", href: "/help" },
       { name: "Blog", href: "/blog" },
       { name: "Tutorials", href: "/tutorials" },
-      { name: "FAQs", href: "#faq" },
+      { name: "FAQs", href: "/#faq" },
       { name: "E-commerce Guides", href: "/guides" },
       { name: "AI Tools Guide", href: "/ai-guide" },
       { name: "Success Stories", href: "/stories" },
@@ -71,25 +71,35 @@ const socials = [
     ),
   },
   {
-  name: "Email",
-  href: "mailto:support@yourdomain.com",
-  icon: (
-    <>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M3 7l9 6l9-6" />
-    </>
-  ),
-},
+    name: "Email",
+    href: "mailto:support@yourdomain.com",
+    icon: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 7l9 6l9-6" />
+      </>
+    ),
+  },
 ];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-blue-100 bg-[#eef4ff]">
-      <div className="mx-auto max-w-[1200px] px-5 pb-8 pt-16 sm:px-6 lg:px-8">
+    <footer className="relative overflow-hidden border-t border-blue-100 bg-gradient-to-b from-[#f3f8ff] to-[#e3eeff]">
+      {/* Decorative glows */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-blue-300/30 blur-3xl"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-sky-300/30 blur-3xl"
+      />
+
+      <div className="relative mx-auto max-w-[1200px] px-5 pb-8 pt-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           {/* Brand */}
           <div>
-            <Link href="/" aria-label="Buildexom home" className="inline-flex flex-col">
+            <Link href="/#top" aria-label="Buildexom home" className="inline-flex flex-col">
               <Logo />
               <span className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-700">
                 AI Powered Store Builder
@@ -100,13 +110,14 @@ export default function Footer() {
               AI-powered store builder. Describe your business and go live in minutes.
             </p>
 
-            <div className="mt-6 flex gap-3">
+            {/* Social icons (yahan id lagi hai, blink isi par hoga) */}
+            <div id="contact-socials" className="mt-6 flex gap-3">
               {socials.map((s) => (
                 <a
                   key={s.name}
                   href={s.href}
                   aria-label={s.name}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-white text-blue-700 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+                  className="glass-card flex h-11 w-11 items-center justify-center rounded-full text-blue-700 transition duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-blue-700 hover:to-sky-500 hover:text-white"
                 >
                   <svg
                     width="18"
@@ -128,7 +139,7 @@ export default function Footer() {
           {/* Link columns */}
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f1b4d]">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-brand-navy">
                 {col.title}
               </h3>
               <ul className="mt-5 space-y-3">
@@ -136,7 +147,7 @@ export default function Footer() {
                   <li key={l.name}>
                     <Link
                       href={l.href}
-                      className="text-[15px] font-medium text-slate-600 transition-colors hover:text-blue-700"
+                      className="inline-block text-[15px] font-medium text-slate-600 transition duration-200 hover:translate-x-1 hover:text-blue-700"
                     >
                       {l.name}
                     </Link>
@@ -148,9 +159,11 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-blue-100 pt-6 text-sm text-slate-500">
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-blue-200/70 pt-6 text-sm text-slate-500">
           <p>© {new Date().getFullYear()} Buildexom. All rights reserved.</p>
-          <p>Made in Pakistan</p>
+          <p className="font-medium">
+            Made in Pakistan <span aria-hidden>🇵🇰</span>
+          </p>
         </div>
       </div>
     </footer>

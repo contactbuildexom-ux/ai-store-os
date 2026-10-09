@@ -45,14 +45,20 @@
 
 export default function FeatureStrip() {
   return (
-    <section className="border-y border-slate-100 bg-white px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+    <section
+      id="features"
+      className="scroll-mt-20 bg-white px-4 py-10 sm:px-6 lg:px-8"
+    >
+      <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((f) => (
-          <div key={f.title} className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue">
+          <div
+            key={f.title}
+            className="glass-card card-lift flex items-start gap-4 rounded-3xl p-5"
+          >
+            <span className="btn-glow flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-sky-500 text-white">
               <svg
-                width="20"
-                height="20"
+                width="22"
+                height="22"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -66,7 +72,7 @@ export default function FeatureStrip() {
             </span>
 
             <div>
-              <h3 className="text-sm font-semibold text-brand-navy">
+              <h3 className="text-[15px] font-bold text-brand-navy">
                 {f.title}
               </h3>
               <p className="mt-1 text-sm leading-relaxed text-slate-600">

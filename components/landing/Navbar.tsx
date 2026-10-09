@@ -23,7 +23,7 @@ const resources = [
 function Chevron({ open }: { open?: boolean }) {
   return (
     <svg
-      className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+      className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
       viewBox="0 0 20 20"
       fill="none"
       stroke="currentColor"
@@ -33,65 +33,102 @@ function Chevron({ open }: { open?: boolean }) {
     </svg>
   );
 }
-
+function goToGenerate(e: React.MouseEvent<HTMLAnchorElement>, after?: () => void) {
+  after?.();
+  const card = document.getElementById("generate-store");
+  if (!card) return; // doosre page par ho to Link khud /#generate-store par le jayega
+  e.preventDefault();
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => {
+    (document.getElementById("store-prompt") as HTMLTextAreaElement | null)?.focus({
+      preventScroll: true,
+    });
+  }, 700);
+}
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [resOpen, setResOpen] = useState(false);
   const [mobileRes, setMobileRes] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const resRef = useRef<HTMLDivElement>(null);
 
-  
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (resRef.current && !resRef.current.contains(e.target as Node)) setResOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setResOpen(false);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+
+    onScroll();
     document.addEventListener("mousedown", onClick);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       document.removeEventListener("mousedown", onClick);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
   return (
-    <header id="top" className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
+    <header
+      id="top"
+      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${
+        scrolled
+          ? "border-blue-100 bg-white/80 shadow-[0_8px_30px_-12px_rgba(29,78,216,0.25)]"
+          : "border-transparent bg-white/60"
+      }`}
+    >
       <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-5 sm:px-6 lg:px-8">
         {/* Logo + links */}
         <div className="flex items-center gap-10">
           <Link href="/#top" aria-label="Buildexom home" className="inline-flex flex-col">
-              <Logo />
-              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-700">
-                AI Powered Store Builder
-              </span>
-            </Link>
+            <Logo />
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-700">
+              AI Powered Store Builder
+            </span>
+          </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => (
-              <a key={item.name} href={item.href} className="text-sm font-medium text-slate-700 transition-colors hover:text-blue-600">
+              <a
+                key={item.name}
+                href={item.href}
+                className="rounded-full px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
+              >
                 {item.name}
               </a>
             ))}
 
-{/* Resources dropdown */}
-    <div ref={resRef} className="relative">
-      <button type="button" aria-haspopup="menu" aria-expanded={resOpen} onClick={() => setResOpen(!resOpen)} 
-      className={`inline-flex cursor-pointer items-center gap-1 
-        text-sm font-medium transition-colors hover:text-blue-600 ${resOpen ? "text-blue-600" : "text-slate-700"}`
-      }
-    >
-      Resources
+            {/* Resources dropdown */}
+            <div ref={resRef} className="relative">
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={resOpen}
+                onClick={() => setResOpen(!resOpen)}
+                className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-700 ${
+                  resOpen ? "bg-blue-50 text-blue-700" : "text-slate-700"
+                }`}
+              >
+                Resources
                 <Chevron open={resOpen} />
               </button>
-{resOpen && (
-            <div role="menu" className="absolute left-1/2 top-full z-50 mt-5 w-[340px] -translate-x-1/2 rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl shadow-blue-900/10"
+
+              {resOpen && (
+                <div
+                  role="menu"
+                  className="glass-card absolute left-1/2 top-full z-50 mt-4 w-[360px] -translate-x-1/2 rounded-3xl p-2"
                 >
                   {resources.map((r) => (
                     <Link
-                      key={r.name} href={r.href} role="menuitem" onClick={() => setResOpen(false)}
-                      className="block rounded-xl px-4 py-3 transition-colors hover:bg-blue-50"
+                      key={r.name}
+                      href={r.href}
+                      role="menuitem"
+                      onClick={() => setResOpen(false)}
+                      className="block rounded-2xl px-4 py-3 transition-colors hover:bg-blue-50"
                     >
-                      <p className="text-sm font-semibold text-[#0f1b4d]">{r.name}</p>
+                      <p className="text-sm font-semibold text-brand-navy">{r.name}</p>
                       <p className="mt-0.5 text-xs text-slate-500">{r.text}</p>
                     </Link>
                   ))}
@@ -102,10 +139,11 @@ export default function Navbar() {
         </div>
 
         {/* Desktop actions */}
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
           <button
-            type="button"  aria-label="Search"
-            className="cursor-pointer text-slate-700 transition-colors hover:text-blue-600"
+            type="button"
+            aria-label="Search"
+            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
           >
             <svg
               width="20"
@@ -124,14 +162,15 @@ export default function Navbar() {
 
           <Link
             href="/login"
-            className="text-sm font-medium text-slate-700 transition-colors hover:text-blue-600"
+            className="text-sm font-semibold text-slate-700 transition-colors hover:text-blue-700"
           >
             Login
           </Link>
 
           <Link
-            href="/login"
-            className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-700/25 transition hover:-translate-y-0.5 hover:bg-blue-800"
+            href="/#generate-store"
+            onClick={(e) => goToGenerate(e)}
+            className="btn-glow rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
           >
             Get Started Free
           </Link>
@@ -143,7 +182,7 @@ export default function Navbar() {
           aria-label="Toggle menu"
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen(!menuOpen)}
-          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-800 md:hidden"
+          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-blue-100 bg-white/70 text-brand-navy md:hidden"
         >
           <svg
             width="22"
@@ -161,14 +200,14 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-slate-100 bg-white px-5 py-5 md:hidden">
+        <div className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-blue-100 bg-white/95 px-5 py-5 backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-1">
             {navItems.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                className="rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
               >
                 {item.name}
               </a>
@@ -178,20 +217,20 @@ export default function Navbar() {
               type="button"
               aria-expanded={mobileRes}
               onClick={() => setMobileRes(!mobileRes)}
-              className="flex items-center justify-between rounded-lg px-3 py-3 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+              className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               Resources
               <Chevron open={mobileRes} />
             </button>
 
             {mobileRes && (
-              <div className="mb-1 ml-3 flex flex-col border-l border-slate-100 pl-3">
+              <div className="mb-1 ml-3 flex flex-col border-l-2 border-blue-100 pl-3">
                 {resources.map((r) => (
                   <Link
                     key={r.name}
                     href={r.href}
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-lg px-3 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                    className="rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700"
                   >
                     {r.name}
                   </Link>
@@ -202,15 +241,15 @@ export default function Navbar() {
             <Link
               href="/login"
               onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+              className="rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
             >
               Login
             </Link>
 
             <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 rounded-xl bg-blue-700 px-5 py-3 text-center text-sm font-semibold text-white hover:bg-blue-800"
+              href="/#generate-store"
+              onClick={(e) => goToGenerate(e, () => setMenuOpen(false))}
+              className="btn-glow mt-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-3 text-center text-sm font-semibold text-white"
             >
               Get Started Free
             </Link>
