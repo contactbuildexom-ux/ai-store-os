@@ -14,12 +14,9 @@ html {
   scroll-padding-top: 90px;
 }
 
-@theme inline {
+ :root {
   --color-background: var(--canvas);
   --color-foreground: var(--ink);
-}
-
-@theme {
   --color-brand-navy: #0b1b4d;
   --color-brand-blue: #1d5fe6;
   --color-brand-blue-dark: #1748b8;
