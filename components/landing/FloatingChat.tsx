@@ -11,22 +11,22 @@ const quickQuestions = [
   "What is the store QR code?",
 ];
 
-/* Demo replies: asli AI lagane tak yehi chalega */
-function getReply(text: string): string {
+/* Backup jawab: sirf tab chalte hain jab AI server se jawab na aaye */
+function getFallback(text: string): string {
   const t = text.toLowerCase();
+  if (/^(hi|hy|hey|hello|salam|assalam)/.test(t.trim()))
+    return "Hi! I'm Bexi AI. Ask me anything about building your online store.";
+  if (t.includes("qr"))
+    return "Every store gets its own QR code. Print it or share it, and customers can open your store or order on WhatsApp right away.";
   if (t.includes("free") || t.includes("price") || t.includes("plan") || t.includes("cost"))
     return "Yes, the free plan is really free. You can list up to 20 products and take orders on WhatsApp. You can upgrade to Pro or Business anytime.";
   if (t.includes("order") || t.includes("whatsapp"))
     return "Customers pick products in your store and send the order to your WhatsApp in one tap, with items and total filled in.";
-  if (t.includes("cod") || t.includes("skill") || t.includes("design"))
+  if (t.includes("coding") || t.includes("skill") || t.includes("design"))
     return "No coding or design skills needed. Just describe your business and the AI builds your store.";
-  if (t.includes("qr"))
-    return "Every store gets its own QR code. Print it or share it, and customers can open your store or order on WhatsApp right away.";
   if (t.includes("upgrade"))
     return "Yes, you can start free and move to Pro or Business whenever your store grows.";
-  if (t.includes("help") || t.includes("support") || t.includes("contact"))
-    return "Our team is a message away. Use the contact icons at the bottom of the page and we will help you.";
-  return "I can help with plans, orders, QR codes and setup. For anything else, please contact our team using the icons at the bottom of the page.";
+  return "I'm Bexi AI. I can help with plans, orders, QR codes and setting up your store. Try asking about one of those.";
 }
 
 export default function FloatingChat() {
@@ -48,16 +48,37 @@ export default function FloatingChat() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  function send(text: string) {
+  async function send(text: string) {
     const msg = text.trim();
-    if (!msg) return;
-    setMessages((m) => [...m, { from: "user", text: msg }]);
+    if (!msg || typing) return;
+
+    const next: Msg[] = [...messages, { from: "user", text: msg }];
+    setMessages(next);
     setInput("");
     setTyping(true);
-    window.setTimeout(() => {
-      setMessages((m) => [...m, { from: "bot", text: getReply(msg) }]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: next.map((m) => ({
+            role: m.from === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+        }),
+      });
+
+      if (!res.ok) throw new Error("chat failed");
+
+      const data = (await res.json()) as { reply?: string };
+      const reply = data.reply && data.reply.trim() ? data.reply : getFallback(msg);
+      setMessages((m) => [...m, { from: "bot", text: reply }]);
+    } catch {
+      setMessages((m) => [...m, { from: "bot", text: getFallback(msg) }]);
+    } finally {
       setTyping(false);
-    }, 700);
+    }
   }
 
   return (
@@ -91,7 +112,7 @@ export default function FloatingChat() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                   m.from === "user"
                     ? "ml-auto rounded-tr-sm bg-blue-600 text-white"
                     : "rounded-tl-sm border border-blue-100 bg-white text-slate-700"
