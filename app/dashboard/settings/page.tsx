@@ -12,7 +12,7 @@ export default function SettingsPage() {
         <p className="mt-1 text-sm text-slate-500">Manage platform identity, contact information, and social profiles.</p>
       </div>
       <SettingsForm />
-      <p className="text-xs text-slate-500">These preferences are saved in this browser. Logo selection is currently a placeholder and does not upload a file to storage.</p>
+      <p className="text-xs text-slate-500">Settings are saved to the platform database. Logo uploads accept JPEG, PNG, or WebP files up to 2 MB.</p>
     </div>
   );
 }

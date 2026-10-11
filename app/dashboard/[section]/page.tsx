@@ -121,7 +121,7 @@ export default async function SectionPage({
   const addAction = section === "stores" || section === "sellers"
     ? <AddStoreButton label={section === "sellers" ? "Add seller" : "Add store"} />
     : section === "products"
-      ? <Link href="/dashboard/stores" className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50"><ArrowUpRight size={14} />Browse stores</Link>
+      ? <Link href="/dashboard/stores" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50"><ArrowUpRight size={14} />Browse stores</Link>
       : null;
 
   return (

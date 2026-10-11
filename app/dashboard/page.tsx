@@ -66,7 +66,7 @@ export default async function DashboardPage() {
           <p className="mt-1 text-sm text-slate-500">Live activity across your commerce platform.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/analytics" className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Platform report <ArrowRight size={14} /></Link>
+          <Link href="/dashboard/analytics" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Platform report <ArrowRight size={14} /></Link>
           <AddStoreButton />
         </div>
       </div>
@@ -84,7 +84,7 @@ export default async function DashboardPage() {
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div><h3 className="text-sm font-semibold text-slate-800">Registered stores</h3><p className="mt-1 text-[11px] text-slate-500">Latest stores created on your platform</p></div>
-            <Link href="/dashboard/stores" className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">View all <ArrowRight size={14} /></Link>
+            <Link href="/dashboard/stores" prefetch className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">View all <ArrowRight size={14} /></Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[510px] text-left">
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div><h3 className="text-sm font-semibold text-slate-800">Quick actions</h3><p className="mt-1 text-[11px] text-slate-500">Common admin destinations</p></div>
             <div className="mt-4 divide-y divide-slate-100">
-              {actions.map(({ label, href, icon: Icon }) => <Link key={href} href={href} className="group flex items-center gap-3 py-3 text-xs text-slate-600 transition hover:text-blue-700"><span className="grid size-8 place-items-center rounded-md bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-700"><Icon size={15} /></span><span className="flex-1">{label}</span><ArrowRight size={14} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600" /></Link>)}
+              {actions.map(({ label, href, icon: Icon }) => <Link key={href} href={href} prefetch className="group flex items-center gap-3 py-3 text-xs text-slate-600 transition hover:text-blue-700"><span className="grid size-8 place-items-center rounded-md bg-slate-50 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-700"><Icon size={15} /></span><span className="flex-1">{label}</span><ArrowRight size={14} className="text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600" /></Link>)}
             </div>
           </section>
           <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
