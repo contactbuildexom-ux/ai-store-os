@@ -1,29 +1,40 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { storeRepo } from '@/lib/store-repository';
 
 export async function POST(req: Request) {
   try {
     const { store_id, message } = await req.json();
 
-    // 1. Fetch store's products to give context to AI
-    const { data: products } = await supabase
-      .from('store_products')
-      .select('*')
-      .eq('store_id', store_id);
+    if (!store_id || !message) {
+      return NextResponse.json({ error: 'Store ID/slug and message are required.' }, { status: 400 });
+    }
 
-    const catalogContext = JSON.stringify(products || []);
+    const store = await storeRepo.getStore(store_id);
+    const products = await storeRepo.getProducts(store_id);
 
-    // TODO: Send `message` and `catalogContext` to AI LLM (Groq/OpenAI) 
-    // with a strict system prompt to only answer using this catalog data.
-    
-    const aiResponse = `Here is what we found based on your store inquiry regarding: "${message}". Our catalog has ${products?.length || 0} items available.`;
+    const query = message.toLowerCase();
+    const matches = products.filter(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.category.toLowerCase().includes(query) ||
+      p.description.toLowerCase().includes(query)
+    );
 
-    return NextResponse.json({ success: true, reply: aiResponse });
+    let reply = '';
+    if (matches.length > 0) {
+      reply = `I found ${matches.length} matching item(s) for "${message}":\n` +
+        matches.map(p => `• *${p.name}* (Rs. ${p.price}): ${p.description}`).join('\n') +
+        `\n\nWould you like to order any of these directly via WhatsApp?`;
+    } else {
+      reply = `Thank you for reaching out to ${store?.name || 'our store'}! We offer ${products.length} exclusive items in our catalog. You can ask about our categories (${Array.from(new Set(products.map(p => p.category))).join(', ')}), pricing, or click 'Order via WhatsApp' to place a direct order!`;
+    }
+
+    return NextResponse.json({
+      success: true,
+      reply,
+      matches_count: matches.length,
+      store_name: store?.name
+    });
+
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

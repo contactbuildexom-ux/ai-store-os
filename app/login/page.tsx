@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/login-form";
 
@@ -13,5 +14,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 			: setup === "required"
 				? "Add your Supabase URL and anon key to .env.local to enable authentication."
 				: undefined;
-	return <LoginForm notice={notice} />;
+	return React.createElement(LoginForm, { notice });
 }
