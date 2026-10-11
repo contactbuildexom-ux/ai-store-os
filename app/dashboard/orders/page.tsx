@@ -15,15 +15,18 @@ export default async function OrdersPage() {
   } else {
     const result = await supabase
       .from("orders")
-      .select("id, customer_name, customer_phone, items, total_amount, status, created_at")
+      .select("id, store_id, customer_name, customer_phone, shipping_address, city, items, total_amount, status, created_at")
       .order("created_at", { ascending: false });
     if (result.error) {
       dataError = `Unable to load orders: ${result.error.message}`;
     } else {
       orders = (result.data ?? []).map((order) => ({
         id: String(order.id),
+        store_id: typeof order.store_id === "string" ? order.store_id : null,
         customer_name: typeof order.customer_name === "string" ? order.customer_name : null,
         customer_phone: typeof order.customer_phone === "string" ? order.customer_phone : null,
+        shipping_address: typeof order.shipping_address === "string" ? order.shipping_address : null,
+        city: typeof order.city === "string" ? order.city : null,
         items: order.items,
         total_amount: typeof order.total_amount === "number" || typeof order.total_amount === "string" ? order.total_amount : null,
         status: typeof order.status === "string" ? order.status : null,

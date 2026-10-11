@@ -3,11 +3,15 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import { DashboardRecordActions } from "@/components/dashboard-record-actions";
 
 export type DashboardOrder = {
   id: string;
+  store_id: string | null;
   customer_name: string | null;
   customer_phone: string | null;
+  shipping_address: string | null;
+  city: string | null;
   items: unknown;
   total_amount: number | string | null;
   status: string | null;
@@ -59,7 +63,8 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
     String(order.total_amount ?? 0),
     order.created_at ? new Date(order.created_at).toLocaleString() : "",
   ]);
-  const columns = ["Order ID", "Customer", "Items", "Status", "Total", "Created"];
+  const columns = ["Order ID", "Customer", "Items", "Status", "Total", "Created", "Actions"];
+  const exportColumns = columns.slice(0, -1);
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -79,11 +84,11 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
-          <ExportCsvButton columns={columns} rows={exportRows} fileName="orders.csv" />
+          <ExportCsvButton columns={exportColumns} rows={exportRows} fileName="orders.csv" />
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] text-left">
+        <table className="w-full min-w-[1000px] text-left">
           <thead className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500">
             <tr>{columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}</tr>
           </thead>
@@ -98,6 +103,28 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
                   <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium capitalize ${statusClass(orderStatus)}`}>{orderStatus}</span></td>
                   <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-700">{Number(order.total_amount ?? 0).toLocaleString()}</td>
                   <td className="whitespace-nowrap px-5 py-4">{order.created_at ? new Date(order.created_at).toLocaleDateString() : "—"}</td>
+                  <td className="whitespace-nowrap px-5 py-3">
+                    <DashboardRecordActions
+                      resource="orders"
+                      recordId={order.id}
+                      values={[
+                        { label: "Customer", value: order.customer_name ?? "" },
+                        { label: "Phone", value: order.customer_phone ?? "" },
+                        { label: "Shipping address", value: order.shipping_address ?? "" },
+                        { label: "City", value: order.city ?? "" },
+                        { label: "Items", value: itemsLabel(order.items) },
+                        { label: "Status", value: order.status ?? "pending" },
+                        { label: "Total", value: String(order.total_amount ?? 0) },
+                        { label: "Store ID", value: order.store_id ?? "" },
+                        { label: "Created", value: order.created_at ? new Date(order.created_at).toLocaleString() : "" },
+                      ]}
+                      fields={[
+                        { key: "customer_name", label: "Customer", },
+                        { key: "customer_phone", label: "Phone" },
+                        { key: "status", label: "Status", type: "select", options: [...new Set([order.status ?? "pending", "pending", "processing", "shipped", "delivered", "completed", "cancelled"])] },
+                      ]}
+                    />
+                  </td>
                 </tr>
               );
             })}

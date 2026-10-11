@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlertCircle, ArrowRight, ArrowUpRight, Bot, CreditCard, Package, ShoppingBag, Store } from "lucide-react";
-import { AddStoreButton } from "@/components/add-store-button";
+import { DashboardGreeting } from "@/components/dashboard-greeting";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type StoreSummary = {
@@ -62,13 +62,10 @@ export default async function DashboardPage() {
       <div className="rise-in flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-medium text-blue-700">Platform overview</p>
-          <h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-slate-900">Good morning, Admin</h2>
+          <h2 className="mt-1.5 text-[25px] font-semibold tracking-tight text-slate-900"><DashboardGreeting /></h2>
           <p className="mt-1 text-sm text-slate-500">Live activity across your commerce platform.</p>
         </div>
-        <div className="flex gap-2">
-          <Link href="/dashboard/analytics" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Platform report <ArrowRight size={14} /></Link>
-          <AddStoreButton />
-        </div>
+        <Link href="/dashboard/analytics" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Platform report <ArrowRight size={14} /></Link>
       </div>
       {dataError && <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertCircle size={17} className="mt-0.5 shrink-0" />{dataError}</p>}
       <section className="rise-in grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3" aria-label="Platform metrics">
