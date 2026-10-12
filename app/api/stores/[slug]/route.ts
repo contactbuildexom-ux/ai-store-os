@@ -1,20 +1,19 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
+  _request: Request,
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     if (!slug) {
       return NextResponse.json({ error: 'Store slug is required.' }, { status: 400 });
+    }
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Store database is not configured.' }, { status: 503 });
     }
 
     // 1. Fetch store details by slug

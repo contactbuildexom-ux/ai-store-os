@@ -1,68 +1,130 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { checkStoreLimits } from "@/lib/planLimits";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function textValue(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
-export async function POST(request: Request) {
+function getSupabase() {
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error("Store database is not configured.");
+  return supabase;
+}
+
+export async function GET(req: Request) {
   try {
-    const body = await request.json();
-    const { store_id, name } = body;
+    const supabase = getSupabase();
+    const { searchParams } = new URL(req.url);
+    const storeId = textValue(searchParams.get("store_id"));
 
-    if (!store_id || !name) {
-      return NextResponse.json({ error: 'Store ID and category name are required.' }, { status: 400 });
+    if (!storeId) {
+      return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
-    // 1. Fetch store plan
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('plan')
-      .eq('id', store_id)
-      .single();
+    const { data: categories, error } = await supabase
+      .from("store_categories")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false });
 
-    if (storeError || !store) {
-      return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, categories: categories ?? [] });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load categories.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const body = await req.json();
+    const storeId = textValue(body?.store_id);
+    const name = textValue(body?.name);
+
+    if (!storeId) {
+      return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
+    }
+    if (!name) {
+      return NextResponse.json({ error: "Category name is required." }, { status: 400 });
     }
 
-    // 2. Count existing categories for this store
-    const { count, error: countError } = await supabase
-      .from('store_categories')
-      .select('*', { count: 'exact', head: true })
-      .eq('store_id', store_id);
-
-    if (countError) {
-      return NextResponse.json({ error: countError.message }, { status: 500 });
+    const limitCheck = await checkStoreLimits(storeId, "category");
+    if (!limitCheck.allowed) {
+      return NextResponse.json({ error: limitCheck.message }, { status: 403 });
     }
 
-    const currentCount = count || 0;
-    const planLimit = store.plan === 'pro' ? 6 : 3;
-
-    // 3. Enforce plan limit
-    if (currentCount >= planLimit) {
-      return NextResponse.json({
-        error: `Category limit reached for ${store.plan.toUpperCase()} plan. Max allowed is ${planLimit}.`
-      }, { status: 403 });
-    }
-
-    // 4. Insert new category
-    const { data, error } = await supabase
-      .from('store_categories')
-      .insert([{ store_id, name }])
+    const { data: category, error } = await supabase
+      .from("store_categories")
+      .insert([{ store_id: storeId, name }])
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, category, message: "Category created successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to save category.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const body = await req.json();
+    const id = textValue(body?.id);
+    const storeId = textValue(body?.store_id);
+    const name = textValue(body?.name);
+
+    if (!id || !storeId) {
+      return NextResponse.json({ error: "Category ID and Store ID are required." }, { status: 400 });
+    }
+    if (!name) {
+      return NextResponse.json({ error: "Category name is required." }, { status: 400 });
     }
 
-    return NextResponse.json({
-      message: 'Category added successfully!',
-      category: data
-    }, { status: 201 });
+    const { data: category, error } = await supabase
+      .from("store_categories")
+      .update({ name })
+      .eq("id", id)
+      .eq("store_id", storeId)
+      .select()
+      .single();
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error.' }, { status: 500 });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, category, message: "Category updated successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update category.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const { searchParams } = new URL(req.url);
+    const id = textValue(searchParams.get("id"));
+    const storeId = textValue(searchParams.get("store_id"));
+
+    if (!id || !storeId) {
+      return NextResponse.json({ error: "Category ID and Store ID are required." }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from("store_categories")
+      .delete()
+      .eq("id", id)
+      .eq("store_id", storeId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, message: "Category deleted successfully." });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to delete category.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

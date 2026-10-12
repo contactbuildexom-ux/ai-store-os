@@ -82,11 +82,8 @@ export default function Navbar() {
       <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-5 sm:px-6 lg:px-8">
         {/* Logo + links */}
         <div className="flex items-center gap-10">
-          <Link href="/#top" aria-label="Buildexom home" className="inline-flex flex-col">
-            <Logo />
-            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-700">
-              AI Powered Store Builder
-            </span>
+          <Link href="/" aria-label="Buildexom home" className="flex shrink-0 items-center">
+              <Logo />
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

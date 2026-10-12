@@ -24,7 +24,7 @@ export async function proxy(request: NextRequest) {
     target.pathname = "/login";
     return NextResponse.redirect(target);
   }
-  if (user && request.nextUrl.pathname === "/login") {
+  if (user?.app_metadata?.role === "super_admin" && request.nextUrl.pathname === "/login") {
     const target = request.nextUrl.clone();
     target.pathname = "/dashboard";
     return NextResponse.redirect(target);
