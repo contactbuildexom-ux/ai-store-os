@@ -23,6 +23,7 @@ function Crop({ x, y, w, h, height }: CropProps) {
         backgroundRepeat: "no-repeat",
         backgroundSize: `${FULL_W * s}px ${FULL_H * s}px`,
         backgroundPosition: `-${x * s}px -${y * s}px`,
+        filter: "contrast(1.08) brightness(1.02)",
       }}
     />
   );
