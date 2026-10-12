@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createAdminClient } from '@/lib/supabase/admin';
+import { canAccessStore } from '@/lib/merchant-api-auth';
 
 export async function POST(request: Request) {
   try {
+    const supabase = createAdminClient();
+    if (!supabase) return NextResponse.json({ error: 'Payment database is not configured.' }, { status: 503 });
     const body = await request.json();
     const { store_id, payment_method, transaction_id, amount } = body;
 
     if (!store_id || !payment_method || !transaction_id || !amount) {
       return NextResponse.json({ error: 'All payment fields are required.' }, { status: 400 });
     }
+    if (!(await canAccessStore(String(store_id)))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
     // Insert payment request into store_payments table
     const { data, error } = await supabase
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
       payment: data
     }, { status: 201 });
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error.' }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unable to submit the upgrade payment.' }, { status: 500 });
   }
 }

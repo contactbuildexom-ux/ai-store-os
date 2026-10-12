@@ -3,13 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import { createMerchantSession, MERCHANT_SESSION_COOKIE } from "@/lib/merchant-session";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return url && serviceRoleKey ? createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } }) : null;
+}
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabase();
+    if (!supabase) return NextResponse.json({ error: "Merchant login is not configured." }, { status: 503 });
     const body = await request.json();
     const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body?.password === "string" ? body.password : "";
@@ -17,6 +20,7 @@ export async function POST(request: Request) {
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
+    if (password.length > 128) return NextResponse.json({ error: "Invalid store credentials." }, { status: 401 });
 
     const { data: store, error } = await supabase
       .from("stores")
@@ -26,6 +30,10 @@ export async function POST(request: Request) {
 
     if (error || !store) {
       return NextResponse.json({ error: "Invalid store credentials." }, { status: 401 });
+    }
+
+    if (typeof store.password_hash !== "string") {
+      return NextResponse.json({ error: "Sign in with the Supabase Auth account linked to this store." }, { status: 401 });
     }
 
     const isPasswordValid = await bcrypt.compare(password, store.password_hash);

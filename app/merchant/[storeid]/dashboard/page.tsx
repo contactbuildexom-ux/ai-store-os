@@ -3,14 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/client';
 import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
+import { StoreQRCode } from '@/components/store-qr-code';
 import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet } from 'lucide-react';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
@@ -45,6 +41,7 @@ export default function MerchantDashboardMaster() {
 
     const [resolvedStoreId, setResolvedStoreId] = useState<string>('');
     const [storeName, setStoreName] = useState<string>('');
+    const [storeSlug, setStoreSlug] = useState<string>('');
     const [storePlan, setStorePlan] = useState<Plan>('basic');
     const [activeTab, setActiveTab] = useState('overview');
     const [productSearch, setProductSearch] = useState('');
@@ -114,7 +111,7 @@ export default function MerchantDashboardMaster() {
     const resolveStoreAndData = useCallback(async (identifier: string) => {
         try {
             const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
-            const storeQuery = supabase.from('stores').select('*');
+            const storeQuery = createClient().from('stores').select('id, name, slug, plan, whatsapp_number');
             const { data: storeData, error: storeError } = await (isUuid
                 ? storeQuery.eq('id', identifier)
                 : storeQuery.eq('slug', identifier)
@@ -129,6 +126,7 @@ export default function MerchantDashboardMaster() {
 
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name);
+            setStoreSlug(storeData.slug);
             setStorePlan(normalizePlan(storeData.plan));
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
@@ -412,6 +410,7 @@ export default function MerchantDashboardMaster() {
                                 </div>
 
                                 <aside className="space-y-5">
+                                    <StoreQRCode storeSlug={storeSlug || paramId} />
                                     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                                         <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p><h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{planDetails.title} plan</h3></div><span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><Sparkles size={17} /></span></div>
                                         <div className="mt-4 space-y-3">

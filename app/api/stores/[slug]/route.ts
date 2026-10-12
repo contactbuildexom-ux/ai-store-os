@@ -19,7 +19,7 @@ export async function GET(
     // 1. Fetch store details by slug
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('*')
+      .select('id, name, slug, plan, payment_status, whatsapp_number, created_at')
       .eq('slug', slug)
       .single();
 
@@ -49,7 +49,7 @@ export async function GET(
       products
     }, { status: 200 });
 
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal server error.' }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unable to load store.' }, { status: 500 });
   }
 }

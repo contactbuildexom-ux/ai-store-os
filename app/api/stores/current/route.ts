@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getMerchantSessionStore } from "@/lib/merchant-api-auth";
 
 type StoreRow = {
   id: string;
@@ -31,6 +32,9 @@ async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAd
 
 export async function GET(request: Request) {
   try {
+    const merchantStore = await getMerchantSessionStore();
+    if (merchantStore) return NextResponse.json({ store: merchantStore as StoreRow });
+
     const supabase = createAdminClient();
     if (!supabase) {
       return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkStoreLimits } from "@/lib/planLimits";
+import { canAccessStore } from "@/lib/merchant-api-auth";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -21,6 +22,7 @@ export async function GET(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const { data: categories, error } = await supabase
       .from("store_categories")
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
     if (!name) {
       return NextResponse.json({ error: "Category name is required." }, { status: 400 });
     }
@@ -82,6 +85,7 @@ export async function PUT(req: Request) {
     if (!id || !storeId) {
       return NextResponse.json({ error: "Category ID and Store ID are required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
     if (!name) {
       return NextResponse.json({ error: "Category name is required." }, { status: 400 });
     }
@@ -113,6 +117,7 @@ export async function DELETE(req: Request) {
     if (!id || !storeId) {
       return NextResponse.json({ error: "Category ID and Store ID are required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const { error } = await supabase
       .from("store_categories")

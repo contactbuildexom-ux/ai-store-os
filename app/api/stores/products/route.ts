@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessStore } from "@/lib/merchant-api-auth";
 import { checkStoreLimits } from "@/lib/planLimits";
 
 function textValue(value: unknown) {
@@ -32,6 +33,7 @@ export async function GET(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const { data, error } = await supabase
       .from("store_products")
@@ -60,11 +62,18 @@ export async function POST(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
     if (!name) {
       return NextResponse.json({ error: "Product name is required." }, { status: 400 });
     }
     if (price === null) {
       return NextResponse.json({ error: "Enter a valid product price." }, { status: 400 });
+    }
+    if (categoryId) {
+      const { data: category, error: categoryError } = await supabase.from("store_categories")
+        .select("id").eq("id", categoryId).eq("store_id", storeId).maybeSingle();
+      if (categoryError) throw categoryError;
+      if (!category) return NextResponse.json({ error: "The selected category does not belong to this store." }, { status: 400 });
     }
 
     const limitCheck = await checkStoreLimits(storeId, "product", categoryId ?? undefined);
@@ -106,6 +115,7 @@ export async function PUT(req: Request) {
     if (!id || !storeId) {
       return NextResponse.json({ error: "Product ID and Store ID are required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const updates: Record<string, string | number | null> = {};
     if ("name" in body) {
@@ -120,7 +130,16 @@ export async function PUT(req: Request) {
     }
     if ("description" in body) updates.description = optionalText(body.description);
     if ("image_url" in body) updates.image_url = optionalText(body.image_url);
-    if ("category_id" in body) updates.category_id = optionalText(body.category_id);
+    if ("category_id" in body) {
+      const categoryId = optionalText(body.category_id);
+      if (categoryId) {
+        const { data: category, error: categoryError } = await supabase.from("store_categories")
+          .select("id").eq("id", categoryId).eq("store_id", storeId).maybeSingle();
+        if (categoryError) throw categoryError;
+        if (!category) return NextResponse.json({ error: "The selected category does not belong to this store." }, { status: 400 });
+      }
+      updates.category_id = categoryId;
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No product fields were provided to update." }, { status: 400 });
@@ -153,6 +172,7 @@ export async function DELETE(req: Request) {
     if (!id || !storeId) {
       return NextResponse.json({ error: "Product ID and Store ID are required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const { error } = await supabase
       .from("store_products")

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canAccessStore } from "@/lib/merchant-api-auth";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -8,6 +9,42 @@ function textValue(value: unknown) {
 function optionalText(value: unknown) {
   const text = textValue(value);
   return text.length ? text : null;
+}
+
+const SOCIAL_KEYS = ["instagram", "facebook", "youtube", "tiktok", "x"] as const;
+const THEME_COLORS: Record<string, string> = {
+  emerald: "#1d7555",
+  ocean: "#2563eb",
+  rose: "#be185d",
+  midnight: "#0f172a",
+  amber: "#b45309",
+  violet: "#6d28d9",
+  fashion: "#4338ca",
+  "home-decor": "#b45309",
+  electronics: "#1e40af",
+  beauty: "#be185d",
+};
+
+function parseSocialLinks(value: unknown): Record<string, string> | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const links: Record<string, string> = {};
+  for (const key of SOCIAL_KEYS) {
+    const candidate = source[key];
+    if (candidate === undefined || candidate === "") {
+      links[key] = "";
+      continue;
+    }
+    if (typeof candidate !== "string" || candidate.length > 2048) return null;
+    try {
+      const url = new URL(candidate);
+      if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+      links[key] = url.toString();
+    } catch {
+      return null;
+    }
+  }
+  return links;
 }
 
 function getSupabase() {
@@ -87,6 +124,7 @@ export async function GET(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const [settingsResult, storeResult, paymentResult] = await Promise.all([
       supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
@@ -144,6 +182,7 @@ export async function POST(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     if (typeof body?.whatsapp_number === "string" && body.whatsapp_number.trim()) {
       const { error: storeError } = await supabase
@@ -153,13 +192,20 @@ export async function POST(req: Request) {
       if (storeError && !isMissingStoreColumn(storeError)) throw storeError;
     }
 
+    const selectedTheme = textValue(body?.selected_theme).toLowerCase().replace(/\s+/g, "-");
+    const themeColor = textValue(body?.theme_color);
+    const validTheme = !selectedTheme || /^#[0-9a-f]{6}$/i.test(selectedTheme) || selectedTheme in THEME_COLORS;
+    if (!validTheme) return NextResponse.json({ error: "Choose a supported theme or six-digit hex color." }, { status: 400 });
+    if (themeColor && !/^#[0-9a-f]{6}$/i.test(themeColor)) return NextResponse.json({ error: "Theme color must be a six-digit hex value." }, { status: 400 });
+
     const basePayload = {
       store_id: storeId,
-      theme_color: optionalText(body?.theme_color) ?? "#1d7555",
+      theme_color: themeColor || (selectedTheme ? THEME_COLORS[selectedTheme] ?? selectedTheme : "#1d7555"),
       banner_text: optionalText(body?.banner_text) ?? "Welcome to our store!",
       font_style: optionalText(body?.font_style) ?? "inter",
       logo_url: optionalText(body?.logo_url) ?? "",
     };
+    if (selectedTheme) Object.assign(basePayload, { selected_theme: selectedTheme });
     const extendedPayload = {
       ...basePayload,
       footer_text: optionalText(body?.footer_text) ?? "",
@@ -167,6 +213,12 @@ export async function POST(req: Request) {
       jazzcash_number: optionalText(body?.jazzcash_number) ?? "",
       easypaisa_number: optionalText(body?.easypaisa_number) ?? "",
     };
+
+    if ("social_links" in body) {
+      const socialLinks = parseSocialLinks(body.social_links);
+      if (!socialLinks) return NextResponse.json({ error: "Provide valid HTTP or HTTPS social profile URLs." }, { status: 400 });
+      Object.assign(extendedPayload, { social_links: socialLinks });
+    }
 
     let result = await supabase
       .from("store_settings")

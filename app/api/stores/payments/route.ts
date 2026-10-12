@@ -1,16 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase = supabaseUrl && supabaseServiceRoleKey
-  ? createClient(supabaseUrl, supabaseServiceRoleKey)
-  : null;
+import { canAccessStore } from '@/lib/merchant-api-auth';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // GET: Store payment methods fetch karne ke liye
 export async function GET(req: Request) {
   try {
+    const supabase = createAdminClient();
     if (!supabase) {
       return NextResponse.json(
         { error: 'Supabase service-role configuration is missing. Add SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL to .env.local.' },
@@ -24,6 +19,7 @@ export async function GET(req: Request) {
     if (!store_id) {
       return NextResponse.json({ error: 'store_id is required' }, { status: 400 });
     }
+    if (!(await canAccessStore(store_id))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
     const { data, error } = await supabase
       .from('store_payments')
@@ -33,14 +29,15 @@ export async function GET(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, payments: data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unable to load payment settings.' }, { status: 500 });
   }
 }
 
 // POST: Payment method add karne ke liye
 export async function POST(req: Request) {
   try {
+    const supabase = createAdminClient();
     if (!supabase) {
       return NextResponse.json(
         { error: 'Supabase service-role configuration is missing. Add SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL to .env.local.' },
@@ -57,6 +54,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    if (!(await canAccessStore(String(store_id)))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
     const { data, error } = await supabase
       .from('store_payments')
@@ -77,7 +75,7 @@ export async function POST(req: Request) {
       payment: data,
       message: 'Payment method configured successfully'
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Unable to save payment settings.' }, { status: 500 });
   }
 }

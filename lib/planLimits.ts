@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function checkStoreLimits(storeId: string, type: 'product' | 'category' | 'whatsapp_order', categoryId?: string) {
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error('Store database is not configured');
   // 1. Store ka plan fetch karein
   const { data: store, error: storeError } = await supabase
     .from('stores')

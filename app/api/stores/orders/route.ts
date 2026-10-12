@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkStoreLimits } from "@/lib/planLimits";
+import { canAccessStore } from "@/lib/merchant-api-auth";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -45,6 +46,7 @@ export async function GET(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     const [storeOrders, legacyOrders] = await Promise.all([
       readOrdersFrom("store_orders", storeId),
@@ -86,6 +88,7 @@ export async function POST(req: Request) {
     if (!storeId || !customerName || !customerPhone || !items || totalAmount === null) {
       return NextResponse.json({ error: "Store, customer, items, and total amount are required." }, { status: 400 });
     }
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     if (isWhatsappOrder) {
       const whatsappLimitCheck = await checkStoreLimits(storeId, "whatsapp_order");
@@ -109,6 +112,62 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create order.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const body = await req.json();
+    const storeId = textValue(body?.store_id);
+    const orderId = textValue(body?.id);
+    if (!storeId || !orderId) return NextResponse.json({ error: "Store ID and order ID are required." }, { status: 400 });
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+
+    const updates: Record<string, string> = {};
+    if ("status" in body) {
+      const status = textValue(body.status).toLowerCase();
+      const allowed = new Set(["pending", "processing", "shipped", "delivered", "completed", "cancelled", "canceled", "rejected"]);
+      if (!allowed.has(status)) return NextResponse.json({ error: "Enter a valid order status." }, { status: 400 });
+      updates.status = status;
+    }
+    if (Object.keys(updates).length === 0) return NextResponse.json({ error: "Provide an order field to update." }, { status: 400 });
+
+    const storeOrder = await supabase.from("store_orders").update(updates)
+      .eq("id", orderId).eq("store_id", storeId).select("id, status").maybeSingle();
+    if (storeOrder.error) throw storeOrder.error;
+    if (storeOrder.data) return NextResponse.json({ success: true, order: storeOrder.data });
+    const publicOrder = await supabase.from("orders").update(updates)
+      .eq("id", orderId).eq("store_id", storeId).select("id, status").maybeSingle();
+    if (publicOrder.error) throw publicOrder.error;
+    if (!publicOrder.data) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    return NextResponse.json({ success: true, order: publicOrder.data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update order.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const supabase = getSupabase();
+    const { searchParams } = new URL(req.url);
+    const storeId = textValue(searchParams.get("store_id"));
+    const orderId = textValue(searchParams.get("id"));
+    if (!storeId || !orderId) return NextResponse.json({ error: "Store ID and order ID are required." }, { status: 400 });
+    if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+    const storeOrder = await supabase.from("store_orders").delete()
+      .eq("id", orderId).eq("store_id", storeId).select("id").maybeSingle();
+    if (storeOrder.error) throw storeOrder.error;
+    if (storeOrder.data) return NextResponse.json({ success: true, deleted: true });
+    const publicOrder = await supabase.from("orders").delete()
+      .eq("id", orderId).eq("store_id", storeId).select("id").maybeSingle();
+    if (publicOrder.error) throw publicOrder.error;
+    if (!publicOrder.data) return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    return NextResponse.json({ success: true, deleted: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to delete order.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
