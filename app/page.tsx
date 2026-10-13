@@ -15,12 +15,14 @@ import FloatingChat from "@/components/landing/FloatingChat";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white text-gray-900">
+    <main className="min-h-screen bg-slate-950 text-white">
       {/* 1. Navbar */}
       <Navbar />
 
-      {/* 2. Hero Section */}
-      <Hero />
+      {/* 2. Hero Section with AI Store Builder */}
+      <div id="hero">
+        <Hero />
+      </div>
 
       {/* 3. Feature Strip */}
       <FeatureStrip />
