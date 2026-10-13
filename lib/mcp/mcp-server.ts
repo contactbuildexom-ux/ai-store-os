@@ -404,7 +404,39 @@ async function executeMcpTool(name: string, args: any): Promise<any> {
     case 'chat_store_assistant': {
       const store = await storeRepo.getStore(args.store_slug);
       const products = await storeRepo.getProducts(args.store_slug);
-      const query = (args.user_message || '').toLowerCase();
+      const query = (args.user_message || '').trim().toLowerCase();
+      const storeName = store?.name || 'our store';
+      const categories = Array.from(new Set(products.map((p: any) => p.category)));
+
+      // Greetings
+      if (/^(hi|hello|hey|salam|assalam)/i.test(query)) {
+        return {
+          reply: `Hello! Welcome to *${storeName}*. We offer ${products.length} products in categories: ${categories.join(', ')}. How can I assist you with your shopping?`,
+          store_name: storeName
+        };
+      }
+
+      // Delivery & Shipping
+      if (/delivery|shipping|fee|charges|cod/i.test(query)) {
+        return {
+          reply: `Delivery for ${storeName}: Rs. 200 in Lahore (1-2 days) and Rs. 350 for other cities across Pakistan (2-4 days). Cash on Delivery available!`,
+          store_name: storeName
+        };
+      }
+
+      // Price / Budget queries
+      const priceMatch = query.match(/under\s*(\d+)|less than\s*(\d+)|(\d+)\s*tak/i);
+      if (priceMatch) {
+        const budget = Number(priceMatch[1] || priceMatch[2] || priceMatch[3]);
+        const affordable = products.filter((p: any) => p.price <= budget);
+        return {
+          reply: affordable.length > 0
+            ? `Found ${affordable.length} item(s) under Rs. ${budget.toLocaleString()}:\n` + affordable.map((p: any) => `• ${p.name} — Rs. ${p.price}`).join('\n')
+            : `No items found under Rs. ${budget.toLocaleString()}. Lowest price starts at Rs. ${Math.min(...products.map((p: any) => p.price))}.`,
+          store_name: storeName,
+          matches: affordable.length
+        };
+      }
 
       // Semantic matching against store catalog
       const matches = products.filter((p: any) => 
@@ -415,17 +447,17 @@ async function executeMcpTool(name: string, args: any): Promise<any> {
 
       let reply = '';
       if (matches.length > 0) {
-        reply = `I found ${matches.length} matching item(s) in our ${store?.name || 'store'} catalog:\n` +
-          matches.map((m: any) => `• ${m.name} — Rs. ${m.price} (${m.description || m.category})`).join('\n') +
-          `\nWould you like to order any of these directly via WhatsApp?`;
+        reply = `Found ${matches.length} matching item(s) in *${storeName}*:\n` +
+          matches.map((m: any) => `• *${m.name}* (Rs. ${m.price.toLocaleString()}): ${m.description || m.category}`).join('\n') +
+          `\n\nWould you like to order any of these directly via WhatsApp?`;
       } else {
-        reply = `Hello! Welcome to ${store?.name || 'our store'}. We currently have ${products.length} curated products available in ${store?.theme?.name || 'our collection'}. You can browse our catalog or ask about any specific item!`;
+        reply = `Welcome to *${storeName}*! We currently have ${products.length} curated products available in ${categories.join(', ')}. You can ask about our bestsellers, prices, or order via WhatsApp!`;
       }
 
       return {
         reply,
         catalog_matches: matches.length,
-        store_name: store?.name
+        store_name: storeName
       };
     }
 
