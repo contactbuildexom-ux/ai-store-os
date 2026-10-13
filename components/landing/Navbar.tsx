@@ -43,259 +43,204 @@ export default function Navbar() {
     </nav>
 ﻿"use client";
 
-import Logo from "@/components/landing/logo";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import Logo from "@/components/landing/logo";
+import AuthModal from "@/components/landing/AuthModal";
+import {
+  DesktopResources,
+  MobileResources,
+} from "@/components/landing/ResourcesMenu";
 
-const navItems = [
-  { name: "Features", href: "/#features" },
-  { name: "Pricing", href: "/#pricing" },
-  { name: "Templates", href: "/#templates" },
+const NAV = [
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "Templates", href: "/#templates" },
 ];
 
-const resources = [
-  { name: "Help Center", text: "Guides to build and manage your store", href: "/help" },
-  { name: "Blog", text: "E-commerce, online selling, and business tips", href: "/blog" },
-  { name: "Tutorials", text: "Short how-to guides and videos", href: "/tutorials" },
-  { name: "FAQs", text: "Answers to common questions", href: "/#faq" },
-  { name: "E-commerce Guides", text: "Products, orders, WhatsApp selling, and more", href: "/guides" },
-  { name: "AI Tools Guide", text: "How to use the AI chatbot and AI features", href: "/ai-guide" },
-  { name: "Success Stories", text: "Real stores built with Buildexom", href: "/stories" },
-];
-
-function Chevron({ open }: { open?: boolean }) {
-  return (
-    <svg
-      className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d="M5 7.5L10 12.5L15 7.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function goToGenerate(e: React.MouseEvent<HTMLAnchorElement>, after?: () => void) {
-  after?.();
-  const card = document.getElementById("generate-store");
-  if (!card) return; // doosre page par ho to Link khud /#generate-store par le jayega
-  e.preventDefault();
-  card.scrollIntoView({ behavior: "smooth", block: "center" });
-  window.setTimeout(() => {
-    (document.getElementById("store-prompt") as HTMLTextAreaElement | null)?.focus({
-      preventScroll: true,
-    });
-  }, 700);
-}
 export default function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [resOpen, setResOpen] = useState(false);
-  const [mobileRes, setMobileRes] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const resRef = useRef<HTMLDivElement>(null);
+  const [authOpen, setAuthOpen] = useState(false);
 
+  // shadow on scroll
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (resRef.current && !resRef.current.contains(e.target as Node)) setResOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setResOpen(false);
     const onScroll = () => setScrolled(window.scrollY > 8);
-
     onScroll();
-    document.addEventListener("mousedown", onClick);
-    document.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      document.removeEventListener("mousedown", onClick);
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll);
-    };
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // lock page scroll while the mobile menu is open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  // close mobile menu on Escape
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
+
+  const close = () => setMobileOpen(false);
+
+  // "Get Started Free" dabane par popup khulta hai
+  const openAuth = () => {
+    setMobileOpen(false);
+    setAuthOpen(true);
+  };
+
   return (
-    <header
-      id="top"
-      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-all duration-300 ${
-        scrolled
-          ? "border-blue-100 bg-white/80 shadow-[0_8px_30px_-12px_rgba(29,78,216,0.25)]"
-          : "border-transparent bg-white/60"
-      }`}
-    >
-      <div className="mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-5 sm:px-6 lg:px-8">
-        {/* Logo + links */}
-        <div className="flex items-center gap-10">
-          <Link href="/" aria-label="Buildexom home" className="flex shrink-0 items-center">
-              <Logo />
+    <>
+      <header
+        className={`sticky top-0 z-50 border-b bg-white/85 backdrop-blur-xl transition-shadow duration-300 ${
+          scrolled
+            ? "border-slate-200 shadow-md shadow-slate-200/60"
+            : "border-slate-200/70"
+        }`}
+      >
+        <div className="relative mx-auto flex h-[72px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
+          {/* Logo */}
+          <Link href="/" aria-label="Buildexom home" onClick={close}>
+            <Logo />
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="rounded-full px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
+          {/* Desktop nav */}
+          <nav
+            className="hidden items-center gap-1 lg:flex"
+            aria-label="Main navigation"
+          >
+            {NAV.map((n) => (
+              <Link
+                key={n.label}
+                href={n.href}
+                className="group relative px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:text-blue-600"
               >
-                {item.name}
-              </a>
+                {n.label}
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 origin-left scale-x-0 rounded-full bg-blue-600 transition-transform duration-300 group-hover:scale-x-100" />
+              </Link>
             ))}
-
-            {/* Resources dropdown */}
-            <div ref={resRef} className="relative">
-              <button
-                type="button"
-                aria-haspopup="menu"
-                aria-expanded={resOpen}
-                onClick={() => setResOpen(!resOpen)}
-                className={`inline-flex cursor-pointer items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-50 hover:text-blue-700 ${
-                  resOpen ? "bg-blue-50 text-blue-700" : "text-slate-700"
-                }`}
-              >
-                Resources
-                <Chevron open={resOpen} />
-              </button>
-
-              {resOpen && (
-                <div
-                  role="menu"
-                  className="glass-card absolute left-1/2 top-full z-50 mt-4 w-[360px] -translate-x-1/2 rounded-3xl p-2"
-                >
-                  {resources.map((r) => (
-                    <Link
-                      key={r.name}
-                      href={r.href}
-                      role="menuitem"
-                      onClick={() => setResOpen(false)}
-                      className="block rounded-2xl px-4 py-3 transition-colors hover:bg-blue-50"
-                    >
-                      <p className="text-sm font-semibold text-brand-navy">{r.name}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">{r.text}</p>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+            <DesktopResources />
           </nav>
-        </div>
 
-        {/* Desktop actions */}
-        <div className="hidden items-center gap-5 md:flex">
-          <button
-            type="button"
-            aria-label="Search"
-            className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {/* Right side */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Link
+              href="/help"
+              aria-label="Search help"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition hover:bg-slate-100 hover:text-blue-600"
             >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-          </button>
-
-          <Link
-            href="/login"
-            className="text-sm font-semibold text-slate-700 transition-colors hover:text-blue-700"
-          >
-            Login
-          </Link>
-
-          <Link
-            href="/#generate-store"
-            onClick={(e) => goToGenerate(e)}
-            className="btn-glow rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
-          >
-            Get Started Free
-          </Link>
-        </div>
-
-        {/* Mobile hamburger */}
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-blue-100 bg-white/70 text-brand-navy md:hidden"
-        >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            {menuOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-blue-100 bg-white/95 px-5 py-5 backdrop-blur-xl md:hidden">
-          <nav className="flex flex-col gap-1">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
               >
-                {item.name}
-              </a>
-            ))}
-
-            <button
-              type="button"
-              aria-expanded={mobileRes}
-              onClick={() => setMobileRes(!mobileRes)}
-              className="flex items-center justify-between rounded-xl px-3 py-3 text-left text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
-            >
-              Resources
-              <Chevron open={mobileRes} />
-            </button>
-
-            {mobileRes && (
-              <div className="mb-1 ml-3 flex flex-col border-l-2 border-blue-100 pl-3">
-                {resources.map((r) => (
-                  <Link
-                    key={r.name}
-                    href={r.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="rounded-xl px-3 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    {r.name}
-                  </Link>
-                ))}
-              </div>
-            )}
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+            </Link>
 
             <Link
               href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-xl px-3 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-700"
+              className="hidden rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-blue-600 sm:inline-block"
             >
               Login
             </Link>
 
-            <Link
-              href="/#generate-store"
-              onClick={(e) => goToGenerate(e, () => setMenuOpen(false))}
-              className="btn-glow mt-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-5 py-3 text-center text-sm font-semibold text-white"
+            <button
+              type="button"
+              onClick={openAuth}
+              className="hidden rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-300/50 transition hover:scale-105 hover:shadow-xl sm:inline-block"
             >
               Get Started Free
-            </Link>
-          </nav>
+            </button>
+
+            {/* Hamburger */}
+            <button
+              type="button"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((o) => !o)}
+              className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-slate-100 lg:hidden"
+            >
+              <span className="relative block h-4 w-5">
+                <span
+                  className={`absolute left-0 h-0.5 w-5 rounded bg-slate-800 transition-all duration-300 ${
+                    mobileOpen ? "top-[7px] rotate-45" : "top-0"
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 top-[7px] h-0.5 w-5 rounded bg-slate-800 transition-all duration-300 ${
+                    mobileOpen ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+                <span
+                  className={`absolute left-0 h-0.5 w-5 rounded bg-slate-800 transition-all duration-300 ${
+                    mobileOpen ? "top-[7px] -rotate-45" : "top-[14px]"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
         </div>
-      )}
-    </header>
+
+        {/* Mobile drawer */}
+        <div
+          className={`overflow-hidden border-t border-slate-200 bg-white transition-all duration-300 lg:hidden ${
+            mobileOpen
+              ? "visible max-h-[calc(100vh-72px)] opacity-100"
+              : "invisible max-h-0 border-t-0 opacity-0"
+          }`}
+        >
+          <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-4">
+            <nav className="space-y-1" aria-label="Mobile navigation">
+              {NAV.map((n) => (
+                <Link
+                  key={n.label}
+                  href={n.href}
+                  onClick={close}
+                  className="block rounded-xl px-3 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+                >
+                  {n.label}
+                </Link>
+              ))}
+
+              <MobileResources onNavigate={close} />
+            </nav>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+              <Link
+                href="/login"
+                onClick={close}
+                className="rounded-full border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-800"
+              >
+                Login
+              </Link>
+              <button
+                type="button"
+                onClick={openAuth}
+                className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-center text-sm font-bold text-white shadow-lg shadow-blue-300/50"
+              >
+                Get Started Free
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Popup header ke bahar rakha hai taake blur ki wajah se position na bigde */}
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+    </>
   );
 }

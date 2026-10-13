@@ -1,77 +1,60 @@
-import { Terminal, Wand2, Rocket } from 'lucide-react';
+import type { ReactNode } from "react";
 
-export default function HowItWorks() {
-  const steps = [
-    {
-      num: '01',
-      icon: Terminal,
-      title: 'Enter Prompt & Pick Plan',
-      desc: 'Describe what you want to sell (e.g. luxury perfumes, streetwear, or organic skincare), pick your plan tier (Free, Pro, Advanced), and select your favorite theme palette.'
-    },
-    {
-      num: '02',
-      icon: Wand2,
-      title: 'AI Designs Entire Storefront',
-      desc: 'In seconds, our AI engine provisions your unique subdomain, designs high-converting hero copy, assigns themes, and generates realistic products with imagery and local pricing.'
-    },
-    {
-      num: '03',
-      icon: Rocket,
-      title: 'Sell & Manage via Store Admin',
-      desc: 'You receive instant admin access. Log into your dashboard to add/edit products, tweak themes, and start receiving direct customer orders straight on your WhatsApp!'
-    }
-  ];
+type Step = {
+  id: number;
+  title: string;
+  description: string;
+  icon: ReactNode;
+};
 
-  return (
-    <section id="how-it-works" className="bg-slate-900 py-20 px-4 sm:px-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Step-by-Step Workflow</span>
-          <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
-            From Prompt to Live Commerce in 3 Steps
-          </h2>
-          <p className="mt-3 text-xs text-slate-400 sm:text-sm">
-            Zero coding, zero designer fees, and zero setup delays.
-          </p>
-        </div>
+const iconProps = {
+  className: "h-7 w-7",
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {steps.map((s, idx) => {
-            const Icon = s.icon;
-            return (
-              <div key={idx} className="relative rounded-3xl border border-slate-800 bg-slate-950 p-8">
-                <span className="text-4xl font-black text-slate-800 absolute top-6 right-6 font-mono">
-                  {s.num}
-                </span>
-                <span className="grid size-12 place-items-center rounded-2xl bg-emerald-500/10 text-emerald-400 mb-6">
-                  <Icon size={24} />
-                </span>
-                <h3 className="text-lg font-bold text-white mb-2">{s.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{s.desc}</p>
-              </div>
-            );
-          })}
-        </div>
-"use client";
-
-const steps = [
+const steps: Step[] = [
   {
-    number: "1",
+    id: 1,
     title: "Share Your Idea",
     description:
       "Tell us what kind of store you want. Be as specific or general as you like.",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M9 18h6M10 21h4" />
+        <path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z" />
+      </svg>
+    ),
   },
   {
-    number: "2",
+    id: 2,
     title: "Let AI Build It",
     description:
-      "Our AI creates your store, adds products, sets up design and pages — automatically.",
+      "Our AI creates your store, adds products, and sets up design and pages automatically.",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9L11 3z" />
+        <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+      </svg>
+    ),
   },
   {
-    number: "3",
+    id: 3,
     title: "Launch & Grow",
     description:
-      "Review, customize and hit publish. Your store is ready to welcome customers!",
+      "Review, customize, and hit publish. Your store is ready to welcome customers.",
+    icon: (
+      <svg {...iconProps}>
+        <path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2" />
+        <path d="M12 15l-3-3a22 22 0 012-4 12 12 0 019-5c0 3-1 7-5 11a22 22 0 01-4 2z" />
+        <circle cx="15" cy="9" r="1" />
+      </svg>
+    ),
   },
 ];
 
@@ -79,59 +62,55 @@ export default function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="w-full bg-[#f7faff] px-4 py-16 font-[Arial,Helvetica,sans-serif] sm:px-6 lg:px-8"
+      className="relative overflow-hidden bg-[#f6f9ff] py-20 sm:py-28"
     >
-      {/* Section Heading */}
-      <div className="mx-auto mb-10 max-w-4xl text-center">
-        <p className="mb-2 text-[16px] font-bold uppercase tracking-[0.18em] text-[#2457d6]">
-          HOW IT WORKS
-        </p>
+      <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-blue-200/30 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-sky-200/30 blur-3xl" />
 
-        <h2 className="text-3xl font-bold tracking-tight text-[#17243a] sm:text-4xl">
-          Get Your Store Online in 3 Simple Steps
-        </h2>
+      <div className="relative mx-auto max-w-6xl px-6">
+        {/* Heading */}
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-600 shadow-sm ring-1 ring-blue-100">
+            How it works
+          </span>
+          <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+            Get Your Store Online in 3 Simple Steps
+          </h2>
+          <p className="mt-4 text-base text-slate-500">
+            No technical skills. No complicated setup. Just a few clicks and
+            you&apos;re ready to go.
+          </p>
+        </div>
 
-        <p className="mt-3 text-[15px] leading-6 text-[#707b8d]">
-          No technical skills. No complicated setup. Just a few clicks and
-          you&apos;re ready to go.
-        </p>
-      </div>
+        {/* Steps */}
+        <div className="relative mt-16 grid gap-10 md:grid-cols-3 md:gap-6">
+          {/* Dotted connector (desktop only) */}
+          <div className="absolute left-[16.66%] right-[16.66%] top-8 hidden border-t-2 border-dashed border-blue-200 md:block" />
 
-      {/* Steps */}
-      <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 lg:flex-row lg:items-center lg:gap-0">
-        {steps.map((step, index) => (
-          <div
-            key={step.number}
-            className="flex w-full items-center lg:w-1/3"
-          >
-            {/* Card */}
-            <div className="w-full rounded-xl border border-[#e1e7f0] bg-white px-6 py-6 shadow-[0_4px_15px_rgba(30,60,100,0.04)]">
-              {/* Number */}
-              <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-[#2160d9] text-[14px] font-bold text-white">
-                {step.number}
-              </div>
-
-              {/* Title */}
-              <h3 className="text-[17px] font-bold text-[#17243a]">
-                {step.title}
-              </h3>
-
-              {/* Description */}
-              <p className="mt-2 text-[14px] leading-[20px] text-[#707b8d]">
-                {step.description}
-              </p>
-            </div>
-
-            {/* Arrow */}
-            {index < steps.length - 1 && (
-              <div className="hidden shrink-0 px-3 lg:block">
-                <span className="text-[25px] font-normal text-[#4f78b8]">
-                  →
+          {steps.map((step) => (
+            <div key={step.id} className="relative flex flex-col items-center">
+              {/* Icon */}
+              <div className="relative z-10">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#1646f5] to-[#2f6bff] text-white shadow-lg shadow-blue-500/30">
+                  {step.icon}
+                </div>
+                <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600 shadow ring-2 ring-blue-100">
+                  {step.id}
                 </span>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Card */}
+              <div className="mt-6 w-full flex-1 rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-100">
+                <h3 className="text-xl font-bold text-slate-900">
+                  {step.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  {step.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
