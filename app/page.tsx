@@ -11,6 +11,7 @@ import Pricing from "@/components/landing/Pricing";
 import Faq from "@/components/landing/Faq";
 import FinalCta from "@/components/landing/FinalCta";
 import Footer from "@/components/landing/Footer";
+import FloatingChat from "@/components/landing/FloatingChat";
 
 export default function HomePage() {
   return (
@@ -55,6 +56,9 @@ export default function HomePage() {
 
       {/* 13. Footer */}
       <Footer />
+
+      {/* Floating chat widget */}
+      <FloatingChat />
     </main>
   );
 }

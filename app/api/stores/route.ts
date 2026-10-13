@@ -1,50 +1,30 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from "next/server";
+import { POST as registerStore } from "./register/route";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
+/** Backward-compatible JSON alias for merchant registration. */
 export async function POST(request: Request) {
+  let input: unknown;
   try {
-    const body = await request.json();
-    const { store_name, tagline, plan_type, selected_theme, whatsapp_number } = body;
-
-    // Validation: Agar plan 'free' hai toh WhatsApp number save nahi hoga / allow nahi hoga
-    let finalWhatsApp = null;
-    if (plan_type === 'pro') {
-      if (!whatsapp_number) {
-        return NextResponse.json({ error: 'Pro plan ke liye WhatsApp number lazmi hai.' }, { status: 400 });
-      }
-      finalWhatsApp = whatsapp_number;
-    }
-
-    // Store insert karein database mein
-    const { data, error } = await supabase
-      .from('stores')
-      .insert([
-        {
-          store_name,
-          tagline,
-          plan_type: plan_type || 'free',
-          selected_theme: selected_theme || 'basic_theme_1',
-          whatsapp_number: finalWhatsApp // Free mein null, Pro mein number
-        }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      message: 'Store successfully created with plan rules!',
-      store: data
-    }, { status: 201 });
-
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    input = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON." }, { status: 400 });
   }
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
+  }
+  const body = input as Record<string, unknown>;
+  return registerStore(new Request(request.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: body.name ?? body.store_name,
+      slug: body.slug,
+      owner_email: body.owner_email,
+      password: body.password,
+      whatsapp_number: body.whatsapp_number,
+      plan: body.plan ?? body.plan_type,
+      selected_theme: body.selected_theme ?? body.theme,
+      tagline: body.tagline,
+    }),
+  }));
 }

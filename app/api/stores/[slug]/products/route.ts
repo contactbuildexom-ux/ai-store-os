@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { storeRepo } from '@/lib/store-repository';
 
@@ -27,3 +28,7 @@ export async function POST(
     return NextResponse.json({ error: err.message }, { status: 400 });
   }
 }
+
+// Backward-compatible URL alias for the canonical merchant product API.
+export { GET, POST, PUT, DELETE } from "../../products/route";
+
