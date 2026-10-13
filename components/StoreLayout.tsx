@@ -85,6 +85,44 @@ export default function StoreLayout({
     return ['All', ...Array.from(set)];
   }, [products]);
 
+  // AI Shopping Assistant chat state
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
+    { sender: 'ai', text: `Hi! 👋 I am your AI Shopping Assistant for ${storeName}. Ask me anything about our products, categories, or pricing!` }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatSending, setIsChatSending] = useState(false);
+
+  const handleSendChatMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || isChatSending) return;
+
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    setChatMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
+    setIsChatSending(true);
+
+    try {
+      const res = await fetch('/api/ai/create-store/store-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store_id: storeSlug, message: userMsg })
+      });
+      const data = await res.json();
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: data.reply || "Sorry, I couldn't find matching items in the catalog." }
+      ]);
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: 'Catalog assistant is temporarily offline. Please order directly via WhatsApp.' }
+      ]);
+    } finally {
+      setIsChatSending(false);
+    }
+  };
+
   // Filtered products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -620,6 +658,89 @@ export default function StoreLayout({
           </div>
         </div>
       </footer>
+
+      {/* 8. Floating AI Shopping Assistant Widget */}
+      <div className="fixed bottom-6 right-6 z-40">
+        {!isAiChatOpen ? (
+          <button
+            onClick={() => setIsAiChatOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl transition hover:bg-slate-800 hover:scale-105 border border-slate-700"
+          >
+            <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+              <Sparkles size={13} />
+            </span>
+            <span>Ask AI Assistant</span>
+          </button>
+        ) : (
+          <div className="relative flex h-[480px] w-80 sm:w-96 flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs">
+            {/* Chat Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white">
+              <div className="flex items-center gap-2">
+                <span className="grid size-7 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold">
+                  <Sparkles size={14} />
+                </span>
+                <div>
+                  <p className="font-bold text-xs">{storeName} AI</p>
+                  <p className="text-[10px] text-emerald-400 font-mono">Catalog Assistant Active</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAiChatOpen(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+                      msg.sender === 'user'
+                        ? 'bg-emerald-600 text-white font-medium'
+                        : 'bg-slate-900 border border-slate-800 text-slate-200'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {isChatSending && (
+                <div className="flex justify-start">
+                  <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3 text-xs text-slate-400 flex items-center gap-2">
+                    <span className="size-2 animate-bounce rounded-full bg-emerald-400" />
+                    <span className="size-2 animate-bounce rounded-full bg-emerald-400 [animation-delay:0.2s]" />
+                    <span className="size-2 animate-bounce rounded-full bg-emerald-400 [animation-delay:0.4s]" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleSendChatMessage} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
+              <input
+                type="text"
+                placeholder="Ask about perfumes, prices..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={isChatSending || !chatInput.trim()}
+                className="rounded-xl bg-emerald-600 px-3.5 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
