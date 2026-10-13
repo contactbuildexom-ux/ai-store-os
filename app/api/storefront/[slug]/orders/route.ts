@@ -28,6 +28,7 @@ export async function POST(
     const customerPhone = cleanText(body?.customer_phone, 40);
     const shippingAddress = cleanText(body?.shipping_address, 500);
     const city = cleanText(body?.city, 120);
+    const paymentMethod = body?.payment_method;
     const requestedItems = Array.isArray(body?.items) ? body.items as RequestedItem[] : [];
 
     if (!customerName || !customerPhone || !shippingAddress || !city || requestedItems.length === 0 || requestedItems.length > 100) {
@@ -40,12 +41,24 @@ export async function POST(
 
     const { data: store, error: storeError } = await supabase
       .from("stores")
-      .select("id, name, slug, plan, whatsapp_number")
+      .select("id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage")
       .eq("slug", slug)
       .maybeSingle();
 
     if (storeError) throw storeError;
     if (!store) return NextResponse.json({ error: "Store not found." }, { status: 404 });
+
+    const acceptsCod = store.accepts_cod ?? true;
+    const acceptsAdvance = store.accepts_advance ?? false;
+    const advancePercentage = Number(store.advance_percentage ?? 50);
+    if (!acceptsCod && !acceptsAdvance) {
+      return NextResponse.json({ error: "This store has not enabled a checkout payment method." }, { status: 409 });
+    }
+    if ((paymentMethod !== "cod" && paymentMethod !== "advance") ||
+      (paymentMethod === "cod" && !acceptsCod) ||
+      (paymentMethod === "advance" && !acceptsAdvance)) {
+      return NextResponse.json({ error: "Choose a payment method enabled by this store." }, { status: 400 });
+    }
 
     const plan = String(store.plan ?? "basic").toLowerCase() === "free" ? "basic" : String(store.plan ?? "basic").toLowerCase();
     const isProCheckout = plan === "pro" || plan === "business";
@@ -104,6 +117,9 @@ export async function POST(
     const freeAbove = Number(delivery?.free_delivery_above ?? 0);
     const deliveryFee = freeAbove > 0 && subtotal >= freeAbove ? 0 : roundMoney(Number.isFinite(configuredFee) ? Math.max(0, configuredFee) : 0);
     const totalAmount = roundMoney(subtotal + deliveryFee);
+    const advanceAmount = paymentMethod === "advance"
+      ? roundMoney(totalAmount * advancePercentage / 100)
+      : 0;
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -116,6 +132,8 @@ export async function POST(
         items,
         total_amount: totalAmount,
         delivery_fee: deliveryFee,
+        payment_method: paymentMethod,
+        advance_amount: advanceAmount,
         status: "pending",
       }])
       .select("id, status, total_amount, delivery_fee, created_at")
@@ -132,6 +150,8 @@ export async function POST(
       subtotal,
       delivery_fee: deliveryFee,
       total_amount: totalAmount,
+      payment_method: paymentMethod,
+      advance_amount: advanceAmount,
     }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to place your order.";

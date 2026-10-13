@@ -55,6 +55,12 @@ export function StoreQRCode({ storeSlug }: StoreQRCodeProps) {
             title={`QR code for ${safeSlug} storefront`}
             bgColor="#ffffff"
             fgColor="#0f172a"
+            imageSettings={{
+              src: "/logo-b.png", // Apne public folder mein 'logo-b.png' ke naam se icon rakh dein
+              height: 40,
+              width: 40,
+              excavate: true, // Yeh QR dots ko logo ke peechay se hata kar saaf jagah banata hai
+            }}
           />
         </div>
         <a
