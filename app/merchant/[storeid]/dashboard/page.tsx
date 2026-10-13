@@ -13,6 +13,7 @@ type Product = { id: string; name: string; price: number | string; description?:
 type Category = { id: string; name: string };
 type Order = { id: string; customer_name: string; customer_phone: string; total_amount: number | string; status?: string | null; created_at?: string; items?: unknown[] };
 type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
+type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
 const PLAN_DETAILS: Record<Plan, { title: string; productLimit: number | null; categoryLimit: number | null; perCategoryLimit?: number; checkout: string }> = {
     basic: { title: 'Basic', productLimit: 20, categoryLimit: 2, checkout: 'Standard checkout' },
@@ -57,6 +58,7 @@ export default function MerchantDashboardMaster() {
     const [acceptsAdvance, setAcceptsAdvance] = useState(false);
     const [advancePercentage, setAdvancePercentage] = useState('50');
     const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({ bank_name: '', account_title: '', account_number: '', iban: '', jazzcash_number: '', easypaisa_number: '' });
+    const [socialLinks, setSocialLinks] = useState<StoreSocialLinks>({ instagram: '', facebook: '', youtube: '', tiktok: '', x: '' });
 
     // Data states
     const [orders, setOrders] = useState<Order[]>([]);
@@ -157,6 +159,16 @@ export default function MerchantDashboardMaster() {
                     jazzcash_number: settingsData.settings.payment_details?.jazzcash_number || settingsData.settings.jazzcash_number || '',
                     easypaisa_number: settingsData.settings.payment_details?.easypaisa_number || settingsData.settings.easypaisa_number || '',
                 });
+                const loadedSocialLinks = settingsData.settings.social_links && typeof settingsData.settings.social_links === 'object'
+                    ? settingsData.settings.social_links
+                    : {};
+                setSocialLinks({
+                    instagram: loadedSocialLinks.instagram || '',
+                    facebook: loadedSocialLinks.facebook || '',
+                    youtube: loadedSocialLinks.youtube || '',
+                    tiktok: loadedSocialLinks.tiktok || '',
+                    x: loadedSocialLinks.x || '',
+                });
             }
         } catch (err) {
             console.error('Error loading store:', err);
@@ -200,6 +212,7 @@ export default function MerchantDashboardMaster() {
                 settingsPayload.advance_percentage = Number(advancePercentage);
                 settingsPayload.payment_details = paymentDetails;
             }
+            if (activeTab === 'branding') settingsPayload.social_links = socialLinks;
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -499,6 +512,12 @@ export default function MerchantDashboardMaster() {
                                     <label className="block text-[11px] font-bold mb-1">Theme Color</label>
                                     <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 border rounded cursor-pointer" />
                                 </div>
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                    <div><h4 className="text-xs font-semibold text-slate-900">Social profiles</h4><p className="mt-1 text-[10px] text-slate-500">Valid profile URLs are shown as linked icons in your public storefront footer.</p></div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {(['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const).map(platform => <label key={platform} className="block text-[10px] font-semibold capitalize text-slate-600">{platform === 'x' ? 'X / Twitter' : platform}<input type="url" value={socialLinks[platform]} onChange={event => setSocialLinks(current => ({ ...current, [platform]: event.target.value }))} placeholder={`https://${platform === 'x' ? 'x.com' : `${platform}.com`}/yourprofile`} maxLength={2048} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
+                                    </div>
+                                </section>
                                 <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>

@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { StoreQRCode } from '@/components/store-qr-code';
+import { StoreSocialLinks } from '@/components/store-social-links';
 import { 
   ShoppingBag, 
   Search, 
@@ -51,6 +53,7 @@ export interface StoreLayoutProps {
     badgeStyle?: string;
   };
   products: ProductItem[];
+  socialLinks?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 }
 
 interface CartItem {
@@ -66,7 +69,8 @@ export default function StoreLayout({
   whatsappNumber,
   plan = 'free',
   theme,
-  products
+  products,
+  socialLinks
 }: StoreLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -653,6 +657,10 @@ export default function StoreLayout({
           <p className="max-w-md mx-auto text-slate-400">
             {description || 'Curated online shopping experience powered by the Buildexom AI Store Builder.'}
           </p>
+          <StoreSocialLinks links={socialLinks} />
+          <div className="mx-auto max-w-xs pt-4 text-left">
+            <StoreQRCode storeSlug={storeSlug} storePath={`/stores/${encodeURIComponent(storeSlug)}`} />
+          </div>
           <div className="pt-4 text-[11px] text-slate-400">
             © {new Date().getFullYear()} {storeName}. Built with AI Store OS.
           </div>

@@ -1,4 +1,5 @@
 import { Landmark, Smartphone } from 'lucide-react';
+import { StoreSocialLinks } from './store-social-links';
 
 type StorePaymentDetails = {
   bank_name: string;
@@ -11,7 +12,11 @@ type StorePaymentDetails = {
   easypaisa_title: string;
 };
 
-export function StoreFooter({ storeName, paymentDetails }: { storeName: string; paymentDetails: StorePaymentDetails }) {
+export function StoreFooter({ storeName, paymentDetails, socialLinks }: {
+  storeName: string;
+  paymentDetails: StorePaymentDetails;
+  socialLinks?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
+}) {
   const accounts = [
     {
       name: 'Bank transfer',
@@ -42,6 +47,9 @@ export function StoreFooter({ storeName, paymentDetails }: { storeName: string; 
   return (
     <footer className="border-t border-slate-200 bg-white px-4 py-10 sm:px-8">
       <div className="mx-auto max-w-7xl">
+        <div className={availableAccounts.length ? 'mb-8' : 'mb-4'}>
+          <StoreSocialLinks links={socialLinks} />
+        </div>
         {availableAccounts.length > 0 && (
           <section aria-labelledby="store-payment-details" className="mx-auto max-w-5xl">
             <div className="text-center">

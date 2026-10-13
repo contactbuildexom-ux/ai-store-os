@@ -20,7 +20,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { THEME_PRESETS } from '@/lib/ai/ai-generator';
-import { ProductRecord, StoreRecord } from '@/lib/store-repository';
+import type { ProductRecord, StoreRecord } from '@/lib/store-repository';
 
 interface StoreAdminClientProps {
   store: StoreRecord;

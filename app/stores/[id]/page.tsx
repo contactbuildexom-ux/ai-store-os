@@ -40,6 +40,7 @@ export default async function StorePage({ params }: PageProps) {
         badgeStyle: 'bg-emerald-100 text-emerald-800 border-emerald-200'
       }}
       products={products}
+      socialLinks={store.social_links}
     />
   );
 }

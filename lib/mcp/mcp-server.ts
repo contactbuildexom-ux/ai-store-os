@@ -41,7 +41,18 @@ export const MCP_TOOLS: McpTool[] = [
         selected_theme: { type: 'string', description: 'Visual theme preset (emerald, royal-gold, velvet-rose, cyber-slate, artisan-cream)' },
         custom_store_name: { type: 'string', description: 'Optional explicit store name' },
         whatsapp_number: { type: 'string', description: 'Seller WhatsApp number for customer orders' },
-        owner_email: { type: 'string', description: 'Email address of the customer / store admin' }
+        owner_email: { type: 'string', description: 'Email address of the customer / store admin' },
+        social_links: {
+          type: 'object',
+          description: 'Optional public profile URLs; configured icons are shown on the generated storefront.',
+          properties: {
+            instagram: { type: 'string' },
+            facebook: { type: 'string' },
+            youtube: { type: 'string' },
+            tiktok: { type: 'string' },
+            x: { type: 'string' },
+          },
+        }
       },
       required: ['prompt']
     }
@@ -311,7 +322,8 @@ async function executeMcpTool(name: string, args: any): Promise<any> {
         selectedTheme: args.selected_theme,
         customStoreName: args.custom_store_name,
         whatsappNumber: args.whatsapp_number,
-        ownerEmail: args.owner_email
+        ownerEmail: args.owner_email,
+        socialLinks: args.social_links,
       });
 
       // Save to repository (Supabase or local persistent store)

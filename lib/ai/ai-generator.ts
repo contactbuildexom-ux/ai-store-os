@@ -36,6 +36,7 @@ export interface GeneratedStore {
   theme: StoreThemeConfig;
   categories: string[];
   products: GeneratedProduct[];
+  social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
   delivery: {
     store_city: string;
     city_rate: number;
@@ -284,8 +285,25 @@ export async function generateStoreFromPrompt(options: {
   customStoreName?: string;
   whatsappNumber?: string;
   ownerEmail?: string;
+  socialLinks?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 }): Promise<GeneratedStore> {
-  const { prompt, plan = 'free', selectedTheme, customStoreName, whatsappNumber, ownerEmail } = options;
+  const { prompt, plan = 'free', selectedTheme, customStoreName, whatsappNumber, ownerEmail, socialLinks = {} } = options;
+
+  const normalizedSocialLinks: GeneratedStore['social_links'] = {};
+  for (const key of ['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const) {
+    const candidate = socialLinks[key]?.trim();
+    if (!candidate) continue;
+    let url: URL;
+    try {
+      url = new URL(candidate);
+    } catch {
+      throw new Error(`social_links.${key} must be a valid HTTP or HTTPS URL.`);
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      throw new Error(`social_links.${key} must be a valid HTTP or HTTPS URL.`);
+    }
+    normalizedSocialLinks[key] = url.toString();
+  }
 
   const niche = detectNiche(prompt);
   const nicheData = NICHE_IMAGES[niche] || NICHE_IMAGES.clothing;
@@ -370,6 +388,7 @@ export async function generateStoreFromPrompt(options: {
     theme,
     categories,
     products,
+    social_links: normalizedSocialLinks,
     delivery: {
       store_city: 'Lahore',
       city_rate: 200,

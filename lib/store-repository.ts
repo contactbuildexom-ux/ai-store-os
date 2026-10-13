@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'node:crypto';
 import { GeneratedStore, GeneratedProduct, THEME_PRESETS } from './ai/ai-generator';
+import { readLocalStoreCache, writeLocalStoreCache } from './local-store-cache';
 
 export interface StoreRecord {
   id: string;
@@ -17,6 +19,7 @@ export interface StoreRecord {
   payment_status: string;
   created_at: string;
   theme?: any;
+  social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 }
 
 export interface ProductRecord {
@@ -122,6 +125,34 @@ memoryProducts.set(defaultVelvetAura.slug, defaultVelvetProducts);
 memoryProducts.set(defaultVelvetAura.id, defaultVelvetProducts);
 
 class StoreRepository {
+  private async hydrateLocalCache() {
+    const cache = await readLocalStoreCache();
+    if (!cache || typeof cache !== 'object') return;
+    const saved = cache as { stores?: unknown; products?: unknown };
+    if (Array.isArray(saved.stores)) {
+      for (const candidate of saved.stores) {
+        if (!candidate || typeof candidate !== 'object') continue;
+        const store = candidate as StoreRecord;
+        if (typeof store.id !== 'string' || typeof store.slug !== 'string') continue;
+        memoryStores.set(store.id, store);
+        memoryStores.set(store.slug, store);
+      }
+    }
+    if (saved.products && typeof saved.products === 'object' && !Array.isArray(saved.products)) {
+      for (const [key, candidate] of Object.entries(saved.products)) {
+        if (Array.isArray(candidate)) memoryProducts.set(key, candidate as ProductRecord[]);
+      }
+    }
+  }
+
+  private async persistLocalCache() {
+    const stores = [...new Map([...memoryStores.values()].map((store) => [store.id, store])).values()];
+    await writeLocalStoreCache({
+      stores,
+      products: Object.fromEntries(memoryProducts.entries()),
+    });
+  }
+
   private getSupabase() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -132,7 +163,7 @@ class StoreRepository {
   }
 
   async saveStore(generated: GeneratedStore): Promise<StoreRecord> {
-    const id = `store_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const id = randomUUID();
     const storeRecord: StoreRecord = {
       id,
       name: generated.name,
@@ -148,7 +179,8 @@ class StoreRepository {
       owner_email: generated.owner_email,
       payment_status: generated.plan === 'free' ? 'active' : 'pending',
       created_at: new Date().toISOString(),
-      theme: generated.theme
+      theme: generated.theme,
+      social_links: generated.social_links ?? {},
     };
 
     // Save in memory cache
@@ -157,6 +189,7 @@ class StoreRepository {
 
     const prods: ProductRecord[] = generated.products.map(p => ({
       ...p,
+      id: randomUUID(),
       store_id: id,
       created_at: new Date().toISOString()
     }));
@@ -165,9 +198,12 @@ class StoreRepository {
 
     // Also persist to Supabase if credentials are valid
     const supabase = this.getSupabase();
+    if (!supabase && process.env.NODE_ENV === 'production') {
+      throw new Error('Store database is not configured. Configure Supabase before creating stores in production.');
+    }
     if (supabase) {
       try {
-        await supabase.from('stores').upsert({
+        const { error: storeError } = await supabase.from('stores').upsert({
           id,
           name: storeRecord.name,
           slug: storeRecord.slug,
@@ -178,9 +214,10 @@ class StoreRepository {
           header_title: storeRecord.header_title,
           payment_status: storeRecord.payment_status
         });
+        if (storeError) throw storeError;
 
         for (const p of prods) {
-          await supabase.from('products').upsert({
+          const { error: productError } = await supabase.from('products').upsert({
             id: p.id,
             store_id: id,
             name: p.name,
@@ -191,16 +228,20 @@ class StoreRepository {
             wholesale_cost: p.wholesale_cost || 0,
             min_accept_price: p.min_accept_price || 0
           });
+          if (productError) throw productError;
         }
       } catch (e) {
         console.warn('Supabase remote sync warning (using memory storage):', e);
       }
     }
 
+    await this.persistLocalCache();
+
     return storeRecord;
   }
 
   async getStore(idOrSlug: string): Promise<StoreRecord | null> {
+    await this.hydrateLocalCache();
     // 1. Check memory cache
     const cached = memoryStores.get(idOrSlug);
     if (cached) return cached;
@@ -229,6 +270,7 @@ class StoreRepository {
             owner_email: data.owner_email || '',
             payment_status: data.payment_status || 'active',
             created_at: data.created_at,
+            social_links: data.social_links || {},
             theme: THEME_PRESETS[data.selected_theme] || THEME_PRESETS['royal-gold']
           };
           memoryStores.set(rec.slug, rec);
@@ -287,6 +329,7 @@ class StoreRepository {
   }
 
   async getProducts(storeIdOrSlug: string): Promise<ProductRecord[]> {
+    await this.hydrateLocalCache();
     // 1. Check memory cache
     const cached = memoryProducts.get(storeIdOrSlug);
     if (cached && cached.length > 0) return cached;

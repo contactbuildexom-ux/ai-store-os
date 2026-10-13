@@ -69,6 +69,15 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     easypaisa_number: typeof savedPaymentDetails.easypaisa_number === 'string' ? savedPaymentDetails.easypaisa_number : legacyPayment('easy')?.account_number ?? '',
     easypaisa_title: typeof savedPaymentDetails.easypaisa_title === 'string' ? savedPaymentDetails.easypaisa_title : legacyPayment('easy')?.account_title || (typeof savedPaymentDetails.account_title === 'string' ? savedPaymentDetails.account_title : ''),
   };
+  const socialSource = typeof settingsResult.data?.social_links === 'object' && settingsResult.data.social_links !== null && !Array.isArray(settingsResult.data.social_links)
+    ? settingsResult.data.social_links as Record<string, unknown>
+    : {};
+  const socialLinks = Object.fromEntries(
+    (['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const)
+      .flatMap((key) => typeof socialSource[key] === 'string' && /^https?:\/\//i.test(socialSource[key] as string)
+        ? [[key, socialSource[key] as string]]
+        : [])
+  ) as Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 
   return (
     <>
@@ -78,7 +87,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         products={products}
         delivery={deliveryResult.data ?? null}
       />
-      <StoreFooter storeName={safeStore.name} paymentDetails={paymentDetails} />
+      <StoreFooter storeName={safeStore.name} paymentDetails={paymentDetails} socialLinks={socialLinks} />
     </>
   );
 }
