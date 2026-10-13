@@ -1,11 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function checkStoreLimits(storeId: string, type: 'product' | 'category', categoryId?: string) {
+export async function checkStoreLimits(storeId: string, type: 'product' | 'category' | 'whatsapp_order', categoryId?: string) {
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error('Store database is not configured');
   // 1. Store ka plan fetch karein
   const { data: store, error: storeError } = await supabase
     .from('stores')
@@ -15,24 +13,35 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
 
   if (storeError || !store) throw new Error('Store not found');
 
-  const plan = store.plan; // 'basic', 'pro', 'business'
+  const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
 
-  if (type === 'category') {
+  // 2. WhatsApp Integration Limit Check (Basic plan par restricted)
+  if (type === 'whatsapp_order') {
     if (plan === 'basic') {
-      return { allowed: false, message: 'Categories are not allowed on Basic plan.' };
+      return { 
+        allowed: false, 
+        message: 'WhatsApp integration is available on Pro and Business plans only. Basic plan uses standard checkout.' 
+      };
     }
+  }
+
+  // 3. Category Limits Check
+  if (type === 'category') {
     const { count } = await supabase
       .from('store_categories')
       .select('*', { count: 'exact', head: true })
       .eq('store_id', storeId);
 
+    if (plan === 'basic' && (count || 0) >= 2) {
+      return { allowed: false, message: 'Basic plan allows maximum 2 categories.' };
+    }
     if (plan === 'pro' && (count || 0) >= 5) {
       return { allowed: false, message: 'Pro plan allows maximum 5 categories.' };
     }
   }
 
+  // 4. Product Limits Check
   if (type === 'product') {
-    // Total products check
     const { count: totalProducts } = await supabase
       .from('store_products')
       .select('*', { count: 'exact', head: true })
