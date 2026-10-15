@@ -1,9 +1,6 @@
 'use client';
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 /* ---------- Sidebar icons ---------- */
 const sidebarIcons = [
@@ -58,7 +55,7 @@ const bars = [35, 55, 40, 70, 60, 85, 75];
 /* ---------- Social proof avatars (store owners) ----------
    Asli photo lagani ho to public/avatars/ mein rakho aur src do,
    jaise:  src: "/avatars/ayesha.jpg"                              */
-type Person = { name: string; bg: string; icon: ReactNode; src?: string };
+type Person = { name: string; bg: string; icon: React.ReactNode; src?: string };
 
 const people: Person[] = [
   {

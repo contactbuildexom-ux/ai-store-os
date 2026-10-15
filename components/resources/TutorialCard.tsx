@@ -1,22 +1,22 @@
 // components/resources/TutorialCard.tsx
 
-import type { Tutorial, TutorialPlan } from "@/lib/tutorials";
+import type { Tutorial } from "@/lib/tutorials";
 
-const planStyles: Record<TutorialPlan, string> = {
+const planStyles: Record<Tutorial["plan"], string> = {
   "All plans": "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
   "Pro & Business": "bg-blue-50 text-blue-700 ring-blue-600/20",
   Business: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
 };
 
 export default function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
-  const { id, title, description, duration, plan, videoUrl } = tutorial;
+  const { emoji, title, summary, duration, plan, video } = tutorial;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60">
       {/* Top row: number + plan badge */}
       <div className="mb-5 flex items-center justify-between">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-blue-500 text-sm font-bold text-white shadow-md shadow-blue-200">
-          {String(id).padStart(2, "0")}
+          {emoji}
         </span>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${planStyles[plan]}`}
@@ -28,7 +28,7 @@ export default function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
       {/* Content */}
       <h3 className="text-lg font-bold leading-snug text-slate-900">{title}</h3>
       <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">
-        {description}
+        {summary}
       </p>
 
       {/* Footer: duration + action */}
@@ -47,9 +47,9 @@ export default function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
           {duration}
         </span>
 
-        {videoUrl ? (
+        {video ? (
           <a
-            href={videoUrl}
+            href={video}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
