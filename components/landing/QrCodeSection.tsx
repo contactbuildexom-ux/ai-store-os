@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import type { ReactNode } from "react";
 
 /* ============ CONFIG ============ */
 const CTA_HREF = "/login"; // signup page ka path
@@ -47,6 +48,55 @@ function buildCells() {
 
 const qrCells = buildCells();
 
+/* ---------- Icons ---------- */
+function Icon({ children, size = 20 }: { children: ReactNode; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
+    </svg>
+  );
+}
+
+const qrIcon = (
+  <>
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4" />
+  </>
+);
+const shareIcon = (
+  <>
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+  </>
+);
+const phoneIcon = (
+  <>
+    <rect x="7" y="2.5" width="10" height="19" rx="2" />
+    <path d="M11 18.5h2" />
+  </>
+);
+const bagIcon = (
+  <>
+    <path d="M6 7h12l1 13H5L6 7z" />
+    <path d="M9 7a3 3 0 0 1 6 0" />
+  </>
+);
+const chatIcon = <path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.3A8 8 0 1 1 21 12z" />;
+
 /* ---------- Content ---------- */
 const useCases = [
   "Shop counter or shop window",
@@ -56,18 +106,27 @@ const useCases = [
   "WhatsApp status and groups",
 ];
 
+const quick = [
+  { title: "Scan", text: "with any phone", icon: phoneIcon },
+  { title: "Store opens", text: "instantly", icon: bagIcon },
+  { title: "Order", text: "on WhatsApp", icon: chatIcon },
+];
+
 const steps = [
   {
     title: "Get your QR code",
     text: "It is generated automatically when your store goes live.",
+    icon: qrIcon,
   },
   {
     title: "Share it anywhere",
     text: "Download it as an image, print it, or post it online.",
+    icon: shareIcon,
   },
   {
     title: "Customers scan and order",
     text: "Their phone opens your store, and they can send the order to your WhatsApp.",
+    icon: chatIcon,
   },
 ];
 
@@ -79,7 +138,7 @@ const controls = [
 
 function CheckIcon() {
   return (
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-blue/10">
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#1976d2]/10">
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -87,7 +146,7 @@ function CheckIcon() {
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="h-3 w-3 text-brand-blue"
+        className="h-3 w-3 text-[#1976d2]"
         aria-hidden="true"
       >
         <path d="M5 12.5l4.5 4.5L19 7.5" />
@@ -96,75 +155,17 @@ function CheckIcon() {
   );
 }
 
-/* Floating chip (QR ke aas paas) */
-function Chip({
-  className,
-  icon,
-  title,
-  text,
-}: {
-  className: string;
-  icon: string;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div
-      className={`animate-float absolute z-20 hidden items-center gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 sm:flex ${className}`}
-      aria-hidden="true"
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-sm text-blue-600">
-        {icon}
-      </span>
-      <div>
-        <p className="text-[11px] font-bold leading-tight text-brand-navy">{title}</p>
-        <p className="text-[10px] leading-tight text-slate-500">{text}</p>
-      </div>
-    </div>
-  );
-}
-
 export default function QrCodeSection() {
   return (
     <section
       id="qr-code"
-      className="bg-modern relative scroll-mt-20 overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="relative scroll-mt-20 overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
     >
-      {/* ---------- Background decoration ---------- */}
-      {/* Dot pattern */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage: "radial-gradient(#9dbcf5 1px, transparent 1px)",
-          backgroundSize: "26px 26px",
-          maskImage:
-            "radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 100%)",
-        }}
-      />
-      {/* Big glow blobs */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-32 top-1/3 h-96 w-96 rounded-full bg-blue-300/40 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-28 -top-20 h-80 w-80 rounded-full bg-sky-300/40 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-indigo-200/40 blur-3xl"
-      />
-
       <div className="relative mx-auto max-w-6xl">
         {/* TOP: heading + short text */}
         <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center rounded-full border border-blue-100 bg-white/80 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-brand-blue">
-            QR Code
-          </span>
-          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
+          <span>QR Code</span>
+          <h2 className="text-brand-navy">
             Your store, <span className="text-gradient">one scan away</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
@@ -174,61 +175,27 @@ export default function QrCodeSection() {
           </p>
         </div>
 
-        {/* MIDDLE: QR on the left, rest of the text on the right */}
-        <div className="mt-14 grid items-center gap-12 lg:grid-cols-[340px_1fr] lg:gap-10">
-          {/* LEFT: QR with rings, panel and chips */}
-          <div className="relative mx-auto flex h-[400px] w-full max-w-[340px] items-center justify-center">
-            {/* Gradient panel behind */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 rounded-[2.5rem] border border-blue-100 bg-gradient-to-br from-blue-100/80 via-white/60 to-sky-100/80"
-            />
+        {/* MIDDLE */}
+        <div className="mt-14 grid items-start gap-10 lg:grid-cols-[360px_1fr] lg:gap-12">
+          {/* LEFT: static QR card */}
+          <div className="mx-auto w-full max-w-[360px] overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-[0_24px_50px_-24px_rgba(25,118,210,0.5)]">
+            {/* Top strip */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#0b2545] via-[#1976d2] to-[#4a9bf0]" />
 
-            {/* Concentric rings */}
-            <div
-              aria-hidden="true"
-              className="absolute h-[330px] w-[330px] rounded-full border border-blue-200/70"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute h-[270px] w-[270px] rounded-full border border-dashed border-blue-300/70"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute h-[210px] w-[210px] rounded-full bg-blue-200/30 blur-xl"
-            />
+            <div className="p-6">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-brand-navy">Your store QR</p>
+                <span className="rounded-full bg-[#e6f1ff] px-2.5 py-1 text-[11px] font-bold text-[#1976d2]">
+                  Sample
+                </span>
+              </div>
 
-            {/* Chips */}
-            <Chip
-              className="-left-3 top-6"
-              icon="📱"
-              title="Scan"
-              text="with any phone"
-            />
-            <Chip
-              className="-right-3 top-1/2"
-              icon="🛍️"
-              title="Store opens"
-              text="instantly"
-            />
-            <Chip
-              className="-left-3 bottom-8"
-              icon="💬"
-              title="Order"
-              text="on WhatsApp"
-            />
-
-            {/* QR card */}
-            <div className="relative z-10">
-              <span className="absolute -right-3 -top-3 z-10 rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-3 py-1 text-[11px] font-semibold text-white">
-                Sample QR
-              </span>
-
-              <div className="rounded-3xl border border-blue-100 bg-white p-5">
-                <div className="relative">
+              {/* QR */}
+              <div className="mt-4 rounded-2xl bg-[#f1f7ff] p-5 ring-1 ring-blue-100">
+                <div className="relative mx-auto w-fit rounded-xl bg-white p-3 shadow-sm">
                   <svg
                     viewBox={`0 0 ${SIZE} ${SIZE}`}
-                    className="h-36 w-36 text-brand-navy sm:h-40 sm:w-40"
+                    className="h-40 w-40 text-brand-navy sm:h-44 sm:w-44"
                     shapeRendering="crispEdges"
                     role="img"
                     aria-label="Sample store QR code"
@@ -246,21 +213,41 @@ export default function QrCodeSection() {
                     ))}
                   </svg>
 
-                  <div className="absolute left-1/2 top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-0.5">
-                    <span className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-blue-700 to-sky-500 text-sm font-bold text-white">
+                  <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-0.5">
+                    <span className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-sm font-bold text-white">
                       B
                     </span>
                   </div>
                 </div>
 
-                <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                <p className="mt-3 text-center text-xs font-semibold text-slate-600">
                   Scan to visit the store
                 </p>
+              </div>
+
+              {/* Static quick facts */}
+              <div className="mt-5 grid grid-cols-3 gap-2">
+                {quick.map((q) => (
+                  <div
+                    key={q.title}
+                    className="rounded-xl border border-blue-100 bg-white px-2 py-3 text-center"
+                  >
+                    <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg bg-[#e6f1ff] text-[#1976d2]">
+                      <Icon size={18}>{q.icon}</Icon>
+                    </span>
+                    <p className="mt-2 text-[12px] font-bold leading-tight text-brand-navy">
+                      {q.title}
+                    </p>
+                    <p className="text-[10.5px] leading-tight text-slate-500">
+                      {q.text}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* RIGHT: rest of the text */}
+          {/* RIGHT */}
           <div>
             <h3 className="text-sm font-bold text-brand-navy">
               Where you can use it
@@ -269,24 +256,28 @@ export default function QrCodeSection() {
               {useCases.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-blue-100 bg-white/85 px-3.5 py-1.5 text-xs font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+                  className="rounded-full border border-blue-100 bg-white px-3.5 py-1.5 text-xs font-semibold text-brand-navy shadow-sm transition hover:border-[#1976d2] hover:text-[#1976d2]"
                 >
                   {item}
                 </span>
               ))}
             </div>
 
-            <h3 className="mt-7 text-sm font-bold text-brand-navy">
+            <h3 className="mt-8 text-sm font-bold text-brand-navy">
               How it works
             </h3>
-            <ol className="mt-3 grid gap-3 sm:grid-cols-3">
-              {steps.map((step, i) => (
+            <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+              {steps.map((step) => (
                 <li
                   key={step.title}
-                  className="card-lift rounded-2xl border border-blue-100 bg-white/90 p-4"
+                  className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-4 shadow-[0_10px_30px_-20px_rgba(25,118,210,0.5)] transition duration-300 hover:-translate-y-1 hover:border-[#1976d2]/40 hover:shadow-[0_20px_40px_-20px_rgba(25,118,210,0.55)]"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-sky-500 text-xs font-bold text-white">
-                    {i + 1}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-[#0b2545] via-[#1976d2] to-[#4a9bf0] transition-transform duration-500 group-hover:scale-x-100"
+                  />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f1ff] text-[#1976d2] transition duration-300 group-hover:bg-gradient-to-br group-hover:from-[#0b2545] group-hover:to-[#1976d2] group-hover:text-white">
+                    <Icon>{step.icon}</Icon>
                   </span>
                   <p className="mt-3 text-sm font-bold text-brand-navy">
                     {step.title}
@@ -296,21 +287,21 @@ export default function QrCodeSection() {
                   </p>
                 </li>
               ))}
-            </ol>
+            </ul>
 
-            <h3 className="mt-7 text-sm font-bold text-brand-navy">
+            <h3 className="mt-8 text-sm font-bold text-brand-navy">
               Store owner controls
             </h3>
             <ul className="mt-3 space-y-2.5">
               {controls.map((item) => (
                 <li
                   key={item.text}
-                  className="flex flex-wrap items-center gap-2.5 text-sm text-slate-700"
+                  className="flex flex-wrap items-center gap-2.5 text-sm font-medium text-brand-navy"
                 >
                   <CheckIcon />
                   <span>{item.text}</span>
                   {item.badge && (
-                    <span className="rounded-full bg-gradient-to-r from-blue-700 to-blue-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                    <span className="rounded-full bg-gradient-to-r from-[#0b2545] to-[#1976d2] px-2.5 py-0.5 text-[11px] font-semibold text-white">
                       {item.badge}
                     </span>
                   )}
@@ -321,11 +312,11 @@ export default function QrCodeSection() {
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href={CTA_HREF}
-                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0b2545] via-[#1556a8] to-[#1976d2] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/40"
               >
                 Get your store QR
               </Link>
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-slate-600">
                 Store QR is free on all plans. Custom design on Pro and Business.
               </span>
             </div>

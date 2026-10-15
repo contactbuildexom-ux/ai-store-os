@@ -4,7 +4,7 @@
   color-scheme: light;
   --ink: #0b1b4d;
   --muted: #5b6b8c;
-  --canvas: #ffffff;
+  --canvas: #e6f4ff;
   --line: #dbe7ff;
   --navy: #0b1b4d;
   /* purane --green, --green-soft waise hi rehne dein */
@@ -14,7 +14,7 @@ html {
   scroll-padding-top: 90px;
   --ink: #0f172a;
   --muted: #64748b;
-  --canvas: #f8fafc;
+  --canvas: #e6f4ff;
   --line: #e2e8f0;
   --blue: #2563eb;
   --blue-soft: #eff6ff;
@@ -30,8 +30,8 @@ html {
 }
 
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--canvas); }
-body { min-height: 100vh; margin: 0; background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }
+html { min-height: 100%; background: var(--canvas); overflow-x: clip; }
+body { min-height: 100vh; margin: 0; background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; overflow-x: clip; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 ::selection { background: #bfdbfe; color: #1e3a8a; }
@@ -43,32 +43,32 @@ button { cursor: pointer; }
 
 /* ===== Modern look ===== */
 .bg-modern {
-  background:
-    radial-gradient(55% 45% at 90% 0%, #d6e6ff 0%, transparent 70%),
-    radial-gradient(45% 40% at 0% 35%, #e6f0ff 0%, transparent 70%),
-    #ffffff;
+  background: #e6f4ff;
 }
 
 .bg-soft-gradient {
-  background: linear-gradient(180deg, #f6faff 0%, #e9f1ff 100%);
+  background: #d3e8ff;
 }
 
 .bg-brand-gradient {
   background: linear-gradient(135deg, #0b1b4d 0%, #1d4ed8 70%, #2f7bff 100%);
 }
 
+/* Heading highlight: moving blue shimmer */
 .text-gradient {
-  background: linear-gradient(90deg, #1d4ed8, #3aa0ff);
+  background: linear-gradient(90deg, #0b5fd1, #1976d2, #38bdf8, #1976d2, #0b5fd1);
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: bx-shimmer 6s linear infinite;
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.95);
   box-shadow: 0 24px 50px -24px rgba(29, 78, 216, 0.35);
 }
 
@@ -83,7 +83,6 @@ button { cursor: pointer; }
 .btn-glow {
   box-shadow: none;
 }
-
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -106,4 +105,232 @@ button { cursor: pointer; }
 }
 .blink-attention a {
   animation: blink-glow 0.9s ease-in-out 4;
+}
+
+/* ───── Buildexom brand theme ───── */
+:root {
+  --bx-navy: #0b2545;
+  --bx-blue: #1976d2;
+  --bx-blue-light: #4a9bf0;
+  --bx-bg: #e6f4ff;
+  --bx-bg-deep: #d3e8ff;
+}
+
+/* ============================================================
+   COLOUR + LIFE LAYER (works on every landing section)
+   ============================================================ */
+
+@keyframes bx-shimmer { to { background-position: 300% 0; } }
+@keyframes bx-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@keyframes bx-slide-in { from { opacity: 0; transform: translateX(40px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes bx-pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.5); } 50% { box-shadow: 0 0 0 7px rgba(25, 118, 210, 0); } }
+@keyframes bx-drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-18px, 14px); } }
+@keyframes bx-reveal { from { opacity: 0; transform: translateY(38px) scale(0.985); } to { opacity: 1; transform: none; } }
+
+main { overflow-x: clip; }
+
+/* Alternating colour bands (plain light blue, NO dots, NO glow).
+   Cards/boxes with rounded-3xl (e.g. Help Center cards) are skipped. */
+main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: var(--bx-bg) !important;
+}
+main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]):nth-of-type(even) {
+  background: var(--bx-bg-deep) !important;
+}
+
+/* Remove old inline blobs (the layer above replaces them) */
+main section [class*="blur-3xl"],
+main section [class*="blur-2xl"],
+main section [class*="blur-[1"] {
+  display: none !important;
+}
+
+/* ---------- Section label (pill) ---------- */
+main section[id] :has(+ h2) {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  padding: 0.5rem 1.25rem !important;
+  border-radius: 9999px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(25, 118, 210, 0.35) !important;
+  box-shadow: 0 6px 18px -8px rgba(25, 118, 210, 0.45) !important;
+  color: #1976d2 !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.18em !important;
+  line-height: 1.3 !important;
+  text-transform: uppercase !important;
+  margin-bottom: 1.1rem !important;
+}
+main section[id] :has(+ h2)::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 9999px;
+  background: #1976d2;
+  animation: bx-pulse-dot 2s ease-in-out infinite;
+}
+main section[id] :has(+ h2) > * {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  letter-spacing: inherit !important;
+  text-transform: inherit !important;
+  backdrop-filter: none !important;
+}
+
+/* ---------- Main section headings ---------- */
+main section[id] h2 {
+  font-size: clamp(1.75rem, 1.1rem + 2.2vw, 2.5rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* ---------- Cards: lift + blue glow on hover ---------- */
+main section:not(:first-of-type) [class*="rounded-3xl"]:not(article),
+main section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article) {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+main section:not(:first-of-type) [class*="rounded-3xl"]:not(article):hover,
+main section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article):hover {
+  transform: translateY(-5px);
+  border-color: rgba(25, 118, 210, 0.55);
+  box-shadow: 0 28px 55px -24px rgba(25, 118, 210, 0.55);
+}
+
+/* ============================================================
+   BUTTONS: lift + glow + shine sweep + arrow nudge
+   (every button / link-button inside the page content)
+   ============================================================ */
+main a[class*="rounded-xl"][class*="bg-"],
+main a[class*="rounded-full"][class*="bg-"],
+main a.glass-card[class*="rounded-"],
+main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]),
+main button[class*="rounded-full"][class*="bg-"]:not([aria-label]),
+main button.glass-card[class*="rounded-"]:not([aria-label]) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+main a[class*="rounded-xl"][class*="bg-"]::after,
+main a[class*="rounded-full"][class*="bg-"]::after,
+main a.glass-card[class*="rounded-"]::after,
+main button[class*="rounded-xl"][class*="bg-"]:not([aria-label])::after,
+main button[class*="rounded-full"][class*="bg-"]:not([aria-label])::after,
+main button.glass-card[class*="rounded-"]:not([aria-label])::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  z-index: 1;
+  width: 50%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.65s ease;
+}
+main a[class*="rounded-xl"][class*="bg-"]:hover,
+main a[class*="rounded-full"][class*="bg-"]:hover,
+main a.glass-card[class*="rounded-"]:hover,
+main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover,
+main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover,
+main button.glass-card[class*="rounded-"]:not([aria-label]):hover {
+  transform: translateY(-3px);
+  filter: brightness(1.06) saturate(1.1);
+  box-shadow: 0 18px 34px -12px rgba(25, 118, 210, 0.75);
+}
+main a[class*="rounded-xl"][class*="bg-"]:hover::after,
+main a[class*="rounded-full"][class*="bg-"]:hover::after,
+main a.glass-card[class*="rounded-"]:hover::after,
+main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover::after,
+main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover::after,
+main button.glass-card[class*="rounded-"]:not([aria-label]):hover::after {
+  left: 130%;
+}
+main a[class*="rounded-xl"][class*="bg-"]:active,
+main a[class*="rounded-full"][class*="bg-"]:active,
+main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):active,
+main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):active {
+  transform: translateY(-1px) scale(0.98);
+}
+/* Arrow (→) inside buttons slides on hover */
+main a > span[aria-hidden="true"],
+main button > span[aria-hidden="true"] {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+main a:hover > span[aria-hidden="true"],
+main button:hover > span[aria-hidden="true"] {
+  transform: translateX(5px);
+}
+
+/* ---------- Hero: entrance animation on page load ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  main section:first-of-type > div > div:first-child > * {
+    animation: bx-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  main section:first-of-type > div > div:first-child > *:nth-child(1) { animation-delay: 0.05s; }
+  main section:first-of-type > div > div:first-child > *:nth-child(2) { animation-delay: 0.15s; }
+  main section:first-of-type > div > div:first-child > *:nth-child(3) { animation-delay: 0.28s; }
+  main section:first-of-type > div > div:first-child > *:nth-child(4) { animation-delay: 0.4s; }
+  main section:first-of-type > div > div:first-child > *:nth-child(5) { animation-delay: 0.52s; }
+  main section:first-of-type > div > div:last-child {
+    animation: bx-slide-in 0.9s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+/* ---------- Scroll reveal (Chrome / Edge; others just show normally) ---------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    main section:not(:first-of-type) > div > *:not(.grid),
+    main section:not(:first-of-type) > div > .grid > * {
+      animation: bx-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+/* ---------- Thin branded scrollbar ---------- */
+html { scrollbar-color: #1976d2 #e6f4ff; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: #e6f4ff; }
+::-webkit-scrollbar-thumb { background: #1976d2; border-radius: 9999px; border: 2px solid #e6f4ff; }
+::-webkit-scrollbar-thumb:hover { background: #0b2545; }
+
+/* ───── Text colours = logo navy (poori site) ───── */
+@theme {
+  --color-black: #0b2545;
+
+  --color-slate-900: #0b2545;
+  --color-slate-800: #0b2545;
+  --color-slate-700: #0b2545;
+  --color-slate-600: #2c4a73;
+
+  --color-gray-900: #0b2545;
+  --color-gray-800: #0b2545;
+  --color-gray-700: #0b2545;
+  --color-gray-600: #2c4a73;
+
+  --color-zinc-900: #0b2545;
+  --color-zinc-800: #0b2545;
+  --color-zinc-700: #0b2545;
+
+  --color-neutral-900: #0b2545;
+  --color-neutral-800: #0b2545;
+  --color-neutral-700: #0b2545;
 }

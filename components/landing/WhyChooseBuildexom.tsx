@@ -5,10 +5,13 @@ const features = [
     title: "Store in minutes",
     text: "Describe your business and AI builds your store. No coding.",
     tag: "AI powered",
+    // Storefront
     icon: (
       <>
-        <path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3z" />
-        <path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2z" />
+        <path d="M3 9l1.5-5h15L21 9" />
+        <path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+        <path d="M5 12v8h14v-8" />
+        <path d="M10 20v-5h4v5" />
       </>
     ),
   },
@@ -16,6 +19,7 @@ const features = [
     title: "WhatsApp ordering",
     text: "Customers send orders straight to your WhatsApp.",
     tag: "One tap orders",
+    // WhatsApp bubble
     icon: (
       <>
         <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
@@ -27,10 +31,12 @@ const features = [
     title: "Works on every device",
     text: "Looks great on mobile, tablet, and desktop.",
     tag: "Fully responsive",
+    // Laptop + phone
     icon: (
       <>
-        <rect x="7" y="2.5" width="10" height="19" rx="2" />
-        <path d="M11 18.5h2" />
+        <rect x="2" y="4" width="14" height="10" rx="1.5" />
+        <path d="M1 18h16" />
+        <rect x="18" y="8" width="4" height="10" rx="1" />
       </>
     ),
   },
@@ -38,6 +44,7 @@ const features = [
     title: "Start free",
     text: "Launch on the free plan and upgrade when you grow.",
     tag: "No card needed",
+    // Gift
     icon: (
       <>
         <path d="M20 12v8H4v-8" />
@@ -52,6 +59,7 @@ const features = [
     title: "Secure and reliable",
     text: "Your store and customer data stay protected.",
     tag: "Data protected",
+    // Shield check
     icon: (
       <>
         <path d="M12 3l7 3v5.5c0 4.5-3 8-7 9.5c-4-1.5-7-5-7-9.5V6l7-3z" />
@@ -63,6 +71,7 @@ const features = [
     title: "Help when you need it",
     text: "Our team is a message away, with priority support on Business.",
     tag: "Priority support",
+    // Headset
     icon: (
       <>
         <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
@@ -78,25 +87,13 @@ export default function WhyChooseBuildexom() {
   return (
     <section
       id="features"
-      className="bg-modern relative scroll-mt-20 overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+      className="relative scroll-mt-20 overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
     >
-      {/* Decorative glows */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 top-10 h-80 w-80 rounded-full bg-blue-300/30 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 bottom-10 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl"
-      />
-
       <div className="relative mx-auto max-w-6xl">
         {/* Heading */}
         <div className="mx-auto max-w-2xl text-center">
-          <span className="glass-card inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-brand-blue">
-            Why Buildexom
-          </span>
-          <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-brand-navy sm:text-5xl">
+          <span>Why Buildexom</span>
+          <h2 className="text-brand-navy">
             Everything you need to{" "}
             <span className="text-gradient">sell online</span>
           </h2>
@@ -107,21 +104,33 @@ export default function WhyChooseBuildexom() {
 
         {/* Cards */}
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <div
+          {features.map((f) => (
+            <article
               key={f.title}
-              className="glass-card card-lift group relative overflow-hidden rounded-3xl p-7"
+              className="group relative isolate flex cursor-default flex-col overflow-hidden rounded-2xl border border-blue-100 bg-white p-7 shadow-[0_12px_32px_-20px_rgba(11,37,69,0.35)] transition duration-300 hover:-translate-y-1.5 hover:border-[#1976d2] hover:shadow-[0_30px_55px_-22px_rgba(25,118,210,0.75)]"
             >
-              {/* Number watermark */}
+              {/* Blue fill that fades in on hover */}
               <span
                 aria-hidden="true"
-                className="absolute right-5 top-3 text-6xl font-extrabold text-blue-100/80 transition-colors group-hover:text-blue-200"
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
+                className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0b2545] via-[#1556a8] to-[#1976d2] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              />
 
-              {/* Icon */}
-              <span className="btn-glow relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-700 to-sky-500 text-white transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3">
+              {/* Large faint icon in the corner */}
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-[#1976d2]/[0.07] transition duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:text-white/10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {f.icon}
+              </svg>
+
+              {/* Icon tile (turns white on hover) */}
+              <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white shadow-lg shadow-blue-500/30 ring-4 ring-[#1976d2]/10 transition duration-300 group-hover:scale-105 group-hover:bg-white group-hover:from-white group-hover:to-white group-hover:text-[#1976d2] group-hover:ring-white/20">
                 <svg
                   width="26"
                   height="26"
@@ -137,24 +146,33 @@ export default function WhyChooseBuildexom() {
                 </svg>
               </span>
 
-              <h3 className="relative mt-6 text-lg font-bold text-brand-navy">
+              <h3 className="relative mt-6 text-lg font-bold text-brand-navy transition-colors duration-300 group-hover:text-white">
                 {f.title}
               </h3>
-              <p className="relative mt-2 text-[15px] leading-relaxed text-slate-600">
+              <p className="relative mt-2 flex-1 text-[15px] leading-relaxed text-slate-600 transition-colors duration-300 group-hover:text-blue-100">
                 {f.text}
               </p>
 
-              <span className="relative mt-5 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                {f.tag}
-              </span>
-
-              {/* Bottom accent line */}
-              <span
-                aria-hidden="true"
-                className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-blue-700 to-sky-400 transition-transform duration-500 group-hover:scale-x-100"
-              />
-            </div>
+              {/* Footer: tag */}
+              <div className="relative mt-6 flex items-center justify-between border-t border-blue-100 pt-4 transition-colors duration-300 group-hover:border-white/20">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f1ff] px-3 py-1 text-xs font-bold text-[#1976d2] transition-colors duration-300 group-hover:bg-white/15 group-hover:text-white">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                  {f.tag}
+                </span>
+              </div>
+            </article>
           ))}
         </div>
 
@@ -162,7 +180,7 @@ export default function WhyChooseBuildexom() {
         <div className="mt-12 text-center">
           <Link
             href="/#generate-store"
-            className="btn-glow inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-7 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#1976d2] px-7 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:-translate-y-0.5 hover:bg-[#1565c0]"
           >
             Start building free <span aria-hidden>→</span>
           </Link>

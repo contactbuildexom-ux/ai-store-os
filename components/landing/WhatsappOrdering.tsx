@@ -175,7 +175,7 @@ export default function WhatsappOrdering() {
               href="/#generate-store"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-7 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
             >
-              Start selling on WhatsApp <span aria-hidden>→</span>
+              Start selling on Buildexom <span aria-hidden>→</span>
             </Link>
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
 /* ---------- Sidebar icons ---------- */
 const sidebarIcons = [
@@ -53,6 +54,90 @@ const orderRows = [
 
 const bars = [35, 55, 40, 70, 60, 85, 75];
 
+/* ---------- Social proof avatars (store owners) ----------
+   Asli photo lagani ho to public/avatars/ mein rakho aur src do,
+   jaise:  src: "/avatars/ayesha.jpg"                              */
+type Person = { name: string; bg: string; icon: ReactNode; src?: string };
+
+const people: Person[] = [
+  {
+    name: "Boutique owner",
+    bg: "from-rose-400 to-pink-500",
+    icon: <path d="M8 3l-5 3 2 4 3-1v11h8V9l3 1 2-4-5-3a4 4 0 0 1-8 0z" />,
+  },
+  {
+    name: "Cafe owner",
+    bg: "from-amber-400 to-orange-500",
+    icon: (
+      <>
+        <path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z" />
+        <path d="M17 10h2a2 2 0 0 1 0 4h-2" />
+        <path d="M8 3v2M12 3v2" />
+      </>
+    ),
+  },
+  {
+    name: "Electronics seller",
+    bg: "from-sky-500 to-blue-600",
+    icon: (
+      <>
+        <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+        <rect x="3" y="14" width="4" height="6" rx="1.5" />
+        <rect x="17" y="14" width="4" height="6" rx="1.5" />
+      </>
+    ),
+  },
+  {
+    name: "Home decor seller",
+    bg: "from-emerald-400 to-teal-500",
+    icon: (
+      <>
+        <path d="M3 11l9-8 9 8" />
+        <path d="M5 10v10h14V10" />
+        <path d="M10 20v-6h4v6" />
+      </>
+    ),
+  },
+];
+
+function AvatarStack() {
+  return (
+    <div className="flex items-center">
+      <div className="flex -space-x-2.5">
+        {people.map((p) => (
+          <span
+            key={p.name}
+            title={p.name}
+            className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-gradient-to-br ${p.bg} text-white shadow-md`}
+          >
+            {p.src ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.src} alt={p.name} className="h-full w-full object-cover" />
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {p.icon}
+              </svg>
+            )}
+          </span>
+        ))}
+        <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#0b2545] text-[11px] font-bold text-white shadow-md">
+          +50K
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Mockup 6 views ---------- */
 function Title({ children }: { children: React.ReactNode }) {
   return <p className="mb-3 text-sm font-bold text-brand-navy">{children}</p>;
@@ -91,6 +176,41 @@ function HomeView() {
   );
 }
 
+/* Shopping-bag illustration for the store banner */
+function BagIllustration() {
+  return (
+    <svg
+      className="absolute bottom-2 right-3 h-28 w-28 sm:right-5 sm:h-32 sm:w-32"
+      viewBox="0 0 120 120"
+      fill="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="bagGrad" x1="16" y1="44" x2="104" y2="110" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4a9bf0" />
+          <stop offset="1" stopColor="#1976d2" />
+        </linearGradient>
+      </defs>
+      <ellipse cx="60" cy="110" rx="36" ry="5" fill="#1976d2" opacity="0.15" />
+      <path
+        d="M42 52V38a18 18 0 0 1 36 0v14"
+        stroke="#0b2545"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <path
+        d="M22 44h76l6 60a6 6 0 0 1-6 6H22a6 6 0 0 1-6-6l6-60z"
+        fill="url(#bagGrad)"
+      />
+      <circle cx="60" cy="80" r="15" fill="white" opacity="0.95" />
+      <path
+        d="M60 70l3.5 7 7.5 1-5.5 5.3 1.3 7.7L60 87.5 53.2 91l1.3-7.7L49 78l7.5-1z"
+        fill="#1976d2"
+      />
+    </svg>
+  );
+}
+
 function StoreView() {
   return (
     <>
@@ -113,12 +233,12 @@ function StoreView() {
         </p>
         <Link
           href="/#templates"
-          className="mt-3 inline-block cursor-pointer rounded-md bg-brand-navy px-3 py-1.5 text-[9px] font-semibold text-white transition-colors hover:bg-blue-700"
+          className="mt-3 inline-block cursor-pointer rounded-md bg-[#0b2545] px-3 py-1.5 text-[9px] font-semibold text-white transition-colors hover:bg-[#1976d2]"
         >
           Shop Now
         </Link>
-        <div className="absolute bottom-0 right-8 h-24 w-16 rounded-t-[2rem] rounded-b-xl bg-white shadow-inner" />
-        <div className="absolute bottom-20 right-10 h-14 w-12 rounded-full bg-blue-600/80" />
+        <BagIllustration />
+        <div className="h-10" />
       </div>
 
       <div className="mt-3 grid grid-cols-4 gap-2">
@@ -241,14 +361,8 @@ function Mockup() {
 
   return (
     <div className="relative mx-auto w-full max-w-[520px] pb-14 lg:ml-auto">
-      {/* Soft glow behind mockup */}
-      <div
-        aria-hidden="true"
-        className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-to-br from-blue-200/60 via-sky-100/40 to-transparent blur-2xl"
-      />
-
-      {/* Floating chip: top left */}
-      <div className="glass-card animate-float absolute -left-6 top-10 z-20 hidden items-center gap-2 rounded-2xl px-3 py-2 sm:flex">
+      {/* Chip: top right (static) */}
+      <div className="glass-card absolute -right-2 -top-5 z-20 hidden items-center gap-2 rounded-2xl px-3 py-2 sm:flex">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-600">
           ✓
         </span>
@@ -300,10 +414,10 @@ function Mockup() {
         </div>
       </div>
 
-      {/* Floating AI card (yahan id lagi hai, cursor yahin aayega) */}
+      {/* AI card (yahan id lagi hai, cursor yahin aayega) - static, no floating */}
       <div
         id="generate-store"
-        className="glass-card animate-float absolute bottom-0 right-0 z-20 w-56 rounded-2xl p-4 lg:-right-4"
+        className="glass-card absolute bottom-0 right-0 z-20 w-56 rounded-2xl p-4 lg:-right-4"
       >
         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-sky-500 text-[10px] font-bold text-white">
           AI
@@ -374,17 +488,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="bg-modern relative overflow-hidden">
-      {/* Decorative blobs */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 -top-24 h-[420px] w-[420px] rounded-full bg-blue-300/30 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 bottom-0 h-[320px] w-[320px] rounded-full bg-sky-200/40 blur-3xl"
-      />
-
+    <section className="relative overflow-hidden bg-[#e6f4ff]">
       <div className="relative mx-auto grid max-w-[1200px] items-center gap-14 px-5 pb-24 pt-12 sm:px-6 lg:grid-cols-2 lg:px-8 lg:pt-16">
         {/* Left: text */}
         <div>
@@ -423,12 +527,8 @@ export default function Hero() {
           </div>
 
           {/* Social proof (sample number, asli number baad mein lagayein) */}
-          <div className="mt-9 flex items-center gap-3">
-            <div className="flex -space-x-2">
-              {["bg-amber-200", "bg-rose-200", "bg-emerald-200", "bg-sky-200"].map((c) => (
-                <span key={c} className={`h-9 w-9 rounded-full border-2 border-white shadow-sm ${c}`} />
-              ))}
-            </div>
+          <div className="mt-9 flex flex-wrap items-center gap-4">
+            <AvatarStack />
             <p className="text-sm font-medium text-slate-600">
               Join 50,000+ happy creators and business owners
             </p>

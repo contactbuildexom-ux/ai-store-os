@@ -100,26 +100,6 @@ export default function FinalCta() {
   return (
     <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <div className="bg-brand-gradient relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] px-6 py-12 sm:px-10 lg:px-14 lg:py-14">
-        {/* Soft glows */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-24 right-10 h-72 w-72 rounded-full bg-blue-400/30 blur-3xl"
-        />
-
-        {/* Subtle dot pattern */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage: "radial-gradient(white 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-
         <div className="relative grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           {/* Left: text */}
           <div className="text-center lg:text-left">
@@ -172,4 +152,4 @@ export default function FinalCta() {
       </div>
     </section>
   );
-}
+} 

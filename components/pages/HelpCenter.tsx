@@ -6,6 +6,17 @@ import Link from "next/link";
 // 👉 Apni real support email yahan likho
 const SUPPORT_EMAIL = "support@yourdomain.com";
 
+type IconName =
+  | "rocket"
+  | "bag"
+  | "chat"
+  | "qr"
+  | "card"
+  | "bot"
+  | "mail"
+  | "play"
+  | "search";
+
 type Topic = {
   q: string;
   steps: string[];
@@ -13,7 +24,7 @@ type Topic = {
 };
 type Category = {
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   blurb: string;
   grad: string;
@@ -21,14 +32,137 @@ type Category = {
   topics: Topic[];
 };
 
+/* ───────────────────────── ICONS ───────────────────────── */
+
+function Icon({
+  name,
+  className = "h-6 w-6",
+}: {
+  name: IconName;
+  className?: string;
+}) {
+  let paths: React.ReactNode;
+  switch (name) {
+    case "rocket":
+      paths = (
+        <>
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09Z" />
+          <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2Z" />
+          <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+          <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+        </>
+      );
+      break;
+    case "bag":
+      paths = (
+        <>
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+          <path d="M3 6h18" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </>
+      );
+      break;
+    case "chat":
+      paths = (
+        <>
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          <path d="M8 12h.01" />
+          <path d="M12 12h.01" />
+          <path d="M16 12h.01" />
+        </>
+      );
+      break;
+    case "qr":
+      paths = (
+        <>
+          <rect width="5" height="5" x="3" y="3" rx="1" />
+          <rect width="5" height="5" x="16" y="3" rx="1" />
+          <rect width="5" height="5" x="3" y="16" rx="1" />
+          <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+          <path d="M21 21v.01" />
+          <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+          <path d="M3 12h.01" />
+          <path d="M12 3h.01" />
+          <path d="M12 16v.01" />
+          <path d="M16 12h1" />
+          <path d="M21 12v.01" />
+          <path d="M12 21v-1" />
+        </>
+      );
+      break;
+    case "card":
+      paths = (
+        <>
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <path d="M2 10h20" />
+          <path d="M6 15h4" />
+        </>
+      );
+      break;
+    case "bot":
+      paths = (
+        <>
+          <path d="M12 8V4H8" />
+          <rect width="16" height="12" x="4" y="8" rx="2" />
+          <path d="M2 14h2" />
+          <path d="M20 14h2" />
+          <path d="M15 13v2" />
+          <path d="M9 13v2" />
+        </>
+      );
+      break;
+    case "mail":
+      paths = (
+        <>
+          <rect width="20" height="16" x="2" y="4" rx="2" />
+          <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+        </>
+      );
+      break;
+    case "play":
+      paths = (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="10 8 16 12 10 16 10 8" />
+        </>
+      );
+      break;
+    case "search":
+      paths = (
+        <>
+          <circle cx="11" cy="11" r="8" />
+          <path d="m21 21-4.3-4.3" />
+        </>
+      );
+      break;
+  }
+
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths}
+    </svg>
+  );
+}
+
+/* ───────────────────────── DATA ───────────────────────── */
+
 const CATEGORIES: Category[] = [
   {
     id: "getting-started",
-    icon: "🚀",
+    icon: "rocket",
     title: "Getting Started",
     blurb: "Create your account and launch your first store",
-    grad: "from-sky-500 to-indigo-600",
-    accent: "bg-sky-600",
+    grad: "from-[#2196f3] to-[#1565c0]",
+    accent: "bg-[#1976d2]",
     topics: [
       {
         q: "How to create your Buildexom account",
@@ -69,11 +203,11 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "products",
-    icon: "🛍️",
+    icon: "bag",
     title: "Products",
     blurb: "Add products, photos, descriptions and categories",
-    grad: "from-amber-400 to-orange-600",
-    accent: "bg-orange-500",
+    grad: "from-[#1976d2] to-[#0d47a1]",
+    accent: "bg-[#1565c0]",
     topics: [
       {
         q: "How to add and edit products",
@@ -103,11 +237,11 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "orders-whatsapp",
-    icon: "💬",
+    icon: "chat",
     title: "Orders & WhatsApp",
     blurb: "Receive and manage orders on WhatsApp",
-    grad: "from-emerald-400 to-teal-600",
-    accent: "bg-emerald-600",
+    grad: "from-[#1646f5] to-[#0b2a9c]",
+    accent: "bg-[#1646f5]",
     topics: [
       {
         q: "How to connect your WhatsApp number",
@@ -139,11 +273,11 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "qr-code",
-    icon: "📱",
+    icon: "qr",
     title: "Store QR Code",
     blurb: "Create, style and download your store QR code",
-    grad: "from-violet-500 to-fuchsia-600",
-    accent: "bg-violet-600",
+    grad: "from-[#0288d1] to-[#01579b]",
+    accent: "bg-[#0288d1]",
     topics: [
       {
         q: "How to get your store QR code",
@@ -171,11 +305,11 @@ const CATEGORIES: Category[] = [
   },
   {
     id: "plans-account",
-    icon: "💳",
+    icon: "card",
     title: "Plans & Account",
     blurb: "Plans, upgrades and how to reach support",
-    grad: "from-rose-400 to-pink-600",
-    accent: "bg-rose-500",
+    grad: "from-[#1565c0] to-[#0b2545]",
+    accent: "bg-[#0b2545]",
     topics: [
       {
         q: "Free, Pro, and Business plan differences",
@@ -208,6 +342,8 @@ const CATEGORIES: Category[] = [
 
 const POPULAR = ["WhatsApp", "QR code", "publish", "products", "plans"];
 
+/* ───────────────────────── PAGE ───────────────────────── */
+
 export default function HelpCenter() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
@@ -231,84 +367,62 @@ export default function HelpCenter() {
 
   return (
     <>
-      {/* ───────── HERO ───────── */}
-      <section className="relative overflow-hidden bg-[#0b1736] pb-28 pt-14 text-white sm:pb-32 sm:pt-20">
-        <div className="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-blue-500/30 blur-3xl" />
-        <div className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-30"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
-            backgroundSize: "44px 44px",
-            maskImage:
-              "radial-gradient(ellipse at center, black 30%, transparent 75%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse at center, black 30%, transparent 75%)",
-          }}
-        />
-
+      {/* ───────── HERO (light, site ke background ke sath match) ───────── */}
+      <section className="relative pb-12 pt-14 sm:pb-16 sm:pt-20">
         <div className="relative mx-auto max-w-[1200px] px-4 text-center sm:px-6">
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-sky-200 ring-1 ring-white/20 backdrop-blur">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />
+          <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#1976d2] shadow-sm ring-1 ring-blue-100">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1976d2]" />
             Help Center
           </span>
 
-          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-extrabold leading-tight tracking-tight text-[#0b2545] sm:text-5xl lg:text-6xl">
             How can we{" "}
-            <span className="bg-gradient-to-r from-sky-300 via-blue-300 to-emerald-300 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#1976d2] to-[#0288d1] bg-clip-text text-transparent">
               help you?
             </span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-blue-100/80 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600 sm:text-lg">
             Guides to build and manage your store.
           </p>
 
           {/* Search */}
           <div className="relative mx-auto mt-8 max-w-xl">
-            <svg
+            <Icon
+              name="search"
               className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search guides, e.g. WhatsApp, QR, publish"
               aria-label="Search help articles"
-              className="w-full rounded-full border border-white/10 bg-white py-4 pl-14 pr-5 text-sm text-slate-800 shadow-2xl shadow-blue-950/40 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-blue-400/40 sm:text-base"
+              className="w-full rounded-full border border-blue-100 bg-white py-4 pl-14 pr-5 text-sm text-slate-800 shadow-xl shadow-blue-500/10 outline-none transition placeholder:text-slate-400 focus:border-[#1976d2] focus:ring-4 focus:ring-blue-200/70 sm:text-base"
             />
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm">
-            <span className="text-blue-100/70">Popular:</span>
+            <span className="text-slate-500">Popular:</span>
             {POPULAR.map((p) => (
               <button
                 key={p}
+                type="button"
                 onClick={() => setQuery(p)}
-                className="rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white ring-1 ring-white/20 transition hover:bg-white/20"
+                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#1976d2] shadow-sm ring-1 ring-blue-100 transition duration-200 hover:-translate-y-0.5 hover:bg-[#1976d2] hover:text-white hover:shadow-md active:scale-95"
               >
                 {p}
               </button>
             ))}
           </div>
 
-          <p className="mt-6 text-sm text-blue-100/70">
-            <b className="text-white">{totalTopics}</b> guides across{" "}
-            <b className="text-white">{CATEGORIES.length}</b> topics
+          <p className="mt-6 text-sm text-slate-500">
+            <b className="text-[#0b2545]">{totalTopics}</b> guides across{" "}
+            <b className="text-[#0b2545]">{CATEGORIES.length}</b> topics
           </p>
         </div>
       </section>
 
-      <div className="relative z-10 mx-auto -mt-14 max-w-[1200px] px-4 pb-20 sm:px-6">
+      <div className="relative mx-auto max-w-[1200px] px-4 pb-20 sm:px-6">
         {/* ───────── CATEGORY CARDS ───────── */}
         {!searching && (
           <nav
@@ -319,20 +433,20 @@ export default function HelpCenter() {
               <a
                 key={c.id}
                 href={`#${c.id}`}
-                className="group flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-lg shadow-slate-200/70 transition duration-300 hover:-translate-y-2 hover:shadow-2xl sm:p-5"
+                className="group flex flex-col items-center rounded-2xl border border-blue-100 bg-white p-4 text-center shadow-lg shadow-blue-900/10 transition duration-300 hover:-translate-y-2 hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-500/20 sm:p-5"
               >
                 <span
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${c.grad} text-2xl shadow-md transition group-hover:scale-110 group-hover:-rotate-6`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${c.grad} text-white shadow-md transition duration-300 group-hover:-rotate-6 group-hover:scale-110`}
                 >
-                  {c.icon}
+                  <Icon name={c.icon} className="h-7 w-7" />
                 </span>
-                <span className="mt-3 text-sm font-bold text-[#0f2350] sm:text-base">
+                <span className="mt-3 text-sm font-bold text-[#0b2545] sm:text-base">
                   {c.title}
                 </span>
                 <span className="mt-1 hidden text-xs leading-5 text-slate-500 sm:block">
                   {c.blurb}
                 </span>
-                <span className="mt-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
+                <span className="mt-2 rounded-full bg-[#e6f1ff] px-2.5 py-0.5 text-[11px] font-semibold text-[#1976d2]">
                   {c.topics.length} guides
                 </span>
               </a>
@@ -342,9 +456,11 @@ export default function HelpCenter() {
 
         {/* ───────── SECTIONS ───────── */}
         {results.length === 0 ? (
-          <div className="mx-auto max-w-md rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
-            <div className="text-4xl">🔍</div>
-            <p className="mt-3 text-lg font-bold text-slate-800">
+          <div className="mx-auto max-w-md rounded-3xl border border-dashed border-blue-200 bg-white p-10 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e6f1ff] text-[#1976d2]">
+              <Icon name="search" className="h-7 w-7" />
+            </span>
+            <p className="mt-4 text-lg font-bold text-[#0b2545]">
               No results for “{query}”
             </p>
             <p className="mt-1 text-sm text-slate-500">
@@ -352,8 +468,9 @@ export default function HelpCenter() {
               right.
             </p>
             <button
+              type="button"
               onClick={() => setQuery("")}
-              className="mt-5 rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="mt-5 rounded-full bg-[#1976d2] px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition duration-200 hover:-translate-y-0.5 hover:bg-[#1565c0] active:scale-95"
             >
               Clear search
             </button>
@@ -364,13 +481,13 @@ export default function HelpCenter() {
               <section
                 key={c.id}
                 id={c.id}
-                className="scroll-mt-28 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-md"
+                className="scroll-mt-28 overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-md shadow-blue-900/5 transition duration-300 hover:shadow-xl hover:shadow-blue-500/10"
               >
                 <div
                   className={`flex items-center gap-4 bg-gradient-to-r ${c.grad} px-5 py-4 text-white sm:px-6`}
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 text-2xl ring-1 ring-white/30">
-                    {c.icon}
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
+                    <Icon name={c.icon} className="h-6 w-6" />
                   </span>
                   <div>
                     <h2 className="text-lg font-extrabold sm:text-xl">
@@ -382,7 +499,7 @@ export default function HelpCenter() {
                   </div>
                 </div>
 
-                <ul className="divide-y divide-slate-100 px-3 py-2 sm:px-4">
+                <ul className="divide-y divide-blue-50 px-3 py-2 sm:px-4">
                   {c.topics.map((t) => {
                     const key = `${c.id}:${t.q}`;
                     const isOpen = searching || open === key;
@@ -392,14 +509,14 @@ export default function HelpCenter() {
                           type="button"
                           onClick={() => setOpen(open === key ? null : key)}
                           aria-expanded={isOpen}
-                          className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-4 text-left text-sm font-semibold text-slate-800 transition hover:bg-slate-50 hover:text-blue-700 sm:text-base"
+                          className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-4 text-left text-sm font-semibold text-[#0b2545] transition hover:bg-[#f3f8ff] hover:text-[#1976d2] sm:text-base"
                         >
                           <span>{t.q}</span>
                           <span
-                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base font-bold transition ${
+                            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-base font-bold transition duration-300 ${
                               isOpen
                                 ? `${c.accent} rotate-45 text-white`
-                                : "bg-slate-100 text-slate-500"
+                                : "bg-[#e6f1ff] text-[#1976d2]"
                             }`}
                             aria-hidden="true"
                           >
@@ -409,7 +526,7 @@ export default function HelpCenter() {
 
                         {isOpen && (
                           <div className="px-2 pb-5">
-                            <ol className="space-y-3 rounded-2xl bg-slate-50 p-4">
+                            <ol className="space-y-3 rounded-2xl bg-[#f3f8ff] p-4 ring-1 ring-blue-100">
                               {t.steps.map((s, i) => (
                                 <li
                                   key={i}
@@ -427,7 +544,7 @@ export default function HelpCenter() {
                             {t.link && (
                               <Link
                                 href={t.link.href}
-                                className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:gap-2 hover:text-blue-800"
+                                className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-[#1976d2] transition-all hover:gap-2 hover:text-[#0b2545]"
                               >
                                 {t.link.label} <span aria-hidden="true">→</span>
                               </Link>
@@ -444,9 +561,15 @@ export default function HelpCenter() {
         )}
 
         {/* ───────── STILL NEED HELP ───────── */}
-        <section className="relative mt-16 overflow-hidden rounded-3xl bg-gradient-to-br from-[#0b1736] via-[#12297a] to-blue-700 p-8 text-white shadow-2xl sm:p-12">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-sky-400/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-10 h-56 w-56 rounded-full bg-violet-500/30 blur-3xl" />
+        <section
+          className="relative mt-16 overflow-hidden rounded-3xl p-8 text-white shadow-2xl shadow-blue-900/30 sm:p-12"
+          style={{
+            background:
+              "linear-gradient(135deg, #0b2545 0%, #0d3068 50%, #1976d2 100%)",
+          }}
+        >
+          <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-sky-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-10 h-56 w-56 rounded-full bg-blue-400/25 blur-3xl" />
 
           <div className="relative text-center">
             <h2 className="text-2xl font-extrabold sm:text-4xl">
@@ -458,29 +581,35 @@ export default function HelpCenter() {
           </div>
 
           <div className="relative mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur">
-              <div className="text-3xl">🤖</div>
-              <p className="mt-2 font-bold">Ask Bexi AI</p>
+            <div className="group rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/15">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-sky-200 transition duration-300 group-hover:scale-110">
+                <Icon name="bot" className="h-6 w-6" />
+              </span>
+              <p className="mt-3 font-bold">Ask Bexi AI</p>
               <p className="mt-1 text-sm text-blue-100/80">
                 Tap the chat bubble at the bottom right.
               </p>
             </div>
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
-              className="rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition hover:bg-white/20"
+              className="group rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/20"
             >
-              <div className="text-3xl">✉️</div>
-              <p className="mt-2 font-bold">Email us</p>
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-sky-200 transition duration-300 group-hover:scale-110">
+                <Icon name="mail" className="h-6 w-6" />
+              </span>
+              <p className="mt-3 font-bold">Email us</p>
               <p className="mt-1 break-all text-sm text-blue-100/80">
                 {SUPPORT_EMAIL}
               </p>
             </a>
             <Link
               href="/tutorials"
-              className="rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition hover:bg-white/20"
+              className="group rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/20"
             >
-              <div className="text-3xl">🎬</div>
-              <p className="mt-2 font-bold">Watch tutorials</p>
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-sky-200 transition duration-300 group-hover:scale-110">
+                <Icon name="play" className="h-6 w-6" />
+              </span>
+              <p className="mt-3 font-bold">Watch tutorials</p>
               <p className="mt-1 text-sm text-blue-100/80">
                 Short step-by-step guides.
               </p>

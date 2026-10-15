@@ -284,19 +284,19 @@ export const resources: Resource[] = [
       },
     ],
   },
-  {
+    {
     id: "stories",
     title: "Success Stories",
     desc: "Real stores built with Buildexom",
-    href: "/stories",
+    href: "/success-stories",
     icon: "🏆",
     theme: "slate",
     badge: "Coming soon",
     groups: [
       {
         title: "Real stores, real results",
-        href: "/stories",
-        links: [{ label: "Read success stories", href: "/stories" }],
+        href: "/success-stories",
+        links: [{ label: "Read success stories", href: "/success-stories" }],
       },
     ],
   },
