@@ -76,7 +76,7 @@ const columns = [
       { name: "FAQs", href: "/#faq" },
       { name: "E-commerce Guides", href: "/guides" },
       { name: "AI Tools Guide", href: "/ai-guide" },
-      { name: "Success Stories", href: "/stories" },
+      { name: "Success Stories", href: "/success-stories" },
     ],
   },
   {
@@ -138,40 +138,41 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="relative overflow-hidden border-t border-blue-100 bg-gradient-to-b from-[#f3f8ff] to-[#e3eeff]">
-      {/* Decorative glows */}
+    <footer className="relative overflow-hidden bg-gradient-to-br from-[#071a33] via-[#0b2545] to-[#1556a8] text-white">
+      {/* Top accent strip */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-24 top-0 h-72 w-72 rounded-full bg-blue-300/30 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-sky-300/30 blur-3xl"
+        className="h-1 w-full bg-gradient-to-r from-[#4a9bf0] via-[#1976d2] to-[#4a9bf0]"
       />
 
       <div className="relative mx-auto max-w-[1200px] px-5 pb-8 pt-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
           {/* Brand */}
           <div>
-            <Link href="/#top" aria-label="Buildexom home" className="inline-flex flex-col">
+            <Link
+              href="/#top"
+              aria-label="Buildexom home"
+              className="inline-flex rounded-2xl bg-white px-4 py-3 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
+            >
               <Logo />
-              <span className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-700">
-                AI Powered Store Builder
-              </span>
             </Link>
 
-            <p className="mt-5 max-w-xs text-[15px] leading-7 text-slate-600">
+            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200">
+              AI Powered Store Builder
+            </p>
+
+            <p className="mt-5 max-w-xs text-[15px] leading-7 text-blue-100/80">
               AI-powered store builder. Describe your business and go live in minutes.
             </p>
 
-            {/* Social icons (yahan id lagi hai, blink isi par hoga) */}
+            {/* Social icons */}
             <div id="contact-socials" className="mt-6 flex gap-3">
               {socials.map((s) => (
                 <a
                   key={s.name}
                   href={s.href}
                   aria-label={s.name}
-                  className="glass-card flex h-11 w-11 items-center justify-center rounded-full text-blue-700 transition duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-blue-700 hover:to-sky-500 hover:text-white"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
                 >
                   <svg
                     width="18"
@@ -193,15 +194,15 @@ export default function Footer() {
           {/* Link columns */}
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-brand-navy">
+              <h3 className="text-sm font-extrabold uppercase tracking-wider text-white">
                 {col.title}
               </h3>
-              <ul className="mt-5 space-y-3">
+              <ul className="mt-4 space-y-3">
                 {col.links.map((l) => (
                   <li key={l.name}>
                     <Link
                       href={l.href}
-                      className="inline-block text-[15px] font-medium text-slate-600 transition duration-200 hover:translate-x-1 hover:text-blue-700"
+                      className="inline-block text-[15px] font-medium text-blue-100/80 transition duration-200 hover:translate-x-1 hover:text-white"
                     >
                       {l.name}
                     </Link>
@@ -213,7 +214,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-blue-200/70 pt-6 text-sm text-slate-500">
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-6 text-sm text-blue-200/80">
           <p>© {new Date().getFullYear()} Buildexom. All rights reserved.</p>
           <p className="font-medium">
             Made in Pakistan <span aria-hidden>🇵🇰</span>

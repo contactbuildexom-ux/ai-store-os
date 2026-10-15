@@ -5,45 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { resources, type Resource } from "@/lib/resources";
 
-const THEME: Record<
-  Resource["theme"],
-  { grad: string; badge: string; dot: string }
-> = {
-  blue: {
-    grad: "from-sky-500 to-indigo-600",
-    badge: "bg-blue-50 text-blue-700",
-    dot: "bg-blue-500",
-  },
-  amber: {
-    grad: "from-amber-400 to-orange-600",
-    badge: "bg-orange-50 text-orange-700",
-    dot: "bg-orange-500",
-  },
-  violet: {
-    grad: "from-violet-500 to-fuchsia-600",
-    badge: "bg-violet-50 text-violet-700",
-    dot: "bg-violet-500",
-  },
-  emerald: {
-    grad: "from-emerald-400 to-teal-600",
-    badge: "bg-emerald-50 text-emerald-700",
-    dot: "bg-emerald-500",
-  },
-  rose: {
-    grad: "from-rose-400 to-pink-600",
-    badge: "bg-rose-50 text-rose-700",
-    dot: "bg-rose-500",
-  },
-  teal: {
-    grad: "from-teal-400 to-cyan-600",
-    badge: "bg-teal-50 text-teal-700",
-    dot: "bg-teal-500",
-  },
-  slate: {
-    grad: "from-slate-500 to-slate-700",
-    badge: "bg-slate-100 text-slate-700",
-    dot: "bg-slate-500",
-  },
+const THEME: Record<Resource["theme"], { grad: string }> = {
+  blue: { grad: "from-sky-500 to-indigo-600" },
+  amber: { grad: "from-amber-400 to-orange-600" },
+  violet: { grad: "from-violet-500 to-fuchsia-600" },
+  emerald: { grad: "from-emerald-400 to-teal-600" },
+  rose: { grad: "from-rose-400 to-pink-600" },
+  teal: { grad: "from-teal-400 to-cyan-600" },
+  slate: { grad: "from-slate-500 to-slate-700" },
 };
 
 const CSS = `
@@ -71,18 +40,130 @@ function Chevron({ className = "" }: { className?: string }) {
   );
 }
 
-/* ───────────────────────── DESKTOP MEGA MENU ───────────────────────── */
+/* ───────────────────────── PROFESSIONAL ICONS ───────────────────────── */
+
+function ResourceIcon({
+  resource,
+  className = "h-5 w-5",
+}: {
+  resource: Resource;
+  className?: string;
+}) {
+  const key = `${resource.id} ${resource.title}`.toLowerCase();
+
+  let kind = "default";
+  if (/help|support/.test(key)) kind = "help";
+  else if (/\bai\b/.test(key)) kind = "ai";
+  else if (/blog/.test(key)) kind = "blog";
+  else if (/tutorial|video/.test(key)) kind = "tutorials";
+  else if (/faq|question/.test(key)) kind = "faq";
+  else if (/e-?commerce|guide/.test(key)) kind = "ecommerce";
+  else if (/success|stories|case/.test(key)) kind = "success";
+
+  let paths: React.ReactNode;
+  switch (kind) {
+    case "help":
+      paths = (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="m4.93 4.93 4.24 4.24" />
+          <path d="m14.83 9.17 4.24-4.24" />
+          <path d="m14.83 14.83 4.24 4.24" />
+          <path d="m9.17 14.83-4.24 4.24" />
+        </>
+      );
+      break;
+    case "blog":
+      paths = (
+        <>
+          <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+          <path d="M18 14h-8" />
+          <path d="M15 18h-5" />
+          <path d="M10 6h8v4h-8V6Z" />
+        </>
+      );
+      break;
+    case "tutorials":
+      paths = (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <polygon points="10 8 16 12 10 16 10 8" />
+        </>
+      );
+      break;
+    case "faq":
+      paths = (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <path d="M12 17h.01" />
+        </>
+      );
+      break;
+    case "ecommerce":
+      paths = (
+        <>
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" />
+          <path d="M3 6h18" />
+          <path d="M16 10a4 4 0 0 1-8 0" />
+        </>
+      );
+      break;
+    case "ai":
+      paths = (
+        <>
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+          <path d="M19 3v4" />
+          <path d="M21 5h-4" />
+        </>
+      );
+      break;
+    case "success":
+      paths = (
+        <>
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+          <path d="M4 22h16" />
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+        </>
+      );
+      break;
+    default:
+      paths = (
+        <>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </>
+      );
+  }
+
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths}
+    </svg>
+  );
+}
+
+/* ───────────────────────── DESKTOP DROPDOWN ───────────────────────── */
 
 export function DesktopResources() {
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState(resources[0].id);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  const active = resources.find((r) => r.id === activeId) ?? resources[0];
-  const theme = THEME[active.theme];
-  const single = active.groups.length === 1;
   const isHere = resources.some((r) => pathname?.startsWith(r.href));
 
   const openNow = () => {
@@ -119,7 +200,12 @@ export function DesktopResources() {
   }, []);
 
   return (
-    <div ref={root} onMouseEnter={openNow} onMouseLeave={closeSoon}>
+    <div
+      ref={root}
+      className="relative"
+      onMouseEnter={openNow}
+      onMouseLeave={closeSoon}
+    >
       <style>{CSS}</style>
 
       {/* Trigger */}
@@ -149,165 +235,76 @@ export function DesktopResources() {
 
       {/* Panel */}
       <div
-        className={`absolute left-1/2 top-full z-50 w-[min(980px,calc(100vw-2rem))] -translate-x-1/2 transition-all duration-300 ease-out ${
+        className={`absolute left-1/2 top-full z-50 w-[340px] max-w-[calc(100vw-2rem)] -translate-x-1/2 transition-all duration-300 ease-out ${
           open
             ? "visible translate-y-0 opacity-100"
             : "pointer-events-none invisible -translate-y-2 opacity-0"
         }`}
       >
-        <div className="grid grid-cols-[290px_1fr] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/15">
-          {/* LEFT: list */}
-          <div className="flex flex-col border-r border-slate-100 bg-slate-50/80 p-3">
-            <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-              Resources
-            </p>
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/15">
+          <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            Resources
+          </p>
 
-            <ul className="space-y-1">
-              {resources.map((r) => {
-                const t = THEME[r.theme];
-                const on = r.id === activeId;
-                return (
-                  <li key={r.id}>
-                    <Link
-                      href={r.href}
-                      onMouseEnter={() => setActiveId(r.id)}
-                      onFocus={() => setActiveId(r.id)}
-                      onClick={() => setOpen(false)}
-                      className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200 ${
-                        on
-                          ? "bg-white shadow-md ring-1 ring-slate-200"
-                          : "hover:bg-white/70"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-lg shadow-sm transition-transform duration-300 ${
-                          on ? "scale-110 -rotate-6" : ""
-                        }`}
-                      >
-                        {r.icon}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2 text-sm font-bold text-[#0f2350]">
-                          {r.title}
-                          {r.badge && (
-                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
-                              {r.badge}
-                            </span>
-                          )}
-                        </span>
-                        <span className="block truncate text-xs text-slate-500">
-                          {r.desc}
-                        </span>
-                      </span>
-                      <span
-                        aria-hidden="true"
-                        className={`text-slate-400 transition-all duration-200 ${
-                          on
-                            ? "translate-x-0 opacity-100"
-                            : "-translate-x-1 opacity-0"
-                        }`}
-                      >
-                        →
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <div className="mt-3 rounded-2xl bg-gradient-to-br from-[#0b1736] to-blue-700 p-4 text-white">
-              <p className="text-sm font-bold">Need help fast?</p>
-              <p className="mt-0.5 text-xs text-blue-100/80">
-                Ask Bexi AI, the chat bubble at the bottom right.
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT: content */}
-          <div
-            key={active.id}
-            className="rm-in max-h-[min(72vh,580px)] overflow-y-auto"
-          >
-            <div
-              className={`flex items-center justify-between gap-4 bg-gradient-to-r ${theme.grad} px-6 py-5 text-white`}
-            >
-              <div className="flex items-center gap-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-2xl ring-1 ring-white/30">
-                  {active.icon}
-                </span>
-                <div>
-                  <h3 className="text-lg font-extrabold">{active.title}</h3>
-                  <p className="text-sm text-white/85">{active.desc}</p>
-                </div>
-              </div>
-              <Link
-                href={active.href}
-                onClick={() => setOpen(false)}
-                className="hidden shrink-0 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0f2350] shadow-md transition hover:scale-105 sm:inline-block"
-              >
-                Explore →
-              </Link>
-            </div>
-
-            <div className="grid gap-x-8 gap-y-6 p-6 sm:grid-cols-2">
-              {active.groups.map((g, gi) => (
-                <div key={g.title} className={single ? "sm:col-span-2" : ""}>
-                  <p className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-                    <span className={`h-2 w-2 rounded-full ${theme.dot}`} />
-                    {g.href ? (
-                      <Link
-                        href={g.href}
-                        onClick={() => setOpen(false)}
-                        className="transition hover:text-blue-600"
-                      >
-                        {g.title}
-                      </Link>
-                    ) : (
-                      g.title
-                    )}
-                  </p>
-
-                  <ul
-                    className={
-                      single
-                        ? "grid gap-x-8 gap-y-1 sm:grid-cols-2"
-                        : "space-y-1"
-                    }
+          <ul className="space-y-1">
+            {resources.map((r, i) => {
+              const t = THEME[r.theme];
+              const current = pathname?.startsWith(r.href);
+              return (
+                <li
+                  key={r.id}
+                  className="rm-up"
+                  style={{ animationDelay: `${i * 35}ms` }}
+                >
+                  <Link
+                    href={r.href}
+                    onClick={() => setOpen(false)}
+                    className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm hover:ring-1 hover:ring-slate-200 ${
+                      current ? "bg-slate-50 ring-1 ring-slate-200" : ""
+                    }`}
                   >
-                    {g.links.map((l, li) => (
-                      <li
-                        key={l.label}
-                        className="rm-up"
-                        style={{
-                          animationDelay: `${Math.min(gi * 70 + li * 30, 420)}ms`,
-                        }}
-                      >
-                        <Link
-                          href={l.href}
-                          onClick={() => setOpen(false)}
-                          className="group/link flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700"
-                        >
-                          <span
-                            aria-hidden="true"
-                            className="mt-0.5 text-blue-400 transition-transform duration-200 group-hover/link:translate-x-1"
-                          >
-                            ›
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110`}
+                    >
+                      <ResourceIcon resource={r} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2 text-sm font-bold text-[#0f2350]">
+                        {r.title}
+                        {r.badge && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                            {r.badge}
                           </span>
-                          <span>
-                            <span className="font-medium">{l.label}</span>
-                            {l.desc && (
-                              <span className="block text-xs text-slate-400">
-                                {l.desc}
-                              </span>
-                            )}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+                        )}
+                      </span>
+                      <span className="block truncate text-xs text-slate-500">
+                        {r.desc}
+                      </span>
+                    </span>
+                    <svg
+                      className="h-4 w-4 shrink-0 -translate-x-1 text-slate-400 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m13 6 6 6-6 6" />
+                    </svg>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-3 rounded-2xl bg-gradient-to-br from-[#0b1736] to-blue-700 p-4 text-white">
+            <p className="text-sm font-bold">Need help fast?</p>
+            <p className="mt-0.5 text-xs text-blue-100/80">
+              Ask Bexi AI, the chat bubble at the bottom right.
+            </p>
           </div>
         </div>
       </div>
@@ -360,9 +357,9 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
                       className="flex flex-1 items-center gap-3 px-3 py-3"
                     >
                       <span
-                        className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-base`}
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-white`}
                       >
-                        {r.icon}
+                        <ResourceIcon resource={r} className="h-4 w-4" />
                       </span>
                       <span>
                         <span className="flex items-center gap-2 text-sm font-bold text-[#0f2350]">
