@@ -12,7 +12,6 @@ type Product = {
 };
 
 type CartItem = Product & { quantity: number };
-type PaymentMethod = { provider_name: string; account_title: string; account_number: string };
 type DeliverySettings = {
     delivery_fee?: number | string | null;
     city_rate?: number | string | null;
@@ -21,13 +20,12 @@ type DeliverySettings = {
     free_delivery_above?: number | string | null;
     estimated_days?: string | null;
 };
-type Store = { id: string; name: string; slug: string; plan: string; whatsapp_number: string };
+type Store = { id: string; name: string; slug: string; plan: string; whatsapp_number: string; accepts_cod: boolean; accepts_advance: boolean; advance_percentage: number };
 type Props = {
     store: Store;
     settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null } | null;
     products: Product[];
     delivery: DeliverySettings | null;
-    paymentMethods: PaymentMethod[];
 };
 
 function money(value: number | string) {
@@ -42,7 +40,7 @@ function whatsappPhone(value: string) {
     return phone;
 }
 
-export default function StorefrontClient({ store, settings, products, delivery, paymentMethods }: Props) {
+export default function StorefrontClient({ store, settings, products, delivery }: Props) {
     const themeColor = settings?.theme_color || '#1d7555';
     const bannerText = settings?.banner_text || `Welcome to ${store.name}`;
     const isPro = ['pro', 'business'].includes(store.plan.toLowerCase());
@@ -51,6 +49,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
     const [city, setCity] = useState(delivery?.store_city || '');
+    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'advance' | ''>(() => store.accepts_cod ? 'cod' : store.accepts_advance ? 'advance' : '');
     const [orderStatus, setOrderStatus] = useState('');
     const [orderError, setOrderError] = useState(false);
     const [whatsappLink, setWhatsappLink] = useState('');
@@ -62,6 +61,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const freeDeliveryAbove = Number(delivery?.free_delivery_above || 0);
     const deliveryFee = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove ? 0 : (Number.isFinite(baseDeliveryFee) ? baseDeliveryFee : 0);
     const finalAmount = subtotal > 0 ? subtotal + deliveryFee : 0;
+    const advanceAmount = Math.round((finalAmount * store.advance_percentage / 100 + Number.EPSILON) * 100) / 100;
 
     function addToCart(product: Product) {
         setCart((current) => {
@@ -100,6 +100,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     customer_phone: customerPhone,
                     shipping_address: customerAddress,
                     city,
+                    payment_method: paymentMethod,
                     items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })),
                     is_whatsapp_order: isPro,
                 }),
@@ -126,6 +127,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     `Subtotal: ${money(result.subtotal)}`,
                     `Delivery: ${deliveryFee === 0 ? 'Free' : money(result.delivery_fee)}`,
                     `Total: ${money(result.total_amount)}`,
+                    `Payment method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(result.advance_amount)})` : 'Cash on Delivery'}`,
                     `Order reference: ${result.order.id}`,
                 ].join('\n');
                 const destination = `https://wa.me/${merchantPhone}?text=${encodeURIComponent(summary)}`;
@@ -133,7 +135,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 else setWhatsappLink(destination);
                 setOrderStatus(`Order saved as pending. ${whatsappWindow ? 'WhatsApp opened in a new tab to send your order details.' : 'Your order is saved. Continue to WhatsApp to send the order details.'}`);
             } else {
-                setOrderStatus(`Order ${result.order.id} placed successfully and saved as pending. Please use the payment details below to complete payment.`);
+                setOrderStatus(paymentMethod === 'advance'
+                    ? `Order ${result.order.id} placed successfully. Transfer ${money(result.advance_amount)} (${store.advance_percentage}% advance) using the account details in the store footer.`
+                    : `Order ${result.order.id} placed successfully and saved as pending. Pay ${money(result.total_amount)} on delivery.`);
             }
 
             setCart([]);
@@ -148,9 +152,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             setLoading(false);
         }
     }
-
-    const jazzcash = paymentMethods.find((method) => method.provider_name.toLowerCase().includes('jazz'));
-    const easypaisa = paymentMethods.find((method) => method.provider_name.toLowerCase().includes('easy'));
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
@@ -182,22 +183,27 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                             <div className="space-y-2 border-t border-slate-100 pt-4 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{money(subtotal)}</span></div><div className="flex justify-between text-slate-500"><span>Delivery fee</span><span>{deliveryFee === 0 ? 'Free' : money(deliveryFee)}</span></div>{freeDeliveryAbove > 0 && <p className="text-[10px] text-emerald-700">Free delivery on orders over {money(freeDeliveryAbove)}.</p>}<div className="flex justify-between border-t border-slate-100 pt-3 text-sm font-bold text-slate-900"><span>Total</span><span style={{ color: themeColor }}>{money(finalAmount)}</span></div></div>
 
-                            {!isPro && <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-blue-900">Pay the merchant directly</p><div className="mt-2 space-y-2">{[jazzcash, easypaisa].filter((method) => method?.account_number).map((method) => <div key={method!.provider_name} className="flex items-center justify-between gap-2 text-xs"><span className="text-blue-800">{method!.provider_name}{method!.account_title ? ` · ${method!.account_title}` : ''}</span><span className="font-semibold text-blue-950">{method!.account_number}</span></div>)}{!jazzcash?.account_number && !easypaisa?.account_number && <p className="text-[11px] leading-5 text-blue-800">The merchant has not added JazzCash or Easypaisa account details. You can still submit your order.</p>}</div></div>}
-
                             <form onSubmit={handleCheckout} className="space-y-3 border-t border-slate-100 pt-4">
                                 <p className="text-xs font-semibold text-slate-800">Delivery details</p>
                                 <input type="text" autoComplete="name" placeholder="Full name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                 <input type="tel" autoComplete="tel" placeholder="Phone number" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} required maxLength={40} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                 <input type="text" autoComplete="address-level2" placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                 <textarea autoComplete="street-address" placeholder="Full delivery address" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} required maxLength={500} rows={3} className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                                <button type="submit" disabled={loading || cart.length === 0} className="w-full rounded-lg px-4 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>{loading ? 'Saving order…' : isPro ? 'Place order & continue to WhatsApp' : 'Place order'}</button>
+                                <fieldset className="space-y-2" disabled={loading}>
+                                    <legend className="text-xs font-semibold text-slate-800">Payment method</legend>
+                                    {!store.accepts_cod && !store.accepts_advance ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-800">The store has not enabled a checkout payment method. Please contact the merchant.</p> : <>
+                                        {store.accepts_cod && <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 text-xs transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50"><input type="radio" name="payment_method" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="size-4 accent-emerald-700" /><span className="flex-1"><span className="block font-semibold text-slate-800">Cash on Delivery</span><span className="mt-0.5 block text-[10px] text-slate-500">Pay the full amount when your order arrives.</span></span><span className="font-semibold text-slate-700">{money(finalAmount)}</span></label>}
+                                        {store.accepts_advance && <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-3 text-xs transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50"><input type="radio" name="payment_method" value="advance" checked={paymentMethod === 'advance'} onChange={() => setPaymentMethod('advance')} className="size-4 accent-emerald-700" /><span className="flex-1"><span className="block font-semibold text-slate-800">Advance payment</span><span className="mt-0.5 block text-[10px] text-slate-500">Transfer {store.advance_percentage}% now; pay the remainder on delivery.</span></span><span className="text-right"><span className="block font-semibold text-slate-700">{money(advanceAmount)}</span><span className="text-[9px] text-slate-400">due in advance</span></span></label>}
+                                    </>}
+                                </fieldset>
+                                {paymentMethod === 'advance' && store.accepts_advance && <p className="rounded-lg bg-blue-50 px-3 py-2 text-[10px] leading-4 text-blue-800">Transfer the advance to the account shown in the payment details at the bottom of this page.</p>}
+                                <button type="submit" disabled={loading || cart.length === 0 || !paymentMethod || (!store.accepts_cod && !store.accepts_advance)} className="w-full rounded-lg px-4 py-3 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>{loading ? 'Saving order…' : isPro ? 'Place order & continue to WhatsApp' : 'Place order'}</button>
                             </form>
                             {orderStatus && <div role={orderError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-[11px] leading-5 ${orderError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>{orderStatus}{whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex font-semibold underline">Open WhatsApp to send order</a>}</div>}
                         </div>
                     </section>
                 </aside>
             </main>
-            <footer className="border-t border-slate-200 bg-white px-5 py-5 text-center text-[10px] text-slate-500">Secure order request · {store.name}</footer>
         </div>
     );
 }

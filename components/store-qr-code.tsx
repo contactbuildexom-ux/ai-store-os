@@ -1,18 +1,24 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Download, ExternalLink, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 type StoreQRCodeProps = {
   storeSlug: string;
+  storePath?: string;
 };
 
-export function StoreQRCode({ storeSlug }: StoreQRCodeProps) {
+export function StoreQRCode({ storeSlug, storePath }: StoreQRCodeProps) {
   const reactId = useId();
   const downloadId = `store-qr-${reactId.replace(/:/g, '')}`;
   const safeSlug = storeSlug.trim();
-  const storeUrl = `https://ai-store-os.vercel.app/store/${encodeURIComponent(safeSlug)}`;
+  const path = storePath || `/store/${encodeURIComponent(safeSlug)}`;
+  const [storeUrl, setStoreUrl] = useState(() => `https://ai-store-os.vercel.app${path}`);
+
+  useEffect(() => {
+    setStoreUrl(new URL(path, window.location.origin).toString());
+  }, [path]);
 
   function downloadQrCode() {
     const svg = document.getElementById(downloadId);
@@ -55,6 +61,12 @@ export function StoreQRCode({ storeSlug }: StoreQRCodeProps) {
             title={`QR code for ${safeSlug} storefront`}
             bgColor="#ffffff"
             fgColor="#0f172a"
+            imageSettings={{
+              src: "/logo.jpg",
+              height: 40,
+              width: 40,
+              excavate: true, // Yeh QR dots ko logo ke peechay se hata kar saaf jagah banata hai
+            }}
           />
         </div>
         <a

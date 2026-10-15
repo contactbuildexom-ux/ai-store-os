@@ -12,6 +12,8 @@ type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
 type Category = { id: string; name: string };
 type Order = { id: string; customer_name: string; customer_phone: string; total_amount: number | string; status?: string | null; created_at?: string; items?: unknown[] };
+type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
+type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
 const PLAN_DETAILS: Record<Plan, { title: string; productLimit: number | null; categoryLimit: number | null; perCategoryLimit?: number; checkout: string }> = {
     basic: { title: 'Basic', productLimit: 20, categoryLimit: 2, checkout: 'Standard checkout' },
@@ -52,8 +54,11 @@ export default function MerchantDashboardMaster() {
     const [logoUrl, setLogoUrl] = useState('');
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [whatsappNumber, setWhatsappNumber] = useState('');
-    const [jazzcashNumber, setJazzcashNumber] = useState('');
-    const [easypaisaNumber, setEasypaisaNumber] = useState('');
+    const [acceptsCod, setAcceptsCod] = useState(true);
+    const [acceptsAdvance, setAcceptsAdvance] = useState(false);
+    const [advancePercentage, setAdvancePercentage] = useState('50');
+    const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({ bank_name: '', account_title: '', account_number: '', iban: '', jazzcash_number: '', easypaisa_number: '' });
+    const [socialLinks, setSocialLinks] = useState<StoreSocialLinks>({ instagram: '', facebook: '', youtube: '', tiktok: '', x: '' });
 
     // Data states
     const [orders, setOrders] = useState<Order[]>([]);
@@ -143,8 +148,27 @@ export default function MerchantDashboardMaster() {
                 setBannerText(settingsData.settings.banner_text || '');
                 setLogoUrl(settingsData.settings.logo_url || '');
                 setWhatsappNumber(settingsData.settings.whatsapp_number || '');
-                setJazzcashNumber(settingsData.settings.jazzcash_number || '');
-                setEasypaisaNumber(settingsData.settings.easypaisa_number || '');
+                setAcceptsCod(settingsData.settings.accepts_cod ?? true);
+                setAcceptsAdvance(settingsData.settings.accepts_advance ?? false);
+                setAdvancePercentage(String(settingsData.settings.advance_percentage ?? 50));
+                setPaymentDetails({
+                    bank_name: settingsData.settings.payment_details?.bank_name || '',
+                    account_title: settingsData.settings.payment_details?.account_title || '',
+                    account_number: settingsData.settings.payment_details?.account_number || '',
+                    iban: settingsData.settings.payment_details?.iban || '',
+                    jazzcash_number: settingsData.settings.payment_details?.jazzcash_number || settingsData.settings.jazzcash_number || '',
+                    easypaisa_number: settingsData.settings.payment_details?.easypaisa_number || settingsData.settings.easypaisa_number || '',
+                });
+                const loadedSocialLinks = settingsData.settings.social_links && typeof settingsData.settings.social_links === 'object'
+                    ? settingsData.settings.social_links
+                    : {};
+                setSocialLinks({
+                    instagram: loadedSocialLinks.instagram || '',
+                    facebook: loadedSocialLinks.facebook || '',
+                    youtube: loadedSocialLinks.youtube || '',
+                    tiktok: loadedSocialLinks.tiktok || '',
+                    x: loadedSocialLinks.x || '',
+                });
             }
         } catch (err) {
             console.error('Error loading store:', err);
@@ -175,18 +199,24 @@ export default function MerchantDashboardMaster() {
         try {
             if (!resolvedStoreId) throw new Error('Store is still loading. Please try again in a moment.');
             const savedLogoUrl = logoFile ? await uploadStoreImage(logoFile, resolvedStoreId) : logoUrl;
-            const res = await fetch('/api/stores/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const settingsPayload: Record<string, unknown> = {
                     store_id: resolvedStoreId,
                     theme_color: themeColor,
                     banner_text: bannerText,
                     logo_url: savedLogoUrl,
                     whatsapp_number: canUseWhatsapp ? whatsappNumber : null,
-                    jazzcash_number: jazzcashNumber,
-                    easypaisa_number: easypaisaNumber
-                })
+                };
+            if (activeTab === 'payments') {
+                settingsPayload.accepts_cod = acceptsCod;
+                settingsPayload.accepts_advance = acceptsAdvance;
+                settingsPayload.advance_percentage = Number(advancePercentage);
+                settingsPayload.payment_details = paymentDetails;
+            }
+            if (activeTab === 'branding') settingsPayload.social_links = socialLinks;
+            const res = await fetch('/api/stores/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settingsPayload)
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save settings.');
@@ -482,6 +512,12 @@ export default function MerchantDashboardMaster() {
                                     <label className="block text-[11px] font-bold mb-1">Theme Color</label>
                                     <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 border rounded cursor-pointer" />
                                 </div>
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                    <div><h4 className="text-xs font-semibold text-slate-900">Social profiles</h4><p className="mt-1 text-[10px] text-slate-500">Valid profile URLs are shown as linked icons in your public storefront footer.</p></div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {(['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const).map(platform => <label key={platform} className="block text-[10px] font-semibold capitalize text-slate-600">{platform === 'x' ? 'X / Twitter' : platform}<input type="url" value={socialLinks[platform]} onChange={event => setSocialLinks(current => ({ ...current, [platform]: event.target.value }))} placeholder={`https://${platform === 'x' ? 'x.com' : `${platform}.com`}/yourprofile`} maxLength={2048} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
+                                    </div>
+                                </section>
                                 <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>
@@ -493,14 +529,33 @@ export default function MerchantDashboardMaster() {
                             <div className="mb-5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Checkout setup</p><h3 className="mt-1 text-base font-semibold text-slate-900">Payments and integrations</h3><p className="mt-1 text-xs text-slate-500">Configure the payment details customers use when ordering from your store.</p></div>
 
                             <form onSubmit={handleSaveSettings} className="space-y-4">
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">JazzCash account number</label>
-                                    <input type="text" value={jazzcashNumber} onChange={e => setJazzcashNumber(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">Easypaisa account number</label>
-                                    <input type="text" value={easypaisaNumber} onChange={e => setEasypaisaNumber(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
-                                </div>
+                                <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                    <h4 className="text-xs font-semibold text-slate-900">Accepted payment methods</h4>
+                                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                                        <input type="checkbox" checked={acceptsCod} onChange={event => setAcceptsCod(event.target.checked)} className="mt-0.5 size-4 accent-emerald-700" />
+                                        <span><span className="block text-xs font-semibold text-slate-800">Cash on Delivery</span><span className="mt-1 block text-[10px] text-slate-500">Customers pay when their order is delivered.</span></span>
+                                    </label>
+                                    <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-white p-3">
+                                        <input type="checkbox" checked={acceptsAdvance} onChange={event => setAcceptsAdvance(event.target.checked)} className="mt-0.5 size-4 accent-emerald-700" />
+                                        <span className="flex-1"><span className="block text-xs font-semibold text-slate-800">Advance payment</span><span className="mt-1 block text-[10px] text-slate-500">Customers transfer a percentage before delivery.</span>
+                                            {acceptsAdvance && <span className="mt-3 block max-w-48"><span className="mb-1 block text-[10px] font-medium text-slate-600">Advance percentage</span><span className="relative block"><input type="number" min="1" max="100" step="1" required value={advancePercentage} onChange={event => setAdvancePercentage(event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 pr-8 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" /><span className="absolute right-3 top-2 text-xs text-slate-400">%</span></span></span>}
+                                        </span>
+                                    </label>
+                                </section>
+
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                    <div><h4 className="text-xs font-semibold text-slate-900">Transfer account details</h4><p className="mt-1 text-[10px] text-slate-500">Shown to customers when they choose advance payment.</p></div>
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {([
+                                            ['bank_name', 'Bank name', 'e.g. Meezan Bank'],
+                                            ['account_title', 'Account title', 'Name on the account'],
+                                            ['account_number', 'Account number', 'Bank account number'],
+                                            ['iban', 'IBAN', 'PK00 XXXX 0000 0000'],
+                                            ['jazzcash_number', 'JazzCash number', '03XX XXXXXXX'],
+                                            ['easypaisa_number', 'EasyPaisa number', '03XX XXXXXXX'],
+                                        ] as const).map(([key, label, placeholder]) => <label key={key} className="block text-[10px] font-semibold text-slate-600">{label}<input type="text" value={paymentDetails[key]} onChange={event => setPaymentDetails(current => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} maxLength={120} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
+                                    </div>
+                                </section>
 
                                 {/* Plan Gated WhatsApp Integration */}
                                 <div className="pt-3 border-t">

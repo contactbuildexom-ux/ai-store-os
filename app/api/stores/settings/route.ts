@@ -11,6 +11,28 @@ function optionalText(value: unknown) {
   return text.length ? text : null;
 }
 
+const PAYMENT_DETAIL_KEYS = ["bank_name", "account_title", "account_number", "iban", "jazzcash_number", "easypaisa_number"] as const;
+
+function parsePaymentDetails(value: unknown) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const source = value as Record<string, unknown>;
+  const details: Record<(typeof PAYMENT_DETAIL_KEYS)[number], string> = {
+    bank_name: "",
+    account_title: "",
+    account_number: "",
+    iban: "",
+    jazzcash_number: "",
+    easypaisa_number: "",
+  };
+  for (const key of PAYMENT_DETAIL_KEYS) {
+    const candidate = source[key];
+    if (candidate === undefined || candidate === null || candidate === "") continue;
+    if (typeof candidate !== "string" || candidate.length > 120) return null;
+    details[key] = candidate.trim();
+  }
+  return details;
+}
+
 const SOCIAL_KEYS = ["instagram", "facebook", "youtube", "tiktok", "x"] as const;
 const THEME_COLORS: Record<string, string> = {
   emerald: "#1d7555",
@@ -128,7 +150,7 @@ export async function GET(req: Request) {
 
     const [settingsResult, storeResult, paymentResult] = await Promise.all([
       supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
-      supabase.from("stores").select("id, name, slug, plan, whatsapp_number").eq("id", storeId).maybeSingle(),
+      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
       supabase.from("store_payments").select("provider_name, account_number, is_active").eq("store_id", storeId).eq("is_active", true),
     ]);
 
@@ -144,7 +166,7 @@ export async function GET(req: Request) {
     if (settingsError && settingsError.code !== "PGRST116") throw settingsError;
     if (isMissingStoreColumn(storeError)) {
       const fallback = await supabase.from("stores").select("id, name, slug").eq("id", storeId).maybeSingle();
-      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null } : null;
+      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
       storeError = fallback.error;
     }
     if (storeError) throw storeError;
@@ -157,10 +179,18 @@ export async function GET(req: Request) {
       settings: settings ? {
         ...settings,
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
+        accepts_cod: store?.accepts_cod ?? true,
+        accepts_advance: store?.accepts_advance ?? false,
+        advance_percentage: store?.advance_percentage ?? 50,
+        payment_details: store?.payment_details ?? {},
         jazzcash_number: accountNumber("jazz") || settings.jazzcash_number || "",
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
         whatsapp_number: store?.whatsapp_number ?? "",
+        accepts_cod: store?.accepts_cod ?? true,
+        accepts_advance: store?.accepts_advance ?? false,
+        advance_percentage: store?.advance_percentage ?? 50,
+        payment_details: store?.payment_details ?? {},
         jazzcash_number: accountNumber("jazz"),
         easypaisa_number: accountNumber("easy"),
       },
@@ -183,6 +213,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+
+    let savedPaymentDetails: Record<string, string> | undefined;
+    if (["accepts_cod", "accepts_advance", "advance_percentage", "payment_details"].some((key) => key in body)) {
+      if (typeof body.accepts_cod !== "boolean" || typeof body.accepts_advance !== "boolean") {
+        return NextResponse.json({ error: "Choose whether to accept Cash on Delivery and advance payments." }, { status: 400 });
+      }
+      const advancePercentage = Number(body.advance_percentage);
+      if (!Number.isInteger(advancePercentage) || advancePercentage < 1 || advancePercentage > 100) {
+        return NextResponse.json({ error: "Advance percentage must be a whole number between 1 and 100." }, { status: 400 });
+      }
+      const paymentDetails = parsePaymentDetails(body.payment_details);
+      if (!paymentDetails) return NextResponse.json({ error: "Payment account details are invalid." }, { status: 400 });
+      if (body.accepts_advance && ![
+        paymentDetails.account_number,
+        paymentDetails.iban,
+        paymentDetails.jazzcash_number,
+        paymentDetails.easypaisa_number,
+      ].some(Boolean)) {
+        return NextResponse.json({ error: "Add a bank account, IBAN, JazzCash, or EasyPaisa destination before enabling advance payment." }, { status: 400 });
+      }
+      const { error: paymentSettingsError } = await supabase.from("stores").update({
+        accepts_cod: body.accepts_cod,
+        accepts_advance: body.accepts_advance,
+        advance_percentage: advancePercentage,
+        payment_details: paymentDetails,
+      }).eq("id", storeId);
+      if (paymentSettingsError) throw paymentSettingsError;
+      savedPaymentDetails = paymentDetails;
+    }
 
     if (typeof body?.whatsapp_number === "string" && body.whatsapp_number.trim()) {
       const { error: storeError } = await supabase
@@ -261,6 +320,7 @@ export async function POST(req: Request) {
       success: true,
       settings: {
         ...result.data,
+        ...(savedPaymentDetails ? { payment_details: savedPaymentDetails } : {}),
         jazzcash_number: optionalText(body?.jazzcash_number) ?? "",
         easypaisa_number: optionalText(body?.easypaisa_number) ?? "",
       },
