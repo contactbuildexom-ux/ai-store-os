@@ -1,60 +1,103 @@
 @import "tailwindcss";
 
+/* ============================================================
+   BRAND TOKENS  (@theme = Tailwind classes like text-brand-navy)
+   ============================================================ */
+@theme {
+  --color-brand-navy: #0b2545;
+  --color-brand-blue: #1976d2;
+  --color-brand-blue-dark: #1565c0;
+
+  /* dark text colours = logo navy */
+  --color-black: #0b2545;
+
+  --color-slate-900: #0b2545;
+  --color-slate-800: #0b2545;
+  --color-slate-700: #0b2545;
+  --color-slate-600: #2c4a73;
+
+  --color-gray-900: #0b2545;
+  --color-gray-800: #0b2545;
+  --color-gray-700: #0b2545;
+  --color-gray-600: #2c4a73;
+
+  --color-zinc-900: #0b2545;
+  --color-zinc-800: #0b2545;
+  --color-zinc-700: #0b2545;
+
+  --color-neutral-900: #0b2545;
+  --color-neutral-800: #0b2545;
+  --color-neutral-700: #0b2545;
+}
+
+/* ============================================================
+   COMPANY BASE (unchanged)
+   ============================================================ */
 :root {
   color-scheme: light;
-  --ink: #0b1b4d;
+  --ink: #0b2545;
   --muted: #5b6b8c;
   --canvas: #e6f4ff;
   --line: #dbe7ff;
-  --navy: #0b1b4d;
-  /* purane --green, --green-soft waise hi rehne dein */
-}
-html {
-  scroll-behavior: smooth;
-  scroll-padding-top: 90px;
-  --ink: #0f172a;
-  --muted: #64748b;
-  --canvas: #e6f4ff;
-  --line: #e2e8f0;
-  --blue: #2563eb;
-  --blue-soft: #eff6ff;
-  --navy: #0f172a;
-}
-
- :root {
+  --navy: #0b2545;
   --color-background: var(--canvas);
   --color-foreground: var(--ink);
-  --color-brand-navy: #0b1b4d;
-  --color-brand-blue: #1d5fe6;
-  --color-brand-blue-dark: #1748b8;
+
+  --bx-navy: #0b2545;
+  --bx-blue: #1976d2;
+  --bx-blue-light: #4a9bf0;
+  --bx-bg: #e6f4ff;
+  --bx-bg-deep: #d3e8ff;
 }
 
 * { box-sizing: border-box; }
-html { min-height: 100%; background: var(--canvas); overflow-x: clip; }
-body { min-height: 100vh; margin: 0; background: var(--canvas); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; overflow-x: clip; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+  min-height: 100%;
+  background: var(--canvas);
+  overflow-x: clip;
+  scrollbar-color: #1976d2 #e6f4ff;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-::selection { background: #bfdbfe; color: #1e3a8a; }
+::selection { background: #bfdbfe; color: #0b2545; }
+
 @media (prefers-reduced-motion: no-preference) {
   .rise-in { animation: rise-in 420ms ease-out both; }
   .rise-in-delay { animation: rise-in 500ms 100ms ease-out both; }
-  @keyframes rise-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
-/* ===== Modern look ===== */
-.bg-modern {
-  background: #e6f4ff;
-}
-
-.bg-soft-gradient {
-  background: #d3e8ff;
-}
-
+/* ===== Modern look helpers ===== */
+.bg-modern { background: #e6f4ff; }
+.bg-soft-gradient { background: #d3e8ff; }
 .bg-brand-gradient {
-  background: linear-gradient(135deg, #0b1b4d 0%, #1d4ed8 70%, #2f7bff 100%);
+  background: linear-gradient(135deg, #0b2545 0%, #1565c0 70%, #1976d2 100%);
 }
 
-/* Heading highlight: moving blue shimmer */
+@keyframes bx-shimmer { to { background-position: 300% 0; } }
+@keyframes bx-pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.5); }
+  50% { box-shadow: 0 0 0 7px rgba(25, 118, 210, 0); }
+}
+
 .text-gradient {
   background: linear-gradient(90deg, #0b5fd1, #1976d2, #38bdf8, #1976d2, #0b5fd1);
   background-size: 300% 100%;
@@ -69,68 +112,53 @@ button { cursor: pointer; }
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow: 0 24px 50px -24px rgba(29, 78, 216, 0.35);
+  box-shadow: 0 24px 50px -24px rgba(25, 118, 210, 0.35);
 }
 
-.card-lift {
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
+.card-lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
 .card-lift:hover {
   transform: translateY(-5px);
-  box-shadow: 0 28px 55px -24px rgba(29, 78, 216, 0.4);
+  box-shadow: 0 28px 55px -24px rgba(25, 118, 210, 0.4);
 }
 
-.btn-glow {
-  box-shadow: none;
-}
+.btn-glow { box-shadow: none; }
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
-.animate-float {
-  animation: float 5s ease-in-out infinite;
-}
+.animate-float { animation: float 5s ease-in-out infinite; }
+
 @keyframes blink-glow {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(29, 78, 216, 0);
-  }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
   50% {
     transform: scale(1.2);
-    box-shadow: 0 0 0 12px rgba(29, 78, 216, 0.25);
-    background: #1d5fe6;
+    box-shadow: 0 0 0 12px rgba(25, 118, 210, 0.25);
+    background: #1976d2;
     color: #ffffff;
   }
 }
-.blink-attention a {
-  animation: blink-glow 0.9s ease-in-out 4;
-}
+.blink-attention a { animation: blink-glow 0.9s ease-in-out 4; }
 
-/* ───── Buildexom brand theme ───── */
-:root {
-  --bx-navy: #0b2545;
-  --bx-blue: #1976d2;
-  --bx-blue-light: #4a9bf0;
-  --bx-bg: #e6f4ff;
-  --bx-bg-deep: #d3e8ff;
+/* ============================================================
+   NAVBAR LOGO: white background removed (also on hover/click)
+   ============================================================ */
+header a[aria-label="Buildexom home"],
+header a[aria-label="Buildexom home"] * {
+  background-color: transparent !important;
+  mix-blend-mode: multiply;
+}
+header a[aria-label="Buildexom home"] {
+  scale: none !important;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ============================================================
-   COLOUR + LIFE LAYER (works on every landing section)
+   SECTIONS: flat light-blue bands
    ============================================================ */
-
-@keyframes bx-shimmer { to { background-position: 300% 0; } }
-@keyframes bx-rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
-@keyframes bx-slide-in { from { opacity: 0; transform: translateX(40px) scale(0.98); } to { opacity: 1; transform: none; } }
-@keyframes bx-pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.5); } 50% { box-shadow: 0 0 0 7px rgba(25, 118, 210, 0); } }
-@keyframes bx-drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-18px, 14px); } }
-@keyframes bx-reveal { from { opacity: 0; transform: translateY(38px) scale(0.985); } to { opacity: 1; transform: none; } }
-
 main { overflow-x: clip; }
 
-/* Alternating colour bands (plain light blue, NO dots, NO glow).
-   Cards/boxes with rounded-3xl (e.g. Help Center cards) are skipped. */
 main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
   position: relative;
   isolation: isolate;
@@ -141,7 +169,7 @@ main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]):nth-of-type(eve
   background: var(--bx-bg-deep) !important;
 }
 
-/* Remove old inline blobs (the layer above replaces them) */
+/* old decorative blobs off */
 main section [class*="blur-3xl"],
 main section [class*="blur-2xl"],
 main section [class*="blur-[1"] {
@@ -190,12 +218,15 @@ main section[id] :has(+ h2) > * {
   backdrop-filter: none !important;
 }
 
-/* ---------- Main section headings ---------- */
+/* ---------- Section headings ---------- */
 main section[id] h2 {
   font-size: clamp(1.75rem, 1.1rem + 2.2vw, 2.5rem) !important;
   font-weight: 800 !important;
   line-height: 1.18 !important;
   letter-spacing: -0.015em !important;
+}
+main section h2:not([class*="text-white"]) {
+  color: #0b2545 !important;
 }
 
 /* ---------- Cards: lift + blue glow on hover ---------- */
@@ -207,130 +238,48 @@ main section:not(:first-of-type) [class*="rounded-3xl"]:not(article):hover,
 main section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article):hover {
   transform: translateY(-5px);
   border-color: rgba(25, 118, 210, 0.55);
-  box-shadow: 0 28px 55px -24px rgba(25, 118, 210, 0.55);
+  box-shadow: 0 28px 55px -24px rgba(25, 118, 210, 0.45);
 }
 
-/* ============================================================
-   BUTTONS: lift + glow + shine sweep + arrow nudge
-   (every button / link-button inside the page content)
-   ============================================================ */
-main a[class*="rounded-xl"][class*="bg-"],
-main a[class*="rounded-full"][class*="bg-"],
-main a.glass-card[class*="rounded-"],
-main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]),
-main button[class*="rounded-full"][class*="bg-"]:not([aria-label]),
-main button.glass-card[class*="rounded-"]:not([aria-label]) {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
+/* ---------- Buttons: simple lift + glow (inside sections only) ---------- */
+main section a[class*="rounded-xl"][class*="bg-"],
+main section a[class*="rounded-full"][class*="bg-"],
+main section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]),
+main section button[class*="rounded-full"][class*="bg-"]:not([aria-label]) {
   transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
-main a[class*="rounded-xl"][class*="bg-"]::after,
-main a[class*="rounded-full"][class*="bg-"]::after,
-main a.glass-card[class*="rounded-"]::after,
-main button[class*="rounded-xl"][class*="bg-"]:not([aria-label])::after,
-main button[class*="rounded-full"][class*="bg-"]:not([aria-label])::after,
-main button.glass-card[class*="rounded-"]:not([aria-label])::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -80%;
-  z-index: 1;
-  width: 50%;
-  height: 100%;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.6), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.65s ease;
-}
-main a[class*="rounded-xl"][class*="bg-"]:hover,
-main a[class*="rounded-full"][class*="bg-"]:hover,
-main a.glass-card[class*="rounded-"]:hover,
-main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover,
-main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover,
-main button.glass-card[class*="rounded-"]:not([aria-label]):hover {
+main section a[class*="rounded-xl"][class*="bg-"]:hover,
+main section a[class*="rounded-full"][class*="bg-"]:hover,
+main section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover,
+main section button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover {
   transform: translateY(-3px);
-  filter: brightness(1.06) saturate(1.1);
-  box-shadow: 0 18px 34px -12px rgba(25, 118, 210, 0.75);
+  filter: brightness(1.05);
+  box-shadow: 0 16px 30px -12px rgba(25, 118, 210, 0.7);
 }
-main a[class*="rounded-xl"][class*="bg-"]:hover::after,
-main a[class*="rounded-full"][class*="bg-"]:hover::after,
-main a.glass-card[class*="rounded-"]:hover::after,
-main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover::after,
-main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover::after,
-main button.glass-card[class*="rounded-"]:not([aria-label]):hover::after {
-  left: 130%;
-}
-main a[class*="rounded-xl"][class*="bg-"]:active,
-main a[class*="rounded-full"][class*="bg-"]:active,
-main button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):active,
-main button[class*="rounded-full"][class*="bg-"]:not([aria-label]):active {
+main section a[class*="rounded-xl"][class*="bg-"]:active,
+main section a[class*="rounded-full"][class*="bg-"]:active,
+main section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):active,
+main section button[class*="rounded-full"][class*="bg-"]:not([aria-label]):active {
   transform: translateY(-1px) scale(0.98);
 }
-/* Arrow (→) inside buttons slides on hover */
-main a > span[aria-hidden="true"],
-main button > span[aria-hidden="true"] {
+
+/* arrow (→) inside buttons nudges on hover */
+main section a > span[aria-hidden="true"],
+main section button > span[aria-hidden="true"] {
   display: inline-block;
   transition: transform 0.25s ease;
 }
-main a:hover > span[aria-hidden="true"],
-main button:hover > span[aria-hidden="true"] {
+main section a:hover > span[aria-hidden="true"],
+main section button:hover > span[aria-hidden="true"] {
   transform: translateX(5px);
 }
 
-/* ---------- Hero: entrance animation on page load ---------- */
-@media (prefers-reduced-motion: no-preference) {
-  main section:first-of-type > div > div:first-child > * {
-    animation: bx-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
-  main section:first-of-type > div > div:first-child > *:nth-child(1) { animation-delay: 0.05s; }
-  main section:first-of-type > div > div:first-child > *:nth-child(2) { animation-delay: 0.15s; }
-  main section:first-of-type > div > div:first-child > *:nth-child(3) { animation-delay: 0.28s; }
-  main section:first-of-type > div > div:first-child > *:nth-child(4) { animation-delay: 0.4s; }
-  main section:first-of-type > div > div:first-child > *:nth-child(5) { animation-delay: 0.52s; }
-  main section:first-of-type > div > div:last-child {
-    animation: bx-slide-in 0.9s 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
-}
-
-/* ---------- Scroll reveal (Chrome / Edge; others just show normally) ---------- */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    main section:not(:first-of-type) > div > *:not(.grid),
-    main section:not(:first-of-type) > div > .grid > * {
-      animation: bx-reveal linear both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 55%;
-    }
-  }
-}
-
-/* ---------- Thin branded scrollbar ---------- */
-html { scrollbar-color: #1976d2 #e6f4ff; }
+/* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: #e6f4ff; }
-::-webkit-scrollbar-thumb { background: #1976d2; border-radius: 9999px; border: 2px solid #e6f4ff; }
-::-webkit-scrollbar-thumb:hover { background: #0b2545; }
-
-/* ───── Text colours = logo navy (poori site) ───── */
-@theme {
-  --color-black: #0b2545;
-
-  --color-slate-900: #0b2545;
-  --color-slate-800: #0b2545;
-  --color-slate-700: #0b2545;
-  --color-slate-600: #2c4a73;
-
-  --color-gray-900: #0b2545;
-  --color-gray-800: #0b2545;
-  --color-gray-700: #0b2545;
-  --color-gray-600: #2c4a73;
-
-  --color-zinc-900: #0b2545;
-  --color-zinc-800: #0b2545;
-  --color-zinc-700: #0b2545;
-
-  --color-neutral-900: #0b2545;
-  --color-neutral-800: #0b2545;
-  --color-neutral-700: #0b2545;
+::-webkit-scrollbar-thumb {
+  background: #1976d2;
+  border-radius: 9999px;
+  border: 2px solid #e6f4ff;
 }
+::-webkit-scrollbar-thumb:hover { background: #0b2545; }
