@@ -39,7 +39,13 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
 
   const sidebar = (
     <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
-      <div className="flex h-[76px] items-center gap-3 border-b border-white/[0.08] px-6"><span className="grid size-9 place-items-center rounded-[10px] bg-blue-500 text-white"><Boxes size={19} /></span><span className="text-[15px] font-semibold tracking-wide">Buildexom <span className="font-normal text-blue-200">AI</span></span><button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button></div>
+      <div className="flex h-[76px] items-center gap-3 border-b border-white/[0.08] px-6">
+        <Link href="/" aria-label="Buildexom home" onClick={() => setMobileOpen(false)} className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-blue-500 text-white"><Boxes size={19} /></span>
+          <span className="truncate text-[15px] font-semibold tracking-wide">Buildexom <span className="font-normal text-blue-200">AI</span></span>
+        </Link>
+        <button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 shrink-0 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button>
+      </div>
       <div className="px-4 pt-7"><p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">Workspace</p><nav className="space-y-1" aria-label="Main navigation">{navigation.map(({ label, href, icon: Icon }) => {
         const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
         return <Link key={href} href={href} prefetch onClick={() => setMobileOpen(false)} aria-current={active ? "page" : undefined} className={`group flex h-10 items-center gap-3 rounded-md px-3 text-[13px] transition-colors ${active ? "bg-blue-600 font-medium text-white shadow-sm shadow-blue-950/20" : "text-slate-300 hover:bg-white/[0.07] hover:text-white"}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.8} /><span className="flex-1">{label}</span>{active && <ChevronRight size={14} className="text-blue-100" />}</Link>;

@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { StoreSocialLinks } from '@/components/store-social-links';
+import {
+  isPublicStorefrontResponse,
+  isStoreAssistantResponse,
+  type StoreAssistantRequest,
+} from '@/lib/storefront-types';
 import { 
   ShoppingBag, 
   Search, 
@@ -63,15 +68,23 @@ interface CartItem {
 
 export default function StoreLayout({
   storeSlug,
-  storeName,
-  tagline,
-  description,
-  whatsappNumber,
-  plan = 'free',
+  storeName: initialStoreName,
+  tagline: initialTagline,
+  description: initialDescription,
+  whatsappNumber: initialWhatsappNumber,
+  plan: initialPlan = 'free',
   theme,
-  products,
+  products: initialProducts,
   socialLinks
 }: StoreLayoutProps) {
+  const [storeName, setStoreName] = useState(initialStoreName);
+  const [tagline, setTagline] = useState(initialTagline);
+  const [description, setDescription] = useState(initialDescription || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
+  const [plan, setPlan] = useState(initialPlan);
+  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -100,30 +113,85 @@ export default function StoreLayout({
   const [chatInput, setChatInput] = useState('');
   const [isChatSending, setIsChatSending] = useState(false);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function refreshCatalog() {
+      setCatalogLoading(true);
+      setCatalogError('');
+      try {
+        const response = await fetch(`/api/stores/${encodeURIComponent(storeSlug)}`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json();
+        if (!response.ok) {
+          const errorMessage = typeof payload === 'object' && payload !== null && 'error' in payload && typeof payload.error === 'string'
+            ? payload.error
+            : 'Unable to refresh the store catalog.';
+          throw new Error(errorMessage);
+        }
+        if (!isPublicStorefrontResponse(payload) || payload.store.slug !== storeSlug) {
+          throw new Error('The store returned an invalid catalog response.');
+        }
+
+        setStoreName(payload.store.name);
+        setTagline(payload.store.tagline);
+        setDescription(payload.store.description);
+        setWhatsappNumber(payload.store.whatsapp_number);
+        setPlan(payload.store.plan);
+        setProducts(payload.products);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setCatalogError(error instanceof Error ? error.message : 'Unable to refresh the store catalog.');
+      } finally {
+        if (!controller.signal.aborted) setCatalogLoading(false);
+      }
+    }
+
+    void refreshCatalog();
+    return () => controller.abort();
+  }, [storeSlug]);
+
   const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isChatSending) return;
 
     const userMsg = chatInput.trim();
+    const requestBody: StoreAssistantRequest = { message: userMsg };
     setChatInput('');
     setChatMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
     setIsChatSending(true);
 
     try {
-      const res = await fetch('/api/ai/create-store/store-chat', {
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeSlug)}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store_id: storeSlug, message: userMsg })
+        body: JSON.stringify(requestBody)
       });
-      const data = await res.json();
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const errorMessage = typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string'
+          ? data.error
+          : 'The assistant could not process your message.';
+        throw new Error(errorMessage);
+      }
+      if (!isStoreAssistantResponse(data)) {
+        throw new Error('The assistant returned an invalid response.');
+      }
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: data.reply || "Sorry, I couldn't find matching items in the catalog." }
+        { sender: 'ai', text: data.reply }
       ]);
-    } catch {
+    } catch (error) {
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: 'Catalog assistant is temporarily offline. Please order directly via WhatsApp.' }
+        {
+          sender: 'ai',
+          text: error instanceof Error
+            ? `The catalog assistant is unavailable: ${error.message}`
+            : 'The catalog assistant is temporarily unavailable. Please try again.',
+        }
       ]);
     } finally {
       setIsChatSending(false);
@@ -225,6 +293,16 @@ export default function StoreLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-500 selection:text-white">
+      {catalogLoading && (
+        <p role="status" className="bg-blue-50 px-4 py-2 text-center text-xs text-blue-800">
+          Refreshing the live catalog…
+        </p>
+      )}
+      {catalogError && (
+        <p role="alert" className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
+          The latest catalog could not be loaded: {catalogError} Showing the data available when this page opened.
+        </p>
+      )}
       {/* 1. Subdomain & Platform Header Bar */}
       <div className="border-b border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-300">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
@@ -764,6 +842,7 @@ export default function StoreLayout({
                 type="text"
                 placeholder="Ask about perfumes, prices..."
                 value={chatInput}
+                maxLength={500}
                 onChange={(e) => setChatInput(e.target.value)}
                 className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
               />

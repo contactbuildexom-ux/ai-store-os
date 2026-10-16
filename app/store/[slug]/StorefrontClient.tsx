@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { isPublicStorefrontResponse } from '@/lib/storefront-types';
 
 type Product = {
     id: string;
@@ -41,9 +42,13 @@ function whatsappPhone(value: string) {
 }
 
 export default function StorefrontClient({ store, settings, products, delivery }: Props) {
+    const [liveStore, setLiveStore] = useState(store);
+    const [liveProducts, setLiveProducts] = useState(products);
+    const [catalogLoading, setCatalogLoading] = useState(true);
+    const [catalogError, setCatalogError] = useState('');
     const themeColor = settings?.theme_color || '#1d7555';
-    const bannerText = settings?.banner_text || `Welcome to ${store.name}`;
-    const isPro = ['pro', 'business'].includes(store.plan.toLowerCase());
+    const bannerText = settings?.banner_text || `Welcome to ${liveStore.name}`;
+    const isPro = ['pro', 'business'].includes(liveStore.plan.toLowerCase());
     const [cart, setCart] = useState<CartItem[]>([]);
     const [customerName, setCustomerName] = useState('');
     const [customerEmail, setCustomerEmail] = useState('');
@@ -64,6 +69,48 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const deliveryFee = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove ? 0 : (Number.isFinite(baseDeliveryFee) ? baseDeliveryFee : 0);
     const finalAmount = subtotal > 0 ? subtotal + deliveryFee : 0;
     const advanceAmount = Math.round((finalAmount * store.advance_percentage / 100 + Number.EPSILON) * 100) / 100;
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        async function refreshCatalog() {
+            setCatalogLoading(true);
+            setCatalogError('');
+            try {
+                const response = await fetch(`/api/stores/${encodeURIComponent(store.slug)}`, {
+                    cache: 'no-store',
+                    signal: controller.signal,
+                });
+                const payload: unknown = await response.json();
+                if (!response.ok) {
+                    const errorMessage = typeof payload === 'object' && payload !== null && 'error' in payload && typeof payload.error === 'string'
+                        ? payload.error
+                        : 'Unable to refresh the store catalog.';
+                    throw new Error(errorMessage);
+                }
+                if (!isPublicStorefrontResponse(payload) || payload.store.slug !== store.slug) {
+                    throw new Error('The store returned an invalid catalog response.');
+                }
+                setLiveStore((current) => ({
+                    ...current,
+                    id: payload.store.id,
+                    name: payload.store.name,
+                    slug: payload.store.slug,
+                    plan: payload.store.plan,
+                    whatsapp_number: payload.store.whatsapp_number,
+                }));
+                setLiveProducts(payload.products);
+            } catch (error) {
+                if (controller.signal.aborted) return;
+                setCatalogError(error instanceof Error ? error.message : 'Unable to refresh the store catalog.');
+            } finally {
+                if (!controller.signal.aborted) setCatalogLoading(false);
+            }
+        }
+
+        void refreshCatalog();
+        return () => controller.abort();
+    }, [store.slug]);
 
     function addToCart(product: Product) {
         setCart((current) => {
@@ -94,7 +141,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
         if (whatsappWindow) whatsappWindow.opener = null;
 
         try {
-            const response = await fetch(`/api/storefront/${encodeURIComponent(store.slug)}/orders`, {
+            const response = await fetch(`/api/storefront/${encodeURIComponent(liveStore.slug)}/orders`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -113,7 +160,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
             if (!response.ok || !result.success) throw new Error(result.error || 'Unable to place your order.');
 
             if (isPro) {
-                const merchantPhone = whatsappPhone(String(result.whatsapp_number || store.whatsapp_number || ''));
+                const merchantPhone = whatsappPhone(String(result.whatsapp_number || liveStore.whatsapp_number || ''));
                 if (!merchantPhone) throw new Error('This store has not configured a WhatsApp number yet. Please contact the store.');
                 const itemLines = (result.items as Array<{ name: string; quantity: number; price: number }>)
                     .map((item) => `• ${item.name} × ${item.quantity} — ${money(item.price * item.quantity)}`)
@@ -132,6 +179,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     `• *Delivery Address:* ${customerAddress}`,
                     ``,
                     `📦 *ITEMS ORDERED:*`,
+                    `New order for ${liveStore.name}`,
+                    '',
                     itemLines,
                     ``,
                     `💵 *Subtotal:* ${money(result.subtotal)}`,
@@ -168,12 +217,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+            {catalogLoading && <p role="status" className="bg-blue-50 px-4 py-2 text-center text-xs text-blue-800">Refreshing the live catalog…</p>}
+            {catalogError && <p role="alert" className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">The latest catalog could not be loaded: {catalogError} Showing the data available when this page opened.</p>}
             <div className="px-4 py-2 text-center text-xs font-medium text-white" style={{ backgroundColor: themeColor }}>{bannerText}</div>
             <header className="border-b border-slate-200 bg-white">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
                     <div className="flex min-w-0 items-center gap-3">
-                        {settings?.logo_url && <Image src={settings.logo_url} alt={`${store.name} logo`} width={40} height={40} unoptimized className="size-10 rounded-lg object-cover" />}
-                        <div className="min-w-0"><h1 className="truncate text-lg font-bold" style={{ color: themeColor }}>{store.name}</h1><p className="text-[11px] text-slate-500">Official online store</p></div>
+                        {settings?.logo_url && <Image src={settings.logo_url} alt={`${liveStore.name} logo`} width={40} height={40} unoptimized className="size-10 rounded-lg object-cover" />}
+                        <div className="min-w-0"><h1 className="truncate text-lg font-bold" style={{ color: themeColor }}>{liveStore.name}</h1><p className="text-[11px] text-slate-500">Official online store</p></div>
                     </div>
                     <div className="hidden rounded-lg bg-slate-50 px-3 py-2 text-right text-[11px] text-slate-600 sm:block"><p>Estimated delivery</p><p className="mt-0.5 font-semibold text-slate-800">{delivery?.estimated_days || 'Standard delivery'}</p></div>
                 </div>
@@ -181,8 +232,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-8 sm:py-9 lg:grid-cols-[minmax(0,1fr)_390px]">
                 <section>
-                    <div className="mb-5 flex items-end justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Shop the collection</p><h2 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Our products</h2></div><span className="text-xs text-slate-500">{products.length} items</span></div>
-                    {products.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">No products available yet.</div> : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{products.map((product) => <article key={product.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="mb-5 flex items-end justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Shop the collection</p><h2 className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Our products</h2></div><span className="text-xs text-slate-500">{liveProducts.length} items</span></div>
+                    {liveProducts.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">No products available yet.</div> : <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{liveProducts.map((product) => <article key={product.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                         {product.image_url ? <Image src={product.image_url} alt={product.name} width={480} height={300} unoptimized className="h-40 w-full bg-slate-100 object-cover" /> : <div className="grid h-40 place-items-center bg-gradient-to-br from-slate-100 to-slate-200 text-3xl font-semibold text-slate-400">{product.name.slice(0, 1).toUpperCase()}</div>}
                         <div className="p-4"><h3 className="text-sm font-semibold text-slate-900">{product.name}</h3><p className="mt-1 min-h-8 line-clamp-2 text-xs leading-5 text-slate-500">{product.description || 'Quality product, ready to order.'}</p><div className="mt-4 flex items-center justify-between gap-2"><span className="text-sm font-bold" style={{ color: themeColor }}>{money(product.price)}</span><button type="button" onClick={() => addToCart(product)} className="rounded-lg px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: themeColor }}>Add to cart</button></div></div>
                     </article>)}</div>}

@@ -115,23 +115,33 @@ export default function MerchantDashboardMaster() {
 
     const resolveStoreAndData = useCallback(async (identifier: string) => {
         try {
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
-            const storeQuery = createClient().from('stores').select('id, name, slug, plan, whatsapp_number');
-            const { data: storeData, error: storeError } = await (isUuid
-                ? storeQuery.eq('id', identifier)
-                : storeQuery.eq('slug', identifier)
-            ).maybeSingle();
+            const supabase = createClient();
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) throw sessionError;
 
-            if (storeError) throw storeError;
+            const response = await fetch('/api/stores/current', {
+                cache: 'no-store',
+                headers: session?.access_token
+                    ? { Authorization: `Bearer ${session.access_token}` }
+                    : {},
+            });
+            const payload: {
+                store?: { id: string; name: string | null; slug: string | null; plan: string | null; whatsapp_number: string | null };
+                error?: string;
+            } = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Unable to load your store.');
+            const storeData = payload.store;
 
             if (!storeData) {
-                setMessage('Store not found in database.');
-                return;
+                throw new Error('No store is linked to this account.');
+            }
+            if (storeData.id !== identifier && storeData.slug !== identifier) {
+                throw new Error('You are not authorized to access this store.');
             }
 
             setResolvedStoreId(storeData.id);
-            setStoreName(storeData.name);
-            setStoreSlug(storeData.slug);
+            setStoreName(storeData.name || 'Your store');
+            setStoreSlug(storeData.slug || '');
             setStorePlan(normalizePlan(storeData.plan));
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.

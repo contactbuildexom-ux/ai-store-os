@@ -1,36 +1,28 @@
 import { NextResponse } from 'next/server';
-import { storeRepo } from '@/lib/store-repository';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { getPublicStorefront, StorefrontDataError } from '@/lib/storefront-data';
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
-    const supabase = createAdminClient();
-    if (!supabase) {
-      return NextResponse.json({ error: 'Store database is not configured.' }, { status: 503 });
-    }
-
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('id, name, slug, plan, payment_status, whatsapp_number, created_at')
-      .eq('slug', slug)
-      .maybeSingle();
-
-    if (storeError) throw storeError;
-    if (!store) {
+    const storefront = await getPublicStorefront(slug);
+    if (!storefront) {
       return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
     }
 
-    const products = await storeRepo.getProducts(store.id || store.slug);
-    const categories = Array.from(new Set(products.map(product => product.category)));
-
-    return NextResponse.json({ store, categories, products }, { status: 200 });
+    return NextResponse.json(storefront, {
+      status: 200,
+      headers: { 'Cache-Control': 'public, max-age=0, s-maxage=60, stale-while-revalidate=300' },
+    });
   } catch (err: unknown) {
+    if (err instanceof StorefrontDataError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error('GET /api/stores/[slug] failed:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Unable to load store.' },
+      { error: 'Unable to load store data.' },
       { status: 500 }
     );
   }
