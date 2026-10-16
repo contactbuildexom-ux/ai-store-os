@@ -25,8 +25,11 @@ export async function POST(
 
     const body = await request.json();
     const customerName = cleanText(body?.customer_name, 120);
+    const customerEmail = cleanText(body?.customer_email, 120);
     const customerPhone = cleanText(body?.customer_phone, 40);
-    const shippingAddress = cleanText(body?.shipping_address, 500);
+    const customerZip = cleanText(body?.zip_code ?? body?.postal_code, 30);
+    const rawAddress = cleanText(body?.shipping_address, 500);
+    const shippingAddress = customerZip ? `${rawAddress} (Postal Code: ${customerZip})` : rawAddress;
     const city = cleanText(body?.city, 120);
     const paymentMethod = body?.payment_method;
     const requestedItems = Array.isArray(body?.items) ? body.items as RequestedItem[] : [];
