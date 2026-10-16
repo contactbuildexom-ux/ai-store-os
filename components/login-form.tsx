@@ -4,9 +4,11 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Boxes, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function LoginForm({ notice }: { notice?: string }) {
+  const { settings } = usePlatformBranding();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -147,9 +149,17 @@ export function LoginForm({ notice }: { notice?: string }) {
           <div className="absolute -right-12 top-44 size-[25rem] rounded-full border border-indigo-100/15" />
           <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#101c45]/80 to-transparent" />
         </div>
-        <Link href="/" aria-label="Buildexom home" className="relative z-10 flex w-fit items-center gap-3 rounded-md font-semibold tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-          <span className="grid size-10 place-items-center rounded-xl bg-blue-500 text-white"><Boxes size={21} /></span>
-          <span className="text-lg">Buildexom <span className="font-normal text-blue-200">AI</span></span>
+        <Link href="/" aria-label={`${settings.title} home`} className="relative z-10 flex w-fit items-center gap-3 rounded-md font-semibold tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          <PlatformLogo
+            fallback={
+              <>
+                <span className="grid size-10 place-items-center rounded-xl bg-blue-500 text-white"><Boxes size={21} /></span>
+                <span className="text-lg">{settings.title}</span>
+              </>
+            }
+            className="max-h-10 max-w-[200px] object-contain"
+          />
+          {settings.logoUrl && <span className="text-lg">{settings.title}</span>}
         </Link>
         <div className="relative z-10 max-w-xl pb-8">
           <div className="mb-7 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-blue-200"><span className="size-1.5 rounded-full bg-blue-300" /> Commerce, in clear view</div>
@@ -161,9 +171,17 @@ export function LoginForm({ notice }: { notice?: string }) {
       </div>
       <main className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
         <div className="w-full max-w-[460px]">
-          <Link href="/" aria-label="Buildexom home" className="mb-8 flex w-fit items-center gap-3 rounded-md font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 lg:hidden">
-            <span className="grid size-10 place-items-center rounded-xl bg-blue-100 text-blue-700"><Boxes size={21} /></span>
-            <span>Buildexom <span className="font-normal text-blue-700">AI</span></span>
+          <Link href="/" aria-label={`${settings.title} home`} className="mb-8 flex w-fit items-center gap-3 rounded-md font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 lg:hidden">
+            <PlatformLogo
+              fallback={
+                <>
+                  <span className="grid size-10 place-items-center rounded-xl bg-blue-100 text-blue-700"><Boxes size={21} /></span>
+                  <span>{settings.title}</span>
+                </>
+              }
+              className="max-h-10 max-w-[200px] object-contain"
+            />
+            {settings.logoUrl && <span>{settings.title}</span>}
           </Link>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_18px_55px_-28px_rgba(30,64,175,0.28)] sm:p-9">
             <div className="mb-8">

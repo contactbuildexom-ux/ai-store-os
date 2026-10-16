@@ -1,33 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import { Save, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
+import { Save, Trash2, Upload } from "lucide-react";
+import { DEFAULT_PLATFORM_BRANDING, usePlatformBranding, type PlatformBrandingSettings } from "@/components/platform-branding";
 
-type PlatformSettings = {
-  title: string;
-  description: string;
-  email: string;
-  phone: string;
-  whatsapp: string;
-  website: string;
-  instagram: string;
-  facebook: string;
-  logoName: string;
-  logoUrl: string;
-};
+type PlatformSettings = PlatformBrandingSettings;
 
-const defaults: PlatformSettings = {
-  title: "Buildexom AI",
-  description: "Commerce, in clear view.",
-  email: "",
-  phone: "",
-  whatsapp: "",
-  website: "",
-  instagram: "",
-  facebook: "",
-  logoName: "",
-  logoUrl: "",
-};
+const defaults: PlatformSettings = DEFAULT_PLATFORM_BRANDING;
 
 function isPlatformSettings(value: unknown): value is PlatformSettings {
   if (typeof value !== "object" || value === null) return false;
@@ -48,16 +28,33 @@ export function SettingsForm() {
   const [saved, setSaved] = useState(false);
   const [logoName, setLogoName] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { updateSettings } = usePlatformBranding();
+
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [logoFile]);
 
   useEffect(() => {
     let active = true;
-    fetch("/api/admin/settings")
+    fetch("/api/admin/settings", { cache: "no-store" })
       .then(readSettingsResponse)
       .then((next) => {
-        if (active) setSettings(next);
+        if (active) {
+          setSettings(next);
+          setLogoName(next.logoName);
+          updateSettings(next);
+        }
       })
       .catch((reason: unknown) => {
         if (active) setError(reason instanceof Error ? reason.message : "Unable to load platform settings.");
@@ -66,7 +63,7 @@ export function SettingsForm() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [updateSettings]);
 
   async function saveSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,9 +92,45 @@ export function SettingsForm() {
       setSettings(savedSettings);
       setLogoName(savedSettings.logoName);
       setLogoFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      updateSettings(savedSettings);
       setSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to save platform settings.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeLogo() {
+    const previousSettings = settings;
+    const previousLogoFile = logoFile;
+    setError(null);
+    setSaved(false);
+    setSaving(true);
+    setSettings((current) => ({ ...current, logoName: "", logoUrl: "" }));
+    setLogoName("");
+    setLogoFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    updateSettings({ ...previousSettings, logoName: "", logoUrl: "" });
+
+    try {
+      const response = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...previousSettings, logoName: "", logoUrl: "" }),
+      });
+      const savedSettings = await readSettingsResponse(response);
+      setSettings(savedSettings);
+      setLogoName("");
+      updateSettings(savedSettings);
+      setSaved(true);
+    } catch (reason) {
+      setSettings(previousSettings);
+      setLogoName(previousLogoFile?.name ?? previousSettings.logoName);
+      setLogoFile(previousLogoFile);
+      updateSettings(previousSettings);
+      setError(reason instanceof Error ? reason.message : "Unable to remove the platform logo.");
     } finally {
       setSaving(false);
     }
@@ -139,14 +172,33 @@ export function SettingsForm() {
           <h3 className="text-sm font-semibold text-slate-800">Branding and social links</h3>
           <p className="mt-1 text-xs text-slate-500">Choose a logo file and update platform profiles.</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="block text-xs font-medium text-slate-700 sm:col-span-2">Logo file
-              <span className="mt-1.5 flex min-h-10 items-center gap-2 rounded-md border border-dashed border-slate-300 px-3 py-2 text-slate-500">
-                <Upload size={15} />
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setLogoFile(file); setLogoName(file?.name ?? ""); setSaved(false); }} className="min-w-0 flex-1 text-xs file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-blue-700" />
-                {logoName || settings.logoName || "Logo upload placeholder"}
-              </span>
-              {settings.logoUrl && <a href={settings.logoUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-[11px] text-blue-700 hover:underline">View current logo</a>}
-            </label>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-slate-700">Logo file
+                <span className="mt-1.5 flex min-h-10 items-center gap-2 rounded-md border border-dashed border-slate-300 px-3 py-2 text-slate-500">
+                  <Upload size={15} />
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0] ?? null; setLogoFile(file); setLogoName(file?.name ?? settings.logoName); setSaved(false); }} className="min-w-0 flex-1 text-xs file:mr-3 file:rounded file:border-0 file:bg-blue-50 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-blue-700" />
+                  {logoName || settings.logoName || "Logo upload placeholder"}
+                </span>
+              </label>
+              {(logoPreviewUrl || settings.logoUrl) && (
+                <div className="mt-3 flex items-center gap-3">
+                  <Image
+                    unoptimized
+                    src={logoPreviewUrl || settings.logoUrl}
+                    alt="Platform logo preview"
+                    width={96}
+                    height={56}
+                    className="h-14 w-24 rounded-md border border-slate-200 bg-white object-contain p-1"
+                  />
+                  <div className="flex flex-col items-start gap-1">
+                    {settings.logoUrl && <a href={settings.logoUrl} target="_blank" rel="noreferrer" className="text-[11px] text-blue-700 hover:underline">View current logo</a>}
+                    <button type="button" onClick={() => void removeLogo()} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50">
+                      <Trash2 size={13} /> Remove logo
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {field("website", "Website URL", "url")}
             {field("instagram", "Instagram URL", "url")}
             <div className="sm:col-span-2">{field("facebook", "Facebook URL", "url")}</div>

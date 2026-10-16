@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/landing/logo";
+import { DEFAULT_PLATFORM_BRANDING, PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import AuthModal from "@/components/landing/AuthModal";
 import SearchPanel from "@/components/landing/SearchPanel";
 import {
@@ -17,6 +18,7 @@ const NAV = [
 ];
 
 export default function Navbar() {
+  const { settings } = usePlatformBranding();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -68,12 +70,15 @@ export default function Navbar() {
           {/* Logo (white background removed with multiply blend) */}
           <Link
             href="/"
-            aria-label="Buildexom home"
+            aria-label={`${settings.title} home`}
             className="flex shrink-0 items-center transition-transform duration-300 hover:scale-[1.03]"
           >
             <span className="block mix-blend-multiply">
-              <Logo />
+              <PlatformLogo fallback={<Logo />} className="h-10 max-w-[200px] object-contain" />
             </span>
+            {(settings.logoUrl || settings.title !== DEFAULT_PLATFORM_BRANDING.title) && (
+              <span className="hidden text-sm font-semibold text-[#0b2545] sm:inline">{settings.title}</span>
+            )}
           </Link>
 
           {/* Desktop nav */}

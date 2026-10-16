@@ -16,8 +16,78 @@ import {
   Zap, 
   Crown, 
   HelpCircle,
-  Loader2
+  Loader2,
+  Package,
 } from 'lucide-react';
+
+type GeneratedPreview = {
+  store_name: string;
+  theme_color: string;
+  banner_text: string;
+  categories: string[];
+  products: Array<{ name: string; price: number; description: string; category_name: string }>;
+};
+
+type GeneratedStoreResponse = {
+  slug: string;
+  storefrontUrl: string;
+  dashboardUrl: string;
+  storeName: string;
+  preview: GeneratedPreview;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseGeneratedStoreResponse(value: unknown): GeneratedStoreResponse | null {
+  if (!isRecord(value) || value.success !== true || typeof value.slug !== 'string' || !isRecord(value.store)) return null;
+  const previewValue = value.preview;
+  if (
+    !isRecord(previewValue) ||
+    typeof previewValue.store_name !== 'string' ||
+    typeof previewValue.theme_color !== 'string' ||
+    typeof previewValue.banner_text !== 'string' ||
+    !Array.isArray(previewValue.categories) ||
+    !previewValue.categories.every((category) => typeof category === 'string') ||
+    !Array.isArray(previewValue.products) ||
+    !/^#[0-9a-f]{6}$/i.test(previewValue.theme_color)
+  ) {
+    return null;
+  }
+  const products = previewValue.products.flatMap((product) => {
+    if (
+      !isRecord(product) ||
+      typeof product.name !== 'string' ||
+      typeof product.price !== 'number' ||
+      !Number.isFinite(product.price) ||
+      typeof product.description !== 'string' ||
+      typeof product.category_name !== 'string'
+    ) {
+      return [];
+    }
+    return [{
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      category_name: product.category_name,
+    }];
+  });
+  if (!products.length || products.length !== previewValue.products.length) return null;
+  return {
+    slug: value.slug,
+    storefrontUrl: typeof value.storefront_url === 'string' ? value.storefront_url : `/store/${encodeURIComponent(value.slug)}`,
+    dashboardUrl: typeof value.dashboard_url === 'string' ? value.dashboard_url : `/merchant/${encodeURIComponent(value.slug)}/dashboard`,
+    storeName: typeof value.store.name === 'string' ? value.store.name : previewValue.store_name,
+    preview: {
+      store_name: previewValue.store_name,
+      theme_color: previewValue.theme_color,
+      banner_text: previewValue.banner_text,
+      categories: previewValue.categories,
+      products,
+    },
+  };
+}
 
 interface MerchantStoreSetupModalProps {
   isOpen: boolean;
@@ -62,7 +132,7 @@ export default function MerchantStoreSetupModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepText, setStepText] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [successData, setSuccessData] = useState<{ storefrontUrl: string; dashboardUrl: string; storeName: string; slug: string } | null>(null);
+  const [successData, setSuccessData] = useState<GeneratedStoreResponse | null>(null);
 
   useEffect(() => {
     if (initialPrompt && !prompt) {
@@ -106,7 +176,7 @@ export default function MerchantStoreSetupModal({
       if (youtube.trim()) socialLinks.youtube = youtube.trim();
       if (twitter.trim()) socialLinks.x = twitter.trim();
 
-      const response = await fetch('/api/ai/create-store', {
+      const response = await fetch('/api/ai/generate-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,23 +187,27 @@ export default function MerchantStoreSetupModal({
           theme: selectedTheme,
           whatsapp_number: whatsappNumber.trim() || undefined,
           owner_email: email.trim().toLowerCase(),
-          password: password.trim() || 'store123456',
+          password,
           social_links: socialLinks,
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to generate store. Please try again.');
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error('The store generator returned an invalid response. Please try again.');
       }
-
-      setSuccessData({
-        storefrontUrl: data.storefront_url || `/store/${encodeURIComponent(data.slug)}`,
-        dashboardUrl: data.dashboard_url || `/merchant/${encodeURIComponent(data.slug)}/dashboard`,
-        storeName: data.store?.name || storeName || 'Your Store',
-        slug: data.slug,
-      });
+      if (!response.ok) {
+        throw new Error(isRecord(result) && typeof result.error === 'string' ? result.error : 'Failed to generate store. Please try again.');
+      }
+      const generatedStore = parseGeneratedStoreResponse(result);
+      if (!generatedStore) throw new Error('The store generator returned incomplete preview data. Please try again.');
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      setSuccessData(generatedStore);
+      setIsSubmitting(false);
 
     } catch (err: unknown) {
       clearTimeout(timer1);
@@ -194,7 +268,46 @@ export default function MerchantStoreSetupModal({
                 <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
                   <span className="font-semibold text-emerald-400">{successData.storeName}</span> is live with automated WhatsApp checkout and integrated social media footer.
                 </p>
+                {plan !== 'basic' && (
+                  <p className="mt-2 text-xs text-amber-300">
+                    Your {plan === 'advanced' ? 'Advanced' : 'Pro'} plan selection is pending payment approval; the store starts with Basic limits until it is approved.
+                  </p>
+                )}
               </div>
+
+              <section className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/70 text-left">
+                <div className="px-5 py-5 text-white" style={{ backgroundColor: successData.preview.theme_color }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">Store preview</p>
+                  <h4 className="mt-2 text-xl font-bold">{successData.preview.store_name}</h4>
+                  <p className="mt-1 text-xs text-white/85">{successData.preview.banner_text}</p>
+                </div>
+                <div className="space-y-4 p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {successData.preview.categories.map((category) => (
+                      <span key={category} className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 text-[10px] text-slate-200">{category}</span>
+                    ))}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {successData.preview.products.slice(0, 6).map((product) => (
+                      <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
+                        <div className="flex items-start gap-2">
+                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-500/15 text-blue-300"><Package size={15} /></span>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="truncate text-xs font-semibold text-white">{product.name}</h5>
+                            <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-400">{product.description}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="truncate text-[10px] text-slate-400">{product.category_name}</span>
+                          <span className="shrink-0 text-xs font-bold text-emerald-300">
+                            {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(product.price)}
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </section>
 
               <div className="grid sm:grid-cols-2 gap-3 pt-3 max-w-md mx-auto">
                 <button
@@ -391,11 +504,12 @@ export default function MerchantStoreSetupModal({
                   />
                   <input
                     type="password"
-                    placeholder="Password (for Admin Login) *"
+                    placeholder="Password (minimum 8 characters) *"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
+                    maxLength={128}
                     className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
                   />
                 </div>

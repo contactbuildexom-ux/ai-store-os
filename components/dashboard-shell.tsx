@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Activity, Bell, Boxes, ChevronDown, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Search, Settings, ShoppingBag, Store, Users, X } from "lucide-react";
+import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const navigation = [
@@ -18,6 +19,7 @@ const navigation = [
 ];
 
 export function DashboardShell({ children, email }: { children: React.ReactNode; email: string }) {
+  const { settings } = usePlatformBranding();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -40,9 +42,17 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
   const sidebar = (
     <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
       <div className="flex h-[76px] items-center gap-3 border-b border-white/[0.08] px-6">
-        <Link href="/" aria-label="Buildexom home" onClick={() => setMobileOpen(false)} className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-blue-500 text-white"><Boxes size={19} /></span>
-          <span className="truncate text-[15px] font-semibold tracking-wide">Buildexom <span className="font-normal text-blue-200">AI</span></span>
+        <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+          <PlatformLogo
+            fallback={
+              <>
+                <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-blue-500 text-white"><Boxes size={19} /></span>
+                <span className="truncate text-[15px] font-semibold tracking-wide">{settings.title}</span>
+              </>
+            }
+            className="max-h-10 max-w-[190px] object-contain"
+          />
+          {settings.logoUrl && <span className="truncate text-[13px] font-semibold tracking-wide">{settings.title}</span>}
         </Link>
         <button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 shrink-0 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button>
       </div>
