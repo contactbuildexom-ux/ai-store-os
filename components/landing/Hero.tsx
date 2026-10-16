@@ -1,6 +1,7 @@
 'use client';
 import Link from "next/link";
 import React, { useEffect, useState } from 'react';
+import MerchantStoreSetupModal from './MerchantStoreSetupModal';
 
 /* ---------- Sidebar icons ---------- */
 const sidebarIcons = [
@@ -352,7 +353,7 @@ function SettingsView() {
 const views = [HomeView, StoreView, ProductsView, OrdersView, AnalyticsView, SettingsView];
 
 /* ---------- Right side: dashboard mockup + AI card ---------- */
-function Mockup() {
+function Mockup({ onOpenBuilder }: { onOpenBuilder: (prompt: string) => void }) {
   const [prompt, setPrompt] = useState("");
   const [active, setActive] = useState(1);
   const View = views[active];
@@ -428,12 +429,13 @@ function Mockup() {
           placeholder="e.g. A store for handmade candles, with a clean and minimal design..."
           className="mt-2 h-16 w-full resize-none rounded-lg border border-blue-100 bg-white/80 p-2 text-[11px] leading-snug text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
-        <Link
-          href="/login"
-          className="btn-glow mt-3 block w-full rounded-lg bg-gradient-to-r from-blue-700 to-blue-500 py-2 text-center text-xs font-semibold text-white transition hover:brightness-110"
+        <button
+          type="button"
+          onClick={() => onOpenBuilder(prompt)}
+          className="btn-glow mt-3 block w-full rounded-lg bg-gradient-to-r from-blue-700 to-blue-500 py-2 text-center text-xs font-semibold text-white transition hover:brightness-110 cursor-pointer"
         >
           ✦ Generate Store
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -444,6 +446,15 @@ const DEMO_VIDEO = "/demo.mp4";
 
 export default function Hero() {
   const [showDemo, setShowDemo] = useState(false);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [builderPrompt, setBuilderPrompt] = useState("");
+
+  const handleOpenBuilder = (p?: string) => {
+    if (typeof p === "string" && p) {
+      setBuilderPrompt(p);
+    }
+    setIsBuilderOpen(true);
+  };
 
   /* Demo popup: Escape se band */
   useEffect(() => {
@@ -505,12 +516,13 @@ export default function Hero() {
           </p>
 
           <div className="mt-9 flex flex-wrap gap-4">
-            <Link
-              href="/#generate-store"
-              className="btn-glow inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-7 py-4 text-[15px] font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110"
+            <button
+              type="button"
+              onClick={() => handleOpenBuilder()}
+              className="btn-glow inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-7 py-4 text-[15px] font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110 cursor-pointer"
             >
               Start Building Free <span aria-hidden>→</span>
-            </Link>
+            </button>
 
             <button
               type="button"
@@ -534,7 +546,7 @@ export default function Hero() {
         </div>
 
         {/* Right: interactive mockup */}
-        <Mockup />
+        <Mockup onOpenBuilder={handleOpenBuilder} />
       </div>
 
       {/* Demo video popup */}
@@ -559,6 +571,13 @@ export default function Hero() {
           </div>
         </div>
       )}
+
+      {/* Merchant AI Store Setup Modal */}
+      <MerchantStoreSetupModal
+        isOpen={isBuilderOpen}
+        onClose={() => setIsBuilderOpen(false)}
+        initialPrompt={builderPrompt}
+      />
     </section>
   );
 }

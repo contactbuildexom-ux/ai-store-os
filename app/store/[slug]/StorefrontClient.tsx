@@ -46,8 +46,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const isPro = ['pro', 'business'].includes(store.plan.toLowerCase());
     const [cart, setCart] = useState<CartItem[]>([]);
     const [customerName, setCustomerName] = useState('');
+    const [customerEmail, setCustomerEmail] = useState('');
     const [customerPhone, setCustomerPhone] = useState('');
     const [customerAddress, setCustomerAddress] = useState('');
+    const [customerZip, setCustomerZip] = useState('');
     const [city, setCity] = useState(delivery?.store_city || '');
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'advance' | ''>(() => store.accepts_cod ? 'cod' : store.accepts_advance ? 'advance' : '');
     const [orderStatus, setOrderStatus] = useState('');
@@ -97,8 +99,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     customer_name: customerName,
+                    customer_email: customerEmail,
                     customer_phone: customerPhone,
                     shipping_address: customerAddress,
+                    zip_code: customerZip,
                     city,
                     payment_method: paymentMethod,
                     items: cart.map((item) => ({ product_id: item.id, quantity: item.quantity })),
@@ -115,20 +119,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     .map((item) => `• ${item.name} × ${item.quantity} — ${money(item.price * item.quantity)}`)
                     .join('\n');
                 const summary = [
-                    `New order for ${store.name}`,
-                    '',
+                    `🛍️ *NEW ORDER — ${store.name.toUpperCase()}*`,
+                    `----------------------------------------`,
+                    `📋 *Order ID:* #${result.order?.id?.slice(0, 8) || 'NEW'}`,
+                    ``,
+                    `👤 *CUSTOMER DETAILS:*`,
+                    `• *Name:* ${customerName}`,
+                    `• *Email:* ${customerEmail || 'Not provided'}`,
+                    `• *Phone:* ${customerPhone}`,
+                    `• *City:* ${city}`,
+                    `• *Postal / Zip Code:* ${customerZip || 'N/A'}`,
+                    `• *Delivery Address:* ${customerAddress}`,
+                    ``,
+                    `📦 *ITEMS ORDERED:*`,
                     itemLines,
-                    '',
-                    `Customer: ${customerName}`,
-                    `Phone: ${customerPhone}`,
-                    `Delivery address: ${customerAddress}`,
-                    `City: ${city}`,
-                    '',
-                    `Subtotal: ${money(result.subtotal)}`,
-                    `Delivery: ${deliveryFee === 0 ? 'Free' : money(result.delivery_fee)}`,
-                    `Total: ${money(result.total_amount)}`,
-                    `Payment method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(result.advance_amount)})` : 'Cash on Delivery'}`,
-                    `Order reference: ${result.order.id}`,
+                    ``,
+                    `💵 *Subtotal:* ${money(result.subtotal)}`,
+                    `🚚 *Delivery Fee:* ${deliveryFee === 0 ? 'Free' : money(result.delivery_fee)}`,
+                    `🏷️ *Grand Total:* ${money(result.total_amount)}`,
+                    `💳 *Payment Method:* ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(result.advance_amount)})` : 'Cash on Delivery (COD)'}`,
+                    `----------------------------------------`,
+                    `Please confirm my order and share delivery details! Thank you!`,
                 ].join('\n');
                 const destination = `https://wa.me/${merchantPhone}?text=${encodeURIComponent(summary)}`;
                 if (whatsappWindow) whatsappWindow.location.href = destination;
@@ -142,8 +153,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             setCart([]);
             setCustomerName('');
+            setCustomerEmail('');
             setCustomerPhone('');
             setCustomerAddress('');
+            setCustomerZip('');
         } catch (error) {
             whatsappWindow?.close();
             setOrderError(true);
@@ -184,11 +197,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             <div className="space-y-2 border-t border-slate-100 pt-4 text-xs"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{money(subtotal)}</span></div><div className="flex justify-between text-slate-500"><span>Delivery fee</span><span>{deliveryFee === 0 ? 'Free' : money(deliveryFee)}</span></div>{freeDeliveryAbove > 0 && <p className="text-[10px] text-emerald-700">Free delivery on orders over {money(freeDeliveryAbove)}.</p>}<div className="flex justify-between border-t border-slate-100 pt-3 text-sm font-bold text-slate-900"><span>Total</span><span style={{ color: themeColor }}>{money(finalAmount)}</span></div></div>
 
                             <form onSubmit={handleCheckout} className="space-y-3 border-t border-slate-100 pt-4">
-                                <p className="text-xs font-semibold text-slate-800">Delivery details</p>
-                                <input type="text" autoComplete="name" placeholder="Full name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                                <input type="tel" autoComplete="tel" placeholder="Phone number" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} required maxLength={40} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                                <input type="text" autoComplete="address-level2" placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
-                                <textarea autoComplete="street-address" placeholder="Full delivery address" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} required maxLength={500} rows={3} className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <p className="text-xs font-semibold text-slate-800">Customer & delivery details</p>
+                                <input type="text" autoComplete="name" placeholder="Full name *" value={customerName} onChange={(event) => setCustomerName(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <input type="email" autoComplete="email" placeholder="Email address (for receipt & updates)" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <input type="tel" autoComplete="tel" placeholder="WhatsApp / Phone number *" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} required maxLength={40} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="text" autoComplete="address-level2" placeholder="City *" value={city} onChange={(event) => setCity(event.target.value)} required maxLength={120} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                    <input type="text" autoComplete="postal-code" placeholder="Zip / Postal code" value={customerZip} onChange={(event) => setCustomerZip(event.target.value)} maxLength={20} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                                </div>
+                                <textarea autoComplete="street-address" placeholder="Full delivery address *" value={customerAddress} onChange={(event) => setCustomerAddress(event.target.value)} required maxLength={500} rows={3} className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                 <fieldset className="space-y-2" disabled={loading}>
                                     <legend className="text-xs font-semibold text-slate-800">Payment method</legend>
                                     {!store.accepts_cod && !store.accepts_advance ? <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-800">The store has not enabled a checkout payment method. Please contact the merchant.</p> : <>

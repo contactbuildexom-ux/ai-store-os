@@ -77,7 +77,10 @@ export default function StoreLayout({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerCity, setCustomerCity] = useState('Lahore');
+  const [customerZip, setCustomerZip] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
   // Extract unique categories
@@ -199,15 +202,20 @@ export default function StoreLayout({
     });
 
     const text = 
-`🛍️ *NEW ORDER - ${storeName.toUpperCase()}*%0A` +
+`🛍️ *NEW ORDER — ${storeName.toUpperCase()}*%0A` +
 `----------------------------------------%0A` +
-`*Customer Name:* ${encodeURIComponent(customerName || 'Valued Customer')}%0A` +
-`*City:* ${encodeURIComponent(customerCity)}%0A` +
-`*Address:* ${encodeURIComponent(customerAddress || 'Will provide in chat')}%0A%0A` +
-`*Items Ordered:*%0A${itemsList}%0A` +
+`👤 *CUSTOMER DETAILS:*%0A` +
+`• *Name:* ${encodeURIComponent(customerName || 'Valued Customer')}%0A` +
+`• *Email:* ${encodeURIComponent(customerEmail || 'Not provided')}%0A` +
+`• *Phone:* ${encodeURIComponent(customerPhone || 'Not provided')}%0A` +
+`• *City:* ${encodeURIComponent(customerCity)}%0A` +
+`• *Postal / Zip Code:* ${encodeURIComponent(customerZip || 'N/A')}%0A` +
+`• *Delivery Address:* ${encodeURIComponent(customerAddress || 'Will provide in chat')}%0A%0A` +
+`📦 *ITEMS ORDERED:*%0A${itemsList}%0A` +
 `💵 *Subtotal:* Rs. ${cartTotal.toLocaleString()}%0A` +
 `🚚 *Delivery Fee:* Rs. ${deliveryFee}%0A` +
 `🏷️ *Grand Total:* Rs. ${grandTotal.toLocaleString()}%0A` +
+`💳 *Payment Method:* Cash on Delivery (COD)%0A` +
 `----------------------------------------%0A` +
 `Please confirm my order. Thank you!`;
 
@@ -579,13 +587,27 @@ export default function StoreLayout({
 
               {/* Order Info Inputs */}
               {cart.length > 0 && (
-                <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-                  <p className="text-xs font-bold text-slate-800">Delivery Details</p>
+                <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2.5">
+                  <p className="text-xs font-bold text-slate-800">Customer & Delivery Details</p>
                   <input
                     type="text"
-                    placeholder="Your Full Name"
+                    placeholder="Your Full Name *"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address (for order updates)"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="WhatsApp / Phone Number *"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
                   />
                   <div className="grid grid-cols-2 gap-2">
@@ -603,12 +625,19 @@ export default function StoreLayout({
                     </select>
                     <input
                       type="text"
-                      placeholder="Delivery Address"
-                      value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Zip / Postal Code"
+                      value={customerZip}
+                      onChange={(e) => setCustomerZip(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
                     />
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Delivery Address *"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
                 </div>
               )}
             </div>
