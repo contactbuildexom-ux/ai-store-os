@@ -100,7 +100,7 @@ export function DashboardRecordActions({ resource, recordId, values, fields, vie
                         {options?.map((option) => <option key={option} value={option}>{option}</option>)}
                       </select>
                     ) : (
-                      <input name={key} type={type} step={type === "number" ? "0.01" : undefined} required={key === "name" || key === "owner_email" || key === "price"} defaultValue={values.find((value) => value.label === label)?.value ?? ""} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                      <input name={key} type={type} step={type === "number" ? key === "stock" ? "1" : "0.01" : undefined} required={key === "name" || key === "owner_email" || key === "price"} defaultValue={values.find((value) => value.label === label)?.value ?? ""} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                     )}
                   </label>
                 ))}

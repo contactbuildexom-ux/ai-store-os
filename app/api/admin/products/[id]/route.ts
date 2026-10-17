@@ -28,6 +28,26 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       if (typeof input.description !== "string") return NextResponse.json({ error: "Invalid product description." }, { status: 400 });
       updates.description = input.description.trim() || null;
     }
+    if ("sku" in input) {
+      if (typeof input.sku !== "string" || input.sku.trim().length > 100) return NextResponse.json({ error: "SKU must be 100 characters or fewer." }, { status: 400 });
+      updates.sku = input.sku.trim() || null;
+    }
+    if ("stock" in input) {
+      const stock = input.stock === "" || input.stock === null
+        ? null
+        : typeof input.stock === "number"
+          ? input.stock
+          : typeof input.stock === "string"
+            ? Number(input.stock)
+            : NaN;
+      if (stock === null) {
+        updates.stock = null;
+      } else if (!Number.isSafeInteger(stock) || stock < 0 || stock > 2147483647) {
+        return NextResponse.json({ error: "Enter a valid non-negative whole-number stock quantity." }, { status: 400 });
+      } else {
+        updates.stock = stock;
+      }
+    }
     if ("category_id" in input) {
       if (typeof input.category_id !== "string") return NextResponse.json({ error: "Invalid product category." }, { status: 400 });
       updates.category_id = input.category_id.trim() || null;
@@ -35,6 +55,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: "No product fields were provided to update." }, { status: 400 });
 
     const { data, error } = await supabase.from("store_products").update(updates).eq("id", id).select("id").maybeSingle();
+    if (error?.code === "23505") return NextResponse.json({ error: "That SKU is already in use for this store." }, { status: 409 });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     if (!data) return NextResponse.json({ error: "Product not found." }, { status: 404 });
     return NextResponse.json({ success: true });

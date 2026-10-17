@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Bell, BookOpenText, Boxes, ChevronDown, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Search, Settings, ShoppingBag, Store, Users, X } from "lucide-react";
+import { Activity, Bell, BookOpenText, Boxes, ChevronDown, ChevronRight, CreditCard, DatabaseBackup, LayoutDashboard, LogOut, Menu, Package, Search, Settings, ShoppingBag, Store, Users, X } from "lucide-react";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -17,6 +17,7 @@ const navigation = [
   { label: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
   { label: "Analytics", href: "/dashboard/analytics", icon: Activity },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Backup", href: "/dashboard/backup", icon: DatabaseBackup },
 ];
 
 export function DashboardShell({ children, email }: { children: React.ReactNode; email: string }) {
@@ -77,7 +78,7 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
           <div className="relative"><button onClick={() => { setNotificationsOpen((value) => !value); setProfileOpen(false); }} className="relative grid size-9 place-items-center rounded-md text-slate-600 transition hover:bg-slate-100" aria-label="Notifications" aria-expanded={notificationsOpen}><Bell size={18} /><span className="absolute right-[7px] top-[6px] size-1.5 rounded-full bg-blue-500 ring-2 ring-white" /></button>{notificationsOpen && <div className="absolute right-0 top-12 z-40 w-72 rounded-lg border border-slate-200 bg-white p-4 shadow-lg"><p className="text-sm font-semibold text-slate-800">Notifications</p><p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-5 text-slate-500">You’re all caught up. New platform activity will appear here.</p></div>}</div>
           <div className="relative"><button onClick={() => { setProfileOpen((value) => !value); setNotificationsOpen(false); }} className="flex items-center gap-2 rounded-md p-1.5 text-left transition hover:bg-slate-100" aria-expanded={profileOpen} aria-label="Admin profile menu"><span className="grid size-8 place-items-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">{initials}</span><ChevronDown size={14} className="hidden text-slate-400 sm:block" /></button>{profileOpen && <div className="absolute right-0 top-12 z-40 w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg"><div className="border-b border-slate-100 px-3 py-2"><p className="text-xs font-medium text-slate-800">Super Admin</p><p className="mt-1 truncate text-[11px] text-slate-500">{email}</p></div><button onClick={signOut} className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-slate-600 hover:bg-slate-50"><LogOut size={15} />Log out</button></div>}</div>
         </header>
-        <main className="mx-auto w-full max-w-[1440px] px-5 py-7 sm:px-8 lg:px-10">{children}</main>
+        <main className="mx-auto min-w-0 w-full max-w-[1440px] px-5 py-7 sm:px-8 lg:px-10">{children}</main>
       </div>
     </div>
   );

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { AddStoreButton } from "@/components/add-store-button";
 import { DashboardRecordActions, type DashboardEditField } from "@/components/dashboard-record-actions";
 import { ExportCsvButton } from "@/components/export-csv-button";
+import { ProductCsvImport } from "@/components/product-csv-import";
+import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type SectionRow = {
@@ -45,6 +47,7 @@ export default async function SectionPage({
   let rows: SectionRow[] = [];
   let totalCount = 0;
   let dataError: string | null = null;
+  let storeOptions: Array<{ id: string; name: string }> = [];
 
   const supabase = createAdminClient();
   if (!supabase) {
@@ -117,26 +120,39 @@ export default async function SectionPage({
   } else if (section === "products") {
     title = "Products";
     description = "Monitor catalog listings across store products.";
-    columns = ["Product Name", "Price", "Category ID", "Created At", "Actions"];
+    columns = ["Product Name", "SKU", "Price", "Stock", "Category ID", "Created At", "Actions"];
     if (supabase) {
-      let query = supabase.from("store_products").select("id, name, price, category_id, description, created_at", { count: "exact" }).order("created_at", { ascending: false });
+      const storesResult = await supabase.from("stores").select("id, name").order("name", { ascending: true }).limit(1000);
+      if (storesResult.error) dataError = `Unable to load stores for product import: ${storesResult.error.message}`;
+      storeOptions = (storesResult.data ?? []).map((store) => ({ id: String(store.id), name: String(store.name ?? "Untitled store") }));
+
+      let query = supabase.from("store_products").select("id, name, price, category_id, description, sku, stock, created_at", { count: "exact" }).order("created_at", { ascending: false });
       if (q) query = query.ilike("name", `%${q}%`);
       const result = await query;
-      if (result.error) dataError = `Unable to load products: ${result.error.message}`;
+      if (result.error) {
+        const missingImportColumns = ["sku", "stock"].some((column) => result.error.message.includes(column));
+        dataError = missingImportColumns
+          ? "Apply supabase/migrations/12_product_csv_import.sql to enable product SKU and stock fields."
+          : `Unable to load products: ${result.error.message}`;
+      }
       totalCount = result.count ?? 0;
       rows = (result.data ?? []).map((product) => {
         const name = String(product.name ?? "");
         const price = String(product.price ?? 0);
         const categoryId = typeof product.category_id === "string" ? product.category_id : "";
         const descriptionText = typeof product.description === "string" ? product.description : "";
+        const sku = typeof product.sku === "string" ? product.sku : "";
+        const stock = product.stock === null || product.stock === undefined ? "" : String(product.stock);
         return {
           id: String(product.id),
-          cells: [name || "N/A", `PKR ${price}`, categoryId ? `${categoryId.slice(0, 8)}...` : "General", product.created_at ? new Date(product.created_at).toLocaleDateString() : "—"],
-          values: [{ label: "Product name", value: name }, { label: "Price", value: price }, { label: "Category ID", value: categoryId }, { label: "Description", value: descriptionText }],
+          cells: [name || "N/A", sku || "—", `PKR ${price}`, stock || "—", categoryId ? `${categoryId.slice(0, 8)}...` : "General", product.created_at ? new Date(product.created_at).toLocaleDateString() : "—"],
+          values: [{ label: "Product name", value: name }, { label: "SKU", value: sku }, { label: "Price", value: price }, { label: "Stock", value: stock }, { label: "Category ID", value: categoryId }, { label: "Description", value: descriptionText }],
           resource: "products",
           fields: [
             { key: "name", label: "Product name" },
+            { key: "sku", label: "SKU" },
             { key: "price", label: "Price", type: "number" },
+            { key: "stock", label: "Stock", type: "number" },
             { key: "category_id", label: "Category ID" },
             { key: "description", label: "Description" },
           ],
@@ -174,6 +190,7 @@ export default async function SectionPage({
     : section === "products"
       ? <Link href="/dashboard/stores" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50"><ArrowUpRight size={14} />Browse stores</Link>
       : null;
+  const importAction = section === "products" ? <ProductCsvImport stores={storeOptions} /> : null;
   const exportColumns = columns.filter((column) => column !== "Actions");
   const exportRows = rows.map((row) => row.cells);
 
@@ -187,11 +204,12 @@ export default async function SectionPage({
         </div>
         <div className="flex gap-2">
           <ExportCsvButton columns={exportColumns} rows={exportRows} fileName={`${section}.csv`} />
+          {importAction}
           {addAction}
         </div>
       </div>
       {dataError && <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertCircle size={17} className="mt-0.5 shrink-0" />{dataError}</p>}
-      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="text-sm font-semibold text-slate-800">All {title.toLowerCase()}</h3>
@@ -202,7 +220,7 @@ export default async function SectionPage({
             <input name="q" defaultValue={q} placeholder={`Search ${title.toLowerCase()}...`} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-slate-400" />
           </form>
         </div>
-        <div className="overflow-x-auto">
+        <DashboardTableScroll>
           <table className="w-full min-w-[850px] text-left">
             <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500">{columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}</tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -219,7 +237,7 @@ export default async function SectionPage({
             </tbody>
           </table>
           {rows.length === 0 && <p className="px-5 py-12 text-center text-sm text-slate-500">No records found.</p>}
-        </div>
+        </DashboardTableScroll>
         <div className="border-t border-slate-100 px-5 py-3 text-[11px] text-slate-500">Total records: {totalCount}</div>
       </section>
     </div>

@@ -61,6 +61,10 @@ export function PlatformBrandingProvider({
   }, []);
 
   useEffect(() => {
+    setSettings(initialSettings);
+  }, [initialSettings]);
+
+  useEffect(() => {
     const brandTitle = settings.seoTitle || settings.title;
     const currentTitle = document.title;
     let nextTitle = currentTitle.replaceAll(DEFAULT_PLATFORM_BRANDING.title, brandTitle);

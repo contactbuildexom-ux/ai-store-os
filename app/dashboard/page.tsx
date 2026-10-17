@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AlertCircle, ArrowRight, ArrowUpRight, Bot, CreditCard, Package, ShoppingBag, Store } from "lucide-react";
 import { DashboardGreeting } from "@/components/dashboard-greeting";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 
 type StoreSummary = {
   id: string;
@@ -78,12 +79,12 @@ export default async function DashboardPage() {
         ))}
       </section>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(270px,0.8fr)]">
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
             <div><h3 className="text-sm font-semibold text-slate-800">Registered stores</h3><p className="mt-1 text-[11px] text-slate-500">Latest stores created on your platform</p></div>
             <Link href="/dashboard/stores" prefetch className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">View all <ArrowRight size={14} /></Link>
           </div>
-          <div className="overflow-x-auto">
+          <DashboardTableScroll>
             <table className="w-full min-w-[510px] text-left">
               <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500"><th className="px-5 py-3">Store name</th><th className="px-4 py-3">Slug</th><th className="px-4 py-3">Plan</th><th className="px-4 py-3">Payment status</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
                 {stores.length === 0 && <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-500">No stores found.</td></tr>}
               </tbody>
             </table>
-          </div>
+          </DashboardTableScroll>
         </section>
         <aside className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { ExportCsvButton } from "@/components/export-csv-button";
 import { DashboardRecordActions } from "@/components/dashboard-record-actions";
+import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 
 export type DashboardOrder = {
   id: string;
@@ -48,6 +49,17 @@ function statusGroup(status: string | null) {
   return "pending";
 }
 
+function formatOrderTimestamp(value: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  const twoDigits = (part: number) => String(part).padStart(2, "0");
+  return {
+    display: `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())} ${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())}`,
+    iso: date.toISOString(),
+  };
+}
+
 export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -61,13 +73,13 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
     itemsLabel(order.items),
     statusGroup(order.status),
     String(order.total_amount ?? 0),
-    order.created_at ? new Date(order.created_at).toLocaleString() : "",
+    formatOrderTimestamp(order.created_at)?.display ?? "",
   ]);
   const columns = ["Order ID", "Customer", "Items", "Status", "Total", "Created", "Actions"];
   const exportColumns = columns.slice(0, -1);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
         <div>
           <h3 className="text-sm font-semibold text-slate-800">All orders</h3>
@@ -87,7 +99,7 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
           <ExportCsvButton columns={exportColumns} rows={exportRows} fileName="orders.csv" />
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <DashboardTableScroll>
         <table className="w-full min-w-[1000px] text-left">
           <thead className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500">
             <tr>{columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}</tr>
@@ -95,6 +107,7 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
           <tbody className="divide-y divide-slate-100">
             {filteredOrders.map((order) => {
               const orderStatus = statusGroup(order.status);
+              const timestamp = formatOrderTimestamp(order.created_at);
               return (
                 <tr key={order.id} className="text-xs text-slate-600 hover:bg-slate-50/70">
                   <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-800">#{order.id.slice(0, 8)}</td>
@@ -102,7 +115,9 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
                   <td className="max-w-[260px] truncate px-5 py-4" title={itemsLabel(order.items)}>{itemsLabel(order.items)}</td>
                   <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium capitalize ${statusClass(orderStatus)}`}>{orderStatus}</span></td>
                   <td className="whitespace-nowrap px-5 py-4 font-medium text-slate-700">{Number(order.total_amount ?? 0).toLocaleString()}</td>
-                  <td className="whitespace-nowrap px-5 py-4">{order.created_at ? new Date(order.created_at).toLocaleDateString() : "—"}</td>
+                  <td className="whitespace-nowrap px-5 py-4">
+                    {timestamp ? <time dateTime={timestamp.iso} title={timestamp.iso}>{timestamp.display}</time> : "—"}
+                  </td>
                   <td className="whitespace-nowrap px-5 py-3">
                     <DashboardRecordActions
                       resource="orders"
@@ -116,7 +131,7 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
                         { label: "Status", value: order.status ?? "pending" },
                         { label: "Total", value: String(order.total_amount ?? 0) },
                         { label: "Store ID", value: order.store_id ?? "" },
-                        { label: "Created", value: order.created_at ? new Date(order.created_at).toLocaleString() : "" },
+                        { label: "Created", value: timestamp?.display ?? "—" },
                       ]}
                       fields={[
                         { key: "customer_name", label: "Customer", },
@@ -131,7 +146,7 @@ export function DashboardOrdersTable({ orders }: { orders: DashboardOrder[] }) {
             {filteredOrders.length === 0 && <tr><td colSpan={columns.length} className="px-5 py-12 text-center text-sm text-slate-500">No orders match these filters.</td></tr>}
           </tbody>
         </table>
-      </div>
+      </DashboardTableScroll>
     </section>
   );
 }
