@@ -141,17 +141,21 @@ button { cursor: pointer; }
 .blink-attention a { animation: blink-glow 0.9s ease-in-out 4; }
 
 /* ============================================================
-   NAVBAR LOGO: white background removed (also on hover/click)
+   NAVBAR LOGO: white background removed
+   (solid isolated group so the multiply blend always works)
    ============================================================ */
-header a[aria-label="Buildexom home"],
-header a[aria-label="Buildexom home"] * {
-  background-color: transparent !important;
-  mix-blend-mode: multiply;
-}
 header a[aria-label="Buildexom home"] {
+  background-color: #e6f4ff !important;
+  isolation: isolate;
+  mix-blend-mode: normal !important;
+  transform: translateZ(0);
   scale: none !important;
   outline: none;
   -webkit-tap-highlight-color: transparent;
+}
+header a[aria-label="Buildexom home"] * {
+  background-color: transparent !important;
+  mix-blend-mode: multiply;
 }
 
 /* ============================================================
@@ -218,15 +222,14 @@ main section[id] :has(+ h2) > * {
   backdrop-filter: none !important;
 }
 
-/* ---------- Section headings ---------- */
+/* ---------- Section headings: size/weight only (NO forced colour).
+   Light sections stay navy (body colour); dark boxes stay white
+   (inherited from text-white). ---------- */
 main section[id] h2 {
   font-size: clamp(1.75rem, 1.1rem + 2.2vw, 2.5rem) !important;
   font-weight: 800 !important;
   line-height: 1.18 !important;
   letter-spacing: -0.015em !important;
-}
-main section h2:not([class*="text-white"]) {
-  color: #0b2545 !important;
 }
 
 /* ---------- Cards: lift + blue glow on hover ---------- */
@@ -283,3 +286,16 @@ main section button:hover > span[aria-hidden="true"] {
   border: 2px solid #e6f4ff;
 }
 ::-webkit-scrollbar-thumb:hover { background: #0b2545; }
+
+/* ===== LOGO: white pixels -> transparent (colour-key filter) ===== */
+header a[aria-label="Buildexom home"] {
+  background-color: transparent !important;
+  isolation: auto;
+  transform: none;
+}
+header a[aria-label="Buildexom home"] * {
+  mix-blend-mode: normal !important;
+}
+header a[aria-label="Buildexom home"] > * {
+  filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='k' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 -3 0 0 0 3'/%3E%3C/filter%3E%3C/svg%3E#k");
+}

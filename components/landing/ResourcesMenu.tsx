@@ -1,19 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { resources, type Resource } from "@/lib/resources";
-
-const THEME: Record<Resource["theme"], { grad: string }> = {
-  blue: { grad: "from-sky-500 to-indigo-600" },
-  amber: { grad: "from-amber-400 to-orange-600" },
-  violet: { grad: "from-violet-500 to-fuchsia-600" },
-  emerald: { grad: "from-emerald-400 to-teal-600" },
-  rose: { grad: "from-rose-400 to-pink-600" },
-  teal: { grad: "from-teal-400 to-cyan-600" },
-  slate: { grad: "from-slate-500 to-slate-700" },
-};
 
 const CSS = `
 @keyframes rmUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -40,7 +30,7 @@ function Chevron({ className = "" }: { className?: string }) {
   );
 }
 
-/* ───────────────────────── PROFESSIONAL ICONS ───────────────────────── */
+/* ───────────────────────── ICONS ───────────────────────── */
 
 function ResourceIcon({
   resource,
@@ -53,14 +43,14 @@ function ResourceIcon({
 
   let kind = "default";
   if (/help|support/.test(key)) kind = "help";
-  else if (/\bai\b/.test(key)) kind = "ai";
+  else if (/\bai\b|ai-guide/.test(key)) kind = "ai";
   else if (/blog/.test(key)) kind = "blog";
   else if (/tutorial|video/.test(key)) kind = "tutorials";
   else if (/faq|question/.test(key)) kind = "faq";
   else if (/e-?commerce|guide/.test(key)) kind = "ecommerce";
   else if (/success|stories|case/.test(key)) kind = "success";
 
-  let paths: React.ReactNode;
+  let paths: ReactNode;
   switch (kind) {
     case "help":
       paths = (
@@ -214,10 +204,10 @@ export function DesktopResources() {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex h-[72px] items-center gap-1.5 px-3 text-sm font-semibold transition-colors ${
+        className={`relative flex h-[72px] items-center gap-1.5 px-3 text-[15px] font-semibold transition-colors ${
           open || isHere
-            ? "text-blue-600"
-            : "text-slate-700 hover:text-blue-600"
+            ? "text-[#1976d2]"
+            : "text-[#0b2545] hover:text-[#1976d2]"
         }`}
       >
         Resources
@@ -227,7 +217,7 @@ export function DesktopResources() {
           }`}
         />
         <span
-          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-left rounded-full bg-blue-600 transition-transform duration-300 ${
+          className={`absolute bottom-0 left-3 right-3 h-0.5 origin-left rounded-full bg-[#1976d2] transition-transform duration-300 ${
             open || isHere ? "scale-x-100" : "scale-x-0"
           }`}
         />
@@ -235,20 +225,19 @@ export function DesktopResources() {
 
       {/* Panel */}
       <div
-        className={`absolute left-1/2 top-full z-50 w-[340px] max-w-[calc(100vw-2rem)] -translate-x-1/2 transition-all duration-300 ease-out ${
+        className={`absolute left-1/2 top-full z-50 w-[350px] max-w-[calc(100vw-2rem)] -translate-x-1/2 transition-all duration-300 ease-out ${
           open
             ? "visible translate-y-0 opacity-100"
             : "pointer-events-none invisible -translate-y-2 opacity-0"
         }`}
       >
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-900/15">
-          <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        <div className="overflow-hidden rounded-3xl border border-[#cfe2fa] bg-white p-3 shadow-[0_30px_60px_-24px_rgba(11,37,69,0.35)]">
+          <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-[#1976d2]">
             Resources
           </p>
 
           <ul className="space-y-1">
             {resources.map((r, i) => {
-              const t = THEME[r.theme];
               const current = pathname?.startsWith(r.href);
               return (
                 <li
@@ -259,30 +248,34 @@ export function DesktopResources() {
                   <Link
                     href={r.href}
                     onClick={() => setOpen(false)}
-                    className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200 hover:bg-slate-50 hover:shadow-sm hover:ring-1 hover:ring-slate-200 ${
-                      current ? "bg-slate-50 ring-1 ring-slate-200" : ""
+                    className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all duration-200 hover:bg-[#f1f8ff] hover:ring-1 hover:ring-[#cfe2fa] ${
+                      current ? "bg-[#f1f8ff] ring-1 ring-[#cfe2fa]" : ""
                     }`}
                   >
                     <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-white shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110`}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105 group-hover:bg-[#1976d2] group-hover:text-white ${
+                        current
+                          ? "bg-[#1976d2] text-white"
+                          : "bg-[#e6f4ff] text-[#1976d2]"
+                      }`}
                     >
                       <ResourceIcon resource={r} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2 text-sm font-bold text-[#0f2350]">
+                      <span className="flex items-center gap-2 text-sm font-bold text-[#0b2545]">
                         {r.title}
                         {r.badge && (
-                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                          <span className="rounded-full bg-[#e6f4ff] px-2 py-0.5 text-[10px] font-bold text-[#1976d2]">
                             {r.badge}
                           </span>
                         )}
                       </span>
-                      <span className="block truncate text-xs text-slate-500">
+                      <span className="block truncate text-xs text-[#5b7aa3]">
                         {r.desc}
                       </span>
                     </span>
                     <svg
-                      className="h-4 w-4 shrink-0 -translate-x-1 text-slate-400 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
+                      className="h-4 w-4 shrink-0 -translate-x-1 text-[#1976d2] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
@@ -300,9 +293,9 @@ export function DesktopResources() {
             })}
           </ul>
 
-          <div className="mt-3 rounded-2xl bg-gradient-to-br from-[#0b1736] to-blue-700 p-4 text-white">
-            <p className="text-sm font-bold">Need help fast?</p>
-            <p className="mt-0.5 text-xs text-blue-100/80">
+          <div className="mt-3 rounded-2xl bg-gradient-to-br from-[#0b2545] to-[#1976d2] p-4 text-white">
+            <p className="text-sm font-bold text-white">Need help fast?</p>
+            <p className="mt-0.5 text-xs text-[#d6e9ff]">
               Ask Bexi AI, the chat bubble at the bottom right.
             </p>
           </div>
@@ -326,7 +319,7 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+        className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-semibold text-[#0b2545] transition hover:bg-white hover:text-[#1976d2]"
       >
         Resources
         <Chevron
@@ -346,31 +339,28 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
         <div className="overflow-hidden">
           <ul className="space-y-1 pb-2 pl-2">
             {resources.map((r) => {
-              const t = THEME[r.theme];
               const expanded = openId === r.id;
               return (
-                <li key={r.id} className="rounded-2xl bg-slate-50/70">
+                <li key={r.id} className="rounded-2xl bg-white/70">
                   <div className="flex items-center">
                     <Link
                       href={r.href}
                       onClick={onNavigate}
                       className="flex flex-1 items-center gap-3 px-3 py-3"
                     >
-                      <span
-                        className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${t.grad} text-white`}
-                      >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#e6f4ff] text-[#1976d2]">
                         <ResourceIcon resource={r} className="h-4 w-4" />
                       </span>
                       <span>
-                        <span className="flex items-center gap-2 text-sm font-bold text-[#0f2350]">
+                        <span className="flex items-center gap-2 text-sm font-bold text-[#0b2545]">
                           {r.title}
                           {r.badge && (
-                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                            <span className="rounded-full bg-[#e6f4ff] px-2 py-0.5 text-[10px] font-bold text-[#1976d2]">
                               {r.badge}
                             </span>
                           )}
                         </span>
-                        <span className="block text-xs text-slate-500">
+                        <span className="block text-xs text-[#5b7aa3]">
                           {r.desc}
                         </span>
                       </span>
@@ -380,7 +370,7 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
                       aria-label={`Show ${r.title} topics`}
                       aria-expanded={expanded}
                       onClick={() => setOpenId(expanded ? null : r.id)}
-                      className="mr-2 flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-white"
+                      className="mr-2 flex h-9 w-9 items-center justify-center rounded-full text-[#1976d2] transition hover:bg-[#e6f4ff]"
                     >
                       <Chevron
                         className={`transition-transform duration-300 ${
@@ -394,7 +384,7 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
                     <div className="rm-in space-y-4 px-4 pb-4 pt-1">
                       {r.groups.map((g) => (
                         <div key={g.title}>
-                          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-[#1976d2]">
                             {g.title}
                           </p>
                           <ul className="space-y-0.5">
@@ -409,7 +399,7 @@ export function MobileResources({ onNavigate }: { onNavigate: () => void }) {
                                 <Link
                                   href={l.href}
                                   onClick={onNavigate}
-                                  className="block rounded-lg px-2 py-1.5 text-sm text-slate-600 transition hover:bg-white hover:text-blue-700"
+                                  className="block rounded-lg px-2 py-1.5 text-sm text-[#2c4a73] transition hover:bg-[#e6f4ff] hover:text-[#1976d2]"
                                 >
                                   {l.label}
                                 </Link>
