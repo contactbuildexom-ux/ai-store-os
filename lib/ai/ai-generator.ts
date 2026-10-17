@@ -104,6 +104,66 @@ export const THEME_PRESETS: Record<string, StoreThemeConfig> = {
     cardBg: 'bg-[#fffbeb]',
     badgeStyle: 'bg-amber-100 text-amber-800 border-amber-200',
     fontVibe: 'Lora, serif'
+  },
+  'ocean-blue': {
+    id: 'ocean-blue',
+    name: 'Ocean Navy & Electric Blue',
+    primaryColor: '#0b2545',
+    secondaryColor: '#1976d2',
+    accentColor: '#38bdf8',
+    textColor: '#0f172a',
+    bgHero: 'bg-gradient-to-br from-[#0b2545] via-[#134074] to-[#1976d2]',
+    cardBg: 'bg-white',
+    badgeStyle: 'bg-blue-100 text-blue-800 border-blue-200',
+    fontVibe: 'Plus Jakarta Sans, sans-serif'
+  },
+  'sunset-amber': {
+    id: 'sunset-amber',
+    name: 'Sunset Amber & Terracotta',
+    primaryColor: '#c2410c',
+    secondaryColor: '#ea580c',
+    accentColor: '#f97316',
+    textColor: '#1c1917',
+    bgHero: 'bg-gradient-to-br from-[#7c2d12] via-[#9a3412] to-[#ea580c]',
+    cardBg: 'bg-white',
+    badgeStyle: 'bg-orange-100 text-orange-800 border-orange-200',
+    fontVibe: 'Inter, sans-serif'
+  },
+  'midnight-minimal': {
+    id: 'midnight-minimal',
+    name: 'Midnight Onyx & Minimal',
+    primaryColor: '#09090b',
+    secondaryColor: '#27272a',
+    accentColor: '#71717a',
+    textColor: '#09090b',
+    bgHero: 'bg-gradient-to-br from-[#09090b] via-[#18181b] to-[#27272a]',
+    cardBg: 'bg-white',
+    badgeStyle: 'bg-zinc-100 text-zinc-900 border-zinc-300',
+    fontVibe: 'Inter, sans-serif'
+  },
+  'aurora-violet': {
+    id: 'aurora-violet',
+    name: 'Aurora Violet & Lavender',
+    primaryColor: '#4c1d95',
+    secondaryColor: '#6d28d9',
+    accentColor: '#8b5cf6',
+    textColor: '#1e1b4b',
+    bgHero: 'bg-gradient-to-br from-[#2e1065] via-[#4c1d95] to-[#7c3aed]',
+    cardBg: 'bg-white',
+    badgeStyle: 'bg-purple-100 text-purple-800 border-purple-200',
+    fontVibe: 'Plus Jakarta Sans, sans-serif'
+  },
+  'mint-fresh': {
+    id: 'mint-fresh',
+    name: 'Mint Fresh & Jade',
+    primaryColor: '#064e3b',
+    secondaryColor: '#047857',
+    accentColor: '#10b981',
+    textColor: '#022c22',
+    bgHero: 'bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#059669]',
+    cardBg: 'bg-white',
+    badgeStyle: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    fontVibe: 'Inter, sans-serif'
   }
 };
 
@@ -312,16 +372,26 @@ export async function generateStoreFromPrompt(options: {
   let themeKey = selectedTheme;
   if (!themeKey || !THEME_PRESETS[themeKey]) {
     const p = prompt.toLowerCase();
-    if (p.includes('gold') || p.includes('royal') || p.includes('luxury') || p.includes('black') || p.includes('dark')) {
+    if (p.includes('ocean') || p.includes('navy') || p.includes('electric') || p.includes('sky')) {
+      themeKey = 'ocean-blue';
+    } else if (p.includes('gold') || p.includes('royal') || p.includes('luxury') || p.includes('black') || p.includes('dark')) {
       themeKey = 'royal-gold';
+    } else if (p.includes('amber') || p.includes('sunset') || p.includes('orange')) {
+      themeKey = 'sunset-amber';
+    } else if (p.includes('purple') || p.includes('violet') || p.includes('lavender')) {
+      themeKey = 'aurora-violet';
+    } else if (p.includes('mint') || p.includes('fresh') || p.includes('nature')) {
+      themeKey = 'mint-fresh';
+    } else if (p.includes('minimal') || p.includes('monochrome') || p.includes('onyx')) {
+      themeKey = 'midnight-minimal';
     } else if (p.includes('rose') || p.includes('pink') || p.includes('blush') || p.includes('girly')) {
       themeKey = 'velvet-rose';
-    } else if (p.includes('tech') || p.includes('neon') || p.includes('cyber') || p.includes('blue')) {
-      themeKey = 'cyber-slate';
+    } else if (p.includes('tech') || p.includes('gadget') || p.includes('electronic') || p.includes('cyber') || p.includes('blue')) {
+      themeKey = 'ocean-blue';
     } else if (p.includes('warm') || p.includes('artisan') || p.includes('brown') || p.includes('earthy')) {
       themeKey = 'artisan-cream';
     } else {
-      themeKey = 'emerald';
+      themeKey = 'ocean-blue';
     }
   }
 

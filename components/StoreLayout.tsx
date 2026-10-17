@@ -24,7 +24,9 @@ import {
   MessageCircle,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 
 export interface ProductItem {
@@ -87,6 +89,7 @@ export default function StoreLayout({
   const [catalogError, setCatalogError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
@@ -332,8 +335,16 @@ export default function StoreLayout({
 
       {/* 2. Main Store Navigation */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open navigation menu"
+              className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 active:scale-95"
+            >
+              <Menu size={20} />
+            </button>
             <div 
               className="flex size-10 items-center justify-center rounded-xl font-bold text-white shadow-sm"
               style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
@@ -341,7 +352,7 @@ export default function StoreLayout({
               {storeName.charAt(0)}
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
                 {storeName}
               </h1>
               <p className="hidden text-xs text-slate-500 sm:block">{storeSlug}.buildexom.store</p>
@@ -401,6 +412,93 @@ export default function StoreLayout({
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer (Slide-In from Left) */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          <div className="relative flex h-full w-full max-w-xs flex-col bg-white shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div 
+                  className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" 
+                  style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
+                >
+                  {storeName.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">{storeName}</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">{storeSlug}.buildexom.store</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Search Catalog</label>
+                <div className="relative mt-2">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-blue-400 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categories</label>
+                <div className="mt-2 space-y-1">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setIsMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                        selectedCategory === cat ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{cat === 'All' ? '🛍️ All Products' : cat}</span>
+                      <ChevronRight size={14} className="opacity-50" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-800">
+                  <MessageCircle size={16} />
+                  <span className="text-xs font-bold">WhatsApp Support</span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80">Have questions about an item or delivery?</p>
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500"
+                >
+                  Chat on WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Hero Section (Dynamic Theme Styling) */}
       <section 
@@ -856,6 +954,33 @@ export default function StoreLayout({
             </form>
           </div>
         )}
+      </div>
+
+      {/* 9. Floating Bottom WhatsApp Pill (Matching Screenshot) */}
+      <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-40">
+        <button
+          type="button"
+          onClick={() => setIsCartOpen(true)}
+          className="w-full sm:w-auto flex items-center justify-between gap-4 rounded-full bg-slate-950/95 text-white px-5 py-3.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 hover:scale-[1.02] active:scale-95"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+              <MessageCircle size={16} />
+            </span>
+            <div className="text-left">
+              <p className="text-xs font-bold leading-none">Order via WhatsApp</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Quick • Easy • Secure</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {totalCartCount > 0 && (
+              <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-slate-950">
+                {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
+              </span>
+            )}
+            <ArrowRight size={16} className="text-emerald-400" />
+          </div>
+        </button>
       </div>
     </div>
   );

@@ -97,11 +97,16 @@ interface MerchantStoreSetupModalProps {
 }
 
 const THEME_OPTIONS = [
-  { id: 'emerald', name: 'Emerald Minimal', color: '#1d7555', desc: 'Fresh & clean' },
+  { id: 'ocean-blue', name: 'Ocean Navy & Electric Blue', color: '#1976d2', desc: 'App-style modern tech & retail' },
+  { id: 'emerald', name: 'Emerald Minimal', color: '#1d7555', desc: 'Fresh & organic' },
   { id: 'royal-gold', name: 'Royal Gold & Dark', color: '#0f172a', desc: 'Luxury & prestigious' },
   { id: 'velvet-rose', name: 'Velvet Rose & Blush', color: '#831843', desc: 'Beauty & apparel' },
-  { id: 'cyber-slate', name: 'Cyber Slate & Indigo', color: '#1e1b4b', desc: 'Modern tech' },
-  { id: 'artisan-cream', name: 'Artisan Terracotta', color: '#78350f', desc: 'Warm & handcrafted' },
+  { id: 'sunset-amber', name: 'Sunset Amber', color: '#ea580c', desc: 'Warm lifestyle & dining' },
+  { id: 'aurora-violet', name: 'Aurora Violet', color: '#7c3aed', desc: 'Creative & boutique' },
+  { id: 'mint-fresh', name: 'Mint Fresh', color: '#059669', desc: 'Wellness & healthcare' },
+  { id: 'cyber-slate', name: 'Cyber Slate', color: '#1e1b4b', desc: 'Modern electronics' },
+  { id: 'artisan-cream', name: 'Artisan Terracotta', color: '#78350f', desc: 'Handcrafted goods' },
+  { id: 'midnight-minimal', name: 'Midnight Onyx', color: '#09090b', desc: 'Ultra-minimal aesthetic' },
 ];
 
 export default function MerchantStoreSetupModal({

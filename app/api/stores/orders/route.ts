@@ -128,7 +128,7 @@ export async function PATCH(req: Request) {
     const updates: Record<string, string> = {};
     if ("status" in body) {
       const status = textValue(body.status).toLowerCase();
-      const allowed = new Set(["pending", "processing", "shipped", "delivered", "completed", "cancelled", "canceled", "rejected"]);
+      const allowed = new Set(["pending", "processing", "ready", "shipped", "delivered", "completed", "cancelled", "canceled", "rejected"]);
       if (!allowed.has(status)) return NextResponse.json({ error: "Enter a valid order status." }, { status: 400 });
       updates.status = status;
     }
