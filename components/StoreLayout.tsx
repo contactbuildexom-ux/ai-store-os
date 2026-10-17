@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { StoreSocialLinks } from '@/components/store-social-links';
+import { StoreFooter } from '@/components/store-footer';
 import {
   isPublicStorefrontResponse,
   isStoreAssistantResponse,
@@ -106,6 +107,30 @@ export default function StoreLayout({
       if (p.category) set.add(p.category);
     });
     return ['All', ...Array.from(set)];
+  }, [products]);
+
+  const defaultFeatured: ProductItem[] = [
+    {
+      id: 'feat-1',
+      name: 'Running Shoes',
+      price: 4999,
+      image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+      description: 'Lightweight breathable sports sneakers for all-day comfort.'
+    },
+    {
+      id: 'feat-2',
+      name: 'Smart Watch',
+      price: 7999,
+      image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+      description: 'Fitness tracker smartwatch with heart rate monitoring.'
+    }
+  ];
+
+  const featuredItems = useMemo(() => {
+    if (products.length >= 2) {
+      return products.slice(0, 4);
+    }
+    return products.length === 1 ? [products[0], defaultFeatured[1]] : defaultFeatured;
   }, [products]);
 
   // AI Shopping Assistant chat state
@@ -500,47 +525,136 @@ export default function StoreLayout({
         </div>
       )}
 
-      {/* 3. Hero Section (Dynamic Theme Styling) */}
-      <section 
-        className="relative overflow-hidden py-16 px-6 text-white sm:py-20"
-        style={{
-          background: `linear-gradient(135deg, ${theme.primaryColor || '#0f172a'} 0%, ${theme.secondaryColor || '#1e293b'} 100%)`
-        }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent pointer-events-none" />
-        
-        <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-medium backdrop-blur-md">
-            <Sparkles size={13} className="text-amber-300" /> Official Storefront • Verified Catalog
-          </div>
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-            {storeName}
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base font-light text-slate-200 sm:text-lg">
-            {tagline}
-          </p>
+      {/* 3. Hero Promo Banner (Matching Screenshot) */}
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 space-y-6">
+        <section
+          className="relative overflow-hidden rounded-3xl p-6 sm:p-10 text-white shadow-xl transition duration-500"
+          style={{
+            background: `linear-gradient(135deg, ${theme.primaryColor || '#071d49'} 0%, ${theme.secondaryColor || '#0b2b68'} 60%, #1976d2 100%)`
+          }}
+        >
+          <div className="absolute -right-16 -top-16 size-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 size-64 rounded-full bg-cyan-400/10 blur-2xl pointer-events-none" />
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
+            <div className="max-w-xl text-left">
+              <h2 className="text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl leading-tight">
+                Premium Products<br />For a Better You
+              </h2>
+              <p className="mt-2 text-xs sm:text-sm text-blue-100 max-w-md leading-relaxed">
+                Quality products. Better living.
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <a
+                  href="#catalog"
+                  className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
+                >
+                  Shop Now →
+                </a>
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                >
+                  <MessageCircle size={14} /> WhatsApp Support
+                </a>
+              </div>
+            </div>
+
+            {/* Wireless Over-Ear Headphones Hero Image (Matching Screenshot) */}
+            <div className="w-48 sm:w-64 lg:w-72 shrink-0">
+              <img
+                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"
+                alt="Premium Headphones"
+                className="size-full object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 4. Featured Products Section (Matching Screenshot) */}
+        <section id="featured" className="space-y-3 pt-1">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+              Featured Products
+            </h3>
             <a
               href="#catalog"
-              className="rounded-full bg-white px-6 py-2.5 text-xs font-bold text-slate-900 shadow-lg transition hover:bg-slate-100"
+              className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition"
             >
-              Shop Collection
-            </a>
-            <a
-              href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20know%20more%20about%20your%20products.`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-5 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-            >
-              <MessageCircle size={15} /> Order on WhatsApp
+              <span>View All</span>
+              <ArrowRight size={13} />
             </a>
           </div>
-        </div>
-      </section>
 
-      {/* 4. Trust Badges Strip */}
-      <div className="border-b border-slate-200 bg-white py-4 px-4">
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {featuredItems.map((item) => (
+              <article
+                key={item.id}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-3">
+                  <img
+                    src={item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
+                    alt={item.name}
+                    className="size-full object-contain transition duration-500 group-hover:scale-105"
+                  />
+                </div>
+
+                <div className="p-3.5">
+                  <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
+                    {item.name}
+                  </h4>
+                  <div className="mt-2.5 flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
+                      Rs. {item.price.toLocaleString()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addToCart(item)}
+                      aria-label={`Add ${item.name} to cart`}
+                      className="grid size-8 place-items-center rounded-full bg-[#1976d2] text-white shadow-md transition hover:bg-[#1565c0] hover:scale-110 active:scale-95"
+                    >
+                      <ShoppingBag size={14} />
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* 5. Category Icons Strip (Matching Screenshot) */}
+        <section id="categories" className="pt-1">
+          <div className="grid grid-cols-4 gap-2 sm:gap-4">
+            {[
+              { id: 'Electronics', name: 'Electronics', icon: '📱' },
+              { id: 'Fashion', name: 'Fashion', icon: '👕' },
+              { id: 'Home', name: 'Home', icon: '🏠' },
+              { id: 'Accessories', name: 'Accessories', icon: '🎧' },
+            ].map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(selectedCategory === cat.name ? 'All' : cat.name)}
+                className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 sm:p-4 text-center transition duration-200 active:scale-95 ${
+                  selectedCategory === cat.name
+                    ? 'border-blue-600 bg-blue-50 text-blue-800 font-bold shadow-xs'
+                    : 'border-slate-200/90 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs'
+                }`}
+              >
+                <span className="text-2xl sm:text-3xl">{cat.icon}</span>
+                <span className="text-[11px] sm:text-xs font-medium leading-none">{cat.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* 6. Trust Badges Strip */}
+      <div className="mt-8 border-y border-slate-200 bg-white py-4 px-4">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:grid-cols-3 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-3">
             <span className="grid size-9 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
@@ -851,26 +965,12 @@ export default function StoreLayout({
         </div>
       )}
 
-      {/* 7. Footer */}
-      <footer className="mt-20 border-t border-slate-200 bg-white py-12 px-4 text-center text-xs text-slate-500">
-        <div className="mx-auto max-w-7xl space-y-3">
-          <div className="flex items-center justify-center gap-2 font-bold text-slate-800">
-            <span>{storeName}</span>
-            <span>•</span>
-            <span className="font-mono text-emerald-700">{storeSlug}.buildexom.store</span>
-          </div>
-          <p className="max-w-md mx-auto text-slate-400">
-            {description || 'Curated online shopping experience powered by the Buildexom AI Store Builder.'}
-          </p>
-          <StoreSocialLinks links={socialLinks} />
-          <div className="mx-auto max-w-xs pt-4 text-left">
-            <StoreQRCode storeSlug={storeSlug} storePath={`/stores/${encodeURIComponent(storeSlug)}`} />
-          </div>
-          <div className="pt-4 text-[11px] text-slate-400">
-            © {new Date().getFullYear()} {storeName}. Built with AI Store OS.
-          </div>
-        </div>
-      </footer>
+      {/* 7. Responsive Store Footer */}
+      <StoreFooter
+        storeName={storeName}
+        storeSlug={storeSlug}
+        socialLinks={socialLinks}
+      />
 
       {/* 8. Floating AI Shopping Assistant Widget */}
       <div className="fixed bottom-6 right-6 z-40">

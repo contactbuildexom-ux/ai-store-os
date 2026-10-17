@@ -87,7 +87,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         products={products}
         delivery={deliveryResult.data ?? null}
       />
-      <StoreFooter storeName={safeStore.name} paymentDetails={paymentDetails} socialLinks={socialLinks} />
+      <StoreFooter storeName={safeStore.name} storeSlug={safeStore.slug} paymentDetails={paymentDetails} socialLinks={socialLinks} />
     </>
   );
 }

@@ -147,6 +147,30 @@ export default function StorefrontClient({ store, settings, products, delivery }
         });
     }, [liveProducts, selectedCategory, searchQuery]);
 
+    const defaultFeatured: Product[] = [
+        {
+            id: 'feat-1',
+            name: 'Running Shoes',
+            price: 4999,
+            image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+            description: 'Lightweight breathable sports sneakers for all-day comfort.'
+        },
+        {
+            id: 'feat-2',
+            name: 'Smart Watch',
+            price: 7999,
+            image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+            description: 'Fitness tracker smartwatch with heart rate monitoring.'
+        }
+    ];
+
+    const featuredItems = useMemo(() => {
+        if (liveProducts.length >= 2) {
+            return liveProducts.slice(0, 4);
+        }
+        return liveProducts.length === 1 ? [liveProducts[0], defaultFeatured[1]] : defaultFeatured;
+    }, [liveProducts]);
+
     const totalCartCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
     const subtotal = useMemo(() => cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0), [cart]);
     const sameCity = Boolean(delivery?.store_city && city.trim().toLowerCase() === delivery.store_city.trim().toLowerCase());
@@ -564,41 +588,133 @@ export default function StorefrontClient({ store, settings, products, delivery }
             <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 space-y-6">
                 {/* 1. Hero Promo Banner (Matching Screenshot) */}
                 <section
-                    className="relative overflow-hidden rounded-3xl p-6 sm:p-10 text-white shadow-lg transition duration-500"
+                    className="relative overflow-hidden rounded-3xl p-6 sm:p-10 text-white shadow-xl transition duration-500"
                     style={{
-                        background: `linear-gradient(135deg, ${themeColor} 0%, #0f172a 100%)`
+                        background: `linear-gradient(135deg, ${themeColor || '#071d49'} 0%, #0b2b68 60%, #1976d2 100%)`
                     }}
                 >
                     <div className="absolute -right-16 -top-16 size-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                     <div className="absolute -left-16 -bottom-16 size-64 rounded-full bg-cyan-400/10 blur-2xl pointer-events-none" />
 
-                    <div className="relative z-10 max-w-2xl">
-                        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold backdrop-blur-md">
-                            <Sparkles size={12} className="text-amber-300" /> Premium Collection • Verified
-                        </div>
-                        <h2 className="text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl leading-tight">
-                            Premium Products For a Better You
-                        </h2>
-                        <p className="mt-2.5 text-xs sm:text-sm text-slate-200 max-w-lg leading-relaxed">
-                            Discover our handpicked catalog crafted for modern elegance and performance. Direct WhatsApp ordering & Cash on Delivery across Pakistan.
-                        </p>
+                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
+                        <div className="max-w-xl text-left">
+                            <h2 className="text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl leading-tight">
+                                Premium Products<br />For a Better You
+                            </h2>
+                            <p className="mt-2 text-xs sm:text-sm text-blue-100 max-w-md leading-relaxed">
+                                Quality products. Better living.
+                            </p>
 
-                        <div className="mt-6 flex flex-wrap items-center gap-3">
-                            <a
-                                href="#products"
-                                className="rounded-full bg-white px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-slate-100 hover:scale-105 active:scale-95"
-                            >
-                                Shop Now →
-                            </a>
-                            <a
-                                href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-                            >
-                                <MessageCircle size={14} /> WhatsApp Support
-                            </a>
+                            <div className="mt-6 flex flex-wrap items-center gap-3">
+                                <a
+                                    href="#products"
+                                    className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
+                                >
+                                    Shop Now →
+                                </a>
+                                <a
+                                    href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                                >
+                                    <MessageCircle size={14} /> WhatsApp Support
+                                </a>
+                            </div>
                         </div>
+
+                        {/* Large Wireless Over-Ear Headphones Hero Image (Matching Screenshot) */}
+                        <div className="w-48 sm:w-64 lg:w-72 shrink-0">
+                            <img
+                                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"
+                                alt="Premium Headphones"
+                                className="size-full object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* 2. Featured Products Section (Matching Screenshot) */}
+                <section id="featured" className="space-y-3 pt-1">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+                            Featured Products
+                        </h3>
+                        <a
+                            href="#products"
+                            className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                        >
+                            <span>View All</span>
+                            <ArrowRight size={13} />
+                        </a>
+                    </div>
+
+                    {/* 2-Column Cards Grid matching screenshot */}
+                    <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {featuredItems.map((item) => (
+                            <article
+                                key={item.id}
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                            >
+                                <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-3">
+                                    <img
+                                        src={item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
+                                        alt={item.name}
+                                        className="size-full object-contain transition duration-500 group-hover:scale-105"
+                                    />
+                                </div>
+
+                                <div className="p-3.5">
+                                    <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
+                                        {item.name}
+                                    </h4>
+                                    <div className="mt-2.5 flex items-center justify-between">
+                                        <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
+                                            {money(item.price)}
+                                        </span>
+                                        {/* Blue circular cart button with cart icon matching screenshot */}
+                                        <button
+                                            type="button"
+                                            onClick={() => addToCart(item, true)}
+                                            aria-label={`Add ${item.name} to cart`}
+                                            className="grid size-8 place-items-center rounded-full bg-[#1976d2] text-white shadow-md transition hover:bg-[#1565c0] hover:scale-110 active:scale-95"
+                                        >
+                                            <ShoppingBag size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 3. Category Icons Strip (Matching Screenshot) */}
+                <section id="categories" className="pt-1">
+                    <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                        {[
+                            { id: 'Electronics', name: 'Electronics', icon: '📱' },
+                            { id: 'Fashion', name: 'Fashion', icon: '👕' },
+                            { id: 'Home', name: 'Home', icon: '🏠' },
+                            { id: 'Accessories', name: 'Accessories', icon: '🎧' },
+                        ].map((cat) => (
+                            <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                    setSelectedCategory(cat.id);
+                                    const el = document.getElementById('products');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-center transition hover:shadow-xs active:scale-95 ${
+                                    selectedCategory === cat.id
+                                        ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                }`}
+                            >
+                                <span className="text-2xl">{cat.icon}</span>
+                                <span className="text-[11px] font-bold sm:text-xs truncate">{cat.name}</span>
+                            </button>
+                        ))}
                     </div>
                 </section>
 
