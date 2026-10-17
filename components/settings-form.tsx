@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Save, Trash2, Upload } from "lucide-react";
 import { DEFAULT_PLATFORM_BRANDING, usePlatformBranding, type PlatformBrandingSettings } from "@/components/platform-branding";
 
@@ -24,16 +25,16 @@ async function readSettingsResponse(response: Response) {
 }
 
 export function SettingsForm() {
-  const [settings, setSettings] = useState(defaults);
+  const router = useRouter();
+  const { settings: initialSettings, updateSettings } = usePlatformBranding();
+  const [settings, setSettings] = useState(initialSettings);
   const [saved, setSaved] = useState(false);
-  const [logoName, setLogoName] = useState("");
+  const [logoName, setLogoName] = useState(initialSettings.logoName);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { updateSettings } = usePlatformBranding();
 
   useEffect(() => {
     if (!logoFile) {
@@ -44,26 +45,6 @@ export function SettingsForm() {
     setLogoPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [logoFile]);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/admin/settings", { cache: "no-store" })
-      .then(readSettingsResponse)
-      .then((next) => {
-        if (active) {
-          setSettings(next);
-          setLogoName(next.logoName);
-          updateSettings(next);
-        }
-      })
-      .catch((reason: unknown) => {
-        if (active) setError(reason instanceof Error ? reason.message : "Unable to load platform settings.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => { active = false; };
-  }, [updateSettings]);
 
   async function saveSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,6 +76,7 @@ export function SettingsForm() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       updateSettings(savedSettings);
       setSaved(true);
+      router.refresh();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Unable to save platform settings.");
     } finally {
@@ -125,6 +107,7 @@ export function SettingsForm() {
       setLogoName("");
       updateSettings(savedSettings);
       setSaved(true);
+      router.refresh();
     } catch (reason) {
       setSettings(previousSettings);
       setLogoName(previousLogoFile?.name ?? previousSettings.logoName);
@@ -146,7 +129,11 @@ export function SettingsForm() {
           setSettings((current) => ({ ...current, [name]: event.target.value }));
           setSaved(false);
         }}
-        maxLength={name === "description" ? 300 : 254}
+        maxLength={{
+          title: 100, description: 300, email: 254, phone: 30, whatsapp: 30,
+          website: 2048, instagram: 2048, facebook: 2048, logoName: 255, logoUrl: 2048,
+          seoTitle: 200, seoDescription: 500, defaultSocialImage: 2048, keywords: 1000,
+        }[name]}
         className="mt-1.5 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     </label>
@@ -155,8 +142,7 @@ export function SettingsForm() {
   return (
     <form onSubmit={saveSettings} className="space-y-5">
       {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
-      {loading && <p role="status" className="text-xs text-slate-500">Loading saved settings…</p>}
-      <fieldset disabled={loading || saving} className="space-y-5 disabled:opacity-70">
+      <fieldset disabled={saving} className="space-y-5 disabled:opacity-70">
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h3 className="text-sm font-semibold text-slate-800">Platform details</h3>
           <p className="mt-1 text-xs text-slate-500">Configure the name and public-facing contact details.</p>
@@ -166,6 +152,42 @@ export function SettingsForm() {
             <div className="sm:col-span-2">{field("description", "Site description")}</div>
             {field("phone", "Contact phone", "tel")}
             {field("whatsapp", "WhatsApp number", "tel")}
+          </div>
+        </section>
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="text-sm font-semibold text-slate-800">SEO settings</h3>
+          <p className="mt-1 text-xs text-slate-500">Set the default metadata and social preview used across public pages.</p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {field("seoTitle", "Global meta title")}
+            {field("defaultSocialImage", "Default social share image URL", "url")}
+            <label className="block text-xs font-medium text-slate-700 sm:col-span-2">Global meta description
+              <textarea
+                name="seoDescription"
+                value={settings.seoDescription}
+                onChange={(event) => {
+                  setSettings((current) => ({ ...current, seoDescription: event.target.value }));
+                  setSaved(false);
+                }}
+                maxLength={500}
+                rows={3}
+                className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <label className="block text-xs font-medium text-slate-700 sm:col-span-2">Keywords
+              <textarea
+                name="keywords"
+                value={settings.keywords}
+                onChange={(event) => {
+                  setSettings((current) => ({ ...current, keywords: event.target.value }));
+                  setSaved(false);
+                }}
+                maxLength={1000}
+                rows={2}
+                placeholder="online stores, ecommerce, WhatsApp ordering"
+                className="mt-1.5 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <span className="mt-1 block font-normal text-slate-500">Separate keywords with commas.</span>
+            </label>
           </div>
         </section>
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

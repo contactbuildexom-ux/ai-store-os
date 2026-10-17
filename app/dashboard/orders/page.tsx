@@ -3,7 +3,7 @@ import { AlertCircle, ShoppingBag } from "lucide-react";
 import { DashboardOrdersTable, type DashboardOrder } from "@/components/dashboard-orders-table";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const metadata: Metadata = { title: "Orders | Buildexom AI" };
+export const metadata: Metadata = { title: "Orders" };
 
 export default async function OrdersPage() {
   const supabase = createAdminClient();

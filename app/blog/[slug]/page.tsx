@@ -35,9 +35,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const post = getPost(slug);
-  if (!post) return { title: "Article not found | Buildexom" };
+  if (!post) return { title: "Article not found" };
   return {
-    title: `${post.title} | Buildexom Blog`,
+    title: post.title,
     description: post.excerpt,
   };
 }

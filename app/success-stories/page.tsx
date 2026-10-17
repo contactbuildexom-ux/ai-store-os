@@ -1,7 +1,7 @@
 import SuccessStories from "@/components/pages/SuccessStories";
 
 export const metadata = {
-  title: "Success Stories | Buildexom",
+  title: "Success Stories",
 };
 
 export default function Page() {

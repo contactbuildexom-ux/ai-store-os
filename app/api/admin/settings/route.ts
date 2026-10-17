@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { revalidateTag } from "next/cache";
 import { isAdminRequest } from "@/lib/admin-api-auth";
+import { PLATFORM_SETTINGS_CACHE_TAG } from "@/lib/platform-settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type SettingsPayload = {
@@ -14,6 +16,10 @@ type SettingsPayload = {
   facebook: string;
   logoName: string;
   logoUrl: string;
+  seoTitle: string;
+  seoDescription: string;
+  defaultSocialImage: string;
+  keywords: string;
 };
 
 const defaults: SettingsPayload = {
@@ -27,6 +33,10 @@ const defaults: SettingsPayload = {
   facebook: "",
   logoName: "",
   logoUrl: "",
+  seoTitle: "",
+  seoDescription: "",
+  defaultSocialImage: "",
+  keywords: "",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -38,6 +48,7 @@ function parseSettings(value: unknown): SettingsPayload | null {
   const lengths: Record<keyof SettingsPayload, number> = {
     title: 100, description: 300, email: 254, phone: 30, whatsapp: 30,
     website: 2048, instagram: 2048, facebook: 2048, logoName: 255, logoUrl: 2048,
+    seoTitle: 200, seoDescription: 500, defaultSocialImage: 2048, keywords: 1000,
   };
   const settings = {} as SettingsPayload;
   for (const key of Object.keys(defaults) as (keyof SettingsPayload)[]) {
@@ -47,7 +58,7 @@ function parseSettings(value: unknown): SettingsPayload | null {
   }
   if (!settings.title) return null;
   if (settings.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(settings.email)) return null;
-  for (const field of [settings.website, settings.instagram, settings.facebook, settings.logoUrl]) {
+  for (const field of [settings.website, settings.instagram, settings.facebook, settings.logoUrl, settings.defaultSocialImage]) {
     if (field) {
       try {
         const url = new URL(field);
@@ -64,10 +75,16 @@ export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const supabase = createAdminClient();
   if (!supabase) return NextResponse.json({ error: "Settings database is not configured." }, { status: 503 });
-  const { data, error } = await supabase.from("platform_settings").select("site_title, site_description, contact_email, contact_phone, whatsapp, social_links, branding").eq("id", "platform").maybeSingle();
-  if (error) return NextResponse.json({ error: "Unable to load platform settings." }, { status: 500 });
+  const { data, error } = await supabase.from("platform_settings").select("site_title, site_description, contact_email, contact_phone, whatsapp, social_links, branding, seo_settings").eq("id", "platform").maybeSingle();
+  if (error) {
+    const migrationMessage = error.message.includes("seo_settings") && (error.code === "42703" || error.code === "PGRST204" || error.message.toLowerCase().includes("column"))
+      ? "Apply supabase/migrations/11_blogs_and_seo_settings.sql to enable SEO settings."
+      : "Unable to load platform settings.";
+    return NextResponse.json({ error: migrationMessage }, { status: 500 });
+  }
   const social = isRecord(data?.social_links) ? data.social_links : {};
   const branding = isRecord(data?.branding) ? data.branding : {};
+  const seo = isRecord(data?.seo_settings) ? data.seo_settings : {};
   return NextResponse.json({
     settings: data ? {
       title: data.site_title,
@@ -80,6 +97,10 @@ export async function GET() {
       facebook: typeof social.facebook === "string" ? social.facebook : "",
       logoName: typeof branding.logoName === "string" ? branding.logoName : "",
       logoUrl: typeof branding.logoUrl === "string" ? branding.logoUrl : "",
+      seoTitle: typeof seo.title === "string" ? seo.title : "",
+      seoDescription: typeof seo.description === "string" ? seo.description : "",
+      defaultSocialImage: typeof seo.defaultSocialImage === "string" ? seo.defaultSocialImage : "",
+      keywords: typeof seo.keywords === "string" ? seo.keywords : "",
     } : defaults,
   });
 }
@@ -137,15 +158,25 @@ export async function PUT(request: Request) {
     whatsapp: settings.whatsapp,
     social_links: { website: settings.website, instagram: settings.instagram, facebook: settings.facebook },
     branding: { logoName: settings.logoName, logoUrl: settings.logoUrl },
+    seo_settings: {
+      title: settings.seoTitle,
+      description: settings.seoDescription,
+      defaultSocialImage: settings.defaultSocialImage,
+      keywords: settings.keywords,
+    },
     updated_at: new Date().toISOString(),
-  }).select("site_title, site_description, contact_email, contact_phone, whatsapp, social_links, branding").single();
+  }).select("site_title, site_description, contact_email, contact_phone, whatsapp, social_links, branding, seo_settings").single();
   if (error) {
     if (uploadedPath) {
       const { error: cleanupError } = await supabase.storage.from("platform-branding").remove([uploadedPath]);
       if (cleanupError) return NextResponse.json({ error: "Unable to save settings or clean up the uploaded logo." }, { status: 500 });
     }
-    return NextResponse.json({ error: "Unable to save platform settings." }, { status: 500 });
+    const message = error.message.includes("seo_settings") && (error.code === "42703" || error.code === "PGRST204" || error.message.toLowerCase().includes("column"))
+      ? "Apply supabase/migrations/11_blogs_and_seo_settings.sql to enable SEO settings."
+      : "Unable to save platform settings.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
+  revalidateTag(PLATFORM_SETTINGS_CACHE_TAG, { expire: 0 });
   return NextResponse.json({ saved: true, settings: {
     title: data.site_title,
     description: data.site_description,
@@ -157,5 +188,9 @@ export async function PUT(request: Request) {
     facebook: data.social_links.facebook,
     logoName: data.branding.logoName,
     logoUrl: data.branding.logoUrl,
+    seoTitle: data.seo_settings.title,
+    seoDescription: data.seo_settings.description,
+    defaultSocialImage: data.seo_settings.defaultSocialImage,
+    keywords: data.seo_settings.keywords,
   } });
 }

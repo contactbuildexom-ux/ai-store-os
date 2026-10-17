@@ -3,7 +3,7 @@ import { PageShell } from "@/components/landing/PageShell";
 import TutorialsList from "@/components/pages/TutorialsList";
 
 export const metadata: Metadata = {
-  title: "Tutorials | Buildexom",
+  title: "Tutorials",
   description:
     "Short how-to guides and videos to build and grow your Buildexom store.",
 };

@@ -15,6 +15,10 @@ export type PlatformBrandingSettings = {
   facebook: string;
   logoName: string;
   logoUrl: string;
+  seoTitle: string;
+  seoDescription: string;
+  defaultSocialImage: string;
+  keywords: string;
 };
 
 type PlatformBrandingContextValue = {
@@ -33,76 +37,42 @@ export const DEFAULT_PLATFORM_BRANDING: PlatformBrandingSettings = {
   facebook: "",
   logoName: "",
   logoUrl: "",
+  seoTitle: "",
+  seoDescription: "",
+  defaultSocialImage: "",
+  keywords: "",
 };
-
-function isPlatformBrandingSettings(value: unknown): value is PlatformBrandingSettings {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Object.keys(DEFAULT_PLATFORM_BRANDING).every(
-      (key) => typeof (value as Record<string, unknown>)[key] === "string",
-    )
-  );
-}
 
 const PlatformBrandingContext = createContext<PlatformBrandingContextValue | null>(null);
 const DEFAULT_FAVICON = "/logo.jpeg";
 
-export function PlatformBrandingProvider({ children }: { children: ReactNode }) {
+export function PlatformBrandingProvider({
+  children,
+  initialSettings = DEFAULT_PLATFORM_BRANDING,
+}: {
+  children: ReactNode;
+  initialSettings?: PlatformBrandingSettings;
+}) {
   const pathname = usePathname();
-  const [settings, setSettings] = useState(DEFAULT_PLATFORM_BRANDING);
-  const updateVersion = useRef(0);
-  const previousDocumentBrand = useRef(DEFAULT_PLATFORM_BRANDING.title);
+  const [settings, setSettings] = useState(initialSettings);
+  const previousDocumentBrand = useRef(initialSettings.seoTitle || initialSettings.title);
   const updateSettings = useCallback((next: PlatformBrandingSettings) => {
-    updateVersion.current += 1;
     setSettings(next);
   }, []);
 
   useEffect(() => {
+    const brandTitle = settings.seoTitle || settings.title;
     const currentTitle = document.title;
-    let nextTitle = currentTitle.replaceAll(DEFAULT_PLATFORM_BRANDING.title, settings.title);
-    if (nextTitle === currentTitle && previousDocumentBrand.current !== settings.title) {
-      nextTitle = currentTitle.replaceAll(previousDocumentBrand.current, settings.title);
+    let nextTitle = currentTitle.replaceAll(DEFAULT_PLATFORM_BRANDING.title, brandTitle);
+    if (nextTitle === currentTitle && previousDocumentBrand.current !== brandTitle) {
+      nextTitle = currentTitle.replaceAll(previousDocumentBrand.current, brandTitle);
     }
-    if (nextTitle === currentTitle && !currentTitle.includes(settings.title)) {
-      nextTitle = `${currentTitle} | ${settings.title}`;
+    if (nextTitle === currentTitle && !currentTitle.includes(brandTitle)) {
+      nextTitle = `${currentTitle} | ${brandTitle}`;
     }
     document.title = nextTitle;
-    previousDocumentBrand.current = settings.title;
-  }, [pathname, settings.title]);
-
-  useEffect(() => {
-    let active = true;
-
-    fetch("/api/branding", { cache: "no-store" })
-      .then(async (response) => {
-        const result: unknown = await response.json();
-        if (!response.ok) {
-          const message =
-            typeof result === "object" && result !== null && "error" in result && typeof result.error === "string"
-              ? result.error
-              : "Unable to load platform branding.";
-          throw new Error(message);
-        }
-        if (typeof result !== "object" || result === null || !("settings" in result)) {
-          throw new Error("The branding service returned an invalid response.");
-        }
-        if (!isPlatformBrandingSettings(result.settings)) {
-          throw new Error("The branding service returned invalid settings.");
-        }
-        return result.settings;
-      })
-      .then((loadedSettings) => {
-        if (active && updateVersion.current === 0) setSettings(loadedSettings);
-      })
-      .catch((error: unknown) => {
-        if (active) console.error(error instanceof Error ? error.message : "Unable to load platform branding.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+    previousDocumentBrand.current = brandTitle;
+  }, [pathname, settings.seoTitle, settings.title]);
 
   useEffect(() => {
     const source = settings.logoUrl || DEFAULT_FAVICON;

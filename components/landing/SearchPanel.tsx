@@ -8,7 +8,7 @@ type Item = { label: string; href: string; group: string };
 
 const QUICK = [
   { label: "Help Center", href: "/help" },
-  { label: "Blog", href: "/blog" },
+  { label: "Blog", href: "/blogs" },
   { label: "Tutorials", href: "/tutorials" },
   { label: "E-commerce Guides", href: "/guides" },
   { label: "AI Tools Guide", href: "/ai-guide" },

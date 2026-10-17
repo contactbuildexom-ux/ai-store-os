@@ -5,7 +5,7 @@ export const LINKS = {
   signup: "/signup",
   pricing: "/#pricing",
   help: "/help",
-  blog: "/blog",
+  blog: "/blogs",
   tutorials: "/tutorials",
   guides: "/guides",
 } as const;

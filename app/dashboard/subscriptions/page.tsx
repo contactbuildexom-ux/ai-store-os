@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AdminPricingPlans } from "@/components/admin-pricing-plans";
 
-export const metadata: Metadata = { title: "Subscriptions | Buildexom AI" };
+export const metadata: Metadata = { title: "Subscriptions" };
 
 export default function SubscriptionsPage() {
   return (

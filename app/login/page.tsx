@@ -2,7 +2,7 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "@/components/login-form";
 
-export const metadata: Metadata = { title: "Sign in | Buildexom AI" };
+export const metadata: Metadata = { title: "Sign in" };
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ access?: string; setup?: string }> }) {
 	const { access, setup } = await searchParams;
 	const mockAuthEnabled = process.env.NODE_ENV === "development"

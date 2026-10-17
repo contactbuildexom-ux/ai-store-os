@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Bell, Boxes, ChevronDown, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Search, Settings, ShoppingBag, Store, Users, X } from "lucide-react";
+import { Activity, Bell, BookOpenText, Boxes, ChevronDown, ChevronRight, CreditCard, LayoutDashboard, LogOut, Menu, Package, Search, Settings, ShoppingBag, Store, Users, X } from "lucide-react";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -13,6 +13,7 @@ const navigation = [
   { label: "Stores", href: "/dashboard/stores", icon: Store },
   { label: "Products", href: "/dashboard/products", icon: Package },
   { label: "Orders", href: "/dashboard/orders", icon: ShoppingBag },
+  { label: "Blogs", href: "/dashboard/blogs", icon: BookOpenText },
   { label: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
   { label: "Analytics", href: "/dashboard/analytics", icon: Activity },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },

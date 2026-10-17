@@ -61,9 +61,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const g = getGuide(slug);
-  if (!g) return { title: "Guide not found | Buildexom" };
+  if (!g) return { title: "Guide not found" };
   return {
-    title: `${g.title} Guide | Buildexom`,
+    title: `${g.title} Guide`,
     description: g.tagline,
   };
 }

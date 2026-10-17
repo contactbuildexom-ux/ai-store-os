@@ -3,7 +3,7 @@ import { PageShell } from "@/components/landing/PageShell";
 import HelpCenter from "@/components/pages/HelpCenter";
 
 export const metadata: Metadata = {
-  title: "Help Center | Buildexom",
+  title: "Help Center",
   description: "Guides to build and manage your Buildexom store.",
 };
 

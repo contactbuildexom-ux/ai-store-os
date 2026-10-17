@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SettingsForm } from "@/components/settings-form";
 
-export const metadata: Metadata = { title: "Settings | Buildexom AI" };
+export const metadata: Metadata = { title: "Settings" };
 
 export default function SettingsPage() {
   return (

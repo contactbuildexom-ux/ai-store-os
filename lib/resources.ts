@@ -80,13 +80,13 @@ export const resources: Resource[] = [
     id: "blog",
     title: "Blog",
     desc: "E-commerce, online selling, and business tips",
-    href: "/blog",
+    href: "/blogs",
     icon: "📰",
     theme: "amber",
     groups: [
       {
         title: "Starting out",
-        href: "/blog",
+        href: "/blogs",
         links: [
           {
             label: "Start an Online Store in Pakistan with No Coding",
@@ -104,7 +104,7 @@ export const resources: Resource[] = [
       },
       {
         title: "Selling on WhatsApp",
-        href: "/blog",
+        href: "/blogs",
         links: [
           {
             label: "How to Sell on WhatsApp",
@@ -122,7 +122,7 @@ export const resources: Resource[] = [
       },
       {
         title: "Growing your store",
-        href: "/blog",
+        href: "/blogs",
         links: [
           {
             label: "Use a QR Code to Bring Customers",

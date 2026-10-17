@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Activity, AlertCircle, CreditCard, Package, ShoppingBag, Store } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const metadata: Metadata = { title: "Analytics | Buildexom AI" };
+export const metadata: Metadata = { title: "Analytics" };
 
 type RevenueOrder = { total_amount: number | string | null; created_at: string | null; status: string | null };
 
