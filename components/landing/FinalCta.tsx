@@ -8,7 +8,7 @@ const perks = ["Free plan available", "No credit card needed", "Live in minutes"
 /* "Talk to our team" -> Footer ke social icons tak scroll + blink */
 function goToSocials(e: MouseEvent<HTMLAnchorElement>) {
   const box = document.getElementById("contact-socials");
-  if (!box) return; // doosre page par ho to Link khud /#contact-socials par le jayega
+  if (!box) return; 
   e.preventDefault();
   box.scrollIntoView({ behavior: "smooth", block: "center" });
   box.classList.remove("blink-attention");

@@ -6,6 +6,8 @@ import Logo from "@/components/landing/logo";
 import { DEFAULT_PLATFORM_BRANDING, PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import AuthModal from "@/components/landing/AuthModal";
 import SearchPanel from "@/components/landing/SearchPanel";
+import GenerateStoreModal from "@/components/landing/GenerateStoreModal";
+import MerchantStoreSetupModal from "@/components/landing/MerchantStoreSetupModal";
 import {
   DesktopResources,
   MobileResources,
@@ -25,11 +27,28 @@ export default function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "signup">("login");
 
+  // "Generate your free store" popup -> AI store builder
+  const [generateOpen, setGenerateOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderPrompt, setBuilderPrompt] = useState("");
+
   const openAuth = (tab: "login" | "signup") => {
     setAuthTab(tab);
     setMobileOpen(false);
     setSearchOpen(false);
     setAuthOpen(true);
+  };
+
+  const openGenerate = () => {
+    setMobileOpen(false);
+    setSearchOpen(false);
+    setGenerateOpen(true);
+  };
+
+  const handleGenerate = (prompt: string) => {
+    setBuilderPrompt(prompt);
+    setGenerateOpen(false);
+    setBuilderOpen(true);
   };
 
   // shadow on scroll
@@ -67,7 +86,6 @@ export default function Navbar() {
         }`}
       >
         <div className="relative mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6">
-          {/* Logo (white background removed with multiply blend) */}
           <Link
             href="/"
             aria-label={`${settings.title} home`}
@@ -131,7 +149,7 @@ export default function Navbar() {
 
             <button
               type="button"
-              onClick={() => openAuth("signup")}
+              onClick={openGenerate}
               className="hidden rounded-full bg-gradient-to-r from-[#1976d2] to-[#1565c0] px-5 py-2.5 text-sm font-bold text-white shadow-[0_6px_16px_-4px_rgba(25,118,210,0.6)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-6px_rgba(25,118,210,0.75)] md:inline-flex"
             >
               Get Started Free
@@ -188,7 +206,7 @@ export default function Navbar() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => openAuth("signup")}
+                  onClick={openGenerate}
                   className="rounded-full bg-gradient-to-r from-[#1976d2] to-[#1565c0] py-3 text-sm font-bold text-white"
                 >
                   Get Started Free
@@ -204,6 +222,16 @@ export default function Navbar() {
         open={authOpen}
         initialTab={authTab}
         onClose={() => setAuthOpen(false)}
+      />
+      <GenerateStoreModal
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
+        onGenerate={handleGenerate}
+      />
+      <MerchantStoreSetupModal
+        isOpen={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        initialPrompt={builderPrompt}
       />
     </>
   );

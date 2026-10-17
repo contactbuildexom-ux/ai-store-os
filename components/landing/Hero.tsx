@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import BodyPortal from "@/components/ui/BodyPortal";
 import MerchantStoreSetupModal from "./MerchantStoreSetupModal";
 
 /* ---------- tiny icon helper ---------- */
@@ -227,8 +228,12 @@ export default function Hero() {
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:py-10">
         {/* ================= LEFT ================= */}
         <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#1976d2]/25 bg-white px-4 py-2 text-sm font-bold text-[#1976d2] shadow-[0_6px_18px_-8px_rgba(25,118,210,0.5)]">
-            <Ico size={15}>{Icons.sparkle}</Ico>
+          <span className="inline-flex items-center gap-2.5 rounded-full border border-[#1976d2]/25 bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#1976d2] shadow-[0_6px_18px_-8px_rgba(25,118,210,0.5)]">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 rounded-full bg-[#1976d2]"
+              style={{ animation: "bx-pulse-dot 2s ease-in-out infinite" }}
+            />
             AI-Powered Store Builder
           </span>
 
@@ -453,7 +458,7 @@ export default function Hero() {
 
           {/* handwritten tag */}
           <div
-            className="pointer-events-none absolute bottom-0 right-4 z-10 hidden -rotate-6 text-lg leading-tight text-[#1976d2] sm:block"
+            className="pointer-events-none absolute bottom-0 right-14 z-10 hidden -rotate-6 text-lg leading-tight text-[#1976d2] sm:block"
             style={{ fontFamily: "'Segoe Script','Brush Script MT',cursive" }}
           >
             Your Store,
@@ -466,38 +471,42 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* ================= demo video popup ================= */}
+      {/* ================= demo video popup (body mein render hota hai) ================= */}
       {demoOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b2545]/80 p-4 backdrop-blur-sm"
-          onClick={() => setDemoOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Buildexom demo video"
-        >
+        <BodyPortal>
           <div
-            className="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-black shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b2545]/80 p-4 backdrop-blur-sm"
+            onClick={() => setDemoOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Buildexom demo video"
           >
-            <button
-              type="button"
-              onClick={() => setDemoOpen(false)}
-              aria-label="Close video"
-              className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0b2545] shadow-md transition-transform hover:scale-105"
+            <div
+              className="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-black shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Ico size={18} sw={2.4}>{Icons.close}</Ico>
-            </button>
-            <video src={DEMO_VIDEO} controls autoPlay className="aspect-video w-full" />
+              <button
+                type="button"
+                onClick={() => setDemoOpen(false)}
+                aria-label="Close video"
+                className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#0b2545] shadow-md transition-transform hover:scale-105"
+              >
+                <Ico size={18} sw={2.4}>{Icons.close}</Ico>
+              </button>
+              <video src={DEMO_VIDEO} controls autoPlay className="aspect-video w-full" />
+            </div>
           </div>
-        </div>
+        </BodyPortal>
       )}
 
-      {/* Merchant AI Store Setup Modal (teammate's component, unchanged) */}
-      <MerchantStoreSetupModal
-        isOpen={isBuilderOpen}
-        onClose={() => setIsBuilderOpen(false)}
-        initialPrompt={builderPrompt}
-      />
+      {/* Merchant AI Store Setup Modal (teammate's component, unchanged) - body mein render hota hai */}
+      <BodyPortal>
+        <MerchantStoreSetupModal
+          isOpen={isBuilderOpen}
+          onClose={() => setIsBuilderOpen(false)}
+          initialPrompt={builderPrompt}
+        />
+      </BodyPortal>
     </section>
   );
 }

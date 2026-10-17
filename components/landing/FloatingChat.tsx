@@ -77,12 +77,12 @@ export default function FloatingChat() {
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[60] flex flex-col items-end gap-3">
+    <div className="fixed bottom-3 right-3 z-[60] flex flex-col items-end gap-3 sm:bottom-4 sm:right-4">
       {/* Chat window */}
       {open && (
-        <div className="flex h-[480px] w-[calc(100vw-2.5rem)] max-w-[360px] flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white">
+        <div className="flex h-[480px] w-[calc(100vw-2rem)] max-w-[360px] flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-[#0b2545]/20">
           {/* Header */}
-          <div className="flex items-center gap-3 bg-gradient-to-r from-[#0b1b4d] to-blue-600 px-4 py-3.5 text-white">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-[#0b2545] to-[#1976d2] px-4 py-3.5 text-white">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-lg">
               🤖
             </span>
@@ -109,7 +109,7 @@ export default function FloatingChat() {
                 key={i}
                 className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                   m.from === "user"
-                    ? "ml-auto rounded-tr-sm bg-blue-600 text-white"
+                    ? "ml-auto rounded-tr-sm bg-[#1976d2] text-white"
                     : "rounded-tl-sm border border-blue-100 bg-white text-slate-700"
                 }`}
               >
@@ -136,7 +136,7 @@ export default function FloatingChat() {
                     key={q}
                     type="button"
                     onClick={() => send(q)}
-                    className="cursor-pointer rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-600 hover:text-white"
+                    className="cursor-pointer rounded-full border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-[#0b2545] transition hover:bg-[#1976d2] hover:text-white"
                   >
                     {q}
                   </button>
@@ -160,12 +160,12 @@ export default function FloatingChat() {
               onChange={(e) => setInput(e.target.value)}
               maxLength={500}
               placeholder="Type your question..."
-              className="h-10 flex-1 rounded-full border border-blue-100 bg-blue-50/50 px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500"
+              className="h-10 flex-1 rounded-full border border-blue-100 bg-blue-50/50 px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[#1976d2]"
             />
             <button
               type="submit"
               aria-label="Send"
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-sky-500 text-white transition hover:brightness-110"
+              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white transition hover:brightness-110"
             >
               ➤
             </button>
@@ -173,28 +173,21 @@ export default function FloatingChat() {
         </div>
       )}
 
-      {/* AI chatbot button: gol circle, andar "Bexi AI" likha hua */}
+      {/* Bexi AI button: compact gol icon (44px), label sirf hover par dikhta hai */}
       <button
         type="button"
         aria-label={open ? "Close Bexi AI chat" : "Open Bexi AI chat"}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="relative flex h-[72px] w-[72px] cursor-pointer flex-col items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-blue-500 text-white shadow-lg shadow-blue-700/30 transition hover:-translate-y-0.5 hover:brightness-110 sm:h-20 sm:w-20"
+        className="group relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white shadow-md shadow-[#0b2545]/25 transition hover:-translate-y-0.5 hover:brightness-110"
       >
-        {!open && (
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 -z-10 animate-ping rounded-full bg-blue-400/40"
-          />
-        )}
-
         {open ? (
-          <span className="text-xl">✕</span>
+          <span className="text-lg">✕</span>
         ) : (
           <>
             <svg
               aria-hidden="true"
-              className="h-6 w-6 sm:h-7 sm:w-7"
+              className="h-5 w-5"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -207,9 +200,13 @@ export default function FloatingChat() {
               <path d="M14.5 9h.01" />
               <path d="M9.5 13a3.5 3.5 0 0 0 5 0" />
             </svg>
-            <span className="mt-1 text-[11px] font-bold leading-none tracking-wide sm:text-xs">
+            <span className="pointer-events-none absolute right-full mr-2 whitespace-nowrap rounded-full bg-[#0b2545] px-3 py-1 text-xs font-bold text-white opacity-0 shadow-md transition group-hover:opacity-100">
               Bexi AI
             </span>
+            <span
+              aria-hidden="true"
+              className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400"
+            />
           </>
         )}
       </button>

@@ -134,7 +134,7 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
       <div
         className={`group relative flex h-full flex-col rounded-3xl p-5 transition duration-300 sm:p-7 ${
           dark
-            ? "bg-gradient-to-b from-[#1646f5] to-[#0b2a9c] text-white shadow-2xl shadow-blue-600/30 hover:-translate-y-2 hover:shadow-blue-600/50 lg:-translate-y-2 lg:hover:-translate-y-3"
+            ? "bg-gradient-to-b from-[#16396b] to-[#0b2545] text-white shadow-2xl shadow-[#0b2545]/30 hover:-translate-y-2 hover:shadow-[#0b2545]/50 lg:-translate-y-2 lg:hover:-translate-y-3"
             : "border border-slate-200 bg-white text-slate-900 shadow-sm hover:-translate-y-2 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100"
         }`}
       >
@@ -170,7 +170,7 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
           href={plan.href}
           className={`group/btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
             dark
-              ? "bg-white text-blue-700 hover:bg-blue-50 hover:shadow-white/30"
+              ? "bg-white text-[#0b2545] hover:bg-blue-50 hover:shadow-white/30"
               : "bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white hover:shadow-blue-300/50"
           }`}
         >
@@ -348,7 +348,7 @@ export default function Pricing() {
   return (
     <section
       id="pricing"
-      className="relative overflow-hidden bg-white py-16 sm:py-24 lg:py-28"
+      className="relative overflow-hidden bg-white py-12 sm:py-16 lg:py-20"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-blue-50 to-transparent" />
 
@@ -358,7 +358,7 @@ export default function Pricing() {
           <span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
             Pricing
           </span>
-          <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
+          <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-[#0b2545] sm:text-5xl lg:text-6xl">
             Choose the Plan That Fits Your Store
           </h2>
           <p className="mt-4 text-base text-slate-500">
@@ -367,7 +367,7 @@ export default function Pricing() {
         </div>
 
         {/* Cards */}
-        <div className="mt-10 grid items-stretch gap-6 sm:mt-14 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid items-stretch gap-6 sm:mt-10 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan, i) => (
             <PlanCard key={plan.id} plan={plan} index={i} />
           ))}

@@ -155,6 +155,12 @@ main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]):nth-of-type(eve
   background: var(--bx-bg-deep) !important;
 }
 
+/* ---------- Section spacing: heading block upar shift (padding kam) ---------- */
+main section[id]:not(:first-of-type):not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
+  padding-top: clamp(2.75rem, 1.8rem + 2.6vw, 4rem) !important;
+  padding-bottom: clamp(3.25rem, 2.25rem + 3vw, 5rem) !important;
+}
+
 /* old decorative blobs off */
 main section [class*="blur-3xl"],
 main section [class*="blur-2xl"],
@@ -169,18 +175,18 @@ main section[id] :has(+ h2) {
   gap: 0.6rem !important;
   width: fit-content !important;
   max-width: 100% !important;
-  padding: 0.5rem 1.25rem !important;
+  padding: 0.55rem 1.35rem !important;
   border-radius: 9999px !important;
   background: #ffffff !important;
   border: 1px solid rgba(25, 118, 210, 0.35) !important;
   box-shadow: 0 6px 18px -8px rgba(25, 118, 210, 0.45) !important;
   color: #1976d2 !important;
-  font-size: 0.95rem !important;
+  font-size: 1rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.18em !important;
   line-height: 1.3 !important;
   text-transform: uppercase !important;
-  margin-bottom: 1.1rem !important;
+  margin-bottom: 0.85rem !important;
 }
 main section[id] :has(+ h2)::before {
   content: "";
@@ -204,12 +210,13 @@ main section[id] :has(+ h2) > * {
   backdrop-filter: none !important;
 }
 
-/* ---------- Section headings: size/weight only (NO forced colour) ---------- */
+/* ---------- Section headings: bara font, tight spacing (NO forced colour) ---------- */
 main section[id] h2 {
-  font-size: clamp(1.75rem, 1.1rem + 2.2vw, 2.5rem) !important;
+  font-size: clamp(2rem, 1.3rem + 2.5vw, 3.1rem) !important;
   font-weight: 800 !important;
-  line-height: 1.18 !important;
-  letter-spacing: -0.015em !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 0 !important;
 }
 
 /* ---------- Cards: lift + blue glow on hover ---------- */

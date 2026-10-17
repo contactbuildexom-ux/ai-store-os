@@ -10,6 +10,8 @@ const CSS = `
 @keyframes rmIn { from { opacity: 0; } to { opacity: 1; } }
 .rm-up { animation: rmUp .38s cubic-bezier(.2,.8,.2,1) both; }
 .rm-in { animation: rmIn .25s ease both; }
+.rm-trigger { font-size: 15px; font-weight: 600; }
+.rm-scroll { scrollbar-width: thin; scrollbar-color: #1976d2 transparent; }
 @media (prefers-reduced-motion: reduce) { .rm-up, .rm-in { animation: none; } }
 `;
 
@@ -204,7 +206,7 @@ export function DesktopResources() {
         aria-haspopup="true"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex h-[72px] items-center gap-1.5 px-3 text-[15px] font-semibold transition-colors ${
+        className={`rm-trigger relative flex h-[72px] items-center gap-1.5 px-3 transition-colors ${
           open || isHere
             ? "text-[#1976d2]"
             : "text-[#0b2545] hover:text-[#1976d2]"
@@ -231,7 +233,7 @@ export function DesktopResources() {
             : "pointer-events-none invisible -translate-y-2 opacity-0"
         }`}
       >
-        <div className="overflow-hidden rounded-3xl border border-[#cfe2fa] bg-white p-3 shadow-[0_30px_60px_-24px_rgba(11,37,69,0.35)]">
+        <div className="rm-scroll max-h-[calc(100vh-88px)] overflow-y-auto overscroll-contain rounded-3xl border border-[#cfe2fa] bg-white p-3 shadow-[0_30px_60px_-24px_rgba(11,37,69,0.35)]">
           <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-widest text-[#1976d2]">
             Resources
           </p>
