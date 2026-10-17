@@ -19,6 +19,7 @@ import {
   Loader2,
   Package,
 } from 'lucide-react';
+import { StoreQRCode } from '@/components/store-qr-code';
 
 type GeneratedPreview = {
   store_name: string;
@@ -313,6 +314,16 @@ export default function MerchantStoreSetupModal({
                   </div>
                 </div>
               </section>
+
+              {/* Generated Store QR Code with 'B' in Center (Matching Screenshot) */}
+              <div className="mx-auto max-w-sm pt-2">
+                <StoreQRCode
+                  storeSlug={successData.slug}
+                  storePath={successData.storefrontUrl}
+                  title="Your store QR"
+                  badge="Live Store"
+                />
+              </div>
 
               <div className="grid sm:grid-cols-2 gap-3 pt-3 max-w-md mx-auto">
                 <button

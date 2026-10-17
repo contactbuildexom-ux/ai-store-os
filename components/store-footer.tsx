@@ -175,9 +175,12 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
               Scan this QR code with any smartphone camera to open and share this store.
             </p>
             {storeSlug && (
-              <div className="w-fit rounded-xl border border-slate-200 bg-white p-2 shadow-xs">
-                <StoreQRCode storeSlug={storeSlug} storePath={`/store/${encodeURIComponent(storeSlug)}`} />
-              </div>
+              <StoreQRCode 
+                storeSlug={storeSlug} 
+                storePath={`/store/${encodeURIComponent(storeSlug)}`} 
+                title="Your store QR"
+                badge="Active"
+              />
             )}
           </div>
         </div>
