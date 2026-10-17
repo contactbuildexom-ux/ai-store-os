@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+<<<<<<< HEAD
+=======
+import React, { useEffect, useState } from 'react';
+import MerchantStoreSetupModal from './MerchantStoreSetupModal';
+>>>>>>> 7057bf30ab6ae5b526e874dcbe843283ad1869de
 
 /* ---------- tiny icon helper ---------- */
 function Ico({
@@ -134,12 +139,20 @@ const sidebar = [
   { label: "Settings", icon: Icons.gear },
 ];
 
+<<<<<<< HEAD
 const stats = [
   { label: "Total Sales", value: "$12,430", delta: "12.5%", icon: Icons.bag, bg: "#e7f8ee", fg: "#16a34a" },
   { label: "Total Orders", value: "245", delta: "18.2%", icon: Icons.users, bg: "#e8f1ff", fg: "#1976d2" },
   { label: "Products", value: "32", delta: "7.3%", icon: Icons.cart, bg: "#f1eaff", fg: "#7c3aed" },
   { label: "Visitors", value: "8.4K", delta: "9.1%", icon: Icons.chart, bg: "#fff1e0", fg: "#f59e0b" },
 ];
+=======
+/* ---------- Right side: dashboard mockup + AI card ---------- */
+function Mockup({ onOpenBuilder }: { onOpenBuilder: (prompt: string) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const [active, setActive] = useState(1);
+  const View = views[active];
+>>>>>>> 7057bf30ab6ae5b526e874dcbe843283ad1869de
 
 const products = [
   { name: "Wireless Headphones", price: "$49.99", icon: Icons.headphones },
@@ -147,6 +160,7 @@ const products = [
   { name: "Smart Watch", price: "$129.99", icon: Icons.watch },
 ];
 
+<<<<<<< HEAD
 const features = [
   { label: "No Coding", icon: Icons.bolt },
   { label: "Secure & Fast", icon: Icons.shield },
@@ -156,6 +170,92 @@ const features = [
 export default function Hero() {
   const [demoOpen, setDemoOpen] = useState(false);
   const startRef = useRef<HTMLAnchorElement>(null);
+=======
+      {/* Dashboard */}
+      <div className="flex overflow-hidden rounded-3xl border border-white bg-white shadow-2xl shadow-blue-900/15 ring-1 ring-blue-100">
+        {/* Sidebar */}
+        <div className="flex w-12 flex-col items-center gap-3 bg-gradient-to-b from-[#0b1b4d] to-[#13307f] py-5">
+          {sidebarIcons.map((icon, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-colors ${
+                active === i
+                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/40"
+                  : "text-white/60 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {icon}
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div className="min-h-[300px] flex-1 p-4">
+          <div className="mb-3 flex gap-1.5">
+            {[0, 1, 2].map((i) => (
+              <span key={i} className="h-2 w-2 rounded-full bg-blue-100" />
+            ))}
+          </div>
+          <View />
+        </div>
+      </div>
+
+      {/* AI card (yahan id lagi hai, cursor yahin aayega) - static, no floating */}
+      <div
+        id="generate-store"
+        className="glass-card absolute bottom-0 right-0 z-20 w-56 rounded-2xl p-4 lg:-right-4"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-sky-500 text-[10px] font-bold text-white">
+          AI
+        </span>
+        <p className="mt-2 text-sm font-bold text-brand-navy">Describe your store</p>
+        <textarea
+          id="store-prompt"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="e.g. A store for handmade candles, with a clean and minimal design..."
+          className="mt-2 h-16 w-full resize-none rounded-lg border border-blue-100 bg-white/80 p-2 text-[11px] leading-snug text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        />
+        <button
+          type="button"
+          onClick={() => onOpenBuilder(prompt)}
+          className="btn-glow mt-3 block w-full rounded-lg bg-gradient-to-r from-blue-700 to-blue-500 py-2 text-center text-xs font-semibold text-white transition hover:brightness-110 cursor-pointer"
+        >
+          ✦ Generate Store
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Hero ---------- */
+const DEMO_VIDEO = "/demo.mp4";
+
+export default function Hero() {
+  const [showDemo, setShowDemo] = useState(false);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [builderPrompt, setBuilderPrompt] = useState("");
+
+  const handleOpenBuilder = (p?: string) => {
+    if (typeof p === "string" && p) {
+      setBuilderPrompt(p);
+    }
+    setIsBuilderOpen(true);
+  };
+>>>>>>> 7057bf30ab6ae5b526e874dcbe843283ad1869de
 
   /* /#generate-store -> scroll to the CTA and focus the button */
   useEffect(() => {
@@ -208,6 +308,7 @@ export default function Hero() {
             hassle. Just describe your business and let our AI handle the rest.
           </p>
 
+<<<<<<< HEAD
           <div
             id="generate-store"
             className="mt-8 flex scroll-mt-28 flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start"
@@ -220,6 +321,16 @@ export default function Hero() {
               Start Building Free
               <Ico size={18} sw={2.4}>{Icons.arrow}</Ico>
             </Link>
+=======
+          <div className="mt-9 flex flex-wrap gap-4">
+            <button
+              type="button"
+              onClick={() => handleOpenBuilder()}
+              className="btn-glow inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-500 px-7 py-4 text-[15px] font-semibold text-white transition hover:-translate-y-0.5 hover:brightness-110 cursor-pointer"
+            >
+              Start Building Free <span aria-hidden>→</span>
+            </button>
+>>>>>>> 7057bf30ab6ae5b526e874dcbe843283ad1869de
 
             <button
               type="button"
@@ -247,6 +358,7 @@ export default function Hero() {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* ================= RIGHT: product mockup ================= */}
         <div className="relative mx-auto w-full max-w-[620px] px-2 pb-12 pt-14 sm:px-4">
           {/* dotted ring */}
@@ -401,6 +513,10 @@ export default function Hero() {
             </svg>
           </div>
         </div>
+=======
+        {/* Right: interactive mockup */}
+        <Mockup onOpenBuilder={handleOpenBuilder} />
+>>>>>>> 7057bf30ab6ae5b526e874dcbe843283ad1869de
       </div>
 
       {/* ================= demo video popup ================= */}
@@ -428,6 +544,13 @@ export default function Hero() {
           </div>
         </div>
       )}
+
+      {/* Merchant AI Store Setup Modal */}
+      <MerchantStoreSetupModal
+        isOpen={isBuilderOpen}
+        onClose={() => setIsBuilderOpen(false)}
+        initialPrompt={builderPrompt}
+      />
     </section>
   );
 }

@@ -17,7 +17,7 @@ export default function V2TestPage() {
                 name: "Dough Art Bakers",
                 slug: "dough-art-" + Date.now(),
                 owner_email: `owner_${Date.now()}@doughart.com`,
-                password_hash: "hashed_123",
+                password: `Test-${Date.now()}-Store!`,
                 whatsapp_number: "+923001234567",
                 plan: "basic",
                 prompt: "Create bakery with dark theme"

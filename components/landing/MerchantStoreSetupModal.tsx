@@ -1,0 +1,552 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  Sparkles, 
+  Store, 
+  MessageCircle, 
+  Share2, 
+  CheckCircle2, 
+  ArrowRight, 
+  X, 
+  Lock, 
+  Mail, 
+  Palette, 
+  Zap, 
+  Crown, 
+  HelpCircle,
+  Loader2,
+  Package,
+} from 'lucide-react';
+
+type GeneratedPreview = {
+  store_name: string;
+  theme_color: string;
+  banner_text: string;
+  categories: string[];
+  products: Array<{ name: string; price: number; description: string; category_name: string }>;
+};
+
+type GeneratedStoreResponse = {
+  slug: string;
+  storefrontUrl: string;
+  dashboardUrl: string;
+  storeName: string;
+  preview: GeneratedPreview;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseGeneratedStoreResponse(value: unknown): GeneratedStoreResponse | null {
+  if (!isRecord(value) || value.success !== true || typeof value.slug !== 'string' || !isRecord(value.store)) return null;
+  const previewValue = value.preview;
+  if (
+    !isRecord(previewValue) ||
+    typeof previewValue.store_name !== 'string' ||
+    typeof previewValue.theme_color !== 'string' ||
+    typeof previewValue.banner_text !== 'string' ||
+    !Array.isArray(previewValue.categories) ||
+    !previewValue.categories.every((category) => typeof category === 'string') ||
+    !Array.isArray(previewValue.products) ||
+    !/^#[0-9a-f]{6}$/i.test(previewValue.theme_color)
+  ) {
+    return null;
+  }
+  const products = previewValue.products.flatMap((product) => {
+    if (
+      !isRecord(product) ||
+      typeof product.name !== 'string' ||
+      typeof product.price !== 'number' ||
+      !Number.isFinite(product.price) ||
+      typeof product.description !== 'string' ||
+      typeof product.category_name !== 'string'
+    ) {
+      return [];
+    }
+    return [{
+      name: product.name,
+      price: product.price,
+      description: product.description,
+      category_name: product.category_name,
+    }];
+  });
+  if (!products.length || products.length !== previewValue.products.length) return null;
+  return {
+    slug: value.slug,
+    storefrontUrl: typeof value.storefront_url === 'string' ? value.storefront_url : `/store/${encodeURIComponent(value.slug)}`,
+    dashboardUrl: typeof value.dashboard_url === 'string' ? value.dashboard_url : `/merchant/${encodeURIComponent(value.slug)}/dashboard`,
+    storeName: typeof value.store.name === 'string' ? value.store.name : previewValue.store_name,
+    preview: {
+      store_name: previewValue.store_name,
+      theme_color: previewValue.theme_color,
+      banner_text: previewValue.banner_text,
+      categories: previewValue.categories,
+      products,
+    },
+  };
+}
+
+interface MerchantStoreSetupModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  initialPrompt?: string;
+  initialPlan?: 'basic' | 'pro' | 'advanced';
+}
+
+const THEME_OPTIONS = [
+  { id: 'ocean-blue', name: 'Ocean Navy & Electric Blue', color: '#1976d2', desc: 'App-style modern tech & retail' },
+  { id: 'emerald', name: 'Emerald Minimal', color: '#1d7555', desc: 'Fresh & organic' },
+  { id: 'royal-gold', name: 'Royal Gold & Dark', color: '#0f172a', desc: 'Luxury & prestigious' },
+  { id: 'velvet-rose', name: 'Velvet Rose & Blush', color: '#831843', desc: 'Beauty & apparel' },
+  { id: 'sunset-amber', name: 'Sunset Amber', color: '#ea580c', desc: 'Warm lifestyle & dining' },
+  { id: 'aurora-violet', name: 'Aurora Violet', color: '#7c3aed', desc: 'Creative & boutique' },
+  { id: 'mint-fresh', name: 'Mint Fresh', color: '#059669', desc: 'Wellness & healthcare' },
+  { id: 'cyber-slate', name: 'Cyber Slate', color: '#1e1b4b', desc: 'Modern electronics' },
+  { id: 'artisan-cream', name: 'Artisan Terracotta', color: '#78350f', desc: 'Handcrafted goods' },
+  { id: 'midnight-minimal', name: 'Midnight Onyx', color: '#09090b', desc: 'Ultra-minimal aesthetic' },
+];
+
+export default function MerchantStoreSetupModal({
+  isOpen,
+  onClose,
+  initialPrompt = '',
+  initialPlan = 'pro',
+}: MerchantStoreSetupModalProps) {
+  const router = useRouter();
+
+  // Form states
+  const [storeName, setStoreName] = useState('');
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [plan, setPlan] = useState<'basic' | 'pro' | 'advanced'>(initialPlan);
+  const [selectedTheme, setSelectedTheme] = useState('royal-gold');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Social media links (All plans get footer social icons)
+  const [instagram, setInstagram] = useState('');
+  const [facebook, setFacebook] = useState('');
+  const [tiktok, setTktok] = useState('');
+  const [youtube, setYoutube] = useState('');
+  const [twitter, setTwitter] = useState('');
+
+  // UI / Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stepText, setStepText] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successData, setSuccessData] = useState<GeneratedStoreResponse | null>(null);
+
+  useEffect(() => {
+    if (initialPrompt && !prompt) {
+      setPrompt(initialPrompt);
+    }
+  }, [initialPrompt]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    
+    if (!prompt.trim() || prompt.trim().length < 8) {
+      setErrorMessage('Please provide a store description or prompt with at least 8 characters.');
+      return;
+    }
+
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMessage('Please enter a valid merchant email address for store administration.');
+      return;
+    }
+
+    if ((plan === 'pro' || plan === 'advanced') && !whatsappNumber.trim()) {
+      setErrorMessage('Pro & Advance plans require a dedicated WhatsApp number for automated order routing.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStepText('1/4 Analyzing store concept & business niche...');
+
+    const timer1 = setTimeout(() => setStepText('2/4 Curating catalog, products & pricing structure...'), 800);
+    const timer2 = setTimeout(() => setStepText('3/4 Configuring brand theme, footer social channels & layout...'), 1600);
+    const timer3 = setTimeout(() => setStepText('4/4 Linking automated WhatsApp checkout mechanism...'), 2400);
+
+    try {
+      const socialLinks: Record<string, string> = {};
+      if (instagram.trim()) socialLinks.instagram = instagram.trim();
+      if (facebook.trim()) socialLinks.facebook = facebook.trim();
+      if (tiktok.trim()) socialLinks.tiktok = tiktok.trim();
+      if (youtube.trim()) socialLinks.youtube = youtube.trim();
+      if (twitter.trim()) socialLinks.x = twitter.trim();
+
+      const response = await fetch('/api/ai/generate-store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_name: storeName.trim() || undefined,
+          name: storeName.trim() || undefined,
+          prompt: prompt.trim(),
+          plan,
+          theme: selectedTheme,
+          whatsapp_number: whatsappNumber.trim() || undefined,
+          owner_email: email.trim().toLowerCase(),
+          password,
+          social_links: socialLinks,
+        }),
+      });
+
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error('The store generator returned an invalid response. Please try again.');
+      }
+      if (!response.ok) {
+        throw new Error(isRecord(result) && typeof result.error === 'string' ? result.error : 'Failed to generate store. Please try again.');
+      }
+      const generatedStore = parseGeneratedStoreResponse(result);
+      if (!generatedStore) throw new Error('The store generator returned incomplete preview data. Please try again.');
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      setSuccessData(generatedStore);
+      setIsSubmitting(false);
+
+    } catch (err: unknown) {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      setErrorMessage(err instanceof Error ? err.message : 'An error occurred while creating your store.');
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div 
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div 
+        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 text-white shadow-2xl my-auto max-h-[92vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 px-6 py-5">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-9 place-items-center rounded-xl bg-blue-600 shadow-lg shadow-blue-500/30 text-white">
+              <Sparkles size={18} />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                AI Store Builder & Merchant Setup
+                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300 border border-blue-400/30">
+                  Instant Launch
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                Setup your complete business profile, WhatsApp integration & social footer
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close modal"
+            className="grid size-8 place-items-center rounded-full bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="overflow-y-auto p-6 space-y-6">
+          {successData ? (
+            <div className="text-center py-6 space-y-5">
+              <div className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <CheckCircle2 size={36} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-extrabold text-white">Store Successfully Created!</h3>
+                <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
+                  <span className="font-semibold text-emerald-400">{successData.storeName}</span> is live with automated WhatsApp checkout and integrated social media footer.
+                </p>
+                {plan !== 'basic' && (
+                  <p className="mt-2 text-xs text-amber-300">
+                    Your {plan === 'advanced' ? 'Advanced' : 'Pro'} plan selection is pending payment approval; the store starts with Basic limits until it is approved.
+                  </p>
+                )}
+              </div>
+
+              <section className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/70 text-left">
+                <div className="px-5 py-5 text-white" style={{ backgroundColor: successData.preview.theme_color }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">Store preview</p>
+                  <h4 className="mt-2 text-xl font-bold">{successData.preview.store_name}</h4>
+                  <p className="mt-1 text-xs text-white/85">{successData.preview.banner_text}</p>
+                </div>
+                <div className="space-y-4 p-4">
+                  <div className="flex flex-wrap gap-2">
+                    {successData.preview.categories.map((category) => (
+                      <span key={category} className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 text-[10px] text-slate-200">{category}</span>
+                    ))}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {successData.preview.products.slice(0, 6).map((product) => (
+                      <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
+                        <div className="flex items-start gap-2">
+                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-500/15 text-blue-300"><Package size={15} /></span>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="truncate text-xs font-semibold text-white">{product.name}</h5>
+                            <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-400">{product.description}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          <span className="truncate text-[10px] text-slate-400">{product.category_name}</span>
+                          <span className="shrink-0 text-xs font-bold text-emerald-300">
+                            {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(product.price)}
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <div className="grid sm:grid-cols-2 gap-3 pt-3 max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push(successData.storefrontUrl);
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-xs font-bold text-white transition hover:bg-emerald-500 shadow-lg shadow-emerald-900/30"
+                >
+                  <Store size={16} /> View Live Storefront
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push(successData.dashboardUrl);
+                  }}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-xs font-bold text-white transition hover:bg-blue-500 shadow-lg shadow-blue-900/30"
+                >
+                  Merchant Dashboard <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {errorMessage && (
+                <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
+                  <span className="font-bold">Error:</span> {errorMessage}
+                </div>
+              )}
+
+              {/* 1. Store Vision & Name */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <Store size={14} className="text-blue-400" /> Store Concept & Prompt
+                  </label>
+                  <span className="text-[11px] text-slate-400">Required</span>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Store Name (e.g. Noor Velvet Couture)"
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={selectedTheme}
+                      onChange={(e) => setSelectedTheme(e.target.value)}
+                      className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white focus:border-blue-500 focus:outline-none"
+                    >
+                      {THEME_OPTIONS.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          🎨 Theme: {t.name} ({t.desc})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <textarea
+                  rows={3}
+                  placeholder="Describe your products, target audience, and vibe (e.g. 'A high-end luxury perfume store selling oriental oud, French EDPs, and gift sets for weddings...')"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-slate-700 bg-slate-800/80 p-3 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </div>
+
+              {/* 2. Plan Selection */}
+              <div className="space-y-2.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Zap size={14} className="text-amber-400" /> Choose Subscription Plan
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products', icon: Store, border: 'border-slate-700' },
+                    { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, border: 'border-blue-500/60 bg-blue-950/20' },
+                    { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority', icon: Crown, border: 'border-amber-500/60 bg-amber-950/20' },
+                  ].map((p) => {
+                    const isSelected = plan === p.id;
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPlan(p.id as any)}
+                        className={`relative rounded-2xl border p-3 text-left transition-all ${
+                          isSelected
+                            ? 'border-blue-500 bg-blue-600/20 ring-1 ring-blue-500 text-white'
+                            : 'border-slate-800 bg-slate-800/40 text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <Icon size={16} className={isSelected ? 'text-blue-400' : 'text-slate-400'} />
+                          {isSelected && <CheckCircle2 size={14} className="text-blue-400" />}
+                        </div>
+                        <p className="text-xs font-bold">{p.name}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{p.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. WhatsApp Integration (Auto-Linked for Pro & Advance) */}
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                    <MessageCircle size={15} className="text-emerald-400" /> Dedicated WhatsApp Number
+                  </label>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    plan !== 'basic' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
+                  }`}>
+                    {plan !== 'basic' ? 'Direct Order Routing' : 'Optional'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  When customers checkout on your storefront, their complete order details (Customer Name, Email, Phone, Address, Zip & Items) will be dispatched directly to this WhatsApp number.
+                </p>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    placeholder="e.g. 923001234567 or +92 300 1234567"
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    required={plan !== 'basic'}
+                    className="w-full rounded-xl border border-emerald-500/30 bg-slate-900 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Social Media Links (All Plans Footer) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                    <Share2 size={14} className="text-sky-400" /> Footer Social Media Links
+                  </label>
+                  <span className="text-[11px] text-emerald-400 font-medium">Included in All Plans</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Every store footer will automatically render your official clickable social media icons.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-2.5">
+                  <input
+                    type="url"
+                    placeholder="Instagram URL (https://instagram.com/...)"
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="url"
+                    placeholder="Facebook URL (https://facebook.com/...)"
+                    value={facebook}
+                    onChange={(e) => setFacebook(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="url"
+                    placeholder="TikTok URL (https://tiktok.com/@...)"
+                    value={tiktok}
+                    onChange={(e) => setTktok(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="url"
+                    placeholder="YouTube or X URL (https://...)"
+                    value={youtube}
+                    onChange={(e) => setYoutube(e.target.value)}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* 5. Merchant Login Details */}
+              <div className="space-y-2.5 border-t border-slate-800 pt-4">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                  <Lock size={14} className="text-amber-400" /> Merchant Account Credentials
+                </label>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <input
+                    type="email"
+                    placeholder="Merchant Email *"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password (minimum 8 characters) *"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    maxLength={128}
+                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>{stepText || 'Building your store with AI...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={17} />
+                      <span>Generate My Online Store</span>
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-[10px] text-slate-400 mt-2">
+                  Instant catalog generation · Dedicated WhatsApp order routing · Ready to accept customer orders
+                </p>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

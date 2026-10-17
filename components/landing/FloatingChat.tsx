@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  isPlatformAssistantResponse,
+  type PlatformAssistantRequest,
+} from "@/lib/storefront-types";
 
 type Msg = { from: "bot" | "user"; text: string };
 
@@ -11,28 +15,11 @@ const quickQuestions = [
   "What is the store QR code?",
 ];
 
-/* Backup jawab: sirf tab chalte hain jab AI server se jawab na aaye */
-function getFallback(text: string): string {
-  const t = text.toLowerCase();
-  if (/^(hi|hy|hey|hello|salam|assalam)/.test(t.trim()))
-    return "Hi! I'm Bexi AI. Ask me anything about building your online store.";
-  if (t.includes("qr"))
-    return "Every store gets its own QR code. Print it or share it, and customers can open your store or order on WhatsApp right away.";
-  if (t.includes("free") || t.includes("price") || t.includes("plan") || t.includes("cost"))
-    return "Yes, the free plan is really free. You can list up to 20 products and take orders on WhatsApp. You can upgrade to Pro or Business anytime.";
-  if (t.includes("order") || t.includes("whatsapp"))
-    return "Customers pick products in your store and send the order to your WhatsApp in one tap, with items and total filled in.";
-  if (t.includes("coding") || t.includes("skill") || t.includes("design"))
-    return "No coding or design skills needed. Just describe your business and the AI builds your store.";
-  if (t.includes("upgrade"))
-    return "Yes, you can start free and move to Pro or Business whenever your store grows.";
-  return "I'm Bexi AI. I can help with plans, orders, QR codes and setting up your store. Try asking about one of those.";
-}
-
 export default function FloatingChat() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [chatError, setChatError] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
     { from: "bot", text: "Hi, I'm Bexi AI 👋 Ask me anything about building your store." },
   ]);
@@ -56,26 +43,34 @@ export default function FloatingChat() {
     setMessages(next);
     setInput("");
     setTyping(true);
+    setChatError("");
 
     try {
+      const requestBody: PlatformAssistantRequest = {
+        messages: next.slice(-20).map((message) => ({
+          role: message.from === "user" ? "user" : "assistant",
+          content: message.text,
+        })),
+      };
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: next.map((m) => ({
-            role: m.from === "user" ? "user" : "assistant",
-            content: m.text,
-          })),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!res.ok) throw new Error("chat failed");
-
-      const data = (await res.json()) as { reply?: string };
-      const reply = data.reply && data.reply.trim() ? data.reply : getFallback(msg);
-      setMessages((m) => [...m, { from: "bot", text: reply }]);
-    } catch {
-      setMessages((m) => [...m, { from: "bot", text: getFallback(msg) }]);
+      const payload: unknown = await res.json();
+      if (!res.ok) {
+        const errorMessage = typeof payload === "object" && payload !== null && "error" in payload && typeof payload.error === "string"
+          ? payload.error
+          : "The assistant could not process your message.";
+        throw new Error(errorMessage);
+      }
+      if (!isPlatformAssistantResponse(payload)) {
+        throw new Error("The assistant returned an invalid response.");
+      }
+      setMessages((current) => [...current, { from: "bot", text: payload.reply }]);
+    } catch (error) {
+      setChatError(error instanceof Error ? error.message : "The assistant is temporarily unavailable.");
     } finally {
       setTyping(false);
     }
@@ -131,6 +126,7 @@ export default function FloatingChat() {
                 </span>
               </div>
             )}
+            {chatError && <p role="alert" className="text-xs text-red-700">{chatError}</p>}
 
             {/* Quick questions (sirf shuru mein) */}
             {messages.length === 1 && (
@@ -162,6 +158,7 @@ export default function FloatingChat() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              maxLength={500}
               placeholder="Type your question..."
               className="h-10 flex-1 rounded-full border border-blue-100 bg-blue-50/50 px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500"
             />

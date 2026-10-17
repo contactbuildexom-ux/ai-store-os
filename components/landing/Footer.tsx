@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Logo from "@/components/landing/logo";
+import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 
 const columns = [
   {
@@ -80,9 +83,29 @@ const socials = [
       </>
     ),
   },
+  {
+    name: "Website",
+    href: "#",
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M2 12h20" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z" />
+      </>
+    ),
+  },
 ];
 
 export default function Footer() {
+  const { settings } = usePlatformBranding();
+  const socialHrefs: Record<string, string> = {
+    Instagram: settings.instagram || "#",
+    Facebook: settings.facebook || "#",
+    WhatsApp: settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}` : "#",
+    Email: settings.email ? `mailto:${settings.email}` : "mailto:support@yourdomain.com",
+    Website: settings.website || "#",
+  };
+
   return (
     <footer className="relative overflow-hidden bg-gradient-to-br from-[#071a33] via-[#0b2545] to-[#1556a8] text-white">
       {/* Top accent strip */}
@@ -97,10 +120,10 @@ export default function Footer() {
           <div>
             <Link
               href="/#top"
-              aria-label="Buildexom home"
+              aria-label={`${settings.title} home`}
               className="inline-flex rounded-2xl bg-white px-4 py-3 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
             >
-              <Logo />
+              <PlatformLogo fallback={<Logo />} className="h-10 max-w-[200px] object-contain" />
             </Link>
 
             <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-blue-200">
@@ -108,7 +131,7 @@ export default function Footer() {
             </p>
 
             <p className="mt-5 max-w-xs text-[15px] leading-7 text-blue-100/80">
-              AI-powered store builder. Describe your business and go live in minutes.
+              {settings.description}
             </p>
 
             {/* Social icons */}
@@ -116,7 +139,9 @@ export default function Footer() {
               {socials.map((s) => (
                 <a
                   key={s.name}
-                  href={s.href}
+                  href={socialHrefs[s.name] ?? s.href}
+                  target={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "_blank" : undefined}
+                  rel={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "noreferrer" : undefined}
                   aria-label={s.name}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
                 >
@@ -161,7 +186,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-6 text-sm text-blue-200/80">
-          <p>© {new Date().getFullYear()} Buildexom. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {settings.title}. All rights reserved.</p>
           <p className="font-medium">
             Made in Pakistan <span aria-hidden>🇵🇰</span>
           </p>

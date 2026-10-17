@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { StoreSocialLinks } from '@/components/store-social-links';
+import {
+  isPublicStorefrontResponse,
+  isStoreAssistantResponse,
+  type StoreAssistantRequest,
+} from '@/lib/storefront-types';
 import { 
   ShoppingBag, 
   Search, 
@@ -19,7 +24,9 @@ import {
   MessageCircle,
   Settings,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Menu,
+  ChevronRight
 } from 'lucide-react';
 
 export interface ProductItem {
@@ -63,21 +70,33 @@ interface CartItem {
 
 export default function StoreLayout({
   storeSlug,
-  storeName,
-  tagline,
-  description,
-  whatsappNumber,
-  plan = 'free',
+  storeName: initialStoreName,
+  tagline: initialTagline,
+  description: initialDescription,
+  whatsappNumber: initialWhatsappNumber,
+  plan: initialPlan = 'free',
   theme,
-  products,
+  products: initialProducts,
   socialLinks
 }: StoreLayoutProps) {
+  const [storeName, setStoreName] = useState(initialStoreName);
+  const [tagline, setTagline] = useState(initialTagline);
+  const [description, setDescription] = useState(initialDescription || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(initialWhatsappNumber);
+  const [plan, setPlan] = useState(initialPlan);
+  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerCity, setCustomerCity] = useState('Lahore');
+  const [customerZip, setCustomerZip] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
   // Extract unique categories
@@ -97,30 +116,85 @@ export default function StoreLayout({
   const [chatInput, setChatInput] = useState('');
   const [isChatSending, setIsChatSending] = useState(false);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function refreshCatalog() {
+      setCatalogLoading(true);
+      setCatalogError('');
+      try {
+        const response = await fetch(`/api/stores/${encodeURIComponent(storeSlug)}`, {
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json();
+        if (!response.ok) {
+          const errorMessage = typeof payload === 'object' && payload !== null && 'error' in payload && typeof payload.error === 'string'
+            ? payload.error
+            : 'Unable to refresh the store catalog.';
+          throw new Error(errorMessage);
+        }
+        if (!isPublicStorefrontResponse(payload) || payload.store.slug !== storeSlug) {
+          throw new Error('The store returned an invalid catalog response.');
+        }
+
+        setStoreName(payload.store.name);
+        setTagline(payload.store.tagline);
+        setDescription(payload.store.description);
+        setWhatsappNumber(payload.store.whatsapp_number);
+        setPlan(payload.store.plan);
+        setProducts(payload.products);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setCatalogError(error instanceof Error ? error.message : 'Unable to refresh the store catalog.');
+      } finally {
+        if (!controller.signal.aborted) setCatalogLoading(false);
+      }
+    }
+
+    void refreshCatalog();
+    return () => controller.abort();
+  }, [storeSlug]);
+
   const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || isChatSending) return;
 
     const userMsg = chatInput.trim();
+    const requestBody: StoreAssistantRequest = { message: userMsg };
     setChatInput('');
     setChatMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
     setIsChatSending(true);
 
     try {
-      const res = await fetch('/api/ai/create-store/store-chat', {
+      const res = await fetch(`/api/stores/${encodeURIComponent(storeSlug)}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store_id: storeSlug, message: userMsg })
+        body: JSON.stringify(requestBody)
       });
-      const data = await res.json();
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const errorMessage = typeof data === 'object' && data !== null && 'error' in data && typeof data.error === 'string'
+          ? data.error
+          : 'The assistant could not process your message.';
+        throw new Error(errorMessage);
+      }
+      if (!isStoreAssistantResponse(data)) {
+        throw new Error('The assistant returned an invalid response.');
+      }
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: data.reply || "Sorry, I couldn't find matching items in the catalog." }
+        { sender: 'ai', text: data.reply }
       ]);
-    } catch {
+    } catch (error) {
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'ai', text: 'Catalog assistant is temporarily offline. Please order directly via WhatsApp.' }
+        {
+          sender: 'ai',
+          text: error instanceof Error
+            ? `The catalog assistant is unavailable: ${error.message}`
+            : 'The catalog assistant is temporarily unavailable. Please try again.',
+        }
       ]);
     } finally {
       setIsChatSending(false);
@@ -199,15 +273,20 @@ export default function StoreLayout({
     });
 
     const text = 
-`🛍️ *NEW ORDER - ${storeName.toUpperCase()}*%0A` +
+`🛍️ *NEW ORDER — ${storeName.toUpperCase()}*%0A` +
 `----------------------------------------%0A` +
-`*Customer Name:* ${encodeURIComponent(customerName || 'Valued Customer')}%0A` +
-`*City:* ${encodeURIComponent(customerCity)}%0A` +
-`*Address:* ${encodeURIComponent(customerAddress || 'Will provide in chat')}%0A%0A` +
-`*Items Ordered:*%0A${itemsList}%0A` +
+`👤 *CUSTOMER DETAILS:*%0A` +
+`• *Name:* ${encodeURIComponent(customerName || 'Valued Customer')}%0A` +
+`• *Email:* ${encodeURIComponent(customerEmail || 'Not provided')}%0A` +
+`• *Phone:* ${encodeURIComponent(customerPhone || 'Not provided')}%0A` +
+`• *City:* ${encodeURIComponent(customerCity)}%0A` +
+`• *Postal / Zip Code:* ${encodeURIComponent(customerZip || 'N/A')}%0A` +
+`• *Delivery Address:* ${encodeURIComponent(customerAddress || 'Will provide in chat')}%0A%0A` +
+`📦 *ITEMS ORDERED:*%0A${itemsList}%0A` +
 `💵 *Subtotal:* Rs. ${cartTotal.toLocaleString()}%0A` +
 `🚚 *Delivery Fee:* Rs. ${deliveryFee}%0A` +
 `🏷️ *Grand Total:* Rs. ${grandTotal.toLocaleString()}%0A` +
+`💳 *Payment Method:* Cash on Delivery (COD)%0A` +
 `----------------------------------------%0A` +
 `Please confirm my order. Thank you!`;
 
@@ -217,6 +296,16 @@ export default function StoreLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-500 selection:text-white">
+      {catalogLoading && (
+        <p role="status" className="bg-blue-50 px-4 py-2 text-center text-xs text-blue-800">
+          Refreshing the live catalog…
+        </p>
+      )}
+      {catalogError && (
+        <p role="alert" className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
+          The latest catalog could not be loaded: {catalogError} Showing the data available when this page opened.
+        </p>
+      )}
       {/* 1. Subdomain & Platform Header Bar */}
       <div className="border-b border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-300">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
@@ -246,8 +335,16 @@ export default function StoreLayout({
 
       {/* 2. Main Store Navigation */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsMenuOpen(true)}
+              aria-label="Open navigation menu"
+              className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 active:scale-95"
+            >
+              <Menu size={20} />
+            </button>
             <div 
               className="flex size-10 items-center justify-center rounded-xl font-bold text-white shadow-sm"
               style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
@@ -255,7 +352,7 @@ export default function StoreLayout({
               {storeName.charAt(0)}
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
                 {storeName}
               </h1>
               <p className="hidden text-xs text-slate-500 sm:block">{storeSlug}.buildexom.store</p>
@@ -315,6 +412,93 @@ export default function StoreLayout({
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation Drawer (Slide-In from Left) */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          <div className="relative flex h-full w-full max-w-xs flex-col bg-white shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div 
+                  className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" 
+                  style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
+                >
+                  {storeName.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">{storeName}</h3>
+                  <p className="text-[10px] text-slate-400 font-mono">{storeSlug}.buildexom.store</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Search Catalog</label>
+                <div className="relative mt-2">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs outline-none focus:border-blue-400 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categories</label>
+                <div className="mt-2 space-y-1">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat);
+                        setIsMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                        selectedCategory === cat ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>{cat === 'All' ? '🛍️ All Products' : cat}</span>
+                      <ChevronRight size={14} className="opacity-50" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-800">
+                  <MessageCircle size={16} />
+                  <span className="text-xs font-bold">WhatsApp Support</span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80">Have questions about an item or delivery?</p>
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-500"
+                >
+                  Chat on WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Hero Section (Dynamic Theme Styling) */}
       <section 
@@ -579,13 +763,27 @@ export default function StoreLayout({
 
               {/* Order Info Inputs */}
               {cart.length > 0 && (
-                <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-                  <p className="text-xs font-bold text-slate-800">Delivery Details</p>
+                <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2.5">
+                  <p className="text-xs font-bold text-slate-800">Customer & Delivery Details</p>
                   <input
                     type="text"
-                    placeholder="Your Full Name"
+                    placeholder="Your Full Name *"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address (for order updates)"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="WhatsApp / Phone Number *"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
                   />
                   <div className="grid grid-cols-2 gap-2">
@@ -603,12 +801,19 @@ export default function StoreLayout({
                     </select>
                     <input
                       type="text"
-                      placeholder="Delivery Address"
-                      value={customerAddress}
-                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      placeholder="Zip / Postal Code"
+                      value={customerZip}
+                      onChange={(e) => setCustomerZip(e.target.value)}
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
                     />
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Delivery Address *"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-slate-400 focus:outline-none"
+                  />
                 </div>
               )}
             </div>
@@ -735,6 +940,7 @@ export default function StoreLayout({
                 type="text"
                 placeholder="Ask about perfumes, prices..."
                 value={chatInput}
+                maxLength={500}
                 onChange={(e) => setChatInput(e.target.value)}
                 className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
               />
@@ -748,6 +954,33 @@ export default function StoreLayout({
             </form>
           </div>
         )}
+      </div>
+
+      {/* 9. Floating Bottom WhatsApp Pill (Matching Screenshot) */}
+      <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-40">
+        <button
+          type="button"
+          onClick={() => setIsCartOpen(true)}
+          className="w-full sm:w-auto flex items-center justify-between gap-4 rounded-full bg-slate-950/95 text-white px-5 py-3.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 hover:scale-[1.02] active:scale-95"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+              <MessageCircle size={16} />
+            </span>
+            <div className="text-left">
+              <p className="text-xs font-bold leading-none">Order via WhatsApp</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Quick • Easy • Secure</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {totalCartCount > 0 && (
+              <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-slate-950">
+                {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
+              </span>
+            )}
+            <ArrowRight size={16} className="text-emerald-400" />
+          </div>
+        </button>
       </div>
     </div>
   );

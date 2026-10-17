@@ -6,12 +6,30 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
 type Category = { id: string; name: string };
-type Order = { id: string; customer_name: string; customer_phone: string; total_amount: number | string; status?: string | null; created_at?: string; items?: unknown[] };
+type OrderItem = { id?: string; product_id?: string; name?: string; price?: number; quantity: number };
+type Order = {
+    id: string;
+    customer_name: string;
+    customer_phone: string;
+    customer_email?: string | null;
+    shipping_address?: string | null;
+    delivery_address?: string | null;
+    city?: string | null;
+    postal_code?: string | null;
+    zip_code?: string | null;
+    payment_method?: string | null;
+    total_amount: number | string;
+    subtotal?: number | string;
+    delivery_fee?: number | string;
+    status?: string | null;
+    created_at?: string;
+    items?: OrderItem[] | unknown[];
+};
 type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
 type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
@@ -92,6 +110,60 @@ export default function MerchantDashboardMaster() {
     const totalRevenue = useMemo(() => orders.reduce((total, order) => total + Number(order.total_amount || 0), 0), [orders]);
     const pendingOrders = useMemo(() => orders.filter((order) => (order.status || 'pending').toLowerCase() === 'pending').length, [orders]);
 
+    const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'ready' | 'shipped' | 'delivered' | 'cancelled'>('all');
+    const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+    const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+    const statusCounts = useMemo(() => {
+        const counts: Record<string, number> = { all: orders.length, pending: 0, ready: 0, shipped: 0, delivered: 0, cancelled: 0 };
+        orders.forEach(o => {
+            const st = (o.status || 'pending').toLowerCase();
+            if (st in counts) counts[st] = (counts[st] || 0) + 1;
+            else if (st === 'processing') counts.pending += 1;
+            else if (st === 'completed') counts.delivered += 1;
+            else if (st === 'canceled' || st === 'rejected') counts.cancelled += 1;
+        });
+        return counts;
+    }, [orders]);
+
+    const filteredOrders = useMemo(() => {
+        const sorted = [...orders].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        if (orderFilter === 'all') return sorted;
+        return sorted.filter(o => {
+            const st = (o.status || 'pending').toLowerCase();
+            if (orderFilter === 'pending') return st === 'pending' || st === 'processing';
+            if (orderFilter === 'delivered') return st === 'delivered' || st === 'completed';
+            if (orderFilter === 'cancelled') return st === 'cancelled' || st === 'canceled' || st === 'rejected';
+            return st === orderFilter;
+        });
+    }, [orders, orderFilter]);
+
+    const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+        if (!resolvedStoreId || updatingOrderId) return;
+        setUpdatingOrderId(orderId);
+        try {
+            const res = await fetch('/api/stores/orders', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: resolvedStoreId,
+                    id: orderId,
+                    status: newStatus
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update order status');
+            setOrders(current => current.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            setMessage(`Order #${orderId.slice(0, 8)} status updated to ${newStatus}.`);
+            setMessageError(false);
+        } catch (err) {
+            setMessage(err instanceof Error ? err.message : 'Error updating order status');
+            setMessageError(true);
+        } finally {
+            setUpdatingOrderId(null);
+        }
+    };
+
     const fetchMeshData = useCallback(async (storeId: string) => {
         try {
             const [prodRes, catRes, ordersRes] = await Promise.all([
@@ -115,23 +187,33 @@ export default function MerchantDashboardMaster() {
 
     const resolveStoreAndData = useCallback(async (identifier: string) => {
         try {
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
-            const storeQuery = createClient().from('stores').select('id, name, slug, plan, whatsapp_number');
-            const { data: storeData, error: storeError } = await (isUuid
-                ? storeQuery.eq('id', identifier)
-                : storeQuery.eq('slug', identifier)
-            ).maybeSingle();
+            const supabase = createClient();
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError) throw sessionError;
 
-            if (storeError) throw storeError;
+            const response = await fetch('/api/stores/current', {
+                cache: 'no-store',
+                headers: session?.access_token
+                    ? { Authorization: `Bearer ${session.access_token}` }
+                    : {},
+            });
+            const payload: {
+                store?: { id: string; name: string | null; slug: string | null; plan: string | null; whatsapp_number: string | null };
+                error?: string;
+            } = await response.json();
+            if (!response.ok) throw new Error(payload.error || 'Unable to load your store.');
+            const storeData = payload.store;
 
             if (!storeData) {
-                setMessage('Store not found in database.');
-                return;
+                throw new Error('No store is linked to this account.');
+            }
+            if (storeData.id !== identifier && storeData.slug !== identifier) {
+                throw new Error('You are not authorized to access this store.');
             }
 
             setResolvedStoreId(storeData.id);
-            setStoreName(storeData.name);
-            setStoreSlug(storeData.slug);
+            setStoreName(storeData.name || 'Your store');
+            setStoreSlug(storeData.slug || '');
             setStorePlan(normalizePlan(storeData.plan));
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
@@ -640,11 +722,259 @@ export default function MerchantDashboardMaster() {
                         </div>
                     )}
 
-                    {/* ORDERS */}
+                    {/* ORDERS MANAGEMENT */}
                     {activeTab === 'orders' && (
-                        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Store activity</p><h3 className="mt-1 text-base font-semibold text-slate-900">Customer orders</h3></div><span className="rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">{pendingOrders} pending</span></div>
-                            {orders.length === 0 ? <div className="px-5 py-12 text-center text-xs text-slate-500">No orders yet. Customer orders placed through your storefront will appear here.</div> : <div className="divide-y divide-slate-100">{[...orders].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).map((order) => <div key={order.id} className="flex flex-wrap items-center gap-3 px-5 py-4"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700"><ShoppingBag size={16} /></span><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{order.customer_name}</p><p className="mt-1 text-[10px] text-slate-500">{order.customer_phone} · {formatDate(order.created_at)}</p></div><span className={`rounded-full px-2 py-1 text-[9px] font-semibold capitalize ${(order.status || 'pending').toLowerCase() === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>{order.status || 'pending'}</span><span className="min-w-24 text-right text-xs font-semibold" style={{ color: themeColor }}>{formatPKR(order.total_amount)}</span></div>)}</div>}
+                        <div className="space-y-4">
+                            {/* Summary Metrics */}
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Orders</p>
+                                    <p className="mt-1 text-xl font-bold text-slate-900">{orders.length}</p>
+                                </div>
+                                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">Pending</p>
+                                    <p className="mt-1 text-xl font-bold text-amber-800">{statusCounts.pending}</p>
+                                </div>
+                                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-700">Ready to Ship</p>
+                                    <p className="mt-1 text-xl font-bold text-blue-800">{statusCounts.ready}</p>
+                                </div>
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 shadow-sm">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">Delivered</p>
+                                    <p className="mt-1 text-xl font-bold text-emerald-800">{statusCounts.delivered}</p>
+                                </div>
+                            </div>
+
+                            {/* Status Filter Tabs */}
+                            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                                {([
+                                    { id: 'all', label: 'All Orders', count: statusCounts.all, color: 'slate' },
+                                    { id: 'pending', label: 'Pending', count: statusCounts.pending, color: 'amber' },
+                                    { id: 'ready', label: 'Ready to Dispatch', count: statusCounts.ready, color: 'blue' },
+                                    { id: 'shipped', label: 'Shipped / In Transit', count: statusCounts.shipped, color: 'purple' },
+                                    { id: 'delivered', label: 'Delivered', count: statusCounts.delivered, color: 'emerald' },
+                                    { id: 'cancelled', label: 'Cancelled', count: statusCounts.cancelled, color: 'rose' },
+                                ] as const).map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setOrderFilter(tab.id)}
+                                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                                            orderFilter === tab.id
+                                                ? 'bg-slate-900 text-white shadow-xs'
+                                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                        }`}
+                                    >
+                                        <span>{tab.label}</span>
+                                        <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                                            orderFilter === tab.id
+                                                ? 'bg-slate-700 text-slate-100'
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            {tab.count}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Orders List */}
+                            <div className="space-y-3">
+                                {filteredOrders.length === 0 ? (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-12 text-center">
+                                        <ShoppingBag size={32} className="mx-auto text-slate-300" />
+                                        <p className="mt-3 text-sm font-semibold text-slate-700">No {orderFilter === 'all' ? '' : orderFilter} orders found</p>
+                                        <p className="mt-1 text-xs text-slate-400">Customer orders placed through your storefront will show up here in real time.</p>
+                                    </div>
+                                ) : (
+                                    filteredOrders.map(order => {
+                                        const status = (order.status || 'pending').toLowerCase();
+                                        const waNumber = (order.customer_phone || '').replace(/\D/g, '');
+                                        const cleanWa = waNumber.startsWith('0') ? `92${waNumber.slice(1)}` : waNumber.length === 10 ? `92${waNumber}` : waNumber;
+                                        const isExpanded = expandedOrderId === order.id;
+
+                                        return (
+                                            <div key={order.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+                                                {/* Header row */}
+                                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/50 px-5 py-3.5">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="grid size-8 place-items-center rounded-lg bg-white border border-slate-200 text-slate-700">
+                                                            <ShoppingBag size={15} />
+                                                        </span>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-mono text-xs font-bold text-slate-900">#{order.id.slice(0, 8)}</span>
+                                                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                                                                    status === 'ready'
+                                                                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                                                        : status === 'shipped'
+                                                                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                                                        : status === 'delivered' || status === 'completed'
+                                                                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                                        : status === 'cancelled' || status === 'canceled'
+                                                                        ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                                                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                                                }`}>
+                                                                    {status === 'ready' && '📦 Ready to Dispatch'}
+                                                                    {status === 'shipped' && '🚚 Shipped'}
+                                                                    {(status === 'delivered' || status === 'completed') && '✅ Delivered'}
+                                                                    {(status === 'cancelled' || status === 'canceled') && '✕ Cancelled'}
+                                                                    {(status === 'pending' || status === 'processing') && '⏳ Pending'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="mt-0.5 text-[10px] text-slate-500">{formatDate(order.created_at)}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] text-slate-500">Order Total</p>
+                                                            <p className="text-sm font-bold text-slate-900" style={{ color: themeColor }}>{formatPKR(order.total_amount)}</p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                                                            className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100"
+                                                        >
+                                                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Customer and Order Body */}
+                                                <div className="p-5">
+                                                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                                        {/* Customer Contact */}
+                                                        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</p>
+                                                            <p className="text-xs font-bold text-slate-900">{order.customer_name}</p>
+                                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                                <span className="text-xs font-medium text-slate-700">{order.customer_phone}</span>
+                                                                {cleanWa && (
+                                                                    <a
+                                                                        href={`https://wa.me/${cleanWa}?text=Hi%20${encodeURIComponent(order.customer_name)}%2C%20regarding%20your%20order%20%23${order.id.slice(0, 8)}%20at%20${encodeURIComponent(storeName)}%3A`}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-emerald-500"
+                                                                    >
+                                                                        <MessageCircle size={11} /> WhatsApp Chat
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                            {order.customer_email && (
+                                                                <p className="flex items-center gap-1 text-[11px] text-slate-500">
+                                                                    <Mail size={11} /> {order.customer_email}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Shipping & Delivery */}
+                                                        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Delivery Address</p>
+                                                            <p className="text-xs font-semibold text-slate-800">{order.shipping_address || order.delivery_address || 'Delivery Address Provided'}</p>
+                                                            <p className="text-[11px] text-slate-500">
+                                                                {order.city ? `City: ${order.city}` : ''} {order.postal_code || order.zip_code ? `· Postal: ${order.postal_code || order.zip_code}` : ''}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Payment Method */}
+                                                        <div className="space-y-1.5 rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Payment & Status</p>
+                                                            <p className="text-xs font-semibold text-slate-800 capitalize">
+                                                                {order.payment_method === 'advance' ? 'Advance Bank Transfer' : 'Cash on Delivery (COD)'}
+                                                            </p>
+                                                            <p className="text-[11px] text-slate-500">Total payable: {formatPKR(order.total_amount)}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Ordered Items (if available or expandable) */}
+                                                    {Array.isArray(order.items) && order.items.length > 0 && (
+                                                        <div className="mt-4 border-t border-slate-100 pt-3">
+                                                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Ordered Items ({order.items.length})</p>
+                                                            <div className="divide-y divide-slate-100 rounded-lg border border-slate-100 bg-slate-50/30">
+                                                                {order.items.map((item: any, idx: number) => (
+                                                                    <div key={idx} className="flex items-center justify-between p-2.5 text-xs">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="size-5 grid place-items-center rounded bg-slate-200 text-[10px] font-bold">{item.quantity || 1}x</span>
+                                                                            <span className="font-medium text-slate-800">{item.name || item.product_name || `Product #${item.product_id?.slice(0, 6) || idx + 1}`}</span>
+                                                                        </div>
+                                                                        {item.price && (
+                                                                            <span className="font-semibold text-slate-700">{formatPKR(item.price * (item.quantity || 1))}</span>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Status Action Controls */}
+                                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="text-[11px] font-semibold text-slate-600">Quick Actions:</span>
+                                                            {status === 'pending' && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={updatingOrderId === order.id}
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'ready')}
+                                                                    className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-blue-500 disabled:opacity-50"
+                                                                >
+                                                                    <Package size={13} /> Mark as Ready to Dispatch
+                                                                </button>
+                                                            )}
+                                                            {status === 'ready' && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={updatingOrderId === order.id}
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
+                                                                    className="flex items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-purple-500 disabled:opacity-50"
+                                                                >
+                                                                    <Truck size={13} /> Mark as Shipped
+                                                                </button>
+                                                            )}
+                                                            {(status === 'ready' || status === 'shipped') && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={updatingOrderId === order.id}
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'delivered')}
+                                                                    className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-500 disabled:opacity-50"
+                                                                >
+                                                                    <CheckCircle2 size={13} /> Mark as Delivered
+                                                                </button>
+                                                            )}
+                                                            {status !== 'cancelled' && status !== 'delivered' && (
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={updatingOrderId === order.id}
+                                                                    onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                                                                    className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                                                >
+                                                                    Cancel Order
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Status Dropdown */}
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] text-slate-400">Change Status:</span>
+                                                            <select
+                                                                value={status}
+                                                                disabled={updatingOrderId === order.id}
+                                                                onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 outline-none focus:border-blue-400"
+                                                            >
+                                                                <option value="pending">⏳ Pending</option>
+                                                                <option value="ready">📦 Ready</option>
+                                                                <option value="shipped">🚚 Shipped</option>
+                                                                <option value="delivered">✅ Delivered</option>
+                                                                <option value="cancelled">✕ Cancelled</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
