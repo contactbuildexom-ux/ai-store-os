@@ -273,28 +273,6 @@ function planLimits(planValue: unknown) {
   return { plan: "basic", categories: 2, products: 20 };
 }
 
-<<<<<<< HEAD
-// Returns a slug that is free and safe to use as a subdomain:
-// shoe-store, then shoe-store-2, shoe-store-3, ... Reserved names (www, admin, api, ...) are never returned as-is.
-async function uniqueStoreSlug(supabase: NonNullable<ReturnType<typeof createAdminClient>>, requestedSlug: string) {
-  const base = requestedSlug.slice(0, MAX_BASE_SLUG_LENGTH).replace(/-+$/g, "") || "store";
-
-  const { data, error } = await supabase
-    .from("stores")
-    .select("slug")
-    .ilike("slug", `${base}%`)
-    .limit(200);
-  if (error) throw error;
-
-  const taken = new Set((data ?? []).map((row) => String(row.slug ?? "").toLowerCase()));
-  if (!isReservedSlug(base) && !taken.has(base)) return base;
-
-  for (let n = 2; n < 200; n += 1) {
-    const candidate = `${base}-${n}`;
-    if (!taken.has(candidate)) return candidate;
-  }
-  return `${base}-${crypto.randomUUID().slice(0, 8)}`;
-=======
 function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!client || !url || url.includes("placeholder-project") || url.includes("your-project")) {
@@ -303,23 +281,41 @@ function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): cli
   return true;
 }
 
+// Returns a slug that is free and safe to use as a subdomain:
+// shoe-store, then shoe-store-2, shoe-store-3, ... Reserved names (www, admin, api, ...) are never returned as-is.
+// Works with Supabase when it is configured, and always also checks the local store repository.
 async function uniqueStoreSlug(supabase: ReturnType<typeof createAdminClient>, requestedSlug: string) {
+  const base = requestedSlug.slice(0, MAX_BASE_SLUG_LENGTH).replace(/-+$/g, "") || "store";
+  const taken = new Set<string>();
+
   if (isConfiguredSupabase(supabase)) {
     try {
-      const { data } = await supabase.from("stores").select("id").ilike("slug", requestedSlug).maybeSingle();
-      if (data) return `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}`;
+      const { data, error } = await supabase
+        .from("stores")
+        .select("slug")
+        .ilike("slug", `${base}%`)
+        .limit(200);
+      if (error) throw error;
+      for (const row of data ?? []) taken.add(String(row.slug ?? "").toLowerCase());
     } catch {
-      // Fallback
+      // Fallback to the local repository below
     }
   }
+
   try {
     const allStores = await storeRepo.getAllStores();
-    const exists = allStores.some((s) => s.slug.toLowerCase() === requestedSlug.toLowerCase());
-    return exists ? `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}` : requestedSlug;
+    for (const s of allStores) taken.add(String(s.slug ?? "").toLowerCase());
   } catch {
-    return requestedSlug;
+    // Ignore
   }
->>>>>>> origin/main
+
+  if (!isReservedSlug(base) && !taken.has(base)) return base;
+
+  for (let n = 2; n < 200; n += 1) {
+    const candidate = `${base}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export async function POST(request: Request) {
@@ -435,11 +431,7 @@ export async function POST(request: Request) {
         if (existingStore) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
         }
-<<<<<<< HEAD
-        // Email OTP check. (After the merge this block sat inside the `existingStore` branch,
-        // right after its `return`, so it never ran. It now runs for every new signup.)
-=======
->>>>>>> origin/main
+        // Email OTP check. It runs for every new signup (it must not sit inside the `existingStore` branch).
         if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
           const verificationToken = text(input.verification_token, 600);
           if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
@@ -468,8 +460,7 @@ export async function POST(request: Request) {
     }
     targetStoreId = targetStore?.id ?? null;
 
-<<<<<<< HEAD
-    if (targetStore) {
+    if (targetStore && supabase) {
       const [productsResult, categoriesResult] = await Promise.all([
         supabase.from("store_products").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
         supabase.from("store_categories").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
@@ -482,19 +473,6 @@ export async function POST(request: Request) {
           store: { id: targetStore.id, slug: targetStore.slug },
           store_url: getStoreUrl(targetStore.slug),
         }, { status: 409 });
-=======
-    if (targetStore && supabase) {
-      try {
-        const [productsResult, categoriesResult] = await Promise.all([
-          supabase.from("store_products").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
-          supabase.from("store_categories").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
-        ]);
-        if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
-          return NextResponse.json({ error: "This store already has catalog data. Generation will not overwrite it.", store: { id: targetStore.id, slug: targetStore.slug } }, { status: 409 });
-        }
-      } catch {
-        // Fallback
->>>>>>> origin/main
       }
     }
 
@@ -568,51 +546,27 @@ export async function POST(request: Request) {
       }
       const planToStore = "basic";
 
-<<<<<<< HEAD
-      const { data, error } = await supabase.from("stores").insert([{
-        name: requestedStoreName || generated.store_name,
-        slug,
-        owner_id: user?.id ?? null,
-        user_id: user?.id ?? null,
-        owner_email: merchantEmail,
-        password_hash,
-        whatsapp_number: requestedWhatsapp || null,
-        ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
-        plan: planToStore,
-        selected_plan: selectedPlan,
-        payment_status: "pending",
-      }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
-      if (error) throw error;
-      store = data;
-      createdStoreId = String(data.id);
-      targetStoreId = String(data.id);
-=======
       if (supabase) {
-        try {
-          const { data, error } = await supabase.from("stores").insert([{
-            name: requestedStoreName || generated.store_name,
-            slug,
-            owner_id: user?.id ?? null,
-            user_id: user?.id ?? null,
-            owner_email: merchantEmail,
-            password_hash,
-            whatsapp_number: requestedWhatsapp || null,
-            ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
-            plan: planToStore,
-            selected_plan: selectedPlan,
-            payment_status: "pending",
-          }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
-          if (!error && data) {
-            store = data;
-            createdStoreId = String(data.id);
-            targetStoreId = String(data.id);
-          }
-        } catch (sbErr) {
-          console.warn("Supabase store insert warning (falling back to storeRepo):", sbErr);
-        }
-      }
-
-      if (!store) {
+        // Supabase is configured: a failed insert must surface (for example duplicate -> 409).
+        const { data, error } = await supabase.from("stores").insert([{
+          name: requestedStoreName || generated.store_name,
+          slug,
+          owner_id: user?.id ?? null,
+          user_id: user?.id ?? null,
+          owner_email: merchantEmail,
+          password_hash,
+          whatsapp_number: requestedWhatsapp || null,
+          ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
+          plan: planToStore,
+          selected_plan: selectedPlan,
+          payment_status: "pending",
+        }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
+        if (error) throw error;
+        store = data;
+        createdStoreId = String(data.id);
+        targetStoreId = String(data.id);
+      } else {
+        // Supabase is not configured (local development): use the local store repository.
         const fallbackStoreId = `store_${crypto.randomUUID().slice(0, 12)}`;
         store = {
           id: fallbackStoreId,
@@ -624,7 +578,6 @@ export async function POST(request: Request) {
         };
         targetStoreId = fallbackStoreId;
       }
->>>>>>> origin/main
     }
     if (!store) throw new Error("Unable to resolve the store to generate.");
     let resolvedStore = store;
