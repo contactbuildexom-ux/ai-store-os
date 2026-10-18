@@ -113,24 +113,41 @@ export default function StoreLayout({
     {
       id: 'feat-1',
       name: 'Running Shoes',
-      price: 4999,
+      price: 12000,
       image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-      description: 'Lightweight breathable sports sneakers for all-day comfort.'
+      description: 'Ultra-lightweight responsive performance running shoes with all-day comfort.'
     },
     {
       id: 'feat-2',
+      name: 'Hoodie',
+      price: 8200,
+      image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
+      description: 'Premium heavyweight cotton fleece hoodie with minimalist tailored fit.'
+    },
+    {
+      id: 'feat-3',
+      name: 'Cap',
+      price: 2499,
+      image_url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
+      description: 'Structured classic baseball cap with breathable eyelets and adjustable strap.'
+    },
+    {
+      id: 'feat-4',
       name: 'Smart Watch',
-      price: 7999,
+      price: 14000,
       image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
-      description: 'Fitness tracker smartwatch with heart rate monitoring.'
+      description: 'Next-gen AMOLED health & fitness tracker with high accuracy sensors.'
     }
   ];
 
   const featuredItems = useMemo(() => {
-    if (products.length >= 2) {
+    if (products.length >= 4) {
       return products.slice(0, 4);
     }
-    return products.length === 1 ? [products[0], defaultFeatured[1]] : defaultFeatured;
+    if (products.length > 0) {
+      return [...products, ...defaultFeatured.slice(products.length, 4)];
+    }
+    return defaultFeatured;
   }, [products]);
 
   // AI Shopping Assistant chat state
@@ -366,54 +383,72 @@ export default function StoreLayout({
               type="button"
               onClick={() => setIsMenuOpen(true)}
               aria-label="Open navigation menu"
-              className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 active:scale-95"
+              className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 active:scale-95 md:hidden"
             >
               <Menu size={20} />
             </button>
-            <div 
-              className="flex size-10 items-center justify-center rounded-xl font-bold text-white shadow-sm"
-              style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
-            >
-              {storeName.charAt(0)}
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
-                {storeName}
-              </h1>
-              <p className="hidden text-xs text-slate-500 sm:block">{storeSlug}.buildexom.store</p>
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/buildexom-icon.png"
+                alt="Buildexom"
+                className="size-9 rounded-xl object-contain shadow-xs"
+              />
+              <div>
+                <h1 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+                  {storeName}
+                </h1>
+                <p className="hidden text-[11px] font-medium text-slate-400 sm:block">{storeSlug}.buildexom.store</p>
+              </div>
             </div>
           </div>
 
-          {/* Search bar */}
-          <div className="relative hidden max-w-xs flex-1 md:block">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs transition focus:border-slate-400 focus:bg-white focus:outline-none"
-            />
-          </div>
+          {/* Desktop Navigation Links (Matching Instagram Post Mockup) */}
+          <nav className="hidden items-center gap-7 lg:flex">
+            <a href="#" className="text-xs font-bold text-slate-900 transition hover:text-blue-600">
+              Home
+            </a>
+            <a href="#featured" className="text-xs font-semibold text-slate-600 transition hover:text-blue-600">
+              Shop
+            </a>
+            <a href="#categories" className="text-xs font-semibold text-slate-600 transition hover:text-blue-600">
+              Categories
+            </a>
+            <a href="#catalog" className="text-xs font-semibold text-slate-600 transition hover:text-blue-600">
+              All Products
+            </a>
+            <a href="#footer" className="text-xs font-semibold text-slate-600 transition hover:text-blue-600">
+              About
+            </a>
+          </nav>
 
-          {/* Cart & WhatsApp Quick Action */}
+          {/* Search bar & Actions */}
           <div className="flex items-center gap-3">
+            <div className="relative hidden max-w-xs md:block">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-44 rounded-full border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs transition focus:border-blue-400 focus:bg-white focus:outline-none lg:w-56"
+              />
+            </div>
+
             <a
               href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!`}
               target="_blank"
               rel="noreferrer"
               className="hidden items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 sm:flex"
             >
-              <MessageCircle size={14} className="text-emerald-600" /> WhatsApp Support
+              <MessageCircle size={14} className="text-emerald-600" /> WhatsApp
             </a>
 
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-95"
-              style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
+              className="relative flex items-center gap-2 rounded-full bg-[#1976d2] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#1565c0]"
             >
-              <ShoppingBag size={16} />
-              <span>Cart</span>
+              <ShoppingBag size={15} />
+              <span className="hidden sm:inline">Cart</span>
               {totalCartCount > 0 && (
                 <span className="grid size-5 place-items-center rounded-full bg-emerald-400 text-[10px] font-bold text-slate-950">
                   {totalCartCount}
@@ -525,24 +560,23 @@ export default function StoreLayout({
         </div>
       )}
 
-      {/* 3. Hero Promo Banner (Matching Screenshot) */}
+      {/* 3. Hero Promo Banner (Matching Instagram Post Studio Footwear Showcase) */}
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 space-y-6">
-        <section
-          className="relative overflow-hidden rounded-3xl p-6 sm:p-10 text-white shadow-xl transition duration-500"
-          style={{
-            background: `linear-gradient(135deg, ${theme.primaryColor || '#071d49'} 0%, ${theme.secondaryColor || '#0b2b68'} 60%, #1976d2 100%)`
-          }}
-        >
-          <div className="absolute -right-16 -top-16 size-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 size-64 rounded-full bg-cyan-400/10 blur-2xl pointer-events-none" />
+        <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-blue-50/70 p-6 sm:p-10 shadow-sm transition duration-500">
+          <div className="absolute -right-16 -top-16 size-72 rounded-full bg-blue-100/50 blur-3xl pointer-events-none" />
+          <div className="absolute -left-16 -bottom-16 size-72 rounded-full bg-slate-100/60 blur-3xl pointer-events-none" />
 
           <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
             <div className="max-w-xl text-left">
-              <h2 className="text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl leading-tight">
-                Premium Products<br />For a Better You
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                Style • Comfort • Performance
+              </span>
+              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.08]">
+                Premium<br />
+                <span className="text-[#1976d2]">Footwear</span>
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-blue-100 max-w-md leading-relaxed">
-                Quality products. Better living.
+              <p className="mt-3 text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
+                Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -556,20 +590,21 @@ export default function StoreLayout({
                   href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                  className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
                 >
-                  <MessageCircle size={14} /> WhatsApp Support
+                  <MessageCircle size={14} className="text-emerald-600" /> WhatsApp Support
                 </a>
               </div>
             </div>
 
-            {/* Wireless Over-Ear Headphones Hero Image (Matching Screenshot) */}
-            <div className="w-48 sm:w-64 lg:w-72 shrink-0">
+            {/* Performance Athletic Sneaker Hero Image (Matching Instagram Post) */}
+            <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative">
               <img
-                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"
-                alt="Premium Headphones"
-                className="size-full object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
+                src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80"
+                alt="Premium Footwear Sneaker"
+                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.15)] transition duration-500 hover:scale-105 -rotate-6"
               />
+              <div className="mx-auto mt-[-18px] h-3.5 w-3/4 rounded-full bg-slate-400/25 blur-md" />
             </div>
           </div>
         </section>
@@ -798,6 +833,52 @@ export default function StoreLayout({
             </div>
           )}
         </div>
+
+        {/* Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
+        <section className="mt-12 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
+          <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🌐</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Your Own Online Store</h4>
+                  <p className="text-[10px] text-blue-200/80">Custom branded domain</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">💬</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">WhatsApp Ordering</h4>
+                  <p className="text-[10px] text-blue-200/80">Direct customer chat</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🛡️</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Secure & Reliable</h4>
+                  <p className="text-[10px] text-blue-200/80">24/7 verified uptime</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📈</span>
+                <div>
+                  <h4 className="text-xs font-bold text-white">Grow Your Business</h4>
+                  <p className="text-[10px] text-blue-200/80">Scale sales effortlessly</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 w-full sm:w-auto text-center">
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg transition hover:bg-blue-400 active:scale-95"
+              >
+                <span>Build Your Store</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* 6. Slide-Out Cart Drawer */}

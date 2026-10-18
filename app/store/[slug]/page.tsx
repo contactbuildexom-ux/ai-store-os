@@ -53,6 +53,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     accepts_cod: store.accepts_cod ?? true,
     accepts_advance: store.accepts_advance ?? false,
     advance_percentage: store.advance_percentage ?? 50,
+    tagline: (store as Record<string, unknown>).tagline as string ?? null,
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)

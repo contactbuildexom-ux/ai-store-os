@@ -58,6 +58,7 @@ export type Store = {
     accepts_cod: boolean;
     accepts_advance: boolean;
     advance_percentage: number;
+    tagline?: string | null;
 };
 
 export type Props = {
@@ -151,24 +152,41 @@ export default function StorefrontClient({ store, settings, products, delivery }
         {
             id: 'feat-1',
             name: 'Running Shoes',
-            price: 4999,
+            price: 12000,
             image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-            description: 'Lightweight breathable sports sneakers for all-day comfort.'
+            description: 'Ultra-cushioned performance running sneakers engineered for endurance, speed, and all-day comfort.'
         },
         {
             id: 'feat-2',
+            name: 'Hoodie',
+            price: 8200,
+            image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
+            description: 'Heavyweight premium French terry cotton fleece hoodie with double-lined hood and relaxed fit.'
+        },
+        {
+            id: 'feat-3',
+            name: 'Cap',
+            price: 2499,
+            image_url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
+            description: 'Embroidered 6-panel structured cotton twill cap with adjustable brass buckle strap.'
+        },
+        {
+            id: 'feat-4',
             name: 'Smart Watch',
-            price: 7999,
+            price: 14000,
             image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
-            description: 'Fitness tracker smartwatch with heart rate monitoring.'
+            description: 'Next-gen fitness tracker with AMOLED touch screen, heart rate sensor, and waterproof casing.'
         }
     ];
 
     const featuredItems = useMemo(() => {
-        if (liveProducts.length >= 2) {
+        if (liveProducts.length >= 4) {
             return liveProducts.slice(0, 4);
         }
-        return liveProducts.length === 1 ? [liveProducts[0], defaultFeatured[1]] : defaultFeatured;
+        if (liveProducts.length > 0) {
+            return [...liveProducts, ...defaultFeatured.slice(liveProducts.length, 4)];
+        }
+        return defaultFeatured;
     }, [liveProducts]);
 
     const totalCartCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
@@ -396,59 +414,77 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 {bannerText}
             </div>
 
-            {/* Main Header (Hamburger Left, Brand Center, Cart Icon Right) */}
+            {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
-                    {/* Left: Hamburger Icon Button */}
-                    <button
-                        type="button"
-                        onClick={() => setIsMenuOpen(true)}
-                        aria-label="Open mobile navigation menu"
-                        className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95"
-                    >
-                        <Menu size={20} />
-                    </button>
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                    {/* Left: Mobile Menu & Logo / Brand */}
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsMenuOpen(true)}
+                            aria-label="Open mobile navigation menu"
+                            className="grid size-9 place-items-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 active:scale-95 md:hidden"
+                        >
+                            <Menu size={18} />
+                        </button>
 
-                    {/* Center: Store Brand Name / Logo */}
-                    <div className="flex min-w-0 items-center justify-center gap-2.5 text-center">
-                        {settings?.logo_url ? (
-                            <Image
-                                src={settings.logo_url}
-                                alt={`${liveStore.name} logo`}
-                                width={36}
-                                height={36}
-                                unoptimized
-                                className="size-9 rounded-xl object-cover shadow-xs"
-                            />
-                        ) : (
-                            <div
-                                className="grid size-9 place-items-center rounded-xl font-bold text-white shadow-xs text-sm"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                {liveStore.name.charAt(0).toUpperCase()}
+                        <div className="flex items-center gap-2.5">
+                            {settings?.logo_url ? (
+                                <Image
+                                    src={settings.logo_url}
+                                    alt={`${liveStore.name} logo`}
+                                    width={32}
+                                    height={32}
+                                    unoptimized
+                                    className="size-8 rounded-lg object-cover shadow-xs"
+                                />
+                            ) : (
+                                <img
+                                    src="/buildexom-icon.png"
+                                    alt="Buildexom"
+                                    className="size-8 object-contain"
+                                />
+                            )}
+                            <div className="min-w-0 text-left">
+                                <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+                                    {liveStore.name}
+                                </h1>
+                                <p className="hidden text-[10px] text-slate-400 sm:block">Buildexom Verified Store</p>
                             </div>
-                        )}
-                        <div className="min-w-0 text-left">
-                            <h1 className="truncate text-base font-extrabold tracking-tight sm:text-lg" style={{ color: themeColor }}>
-                                {liveStore.name}
-                            </h1>
-                            <p className="hidden text-[10px] text-slate-400 sm:block">Official Online Store</p>
                         </div>
                     </div>
 
-                    {/* Right: Cart Icon Button with Counter Badge */}
-                    <div className="flex items-center gap-2">
+                    {/* Center: Desktop Navigation Links matching post screen (Home, Shop, Categories, About) */}
+                    <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-700">
+                        <a href="#hero" className="transition hover:text-blue-600">Home</a>
+                        <a href="#featured" className="transition hover:text-blue-600">Shop</a>
+                        <a href="#categories" className="transition hover:text-blue-600">Categories</a>
+                        <a href="#products" className="transition hover:text-blue-600">All Products</a>
+                        <a href="#feature-strip" className="transition hover:text-blue-600">About</a>
+                    </nav>
+
+                    {/* Right: WhatsApp & Cart Icon Button with Counter Badge */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <a
+                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+                        >
+                            <MessageCircle size={14} className="text-emerald-600" /> WhatsApp
+                        </a>
+
                         <button
                             type="button"
                             onClick={() => setIsCartOpen(true)}
                             aria-label={`Shopping cart with ${totalCartCount} items`}
                             className="relative grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-800 transition hover:bg-slate-100 active:scale-95 shadow-xs"
                         >
-                            <ShoppingBag size={20} />
+                            <ShoppingBag size={18} />
                             {totalCartCount > 0 && (
                                 <span
                                     className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full text-[10px] font-bold text-white shadow-sm animate-bounce"
-                                    style={{ backgroundColor: themeColor }}
+                                    style={{ backgroundColor: themeColor || '#1976d2' }}
                                 >
                                     {totalCartCount}
                                 </span>
@@ -586,29 +622,30 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Main Page Body */}
             <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 space-y-6">
-                {/* 1. Hero Promo Banner (Matching Screenshot) */}
+                {/* 1. Hero Promo Section (Matching Instagram Post Screen) */}
                 <section
-                    className="relative overflow-hidden rounded-3xl p-6 sm:p-10 text-white shadow-xl transition duration-500"
-                    style={{
-                        background: `linear-gradient(135deg, ${themeColor || '#071d49'} 0%, #0b2b68 60%, #1976d2 100%)`
-                    }}
+                    id="hero"
+                    className="relative overflow-hidden rounded-3xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-6 sm:p-10 shadow-sm transition duration-500"
                 >
-                    <div className="absolute -right-16 -top-16 size-64 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                    <div className="absolute -left-16 -bottom-16 size-64 rounded-full bg-cyan-400/10 blur-2xl pointer-events-none" />
+                    <div className="absolute -right-16 -top-16 size-72 rounded-full bg-blue-100/40 blur-3xl pointer-events-none" />
+                    <div className="absolute -left-16 -bottom-16 size-72 rounded-full bg-indigo-50/50 blur-3xl pointer-events-none" />
 
-                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
-                        <div className="max-w-xl text-left">
-                            <h2 className="text-2xl font-black tracking-tight sm:text-4xl lg:text-5xl leading-tight">
-                                Premium Products<br />For a Better You
+                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-8 relative z-10">
+                        <div className="max-w-xl text-left space-y-3">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-blue-700">
+                                ✨ Style • Comfort • Performance
+                            </span>
+                            <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-tight">
+                                {liveStore.name || 'Premium Footwear'}
                             </h2>
-                            <p className="mt-2 text-xs sm:text-sm text-blue-100 max-w-md leading-relaxed">
-                                Quality products. Better living.
+                            <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
+                                {liveStore.tagline || 'Style • Comfort • Performance'}
                             </p>
 
-                            <div className="mt-6 flex flex-wrap items-center gap-3">
+                            <div className="pt-3 flex flex-wrap items-center gap-3">
                                 <a
-                                    href="#products"
-                                    className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
+                                    href="#featured"
+                                    className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
                                 >
                                     Shop Now →
                                 </a>
@@ -616,30 +653,33 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:border-slate-300"
                                 >
-                                    <MessageCircle size={14} /> WhatsApp Support
+                                    <MessageCircle size={14} className="text-emerald-600" /> Order on WhatsApp
                                 </a>
                             </div>
                         </div>
 
-                        {/* Large Wireless Over-Ear Headphones Hero Image (Matching Screenshot) */}
-                        <div className="w-48 sm:w-64 lg:w-72 shrink-0">
+                        {/* Floating Performance Sneaker Hero Image (Matching Post Screen) */}
+                        <div className="w-52 sm:w-72 lg:w-80 shrink-0">
                             <img
-                                src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"
-                                alt="Premium Headphones"
+                                src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80"
+                                alt="Premium Footwear"
                                 className="size-full object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
                             />
                         </div>
                     </div>
                 </section>
 
-                {/* 2. Featured Products Section (Matching Screenshot) */}
-                <section id="featured" className="space-y-3 pt-1">
+                {/* 2. Featured Products Section (Matching Post Grid) */}
+                <section id="featured" className="space-y-4 pt-1">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
-                            Featured Products
-                        </h3>
+                        <div>
+                            <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
+                                Featured Products
+                            </h3>
+                            <p className="text-xs text-slate-500">Handpicked essentials curated for you</p>
+                        </div>
                         <a
                             href="#products"
                             className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition"
@@ -649,14 +689,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </a>
                     </div>
 
-                    {/* 2-Column Cards Grid matching screenshot */}
-                    <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {/* 4-Column Grid on Desktop, 2-Column on Mobile matching post */}
+                    <div className="grid grid-cols-2 gap-3.5 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
                         {featuredItems.map((item) => (
                             <article
                                 key={item.id}
-                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
                             >
-                                <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-3">
+                                <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
                                     <img
                                         src={item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
                                         alt={item.name}
@@ -914,6 +954,52 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <h4 className="text-xs font-bold text-slate-900">Dedicated Support</h4>
                                 <p className="text-[11px] text-slate-500">Real-time WhatsApp tracking</p>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 5. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
+                <section className="overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
+                    <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
+                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">🌐</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-white">Your Own Online Store</h4>
+                                    <p className="text-[10px] text-blue-200/80">Custom branded domain</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">💬</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-white">WhatsApp Ordering</h4>
+                                    <p className="text-[10px] text-blue-200/80">Direct customer chat</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">🛡️</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-white">Secure & Reliable</h4>
+                                    <p className="text-[10px] text-blue-200/80">24/7 verified uptime</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <span className="text-xl">📈</span>
+                                <div>
+                                    <h4 className="text-xs font-bold text-white">Grow Your Business</h4>
+                                    <p className="text-[10px] text-blue-200/80">Scale sales effortlessly</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="shrink-0 w-full sm:w-auto text-center">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg transition hover:bg-blue-400 active:scale-95"
+                            >
+                                <span>Build Your Store</span>
+                                <ArrowRight size={14} />
+                            </Link>
                         </div>
                     </div>
                 </section>

@@ -282,6 +282,25 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
       { name: 'Precision Ceramic Burr Hand Coffee Grinder', price: 4500, desc: 'Aerospace aluminum body with 36 adjustable grind settings from Turkish fine to coarse cold brew.' },
       { name: 'Cold Brew Infusion Bottle & Filter Set', price: 2900, desc: 'Leakproof silicone-sealed travel brewer engineered for smooth 18-hour cold extractions.' }
     ]
+  },
+  footwear: {
+    categories: ['Athletic Running', 'Streetwear Hoodies', 'Headwear & Caps', 'Smart Wearables'],
+    images: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Running Shoes', price: 12000, desc: 'Ultra-lightweight responsive performance running shoes with breathable mesh and all-day comfort.' },
+      { name: 'Hoodie', price: 8200, desc: 'Premium heavyweight cotton fleece hoodie with minimalist tailored fit.' },
+      { name: 'Cap', price: 2499, desc: 'Structured classic baseball cap with breathable eyelets and adjustable strap.' },
+      { name: 'Smart Watch', price: 14000, desc: 'Next-gen AMOLED health & fitness tracker with high accuracy heart rate and workout sensors.' },
+      { name: 'Leather Casual Sneakers', price: 9500, desc: 'Handcrafted genuine leather low-top sneakers with cushioned OrthoLite insoles.' },
+      { name: 'Athletic Gym Duffel Bag', price: 4500, desc: 'Water-resistant gym duffel with separate shoe compartment and ergonomic strap.' }
+    ]
   }
 };
 
@@ -290,6 +309,7 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
  */
 function detectNiche(prompt: string): string {
   const p = prompt.toLowerCase();
+  if (p.includes('shoe') || p.includes('footwear') || p.includes('sneaker') || p.includes('jogger') || p.includes('boot')) return 'footwear';
   if (p.includes('perfume') || p.includes('fragrance') || p.includes('scent') || p.includes('oud') || p.includes('attar')) return 'perfume';
   if (p.includes('cloth') || p.includes('dress') || p.includes('fashion') || p.includes('wear') || p.includes('hoodie') || p.includes('kurta') || p.includes('suit') || p.includes('apparel')) return 'clothing';
   if (p.includes('skin') || p.includes('cosmetic') || p.includes('beauty') || p.includes('serum') || p.includes('cream') || p.includes('lotion') || p.includes('makeup')) return 'skincare';
@@ -323,6 +343,7 @@ function extractStoreName(prompt: string, niche: string): string {
   }
 
   const nicheNames: Record<string, string[]> = {
+    footwear: ['Stride & Pace Footwear', 'Aura Kicks Atelier', 'Apex Footwear Co.', 'Urban Velocity Shoes'],
     perfume: ['Velvet Aura Fragrances', 'Royal Scent Co.', 'Oud & Amber Atelier', 'Luxe Essence'],
     clothing: ['Noor Couture', 'Urban Aura Threads', 'Zahra Pret & Festive', 'Vogue Loom'],
     skincare: ['Glow Botanica', 'Pure Aura Skincare', 'Silk & Dew Beauty', 'Aura Dermacare'],
@@ -405,6 +426,7 @@ export async function generateStoreFromPrompt(options: {
 
   // Generate tagline and hero based on niche & prompt
   const taglines: Record<string, string> = {
+    footwear: 'Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.',
     perfume: 'Captivating artisanal fragrances and pure concentrated attars crafted for unforgettable impressions.',
     clothing: 'Modern silhouettes, luxury festive fabrics, and timeless handcrafted essentials tailored for you.',
     skincare: 'Clinically balanced, botanical-infused skin nutrition for natural radiant glow every day.',

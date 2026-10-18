@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 /* ============ CONFIG ============ */
@@ -213,10 +213,12 @@ export default function QrCodeSection() {
                     ))}
                   </svg>
 
-                  <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white p-0.5">
-                    <span className="flex h-full w-full items-center justify-center rounded-md bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-sm font-bold text-white">
-                      B
-                    </span>
+                  <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1 shadow-md ring-1 ring-slate-100">
+                    <img
+                      src="/buildexom-icon.png"
+                      alt="Buildexom Logo"
+                      className="size-full object-contain"
+                    />
                   </div>
                 </div>
 

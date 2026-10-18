@@ -47,7 +47,8 @@ export const getPlatformSettings = unstable_cache(
       const missingSeoColumn = result.error.message.includes("seo_settings")
         && (result.error.code === "42703" || result.error.code === "PGRST204" || result.error.message.toLowerCase().includes("column"));
       if (!missingSeoColumn) {
-        throw new Error(`Unable to load platform settings: ${result.error.message}`);
+        console.warn(`Unable to load platform settings from database (${result.error.message}); using defaults.`);
+        return defaults;
       }
 
       if (!legacySchemaWarningLogged) {
@@ -59,7 +60,10 @@ export const getPlatformSettings = unstable_cache(
         .select("site_title, site_description, contact_email, contact_phone, whatsapp, social_links, branding")
         .eq("id", "platform")
         .maybeSingle();
-      if (legacyResult.error) throw new Error(`Unable to load platform settings: ${legacyResult.error.message}`);
+      if (legacyResult.error) {
+        console.warn(`Unable to load legacy platform settings (${legacyResult.error.message}); using defaults.`);
+        return defaults;
+      }
       data = legacyResult.data ? { ...legacyResult.data, seo_settings: {} } : null;
     }
 
