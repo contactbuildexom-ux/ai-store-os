@@ -2,47 +2,107 @@ import { notFound } from 'next/navigation';
 import StorefrontClient from './StorefrontClient';
 import { StoreFooter } from '../../../components/store-footer';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { storeRepo } from '@/lib/store-repository';
 
 export default async function PublicStorePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const slug = resolvedParams.slug;
-  const supabase = createAdminClient();
-  if (!supabase) notFound();
+  const rawSupabase = createAdminClient();
+  const isSupabaseValid = rawSupabase && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder-project') && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project');
+  const supabase = isSupabaseValid ? rawSupabase : null;
 
-  const { data: store, error: storeError } = await supabase
-    .from('stores')
-    .select('id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details')
-    .eq('slug', slug)
-    .single();
+  let store: any = null;
+  let settingsData: any = null;
+  let products: any[] = [];
+  let deliveryData: any = null;
+  let paymentMethods: any[] = [];
 
-  if (storeError || !store) {
+  if (supabase) {
+    try {
+      const { data: dbStore } = await supabase
+        .from('stores')
+        .select('id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details')
+        .eq('slug', slug)
+        .maybeSingle();
+      store = dbStore;
+    } catch (e) {
+      console.warn("Supabase fetch store warning:", e);
+    }
+  }
+
+  if (store && supabase) {
+    try {
+      const [settingsResult, builderProducts, legacyProducts, deliveryResult, paymentResult] = await Promise.all([
+        supabase.from('store_settings').select('*').eq('store_id', store.id).maybeSingle(),
+        supabase.from('store_products').select('id, name, description, price, image_url, category_id, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
+        supabase.from('products').select('id, name, description, price, image_url, category, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
+        supabase.from('delivery_settings').select('*').eq('store_id', store.id).maybeSingle(),
+        supabase.from('store_payments').select('provider_name, account_title, account_number').eq('store_id', store.id).eq('is_active', true),
+      ]);
+      settingsData = settingsResult.data ?? null;
+      deliveryData = deliveryResult.data ?? null;
+      const productById = new Map<string, { id: string; name: string; description: string | null; price: number; image_url: string | null }>();
+      for (const product of [...(legacyProducts.data ?? []), ...(builderProducts.data ?? [])]) {
+        productById.set(String(product.id), {
+          id: String(product.id),
+          name: String(product.name ?? ""),
+          description: typeof product.description === "string" ? product.description : null,
+          price: Number(product.price ?? 0),
+          image_url: typeof product.image_url === "string" ? product.image_url : null,
+        });
+      }
+      products = [...productById.values()];
+      paymentMethods = (paymentResult.data ?? []).map((payment) => ({
+        provider_name: String(payment.provider_name ?? ''),
+        account_title: String(payment.account_title ?? ''),
+        account_number: String(payment.account_number ?? ''),
+      }));
+    } catch (sbErr) {
+      console.warn("Supabase sub-queries error:", sbErr);
+    }
+  }
+
+  // Fallback to storeRepo if not in Supabase or catalog is empty
+  if (!store || products.length === 0) {
+    const repoStore = await storeRepo.getStore(slug);
+    if (repoStore) {
+      store = {
+        id: repoStore.id,
+        name: repoStore.name,
+        slug: repoStore.slug,
+        plan: repoStore.plan || 'basic',
+        whatsapp_number: repoStore.whatsapp_number || '',
+        accepts_cod: true,
+        accepts_advance: false,
+        advance_percentage: 50,
+        tagline: repoStore.tagline,
+        payment_details: {}
+      };
+      if (!settingsData) {
+        settingsData = {
+          theme_color: repoStore.primary_color,
+          selected_theme: repoStore.selected_theme,
+          banner_text: repoStore.header_title || repoStore.tagline,
+          footer_text: repoStore.description,
+          social_links: repoStore.social_links || {}
+        };
+      }
+      if (products.length === 0) {
+        const repoProducts = await storeRepo.getProducts(repoStore.id);
+        products = repoProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          image_url: p.image_url
+        }));
+      }
+    }
+  }
+
+  if (!store) {
     notFound();
   }
-
-  const [settingsResult, builderProducts, legacyProducts, deliveryResult, paymentResult] = await Promise.all([
-    supabase.from('store_settings').select('*').eq('store_id', store.id).maybeSingle(),
-    supabase.from('store_products').select('id, name, description, price, image_url, category_id, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
-    supabase.from('products').select('id, name, description, price, image_url, category, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
-    supabase.from('delivery_settings').select('*').eq('store_id', store.id).maybeSingle(),
-    supabase.from('store_payments').select('provider_name, account_title, account_number').eq('store_id', store.id).eq('is_active', true),
-  ]);
-
-  const productById = new Map<string, { id: string; name: string; description: string | null; price: number; image_url: string | null }>();
-  for (const product of [...(legacyProducts.data ?? []), ...(builderProducts.data ?? [])]) {
-    productById.set(String(product.id), {
-      id: String(product.id),
-      name: String(product.name ?? ""),
-      description: typeof product.description === "string" ? product.description : null,
-      price: Number(product.price ?? 0),
-      image_url: typeof product.image_url === "string" ? product.image_url : null,
-    });
-  }
-  const products = [...productById.values()];
-  const paymentMethods = (paymentResult.data ?? []).map((payment) => ({
-    provider_name: String(payment.provider_name ?? ''),
-    account_title: String(payment.account_title ?? ''),
-    account_number: String(payment.account_number ?? ''),
-  }));
 
   const safeStore = {
     id: store.id,
@@ -70,8 +130,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     easypaisa_number: typeof savedPaymentDetails.easypaisa_number === 'string' ? savedPaymentDetails.easypaisa_number : legacyPayment('easy')?.account_number ?? '',
     easypaisa_title: typeof savedPaymentDetails.easypaisa_title === 'string' ? savedPaymentDetails.easypaisa_title : legacyPayment('easy')?.account_title || (typeof savedPaymentDetails.account_title === 'string' ? savedPaymentDetails.account_title : ''),
   };
-  const socialSource = typeof settingsResult.data?.social_links === 'object' && settingsResult.data.social_links !== null && !Array.isArray(settingsResult.data.social_links)
-    ? settingsResult.data.social_links as Record<string, unknown>
+  const socialSource = typeof settingsData?.social_links === 'object' && settingsData.social_links !== null && !Array.isArray(settingsData.social_links)
+    ? settingsData.social_links as Record<string, unknown>
     : {};
   const socialLinks = Object.fromEntries(
     (['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const)
@@ -84,9 +144,9 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     <>
       <StorefrontClient
         store={safeStore}
-        settings={settingsResult.data ?? null}
+        settings={settingsData ?? null}
         products={products}
-        delivery={deliveryResult.data ?? null}
+        delivery={deliveryData ?? null}
       />
       <StoreFooter storeName={safeStore.name} storeSlug={safeStore.slug} paymentDetails={paymentDetails} socialLinks={socialLinks} />
     </>

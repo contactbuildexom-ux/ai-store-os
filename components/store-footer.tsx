@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Landmark, Smartphone, ShieldCheck, Truck, Headphones, RotateCcw, MapPin, Phone, Mail } from 'lucide-react';
 import { StoreSocialLinks } from './store-social-links';
-import { StoreQRCode } from './store-qr-code';
+import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from './store-qr-code';
 
 type StorePaymentDetails = {
   bank_name: string;
@@ -116,9 +116,13 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           {/* Brand Info */}
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="grid size-8 place-items-center rounded-xl bg-blue-600 font-extrabold text-white text-sm shadow-xs">
-                {storeName.charAt(0).toUpperCase()}
+            <div className="flex items-center gap-2.5">
+              <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden">
+                <img
+                  src={BUILDEXOM_ICON_DATA_URL}
+                  alt={storeName}
+                  className="size-full object-contain"
+                />
               </div>
               <h3 className="text-base font-extrabold tracking-tight text-slate-900">{storeName}</h3>
             </div>

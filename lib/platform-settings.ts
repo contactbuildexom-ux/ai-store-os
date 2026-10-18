@@ -34,7 +34,8 @@ function stringValue(value: unknown) {
 export const getPlatformSettings = unstable_cache(
   async (): Promise<PlatformBrandingSettings> => {
     const supabase = createAdminClient();
-    if (!supabase) return defaults;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return defaults;
 
     const result = await supabase
       .from("platform_settings")

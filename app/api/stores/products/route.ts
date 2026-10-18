@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { checkStoreLimits } from "@/lib/planLimits";
+import { storeRepo } from "@/lib/store-repository";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -20,13 +21,13 @@ function parsePrice(value: unknown) {
 
 function getSupabase() {
   const supabase = createAdminClient();
-  if (!supabase) throw new Error("Store database is not configured.");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return null;
   return supabase;
 }
 
 export async function GET(req: Request) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const storeId = textValue(searchParams.get("store_id"));
 
@@ -35,15 +36,39 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
-    const { data, error } = await supabase
-      .from("store_products")
-      .select("*")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false });
+    let products: any[] = [];
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("store_products")
+          .select("*")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false });
+        if (!error && data) products = data;
+      } catch {
+        // Fallback
+      }
+    }
 
-    if (error) throw error;
+    if (products.length === 0) {
+      try {
+        const repoProducts = await storeRepo.getProducts(storeId);
+        products = repoProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          image_url: p.image_url,
+          store_id: storeId,
+          created_at: p.created_at,
+        }));
+      } catch {
+        // Fallback
+      }
+    }
 
-    return NextResponse.json({ success: true, products: data ?? [] });
+    return NextResponse.json({ success: true, products });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load products.";
     return NextResponse.json({ error: message }, { status: 500 });

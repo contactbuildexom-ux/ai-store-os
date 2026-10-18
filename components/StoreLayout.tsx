@@ -100,6 +100,8 @@ export default function StoreLayout({
   const [customerZip, setCustomerZip] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
 
+  const themeColor = theme?.primaryColor || '#10b981';
+
   // Extract unique categories
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -114,7 +116,7 @@ export default function StoreLayout({
       id: 'feat-1',
       name: 'Running Shoes',
       price: 12000,
-      image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+      image_url: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
       description: 'Ultra-lightweight responsive performance running shoes with all-day comfort.'
     },
     {
@@ -562,18 +564,31 @@ export default function StoreLayout({
 
       {/* 3. Hero Promo Banner (Matching Instagram Post Studio Footwear Showcase) */}
       <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 space-y-6">
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-blue-50/70 p-6 sm:p-10 shadow-sm transition duration-500">
-          <div className="absolute -right-16 -top-16 size-72 rounded-full bg-blue-100/50 blur-3xl pointer-events-none" />
-          <div className="absolute -left-16 -bottom-16 size-72 rounded-full bg-slate-100/60 blur-3xl pointer-events-none" />
+        <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-slate-100/70 p-6 sm:p-10 shadow-sm transition duration-500">
+          <div
+            className="absolute -right-16 -top-16 size-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+            style={{ backgroundColor: themeColor }}
+          />
+          <div
+            className="absolute -left-16 -bottom-16 size-72 rounded-full blur-3xl opacity-10 pointer-events-none"
+            style={{ backgroundColor: themeColor }}
+          />
 
           <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
             <div className="max-w-xl text-left">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider"
+                style={{
+                  backgroundColor: `${themeColor}15`,
+                  color: themeColor,
+                  borderColor: `${themeColor}35`
+                }}
+              >
                 Style • Comfort • Performance
               </span>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.08]">
                 Premium<br />
-                <span className="text-[#1976d2]">Footwear</span>
+                <span style={{ color: themeColor }}>Footwear</span>
               </h2>
               <p className="mt-3 text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
                 Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.
@@ -582,7 +597,8 @@ export default function StoreLayout({
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <a
                   href="#catalog"
-                  className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
+                  className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                  style={{ backgroundColor: themeColor }}
                 >
                   Shop Now →
                 </a>
@@ -600,9 +616,9 @@ export default function StoreLayout({
             {/* Performance Athletic Sneaker Hero Image (Matching Instagram Post) */}
             <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative">
               <img
-                src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80"
+                src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80"
                 alt="Premium Footwear Sneaker"
-                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.15)] transition duration-500 hover:scale-105 -rotate-6"
+                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105 -rotate-6"
               />
               <div className="mx-auto mt-[-18px] h-3.5 w-3/4 rounded-full bg-slate-400/25 blur-md" />
             </div>
@@ -617,7 +633,8 @@ export default function StoreLayout({
             </h3>
             <a
               href="#catalog"
-              className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+              className="flex items-center gap-1 text-xs font-bold transition hover:opacity-80"
+              style={{ color: themeColor }}
             >
               <span>View All</span>
               <ArrowRight size={13} />
@@ -632,7 +649,7 @@ export default function StoreLayout({
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-3">
                   <img
-                    src={item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
+                    src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                     alt={item.name}
                     className="size-full object-contain transition duration-500 group-hover:scale-105"
                   />
@@ -650,7 +667,8 @@ export default function StoreLayout({
                       type="button"
                       onClick={() => addToCart(item)}
                       aria-label={`Add ${item.name} to cart`}
-                      className="grid size-8 place-items-center rounded-full bg-[#1976d2] text-white shadow-md transition hover:bg-[#1565c0] hover:scale-110 active:scale-95"
+                      className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
+                      style={{ backgroundColor: themeColor }}
                     >
                       <ShoppingBag size={14} />
                     </button>

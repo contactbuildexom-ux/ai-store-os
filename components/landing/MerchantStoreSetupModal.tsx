@@ -204,6 +204,9 @@ export default function MerchantStoreSetupModal({
       if (youtube.trim()) socialLinks.youtube = youtube.trim();
       if (twitter.trim()) socialLinks.x = twitter.trim();
 
+      const selectedThemeObj = THEME_OPTIONS.find((t) => t.id === selectedTheme);
+      const themeColor = selectedThemeObj?.color || '#1976d2';
+
       const response = await fetch('/api/ai/generate-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,6 +216,8 @@ export default function MerchantStoreSetupModal({
           prompt: prompt.trim(),
           plan,
           theme: selectedTheme,
+          theme_color: themeColor,
+          selected_theme: selectedTheme,
           whatsapp_number: whatsappNumber.trim() || undefined,
           owner_email: email.trim().toLowerCase(),
           password,

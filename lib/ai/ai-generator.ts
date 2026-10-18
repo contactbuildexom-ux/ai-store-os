@@ -301,6 +301,25 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
       { name: 'Leather Casual Sneakers', price: 9500, desc: 'Handcrafted genuine leather low-top sneakers with cushioned OrthoLite insoles.' },
       { name: 'Athletic Gym Duffel Bag', price: 4500, desc: 'Water-resistant gym duffel with separate shoe compartment and ergonomic strap.' }
     ]
+  },
+  wedding: {
+    categories: ['Bridal Couture', 'Wedding Favors & Gift Boxes', 'Traditional Jewelry & Sets', 'Festive Accessories'],
+    images: [
+      'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1545232979-fbf68fe9ec41?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Royal Velvet Embroidered Bridal Pouch & Clutch', price: 3200, desc: 'Handcrafted zardozi embroidered velvet bridal clutch with detachable gold chain.' },
+      { name: 'Artisan Wedding Favor & Sweets Gift Box (Set of 12)', price: 4500, desc: 'Laser-cut gold foiled favor boxes adorned with silk ribbons for wedding guests.' },
+      { name: 'Traditional Kundan Bridal Choker & Earrings Set', price: 6800, desc: 'Gold-plated 22k finish kundan bridal necklace with matching jhumkas and maang tikka.' },
+      { name: 'Luxury Organza & Tilla Embroidered Formal Dupatta', price: 4200, desc: 'Pure tissue organza dupatta with scalloped borders and intricate tilla embellishments.' },
+      { name: 'Handcrafted Scented Wedding Soy Candle Souvenirs', price: 2800, desc: 'Pack of 6 personalized fragrant soy wax jars with floral notes and customized tags.' },
+      { name: 'Velvet Shagun & Cash Envelopes (Pack of 10)', price: 1800, desc: 'Premium velvet textured monetary gift envelopes with traditional embossed motif.' }
+    ]
   }
 };
 
@@ -309,6 +328,7 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
  */
 function detectNiche(prompt: string): string {
   const p = prompt.toLowerCase();
+  if (p.includes('wedding') || p.includes('bridal') || p.includes('shaadi') || p.includes('groom') || p.includes('bride') || p.includes('marriage')) return 'wedding';
   if (p.includes('shoe') || p.includes('footwear') || p.includes('sneaker') || p.includes('jogger') || p.includes('boot')) return 'footwear';
   if (p.includes('perfume') || p.includes('fragrance') || p.includes('scent') || p.includes('oud') || p.includes('attar')) return 'perfume';
   if (p.includes('cloth') || p.includes('dress') || p.includes('fashion') || p.includes('wear') || p.includes('hoodie') || p.includes('kurta') || p.includes('suit') || p.includes('apparel')) return 'clothing';
@@ -432,7 +452,8 @@ export async function generateStoreFromPrompt(options: {
     skincare: 'Clinically balanced, botanical-infused skin nutrition for natural radiant glow every day.',
     jewelry: 'Handcrafted luxury jewelry and 18K gold-plated keepsakes designed to shine on every occasion.',
     tech: 'Cutting-edge smart wearables, precision acoustics, and premium workstation essentials.',
-    food: 'Freshly roasted single-origin specialty coffees, hand-poured beans, and gourmet artisan treats.'
+    food: 'Freshly roasted single-origin specialty coffees, hand-poured beans, and gourmet artisan treats.',
+    wedding: 'Exquisite bridal accessories, royal wedding favor boxes, and handcrafted traditional keepsakes for your special moments.'
   };
 
   const tagline = taglines[niche] || 'Exquisite quality products handcrafted with passion and delivered swiftly to your doorstep.';

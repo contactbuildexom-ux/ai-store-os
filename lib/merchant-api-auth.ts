@@ -4,6 +4,7 @@ import { createClient as createSupabaseServerClient } from "@/lib/supabase/serve
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ADMIN_SESSION_COOKIE, verifyAdminSession } from "@/lib/admin-session";
 import { MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
+import { storeRepo } from "@/lib/store-repository";
 
 /** Checks that the current browser session owns the requested store. */
 export async function canAccessStore(storeId: string) {
@@ -42,13 +43,31 @@ export async function getMerchantSessionStore() {
   const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
   if (merchantSession) {
     const admin = createAdminClient();
-    if (!admin) return null;
-    const { data, error } = await admin
-      .from("stores")
-      .select("id, name, slug, plan, payment_status, owner_email")
-      .eq("id", merchantSession.storeId)
-      .maybeSingle();
-    return error ? null : data;
+    const isSupabaseValid = admin && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
+    if (isSupabaseValid && admin) {
+      try {
+        const { data, error } = await admin
+          .from("stores")
+          .select("id, name, slug, plan, payment_status, owner_email")
+          .eq("id", merchantSession.storeId)
+          .maybeSingle();
+        if (!error && data) return data;
+      } catch {
+        // Fallback to storeRepo
+      }
+    }
+    const repoStore = await storeRepo.getStore(merchantSession.storeId);
+    if (repoStore) {
+      return {
+        id: repoStore.id,
+        name: repoStore.name,
+        slug: repoStore.slug,
+        plan: repoStore.plan || "basic",
+        payment_status: repoStore.payment_status || "active",
+        owner_email: repoStore.owner_email,
+      };
+    }
+    return null;
   }
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;

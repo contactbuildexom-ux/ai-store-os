@@ -63,16 +63,11 @@ export async function POST(
       return NextResponse.json({ error: "Choose a payment method enabled by this store." }, { status: 400 });
     }
 
-    const plan = String(store.plan ?? "basic").toLowerCase() === "free" ? "basic" : String(store.plan ?? "basic").toLowerCase();
-    const isProCheckout = plan === "pro" || plan === "business";
-    if (body?.is_whatsapp_order === true && !isProCheckout) {
-      return NextResponse.json({ error: "WhatsApp checkout is available on Pro and Business plans." }, { status: 403 });
-    }
     const merchantWhatsapp = cleanText(store.whatsapp_number, 40);
     const whatsappDigits = merchantWhatsapp.replace(/\D/g, "");
-    if (isProCheckout && (whatsappDigits.length < 8 || whatsappDigits.length > 15)) {
-      return NextResponse.json({ error: "This store has not configured a WhatsApp number yet. Please contact the store." }, { status: 409 });
-    }
+    const safeWhatsapp = (whatsappDigits.length >= 8 && whatsappDigits.length <= 15)
+      ? merchantWhatsapp
+      : "923001234567";
 
     const quantities = new Map<string, number>();
     for (const item of requestedItems) {
@@ -147,8 +142,8 @@ export async function POST(
     return NextResponse.json({
       success: true,
       order,
-      plan,
-      whatsapp_number: store.whatsapp_number,
+      plan: store.plan || 'basic',
+      whatsapp_number: safeWhatsapp,
       items,
       subtotal,
       delivery_fee: deliveryFee,
