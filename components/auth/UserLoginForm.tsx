@@ -6,19 +6,41 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/landing/logo";
 
-/* ---------- settings (yahan se aasani se badal sakte ho) ---------- */
-const AFTER_LOGIN_HREF = "/dashboard"; // login ke baad user kahan jaye
-const SIGNUP_HREF = "/login?mode=signup"; // abhi wohi jo AuthModal mein tha
+
+const AFTER_LOGIN_HREF = "/dashboard"; 
+const SIGNUP_HREF = "/user/signup";
 
 type LoginPayload = { email: string; password: string; remember: boolean };
 
+type LoginResponse = {
+  error?: string;
+  store?: { slug?: string | null };
+};
+
 /**
- * TODO: yahan asli user-auth call lagegi (API route / auth provider).
- * Galat credentials par user-friendly message wala Error throw karna hai.
+ * Asli login: /api/stores/login par email + password bhejta hai.
+ * Kamyab hone par us user ke dashboard ka path wapas karta hai.
  */
-async function authenticateUser(payload: LoginPayload): Promise<void> {
-  void payload;
-  throw new Error("User login is not connected to the server yet.");
+async function authenticateUser(payload: LoginPayload): Promise<string> {
+  const response = await fetch("/api/stores/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: payload.email, password: payload.password }),
+  });
+
+  let data: LoginResponse = {};
+  try {
+    data = (await response.json()) as LoginResponse;
+  } catch {
+    // JSON na aaye to neeche generic error chalega
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || "Login failed. Please check your email and password.");
+  }
+
+  const slug = data.store?.slug;
+  return slug ? `/merchant/${encodeURIComponent(slug)}/dashboard` : AFTER_LOGIN_HREF;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,8 +77,9 @@ export default function UserLoginForm() {
     setError("");
     setLoading(true);
     try {
-      await authenticateUser({ email: cleanEmail, password, remember });
-      router.push(AFTER_LOGIN_HREF);
+      const nextPath = await authenticateUser({ email: cleanEmail, password, remember });
+      router.push(nextPath);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
     } finally {

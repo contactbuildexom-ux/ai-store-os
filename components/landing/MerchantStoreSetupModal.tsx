@@ -20,6 +20,10 @@ import {
   Package,
 } from 'lucide-react';
 import { StoreQRCode } from '@/components/store-qr-code';
+import EmailVerifyField from '@/components/auth/EmailVerifyField';
+
+// NEXT_PUBLIC_REQUIRE_EMAIL_OTP=true hone par hi email verification zaroori hogi
+const OTP_REQUIRED = process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === 'true';
 
 type GeneratedPreview = {
   store_name: string;
@@ -110,6 +114,12 @@ const THEME_OPTIONS = [
   { id: 'midnight-minimal', name: 'Midnight Onyx', color: '#09090b', desc: 'Ultra-minimal aesthetic' },
 ];
 
+/* Shared light-theme classes */
+const INPUT =
+  'w-full rounded-xl border border-[#bfdcff] bg-[#f3f8ff] px-3.5 py-2.5 text-sm text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20';
+const LABEL =
+  'flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0b2545]';
+
 export default function MerchantStoreSetupModal({
   isOpen,
   onClose,
@@ -126,6 +136,8 @@ export default function MerchantStoreSetupModal({
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
 
   // Social media links (All plans get footer social icons)
   const [instagram, setInstagram] = useState('');
@@ -162,6 +174,11 @@ export default function MerchantStoreSetupModal({
       return;
     }
 
+    if (OTP_REQUIRED && !verificationToken) {
+      setErrorMessage('Please verify your email address with the code we send you.');
+      return;
+    }
+
     if ((plan === 'pro' || plan === 'advanced') && !whatsappNumber.trim()) {
       setErrorMessage('Pro & Advance plans require a dedicated WhatsApp number for automated order routing.');
       return;
@@ -194,6 +211,8 @@ export default function MerchantStoreSetupModal({
           whatsapp_number: whatsappNumber.trim() || undefined,
           owner_email: email.trim().toLowerCase(),
           password,
+          owner_phone: contactPhone.trim() || undefined,
+          verification_token: verificationToken || undefined,
           social_links: socialLinks,
         }),
       });
@@ -226,29 +245,26 @@ export default function MerchantStoreSetupModal({
 
   return (
     <div 
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[#0b2545]/60 p-3 backdrop-blur-sm sm:p-4"
       role="dialog"
       aria-modal="true"
     >
       <div 
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 text-white shadow-2xl my-auto max-h-[92vh] flex flex-col"
+        className="relative my-auto flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-[#cfe2fa] bg-white text-[#0b2545] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 px-6 py-5">
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-9 place-items-center rounded-xl bg-blue-600 shadow-lg shadow-blue-500/30 text-white">
-              <Sparkles size={18} />
+        <div className="flex items-center justify-between bg-gradient-to-br from-[#0b2545] to-[#1976d2] px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="grid size-10 place-items-center rounded-xl bg-white/15 text-white">
+              <Store size={20} />
             </span>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                AI Store Builder & Merchant Setup
-                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-semibold text-blue-300 border border-blue-400/30">
-                  Instant Launch
-                </span>
+              <h2 className="text-lg font-extrabold text-white">
+                Set up your online store
               </h2>
-              <p className="text-xs text-slate-400">
-                Setup your complete business profile, WhatsApp integration & social footer
+              <p className="text-xs text-blue-100/90">
+                Tell us about your business and we will build it for you
               </p>
             </div>
           </div>
@@ -256,32 +272,32 @@ export default function MerchantStoreSetupModal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="grid size-8 place-items-center rounded-full bg-slate-800 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+            className="grid size-9 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="overflow-y-auto p-6 space-y-6">
+        <div className="space-y-6 overflow-y-auto p-6">
           {successData ? (
-            <div className="text-center py-6 space-y-5">
-              <div className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+            <div className="space-y-5 py-4 text-center">
+              <div className="mx-auto grid size-16 place-items-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600">
                 <CheckCircle2 size={36} />
               </div>
               <div>
-                <h3 className="text-2xl font-extrabold text-white">Store Successfully Created!</h3>
-                <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
-                  <span className="font-semibold text-emerald-400">{successData.storeName}</span> is live with automated WhatsApp checkout and integrated social media footer.
+                <h3 className="text-2xl font-extrabold text-[#0b2545]">Store Successfully Created!</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm text-[#2c4a73]">
+                  <span className="font-semibold text-emerald-600">{successData.storeName}</span> is live with automated WhatsApp checkout and integrated social media footer.
                 </p>
                 {plan !== 'basic' && (
-                  <p className="mt-2 text-xs text-amber-300">
+                  <p className="mx-auto mt-3 max-w-md rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     Your {plan === 'advanced' ? 'Advanced' : 'Pro'} plan selection is pending payment approval; the store starts with Basic limits until it is approved.
                   </p>
                 )}
               </div>
 
-              <section className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/70 text-left">
+              <section className="mx-auto max-w-xl overflow-hidden rounded-2xl border border-[#cfe2fa] bg-[#f3f8ff] text-left">
                 <div className="px-5 py-5 text-white" style={{ backgroundColor: successData.preview.theme_color }}>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/70">Store preview</p>
                   <h4 className="mt-2 text-xl font-bold">{successData.preview.store_name}</h4>
@@ -290,22 +306,22 @@ export default function MerchantStoreSetupModal({
                 <div className="space-y-4 p-4">
                   <div className="flex flex-wrap gap-2">
                     {successData.preview.categories.map((category) => (
-                      <span key={category} className="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-1 text-[10px] text-slate-200">{category}</span>
+                      <span key={category} className="rounded-full border border-[#bfdcff] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#1976d2]">{category}</span>
                     ))}
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {successData.preview.products.slice(0, 6).map((product) => (
-                      <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-slate-700 bg-slate-900/70 p-3">
+                      <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-[#cfe2fa] bg-white p-3">
                         <div className="flex items-start gap-2">
-                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-blue-500/15 text-blue-300"><Package size={15} /></span>
+                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#e6f4ff] text-[#1976d2]"><Package size={15} /></span>
                           <div className="min-w-0 flex-1">
-                            <h5 className="truncate text-xs font-semibold text-white">{product.name}</h5>
-                            <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-400">{product.description}</p>
+                            <h5 className="truncate text-xs font-semibold text-[#0b2545]">{product.name}</h5>
+                            <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#5b7aa3]">{product.description}</p>
                           </div>
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-2">
-                          <span className="truncate text-[10px] text-slate-400">{product.category_name}</span>
-                          <span className="shrink-0 text-xs font-bold text-emerald-300">
+                          <span className="truncate text-[10px] text-[#5b7aa3]">{product.category_name}</span>
+                          <span className="shrink-0 text-xs font-bold text-emerald-600">
                             {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(product.price)}
                           </span>
                         </div>
@@ -325,14 +341,14 @@ export default function MerchantStoreSetupModal({
                 />
               </div>
 
-              <div className="grid sm:grid-cols-2 gap-3 pt-3 max-w-md mx-auto">
+              <div className="mx-auto grid max-w-md gap-3 pt-3 sm:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => {
                     onClose();
                     router.push(successData.storefrontUrl);
                   }}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-xs font-bold text-white transition hover:bg-emerald-500 shadow-lg shadow-emerald-900/30"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-xs font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-500"
                 >
                   <Store size={16} /> View Live Storefront
                 </button>
@@ -342,7 +358,7 @@ export default function MerchantStoreSetupModal({
                     onClose();
                     router.push(successData.dashboardUrl);
                   }}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-xs font-bold text-white transition hover:bg-blue-500 shadow-lg shadow-blue-900/30"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#1976d2] px-5 py-3.5 text-xs font-bold text-white shadow-md shadow-blue-500/25 transition hover:bg-[#1565c0]"
                 >
                   Merchant Dashboard <ArrowRight size={16} />
                 </button>
@@ -351,7 +367,7 @@ export default function MerchantStoreSetupModal({
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               {errorMessage && (
-                <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
+                <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-700">
                   <span className="font-bold">Error:</span> {errorMessage}
                 </div>
               )}
@@ -359,30 +375,30 @@ export default function MerchantStoreSetupModal({
               {/* 1. Store Vision & Name */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                    <Store size={14} className="text-blue-400" /> Store Concept & Prompt
+                  <label className={LABEL}>
+                    <Store size={14} className="text-[#1976d2]" /> Store Concept & Prompt
                   </label>
-                  <span className="text-[11px] text-slate-400">Required</span>
+                  <span className="text-[11px] font-semibold text-[#5b7aa3]">Required</span>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <input
                       type="text"
                       placeholder="Store Name (e.g. Noor Velvet Couture)"
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className={INPUT}
                     />
                   </div>
                   <div>
                     <select
                       value={selectedTheme}
                       onChange={(e) => setSelectedTheme(e.target.value)}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white focus:border-blue-500 focus:outline-none"
+                      className={INPUT}
                     >
                       {THEME_OPTIONS.map((t) => (
                         <option key={t.id} value={t.id}>
-                          🎨 Theme: {t.name} ({t.desc})
+                          Theme: {t.name} ({t.desc})
                         </option>
                       ))}
                     </select>
@@ -394,20 +410,20 @@ export default function MerchantStoreSetupModal({
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   required
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800/80 p-3 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                  className={`${INPUT} resize-none`}
                 />
               </div>
 
               {/* 2. Plan Selection */}
               <div className="space-y-2.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <Zap size={14} className="text-amber-400" /> Choose Subscription Plan
+                <label className={LABEL}>
+                  <Zap size={14} className="text-[#1976d2]" /> Choose Subscription Plan
                 </label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                   {[
-                    { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products', icon: Store, border: 'border-slate-700' },
-                    { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, border: 'border-blue-500/60 bg-blue-950/20' },
-                    { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority', icon: Crown, border: 'border-amber-500/60 bg-amber-950/20' },
+                    { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products', icon: Store },
+                    { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle },
+                    { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority', icon: Crown },
                   ].map((p) => {
                     const isSelected = plan === p.id;
                     const Icon = p.icon;
@@ -418,16 +434,16 @@ export default function MerchantStoreSetupModal({
                         onClick={() => setPlan(p.id as any)}
                         className={`relative rounded-2xl border p-3 text-left transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-600/20 ring-1 ring-blue-500 text-white'
-                            : 'border-slate-800 bg-slate-800/40 text-slate-300 hover:border-slate-700'
+                            ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25'
+                            : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff]'
                         }`}
                       >
-                        <div className="flex items-center justify-between mb-1.5">
-                          <Icon size={16} className={isSelected ? 'text-blue-400' : 'text-slate-400'} />
-                          {isSelected && <CheckCircle2 size={14} className="text-blue-400" />}
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <Icon size={16} className={isSelected ? 'text-[#1976d2]' : 'text-[#5b7aa3]'} />
+                          {isSelected && <CheckCircle2 size={14} className="text-[#1976d2]" />}
                         </div>
-                        <p className="text-xs font-bold">{p.name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 leading-snug">{p.desc}</p>
+                        <p className="text-xs font-bold text-[#0b2545]">{p.name}</p>
+                        <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{p.desc}</p>
                       </button>
                     );
                   })}
@@ -435,18 +451,18 @@ export default function MerchantStoreSetupModal({
               </div>
 
               {/* 3. WhatsApp Integration (Auto-Linked for Pro & Advance) */}
-              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 space-y-2.5">
+              <div className="space-y-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                    <MessageCircle size={15} className="text-emerald-400" /> Dedicated WhatsApp Number
+                  <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
+                    <MessageCircle size={15} className="text-emerald-600" /> Dedicated WhatsApp Number
                   </label>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                    plan !== 'basic' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    plan !== 'basic' ? 'border border-emerald-300 bg-white text-emerald-700' : 'text-[#5b7aa3]'
                   }`}>
                     {plan !== 'basic' ? 'Direct Order Routing' : 'Optional'}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
+                <p className="text-[11px] leading-relaxed text-[#2c4a73]">
                   When customers checkout on your storefront, their complete order details (Customer Name, Email, Phone, Address, Zip & Items) will be dispatched directly to this WhatsApp number.
                 </p>
                 <div className="relative">
@@ -456,7 +472,7 @@ export default function MerchantStoreSetupModal({
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
                     required={plan !== 'basic'}
-                    className="w-full rounded-xl border border-emerald-500/30 bg-slate-900 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                    className="w-full rounded-xl border border-emerald-200 bg-white px-3.5 py-2.5 text-sm text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                   />
                 </div>
               </div>
@@ -464,59 +480,59 @@ export default function MerchantStoreSetupModal({
               {/* 4. Social Media Links (All Plans Footer) */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                    <Share2 size={14} className="text-sky-400" /> Footer Social Media Links
+                  <label className={LABEL}>
+                    <Share2 size={14} className="text-[#1976d2]" /> Footer Social Media Links
                   </label>
-                  <span className="text-[11px] text-emerald-400 font-medium">Included in All Plans</span>
+                  <span className="text-[11px] font-semibold text-emerald-600">Included in All Plans</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-[#5b7aa3]">
                   Every store footer will automatically render your official clickable social media icons.
                 </p>
-                <div className="grid sm:grid-cols-2 gap-2.5">
+                <div className="grid gap-2.5 sm:grid-cols-2">
                   <input
                     type="url"
                     placeholder="Instagram URL (https://instagram.com/...)"
                     value={instagram}
                     onChange={(e) => setInstagram(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                   <input
                     type="url"
                     placeholder="Facebook URL (https://facebook.com/...)"
                     value={facebook}
                     onChange={(e) => setFacebook(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                   <input
                     type="url"
                     placeholder="TikTok URL (https://tiktok.com/@...)"
                     value={tiktok}
                     onChange={(e) => setTktok(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                   <input
                     type="url"
                     placeholder="YouTube or X URL (https://...)"
                     value={youtube}
                     onChange={(e) => setYoutube(e.target.value)}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                 </div>
               </div>
 
               {/* 5. Merchant Login Details */}
-              <div className="space-y-2.5 border-t border-slate-800 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <Lock size={14} className="text-amber-400" /> Merchant Account Credentials
+              <div className="space-y-2.5 border-t border-[#cfe2fa] pt-4">
+                <label className={LABEL}>
+                  <Lock size={14} className="text-[#1976d2]" /> Merchant Account Credentials
                 </label>
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <input
                     type="email"
                     placeholder="Merchant Email *"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                   <input
                     type="password"
@@ -526,9 +542,26 @@ export default function MerchantStoreSetupModal({
                     required
                     minLength={8}
                     maxLength={128}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800/80 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                    className={INPUT}
                   />
                 </div>
+                {OTP_REQUIRED && (
+                  <>
+                    <input
+                      type="tel"
+                      placeholder="Contact number (e.g. 923001234567) *"
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      required
+                      className={INPUT}
+                    />
+                    <EmailVerifyField
+                      email={email}
+                      phone={contactPhone}
+                      onVerified={setVerificationToken}
+                    />
+                  </>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -536,21 +569,21 @@ export default function MerchantStoreSetupModal({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      <span>{stepText || 'Building your store with AI...'}</span>
+                      <span>{stepText || 'Building your store...'}</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles size={17} />
-                      <span>Generate My Online Store</span>
+                      <Store size={17} />
+                      <span>Create My Online Store</span>
                     </>
                   )}
                 </button>
-                <p className="text-center text-[10px] text-slate-400 mt-2">
+                <p className="mt-2 text-center text-[10px] text-[#5b7aa3]">
                   Instant catalog generation · Dedicated WhatsApp order routing · Ready to accept customer orders
                 </p>
               </div>

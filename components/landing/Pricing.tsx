@@ -6,7 +6,7 @@ import Link from "next/link";
 type Feature = {
   label: string;
   isNew?: boolean;
-  locked?: boolean; // true = disabled jab tak customer pay na kare
+  locked?: boolean; // true = disabled untill customer don't upgrade to higher plan
 };
 
 type Plan = {
@@ -40,7 +40,7 @@ const plans: Plan[] = [
       { label: "Buildexom Branding" },
     ],
     cta: "Get Started Free",
-    href: "/login?mode=signup",
+    href: "/user/signup",
   },
   {
     id: "pro",
@@ -64,7 +64,7 @@ const plans: Plan[] = [
       { label: "Abandoned Cart Reminders", locked: true },
     ],
     cta: "Upgrade to Pro",
-    href: "/login?mode=signup&plan=pro",
+    href: "/user/signup?plan=pro",
   },
   {
     id: "business",
@@ -92,7 +92,7 @@ const plans: Plan[] = [
       { label: "Auto Invoice PDF", locked: true },
     ],
     cta: "Go Business",
-    href: "/login?mode=signup&plan=business",
+    href: "/user/signup?plan=business",
   },
 ];
 
@@ -336,7 +336,7 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
               dark ? "bg-white/10 text-blue-100" : "bg-amber-50 text-amber-700"
             }`}
           >
-            Locked features payment ke baad automatically unlock ho jayengi.
+            Locked features will automatically get unlocked once you upgrade your plan.
           </p>
         )}
       </div>

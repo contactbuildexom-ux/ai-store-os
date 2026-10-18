@@ -134,8 +134,8 @@ export default function Footer() {
               {settings.description}
             </p>
 
-            {/* Social icons */}
-            <div id="contact-socials" className="mt-6 flex gap-3">
+            {/* Social icons: 3 upar, 2 neeche */}
+            <div id="contact-socials" className="mt-6 grid w-fit grid-cols-3 gap-3">
               {socials.map((s) => (
                 <a
                   key={s.name}
