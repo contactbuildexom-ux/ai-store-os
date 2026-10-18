@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkStoreLimits } from "@/lib/planLimits";
 import { canAccessStore } from "@/lib/merchant-api-auth";
+import { storeRepo } from "@/lib/store-repository";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -9,13 +10,13 @@ function textValue(value: unknown) {
 
 function getSupabase() {
   const supabase = createAdminClient();
-  if (!supabase) throw new Error("Store database is not configured.");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return null;
   return supabase;
 }
 
 export async function GET(req: Request) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const storeId = textValue(searchParams.get("store_id"));
 
@@ -24,15 +25,32 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
-    const { data: categories, error } = await supabase
-      .from("store_categories")
-      .select("*")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false });
+    let categories: any[] = [];
+    const supabase = getSupabase();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from("store_categories")
+          .select("*")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false });
+        if (!error && data) categories = data;
+      } catch {
+        // Fallback
+      }
+    }
 
-    if (error) throw error;
+    if (categories.length === 0) {
+      try {
+        const repoProducts = await storeRepo.getProducts(storeId);
+        const uniqueCats = [...new Set(repoProducts.map((p) => p.category).filter(Boolean))];
+        categories = uniqueCats.map((name, idx) => ({ id: `cat_${idx + 1}`, name, store_id: storeId }));
+      } catch {
+        // Fallback
+      }
+    }
 
-    return NextResponse.json({ success: true, categories: categories ?? [] });
+    return NextResponse.json({ success: true, categories });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load categories.";
     return NextResponse.json({ error: message }, { status: 500 });

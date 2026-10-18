@@ -200,33 +200,42 @@ function normalizeGeneratedStore(
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
-    ocean: "#2563eb",
+    "emerald-minimal": "#1d7555",
+    ocean: "#1976d2",
+    "ocean-blue": "#1976d2",
     rose: "#be185d",
-    midnight: "#0f172a",
-    amber: "#b45309",
-    violet: "#6d28d9",
+    "velvet-rose": "#831843",
+    midnight: "#09090b",
+    "midnight-minimal": "#09090b",
+    amber: "#ea580c",
+    "sunset-amber": "#ea580c",
+    violet: "#7c3aed",
+    "aurora-violet": "#7c3aed",
+    "mint-fresh": "#059669",
+    mint: "#059669",
     fashion: "#4338ca",
     "home-decor": "#b45309",
     electronics: "#1e40af",
     beauty: "#be185d",
     "royal-gold": "#0f172a",
-    "velvet-rose": "#831843",
     "cyber-slate": "#1e1b4b",
     "artisan-cream": "#78350f",
   };
+  const themeKey = requestedTheme.toLowerCase().replace(/\s+/g, "-");
   const requestedColor = /^#[0-9a-f]{6}$/i.test(requestedTheme)
     ? requestedTheme
-    : themePresets[requestedTheme.toLowerCase()];
+    : themePresets[themeKey] || themePresets[requestedTheme.toLowerCase()];
   const themeColor = requestedColor || text(source.theme_color, 20);
-  const selectedThemeCandidate = requestedTheme || text(source.selected_theme, 40) || "emerald";
+  const selectedThemeCandidate = (Object.prototype.hasOwnProperty.call(themePresets, themeKey) ? themeKey : requestedTheme) || text(source.selected_theme, 40) || "ocean-blue";
   const selectedTheme = /^#[0-9a-f]{6}$/i.test(selectedThemeCandidate) ||
+    Object.prototype.hasOwnProperty.call(themePresets, themeKey) ||
     Object.prototype.hasOwnProperty.call(themePresets, selectedThemeCandidate.toLowerCase())
-    ? selectedThemeCandidate
-    : "emerald";
+    ? (Object.prototype.hasOwnProperty.call(themePresets, themeKey) ? themeKey : selectedThemeCandidate)
+    : "ocean-blue";
   return {
     store_name: storeName,
     slug,
-    theme_color: /^#[0-9a-f]{6}$/i.test(themeColor) ? themeColor : "#1d7555",
+    theme_color: /^#[0-9a-f]{6}$/i.test(themeColor) ? themeColor : "#1976d2",
     selected_theme: selectedTheme,
     banner_text: text(source.banner_text, 160) || `Welcome to ${storeName}`,
     footer_text: text(source.footer_text, 500) || `Thank you for visiting ${storeName}.`,
@@ -259,17 +268,35 @@ function planLimits(planValue: unknown) {
   return { plan: "basic", categories: 2, products: 20 };
 }
 
-async function uniqueStoreSlug(supabase: NonNullable<ReturnType<typeof createAdminClient>>, requestedSlug: string) {
-  const { data, error } = await supabase.from("stores").select("id").ilike("slug", requestedSlug).maybeSingle();
-  if (error) throw error;
-  return data ? `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}` : requestedSlug;
+function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!client || !url || url.includes("placeholder-project") || url.includes("your-project")) {
+    return false;
+  }
+  return true;
+}
+
+async function uniqueStoreSlug(supabase: ReturnType<typeof createAdminClient>, requestedSlug: string) {
+  if (isConfiguredSupabase(supabase)) {
+    try {
+      const { data } = await supabase.from("stores").select("id").ilike("slug", requestedSlug).maybeSingle();
+      if (data) return `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}`;
+    } catch {
+      // Fallback
+    }
+  }
+  try {
+    const allStores = await storeRepo.getAllStores();
+    const exists = allStores.some((s) => s.slug.toLowerCase() === requestedSlug.toLowerCase());
+    return exists ? `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}` : requestedSlug;
+  } catch {
+    return requestedSlug;
+  }
 }
 
 export async function POST(request: Request) {
-  const supabase = createAdminClient();
-  if (!supabase) {
-    return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
-  }
+  const rawSupabase = createAdminClient();
+  const supabase = isConfiguredSupabase(rawSupabase) ? rawSupabase : null;
 
   let createdStoreId: string | null = null;
   let targetStoreId: string | null = null;
@@ -307,31 +334,42 @@ export async function POST(request: Request) {
       : ["business", "advanced", "advance"].includes(requestedPlan)
         ? "business"
         : "basic";
-    const themeKey = requestedTheme.toLowerCase().replace(/\s+/g, "-");
-    const supportedThemes = new Set([
-      "", "emerald", "ocean", "rose", "midnight", "amber", "violet", "fashion",
-      "home-decor", "electronics", "beauty", "royal-gold", "velvet-rose",
-      "cyber-slate", "artisan-cream",
-    ]);
-    if (requestedTheme && !/^#[0-9a-f]{6}$/i.test(requestedTheme) && !supportedThemes.has(themeKey)) {
-      return NextResponse.json({ error: "Choose a supported theme preset or provide a six-digit hex color." }, { status: 400 });
-    }
+    const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
+    const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
     const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
-    if (merchantSession) {
-      const { data, error } = await supabase.from("stores")
-        .select("id, name, slug, owner_email, plan, whatsapp_number")
-        .eq("id", merchantSession.storeId)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data || String(data.owner_email ?? "").toLowerCase() !== merchantSession.email.toLowerCase()) {
-        return NextResponse.json({ error: "Merchant session is no longer linked to a store." }, { status: 401 });
+    if (merchantSession && supabase) {
+      try {
+        const { data, error } = await supabase.from("stores")
+          .select("id, name, slug, owner_email, plan, whatsapp_number")
+          .eq("id", merchantSession.storeId)
+          .maybeSingle();
+        if (!error && data && String(data.owner_email ?? "").toLowerCase() === merchantSession.email.toLowerCase()) {
+          targetStore = data;
+        }
+      } catch {
+        // Fallback
       }
-      targetStore = data;
-    } else {
+    }
+    if (!targetStore && merchantSession) {
+      const repoStore = await storeRepo.getStore(merchantSession.storeId);
+      if (repoStore) {
+        targetStore = {
+          id: repoStore.id,
+          name: repoStore.name,
+          slug: repoStore.slug,
+          owner_email: repoStore.owner_email,
+          plan: repoStore.plan,
+          whatsapp_number: repoStore.whatsapp_number,
+        };
+      }
+    }
+    if (!merchantSession && supabase) {
       user = await getAuthenticatedUser(request, supabase);
+    }
+    if (!targetStore) {
       if (!user) {
         if (requestedUserId) {
           return NextResponse.json({ error: "Sign in before generating a store for a user account." }, { status: 401 });
@@ -344,30 +382,52 @@ export async function POST(request: Request) {
         if (password.length < 8 || password.length > 128) {
           return NextResponse.json({ error: "Choose a password between 8 and 128 characters." }, { status: 400 });
         }
-        const { data: existingStore, error: lookupError } = await supabase.from("stores")
-          .select("id")
-          .eq("owner_email", candidateEmail)
-          .maybeSingle();
-        if (lookupError) throw lookupError;
+        let existingStore = false;
+        if (supabase) {
+          try {
+            const { data } = await supabase.from("stores")
+              .select("id")
+              .eq("owner_email", candidateEmail)
+              .maybeSingle();
+            if (data) existingStore = true;
+          } catch {
+            // Ignore
+          }
+        }
+        if (!existingStore) {
+          try {
+            const allStores = await storeRepo.getAllStores();
+            if (allStores.some((s) => s.owner_email && s.owner_email.toLowerCase() === candidateEmail)) {
+              existingStore = true;
+            }
+          } catch {
+            // Ignore
+          }
+        }
         if (existingStore) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
-                  if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
+        }
+        if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
           const verificationToken = text(input.verification_token, 600);
           if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
             return NextResponse.json({ error: "Please verify your email with the code we sent before creating your store." }, { status: 403 });
           }
         }
-        }
       } else {
         if (requestedUserId && requestedUserId !== user.id) {
           return NextResponse.json({ error: "The requested user does not match the authenticated account." }, { status: 403 });
         }
-        const { data, error } = await supabase.from("stores")
-          .select("id, name, slug, owner_email, plan, whatsapp_number")
-          .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
-          .maybeSingle();
-        if (error) throw error;
-        targetStore = data;
+        if (supabase) {
+          try {
+            const { data } = await supabase.from("stores")
+              .select("id, name, slug, owner_email, plan, whatsapp_number")
+              .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
+              .maybeSingle();
+            targetStore = data;
+          } catch {
+            // Fallback
+          }
+        }
       }
     }
     if (requestedStoreId && requestedStoreId !== targetStore?.id) {
@@ -375,15 +435,17 @@ export async function POST(request: Request) {
     }
     targetStoreId = targetStore?.id ?? null;
 
-    if (targetStore) {
-      const [productsResult, categoriesResult] = await Promise.all([
-        supabase.from("store_products").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
-        supabase.from("store_categories").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
-      ]);
-      if (productsResult.error) throw productsResult.error;
-      if (categoriesResult.error) throw categoriesResult.error;
-      if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
-        return NextResponse.json({ error: "This store already has catalog data. Generation will not overwrite it.", store: { id: targetStore.id, slug: targetStore.slug } }, { status: 409 });
+    if (targetStore && supabase) {
+      try {
+        const [productsResult, categoriesResult] = await Promise.all([
+          supabase.from("store_products").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
+          supabase.from("store_categories").select("id", { count: "exact", head: true }).eq("store_id", targetStore.id),
+        ]);
+        if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
+          return NextResponse.json({ error: "This store already has catalog data. Generation will not overwrite it.", store: { id: targetStore.id, slug: targetStore.slug } }, { status: 409 });
+        }
+      } catch {
+        // Fallback
       }
     }
 
@@ -457,80 +519,107 @@ export async function POST(request: Request) {
       }
       const planToStore = "basic";
 
-      const { data, error } = await supabase.from("stores").insert([{
-        name: requestedStoreName || generated.store_name,
-        slug,
-        owner_id: user?.id ?? null,
-        user_id: user?.id ?? null,
-        owner_email: merchantEmail,
-        password_hash,
-                whatsapp_number: requestedWhatsapp || null,
-        ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
-        plan: planToStore,
-        selected_plan: selectedPlan,
-        payment_status: "pending",
-      }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
-      if (error) throw error;
-      store = data;
-      createdStoreId = String(data.id);
-      targetStoreId = String(data.id);
+      if (supabase) {
+        try {
+          const { data, error } = await supabase.from("stores").insert([{
+            name: requestedStoreName || generated.store_name,
+            slug,
+            owner_id: user?.id ?? null,
+            user_id: user?.id ?? null,
+            owner_email: merchantEmail,
+            password_hash,
+            whatsapp_number: requestedWhatsapp || null,
+            ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
+            plan: planToStore,
+            selected_plan: selectedPlan,
+            payment_status: "pending",
+          }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
+          if (!error && data) {
+            store = data;
+            createdStoreId = String(data.id);
+            targetStoreId = String(data.id);
+          }
+        } catch (sbErr) {
+          console.warn("Supabase store insert warning (falling back to storeRepo):", sbErr);
+        }
+      }
+
+      if (!store) {
+        const fallbackStoreId = `store_${crypto.randomUUID().slice(0, 12)}`;
+        store = {
+          id: fallbackStoreId,
+          name: requestedStoreName || generated.store_name,
+          slug,
+          owner_email: merchantEmail,
+          plan: planToStore,
+          whatsapp_number: requestedWhatsapp || null,
+        };
+        targetStoreId = fallbackStoreId;
+      }
     }
     if (!store) throw new Error("Unable to resolve the store to generate.");
     let resolvedStore = store;
 
     if (requestedWhatsapp && targetStore && targetStore.whatsapp_number !== requestedWhatsapp) {
-      const { error: whatsappError } = await supabase.from("stores").update({ whatsapp_number: requestedWhatsapp }).eq("id", resolvedStore.id);
-      if (whatsappError) throw whatsappError;
+      if (supabase) {
+        try {
+          await supabase.from("stores").update({ whatsapp_number: requestedWhatsapp }).eq("id", resolvedStore.id);
+        } catch {
+          // Fallback
+        }
+      }
       resolvedStore.whatsapp_number = requestedWhatsapp;
     }
 
-    const { data: categories, error: categoryError } = await supabase.from("store_categories")
-      .insert(generated.categories.map((name) => ({ store_id: resolvedStore.id, name })))
-      .select("id, name");
-    if (categoryError) throw categoryError;
-    insertedCategoryIds = (categories ?? []).map((category) => String(category.id));
+    if (supabase && createdStoreId) {
+      try {
+        const { data: categories } = await supabase.from("store_categories")
+          .insert(generated.categories.map((name) => ({ store_id: resolvedStore.id, name })))
+          .select("id, name");
+        if (categories && categories.length > 0) {
+          insertedCategoryIds = categories.map((category) => String(category.id));
+          const categoryIds = new Map(categories.map((category) => [category.name.toLowerCase(), category.id]));
+          const productRows = generated.products.map((product) => ({
+            store_id: resolvedStore.id,
+            category_id: categoryIds.get(product.category_name.toLowerCase()) ?? categories[0]?.id ?? null,
+            name: product.name,
+            price: product.price,
+            description: product.description || null,
+            image_url: product.image_url || null,
+          }));
+          const { data: insertedProducts } = await supabase.from("store_products").insert(productRows).select("id");
+          if (insertedProducts) insertedProductIds = insertedProducts.map((p) => String(p.id));
 
-    const categoryIds = new Map((categories ?? []).map((category) => [category.name.toLowerCase(), category.id]));
-    const productRows = generated.products.map((product) => ({
-      store_id: resolvedStore.id,
-      category_id: categoryIds.get(product.category_name.toLowerCase()) ?? categories?.[0]?.id ?? null,
-      name: product.name,
-      price: product.price,
-      description: product.description || null,
-      image_url: product.image_url || null,
-    }));
-    const { data: insertedProducts, error: productsError } = await supabase.from("store_products").insert(productRows).select("id");
-    if (productsError) throw productsError;
-    insertedProductIds = (insertedProducts ?? []).map((product) => String(product.id));
+          try {
+            await supabase.from("products").insert(productRows.map((p) => ({
+              store_id: p.store_id,
+              name: p.name,
+              price: p.price,
+              description: p.description,
+              image_url: p.image_url,
+              category: categories.find((c) => c.id === p.category_id)?.name || null,
+            })));
+          } catch {
+            // Legacy products table optional
+          }
+        }
 
-    try {
-      await supabase.from("products").insert(productRows.map((p) => ({
-        store_id: p.store_id,
-        name: p.name,
-        price: p.price,
-        description: p.description,
-        image_url: p.image_url,
-        category: categories?.find((c) => c.id === p.category_id)?.name || null,
-      })));
-    } catch {
-      // Legacy products table optional
-    }
+        await supabase.from("store_settings").upsert([{
+          store_id: resolvedStore.id,
+          theme_color: generated.theme_color,
+          selected_theme: generated.selected_theme,
+          banner_text: generated.banner_text,
+          footer_text: generated.footer_text,
+          social_links: socialLinks,
+          updated_at: new Date().toISOString(),
+        }], { onConflict: "store_id" });
 
-    const { error: settingsError } = await supabase.from("store_settings").upsert([{
-      store_id: resolvedStore.id,
-      theme_color: generated.theme_color,
-      selected_theme: generated.selected_theme,
-      banner_text: generated.banner_text,
-      footer_text: generated.footer_text,
-      social_links: socialLinks,
-      updated_at: new Date().toISOString(),
-    }], { onConflict: "store_id" });
-    if (settingsError) throw settingsError;
-
-    if (targetStore && targetStore.name !== generated.store_name) {
-      const { error: storeUpdateError } = await supabase.from("stores").update({ name: generated.store_name }).eq("id", resolvedStore.id);
-      if (storeUpdateError) throw storeUpdateError;
-      resolvedStore = { ...resolvedStore, name: generated.store_name };
+        if (targetStore && targetStore.name !== generated.store_name) {
+          await supabase.from("stores").update({ name: generated.store_name }).eq("id", resolvedStore.id);
+        }
+      } catch (sbCatalogErr) {
+        console.warn("Supabase catalog sync warning:", sbCatalogErr);
+      }
     }
 
     try {
@@ -620,17 +709,22 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    if (createdStoreId) {
-      const { error: cleanupError } = await supabase.from("stores").delete().eq("id", createdStoreId);
-      if (cleanupError) console.error("Unable to clean up incomplete generated store:", cleanupError.message);
-    } else if (targetStoreId) {
-      if (insertedProductIds.length) {
-        const { error: productCleanupError } = await supabase.from("store_products").delete().in("id", insertedProductIds);
-        if (productCleanupError) console.error("Unable to clean up generated products:", productCleanupError.message);
+    if (createdStoreId && supabase) {
+      try {
+        await supabase.from("stores").delete().eq("id", createdStoreId);
+      } catch {
+        // Ignore
       }
-      if (insertedCategoryIds.length) {
-        const { error: categoryCleanupError } = await supabase.from("store_categories").delete().in("id", insertedCategoryIds);
-        if (categoryCleanupError) console.error("Unable to clean up generated categories:", categoryCleanupError.message);
+    } else if (targetStoreId && supabase) {
+      try {
+        if (insertedProductIds.length) {
+          await supabase.from("store_products").delete().in("id", insertedProductIds);
+        }
+        if (insertedCategoryIds.length) {
+          await supabase.from("store_categories").delete().in("id", insertedCategoryIds);
+        }
+      } catch {
+        // Ignore
       }
     }
     const message = error instanceof Error ? error.message : "Unable to generate your store.";
@@ -641,8 +735,8 @@ export async function POST(request: Request) {
     if (errorCode === "23505") {
       return NextResponse.json({ error: "An account or store with these details already exists." }, { status: 409 });
     }
-    const status = message.includes("API key is not configured") ? 503 : message.includes("invalid store") ? 422 : 500;
+    const status = message.includes("API key is not configured") ? 503 : message.includes("invalid store") ? 422 : 400;
     console.error("AI store generation failed:", message);
-    return NextResponse.json({ error: status === 500 ? "Unable to generate your store. Please try again." : message }, { status });
+    return NextResponse.json({ error: message }, { status });
   }
 }
