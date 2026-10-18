@@ -95,7 +95,7 @@ export default function MerchantDashboardMaster() {
     const [prodPrice, setProdPrice] = useState('');
     const [prodDesc, setProdDesc] = useState('');
     const [prodCategory, setProdCategory] = useState('');
-    const [prodImageFile, setProdImageFile] = useState<File | null>(null);
+    const [prodImageFiles, setProdImageFiles] = useState<File[]>([]);
     const [editingProdId, setEditingProdId] = useState<string | null>(null);
 
     // Category Form
@@ -317,16 +317,30 @@ export default function MerchantDashboardMaster() {
         }
     };
 
-    // Save Product with Supabase Image Upload
+    const handleProductFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
+        if (files.length > 0) {
+            setProdImageFiles((prev) => [...prev, ...files]);
+        }
+    };
+
+    const handleRemoveProductFile = (index: number) => {
+        setProdImageFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    // Save Product with Supabase Multiple Images Upload
     const handleSaveProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
         setUploadingImage(true);
 
         try {
-            let imageUrl = null;
-            if (prodImageFile) {
-                imageUrl = await uploadProductImage(prodImageFile, resolvedStoreId);
+            let imageUrl: string | null = null;
+            if (prodImageFiles.length > 0) {
+                const uploadedUrls = await Promise.all(
+                    prodImageFiles.map((file) => uploadProductImage(file, resolvedStoreId))
+                );
+                imageUrl = uploadedUrls.filter(Boolean).join(',');
             }
 
             const method = editingProdId ? 'PUT' : 'POST';
@@ -352,7 +366,7 @@ export default function MerchantDashboardMaster() {
                 setProdName('');
                 setProdPrice('');
                 setProdDesc('');
-                setProdImageFile(null);
+                setProdImageFiles([]);
                 setEditingProdId(null);
                 setActiveTab('overview');
                 await fetchMeshData(resolvedStoreId);
@@ -478,7 +492,7 @@ export default function MerchantDashboardMaster() {
                                         <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back, {storeName}</h2>
                                         <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">Your products, orders, and storefront performance at a glance. Keep your catalog fresh and stay on top of every order.</p>
                                     </div>
-                                    <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFile(null); setActiveTab('products'); }} className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-sm transition hover:opacity-90" style={{ backgroundColor: themeColor }}><CirclePlus size={15} /> Add a product</button>
+                                    <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-sm transition hover:opacity-90" style={{ backgroundColor: themeColor }}><CirclePlus size={15} /> Add a product</button>
                                 </div>
                             </section>
 
@@ -512,10 +526,10 @@ export default function MerchantDashboardMaster() {
                                         <div className="divide-y divide-slate-100">
                                             {filteredProducts.map((product) => (
                                                 <article key={product.id} className="flex items-center gap-3 px-5 py-3.5 transition hover:bg-slate-50/70">
-                                                    {product.image_url ? <Image src={product.image_url} alt="" width={48} height={48} unoptimized className="size-12 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover" /> : <span className="grid size-12 shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400"><Package size={18} /></span>}
+                                                    {product.image_url ? <Image src={product.image_url.split(',')[0].trim()} alt="" width={48} height={48} unoptimized className="size-12 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover" /> : <span className="grid size-12 shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400"><Package size={18} /></span>}
                                                     <div className="min-w-0 flex-1"><h4 className="truncate text-xs font-semibold text-slate-800">{product.name}</h4><p className="mt-1 truncate text-[10px] text-slate-500">{product.description || 'No description added'}{product.created_at ? ` · Added ${formatDate(product.created_at)}` : ''}</p></div>
                                                     <p className="whitespace-nowrap text-xs font-semibold text-slate-900">{formatPKR(product.price)}</p>
-                                                    <button type="button" aria-label={`Edit ${product.name}`} title="Edit product" onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFile(null); setActiveTab('products'); }} className="grid size-8 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button>
+                                                    <button type="button" aria-label={`Edit ${product.name}`} title="Edit product" onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFiles([]); setActiveTab('products'); }} className="grid size-8 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button>
                                                 </article>
                                             ))}
                                         </div>
@@ -696,29 +710,89 @@ export default function MerchantDashboardMaster() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-[11px] font-semibold text-slate-700">Product image</label>
-                                        <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3 transition-colors hover:border-blue-400 hover:bg-blue-50/50">
-                                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700"><Upload size={16} /></span>
-                                            <span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-slate-700">{prodImageFile?.name || 'Choose a product image'}</span><span className="mt-1 block text-[10px] text-slate-500">PNG, JPG, WebP or GIF · max 5 MB</span></span>
-                                            <span className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors group-hover:border-blue-300 group-hover:bg-blue-50 group-hover:text-blue-700">Choose file</span>
-                                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={event => setProdImageFile(event.target.files?.[0] || null)} className="sr-only" />
+                                        <label className="mb-1 block text-[11px] font-semibold text-slate-700">
+                                            Product images (Multiple supported)
                                         </label>
+                                        <label className="group flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3 transition-colors hover:border-emerald-400 hover:bg-emerald-50/50">
+                                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500 transition-colors group-hover:bg-emerald-100 group-hover:text-emerald-700">
+                                                <Upload size={16} />
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-xs font-medium text-slate-700">
+                                                    {prodImageFiles.length === 0
+                                                        ? 'Select product image(s)'
+                                                        : `${prodImageFiles.length} ${prodImageFiles.length === 1 ? 'image' : 'images'} selected`}
+                                                </span>
+                                                <span className="mt-1 block text-[10px] text-slate-500">
+                                                    PNG, JPG, WebP · Select multiple at once · 1st is cover
+                                                </span>
+                                            </span>
+                                            <span className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors group-hover:border-emerald-300 group-hover:bg-emerald-50 group-hover:text-emerald-700">
+                                                Browse
+                                            </span>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept="image/png,image/jpeg,image/webp,image/gif"
+                                                onChange={handleProductFilesChange}
+                                                className="sr-only"
+                                            />
+                                        </label>
+
+                                        {/* Multi-image thumbnail list */}
+                                        {prodImageFiles.length > 0 && (
+                                            <div className="mt-2 space-y-1.5">
+                                                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                                    <span>Selected files ({prodImageFiles.length}):</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdImageFiles([])}
+                                                        className="text-red-500 hover:underline"
+                                                    >
+                                                        Clear all
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {prodImageFiles.map((file, idx) => (
+                                                        <div
+                                                            key={`${file.name}-${idx}`}
+                                                            className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] shadow-2xs"
+                                                        >
+                                                            <span
+                                                                className="size-1.5 rounded-full"
+                                                                style={{ backgroundColor: idx === 0 ? themeColor : '#94a3b8' }}
+                                                            />
+                                                            <span className="max-w-[110px] truncate text-slate-700 font-medium">
+                                                                {idx === 0 ? '⭐ ' : ''}{file.name}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveProductFile(idx)}
+                                                                className="text-slate-400 hover:text-red-600 ml-0.5"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">Description</label>
                                         <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </div>
                                     <button type="submit" disabled={uploadingImage || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
-                                        {uploadingImage ? 'Uploading Image & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
+                                        {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
                                     </button>
-                                    {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFile(null); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
+                                    {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
                                     {!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails.title} product limit. Upgrade your plan to add more.</p>}
                                 </form>
                             </div>
 
                             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                                 <div className="border-b border-slate-100 px-5 py-4"><h3 className="text-sm font-semibold text-slate-900">Product inventory</h3><p className="mt-1 text-[11px] text-slate-500">All {products.length} products in this store</p></div>
-                                {products.length === 0 ? <p className="px-5 py-10 text-center text-xs text-slate-500">No products yet. Add your first product using the form.</p> : <div className="divide-y divide-slate-100">{products.map((product) => <div key={product.id} className="flex items-center gap-3 px-4 py-3"><div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">{product.image_url ? <Image src={product.image_url} alt="" width={40} height={40} unoptimized className="size-full object-cover" /> : <Package size={16} />}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{product.name}</p><p className="mt-1 truncate text-[10px] text-slate-500">{categories.find((category) => category.id === product.category_id)?.name || 'Uncategorized'}</p></div><span className="text-xs font-semibold text-slate-800">{formatPKR(product.price)}</span><button aria-label={`Edit ${product.name}`} onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFile(null); }} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button><button aria-label={`Delete ${product.name}`} onClick={() => handleDeleteProduct(product.id)} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button></div>)}</div>}
+                                {products.length === 0 ? <p className="px-5 py-10 text-center text-xs text-slate-500">No products yet. Add your first product using the form.</p> : <div className="divide-y divide-slate-100">{products.map((product) => <div key={product.id} className="flex items-center gap-3 px-4 py-3"><div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">{product.image_url ? <Image src={product.image_url.split(',')[0].trim()} alt="" width={40} height={40} unoptimized className="size-full object-cover" /> : <Package size={16} />}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{product.name}</p><p className="mt-1 truncate text-[10px] text-slate-500">{categories.find((category) => category.id === product.category_id)?.name || 'Uncategorized'}</p></div><span className="text-xs font-semibold text-slate-800">{formatPKR(product.price)}</span><button aria-label={`Edit ${product.name}`} onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFiles([]); }} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button><button aria-label={`Delete ${product.name}`} onClick={() => handleDeleteProduct(product.id)} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button></div>)}</div>}
                             </div>
                         </div>
                     )}

@@ -86,7 +86,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [catalogLoading, setCatalogLoading] = useState(true);
     const [catalogError, setCatalogError] = useState('');
 
-    const themeColor = settings?.theme_color || '#0b2545';
+    const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.theme?.primaryColor || '#10b981';
     const bannerText = settings?.banner_text || '✨ Free delivery nationwide on orders above Rs. 3,000!';
     const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
 
@@ -153,7 +153,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
             id: 'feat-1',
             name: 'Running Shoes',
             price: 12000,
-            image_url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
+            image_url: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
             description: 'Ultra-cushioned performance running sneakers engineered for endurance, speed, and all-day comfort.'
         },
         {
@@ -291,9 +291,45 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
         const merchantPhone = whatsappPhone(String(liveStore.whatsapp_number || ''));
 
+        // Prepare order items text
+        const itemLines = cart
+            .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
+            .join('\n');
+
+        const fallbackSummary = [
+            `🛍️ *NEW ORDER — ${liveStore.name.toUpperCase()}*`,
+            `----------------------------------------`,
+            `👤 *CUSTOMER DETAILS:*`,
+            `• *Name:* ${customerName}`,
+            `• *WhatsApp / Phone:* ${customerPhone}`,
+            `• *Email:* ${customerEmail || 'Not provided'}`,
+            `• *City:* ${city}`,
+            `• *Postal / Zip Code:* ${customerZip || 'N/A'}`,
+            `• *Delivery Address:* ${customerAddress}`,
+            ``,
+            `📦 *ITEMS ORDERED:*`,
+            itemLines,
+            ``,
+            `💵 *Subtotal:* ${money(subtotal)}`,
+            `🚚 *Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : money(deliveryFee)}`,
+            `🏷️ *Grand Total:* ${money(finalAmount)}`,
+            `💳 *Payment Method:* ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(advanceAmount)})` : 'Cash on Delivery (COD)'}`,
+            `----------------------------------------`,
+            `Please confirm my order and dispatch timeline. Thank you!`,
+        ].join('\n');
+
+        const targetPhoneInitial = whatsappPhone(merchantPhone || '923001234567');
+        const fallbackUrl = `https://wa.me/${targetPhoneInitial}?text=${encodeURIComponent(fallbackSummary)}`;
+        setWhatsappLink(fallbackUrl);
+
         // Open window during user gesture
-        const whatsappWindow = window.open('about:blank', '_blank');
-        if (whatsappWindow) whatsappWindow.opener = null;
+        let whatsappWindow: Window | null = null;
+        try {
+            whatsappWindow = window.open('about:blank', '_blank');
+            if (whatsappWindow) whatsappWindow.opener = null;
+        } catch {
+            // Popup blocked by browser policy
+        }
 
         try {
             const response = await fetch(`/api/storefront/${encodeURIComponent(liveStore.slug)}/orders`, {
@@ -315,11 +351,11 @@ export default function StorefrontClient({ store, settings, products, delivery }
             if (!response.ok || !result.success) throw new Error(result.error || 'Unable to place your order.');
 
             const targetPhone = whatsappPhone(String(result.whatsapp_number || merchantPhone || '923001234567'));
-            const itemLines = (result.items as Array<{ name: string; quantity: number; price: number }>)
-                .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(item.price * item.quantity)}`)
+            const confirmedLines = (result.items as Array<{ name: string; quantity: number; price: number }> || cart)
+                .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
                 .join('\n');
 
-            const summary = [
+            const fullSummary = [
                 `🛍️ *NEW ORDER — ${liveStore.name.toUpperCase()}*`,
                 `----------------------------------------`,
                 `📋 *Order ID:* #${result.order?.id?.slice(0, 8) || 'NEW'}`,
@@ -333,7 +369,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 `• *Delivery Address:* ${customerAddress}`,
                 ``,
                 `📦 *ITEMS ORDERED:*`,
-                itemLines,
+                confirmedLines,
                 ``,
                 `💵 *Subtotal:* ${money(result.subtotal || subtotal)}`,
                 `🚚 *Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : money(result.delivery_fee || deliveryFee)}`,
@@ -343,21 +379,32 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 `Please confirm my order and dispatch timeline. Thank you!`,
             ].join('\n');
 
-            const destination = `https://wa.me/${targetPhone}?text=${encodeURIComponent(summary)}`;
-            if (whatsappWindow) whatsappWindow.location.href = destination;
-            else setWhatsappLink(destination);
+            const destination = `https://wa.me/${targetPhone}?text=${encodeURIComponent(fullSummary)}`;
+            setWhatsappLink(destination);
 
-            setOrderStatus(`✓ Order placed successfully! Order #${result.order?.id?.slice(0, 8) || ''} saved.`);
+            if (whatsappWindow && !whatsappWindow.closed) {
+                whatsappWindow.location.href = destination;
+            } else {
+                window.open(destination, '_blank');
+            }
+
+            setOrderStatus(`✓ Order placed successfully! Order #${result.order?.id?.slice(0, 8) || ''} saved. Opening WhatsApp...`);
             setCart([]);
             setCustomerName('');
             setCustomerEmail('');
             setCustomerPhone('');
             setCustomerAddress('');
             setCustomerZip('');
-        } catch (error) {
-            whatsappWindow?.close();
-            setOrderError(true);
-            setOrderStatus(error instanceof Error ? error.message : 'Unable to place order. Please try again.');
+        } catch {
+            // Even if server request encounters any issue, ensure customer order is delivered to WhatsApp
+            setWhatsappLink(fallbackUrl);
+            if (whatsappWindow && !whatsappWindow.closed) {
+                whatsappWindow.location.href = fallbackUrl;
+            } else {
+                window.open(fallbackUrl, '_blank');
+            }
+            setOrderStatus('✓ Order generated! Tap below to send details directly to WhatsApp.');
+            setCart([]);
         } finally {
             setLoading(false);
         }
@@ -625,27 +672,41 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 {/* 1. Hero Promo Section (Matching Instagram Post Screen) */}
                 <section
                     id="hero"
-                    className="relative overflow-hidden rounded-3xl border border-slate-100 bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-6 sm:p-10 shadow-sm transition duration-500"
+                    className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-6 sm:p-10 shadow-sm transition duration-500"
                 >
-                    <div className="absolute -right-16 -top-16 size-72 rounded-full bg-blue-100/40 blur-3xl pointer-events-none" />
-                    <div className="absolute -left-16 -bottom-16 size-72 rounded-full bg-indigo-50/50 blur-3xl pointer-events-none" />
+                    <div
+                        className="absolute -right-16 -top-16 size-72 rounded-full blur-3xl opacity-20 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+                    <div
+                        className="absolute -left-16 -bottom-16 size-72 rounded-full blur-3xl opacity-10 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
 
                     <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-8 relative z-10">
                         <div className="max-w-xl text-left space-y-3">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/80 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-blue-700">
+                            <span
+                                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold tracking-wide"
+                                style={{
+                                    backgroundColor: `${themeColor}15`,
+                                    color: themeColor,
+                                    borderColor: `${themeColor}35`
+                                }}
+                            >
                                 ✨ Style • Comfort • Performance
                             </span>
                             <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-tight">
                                 {liveStore.name || 'Premium Footwear'}
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
+                            <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed font-medium">
                                 {liveStore.tagline || 'Style • Comfort • Performance'}
                             </p>
 
                             <div className="pt-3 flex flex-wrap items-center gap-3">
                                 <a
                                     href="#featured"
-                                    className="rounded-full bg-[#1976d2] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition hover:bg-[#1565c0] hover:scale-105 active:scale-95"
+                                    className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                    style={{ backgroundColor: themeColor }}
                                 >
                                     Shop Now →
                                 </a>
@@ -660,12 +721,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </div>
                         </div>
 
-                        {/* Floating Performance Sneaker Hero Image (Matching Post Screen) */}
-                        <div className="w-52 sm:w-72 lg:w-80 shrink-0">
+                        {/* Floating Performance Sneaker Hero Image (Matching Post Screen Studio Footwear) */}
+                        <div className="w-52 sm:w-72 lg:w-84 shrink-0 relative">
                             <img
-                                src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80"
+                                src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80"
                                 alt="Premium Footwear"
-                                className="size-full object-contain drop-shadow-2xl transition duration-500 hover:scale-105"
+                                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
                             />
                         </div>
                     </div>
@@ -682,7 +743,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                         <a
                             href="#products"
-                            className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 transition"
+                            className="flex items-center gap-1 text-xs font-bold transition hover:opacity-80"
+                            style={{ color: themeColor }}
                         >
                             <span>View All</span>
                             <ArrowRight size={13} />
@@ -698,7 +760,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             >
                                 <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
                                     <img
-                                        src={item.image_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
+                                        src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                                         alt={item.name}
                                         className="size-full object-contain transition duration-500 group-hover:scale-105"
                                     />
@@ -712,12 +774,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
                                             {money(item.price)}
                                         </span>
-                                        {/* Blue circular cart button with cart icon matching screenshot */}
+                                        {/* Dynamic circular cart button matching theme */}
                                         <button
                                             type="button"
                                             onClick={() => addToCart(item, true)}
                                             aria-label={`Add ${item.name} to cart`}
-                                            className="grid size-8 place-items-center rounded-full bg-[#1976d2] text-white shadow-md transition hover:bg-[#1565c0] hover:scale-110 active:scale-95"
+                                            className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
+                                            style={{ backgroundColor: themeColor }}
                                         >
                                             <ShoppingBag size={14} />
                                         </button>
@@ -747,9 +810,18 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 }}
                                 className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-center transition hover:shadow-xs active:scale-95 ${
                                     selectedCategory === cat.id
-                                        ? 'border-blue-600 bg-blue-50/80 text-blue-900 shadow-xs'
+                                        ? 'shadow-xs font-bold'
                                         : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                                 }`}
+                                style={
+                                    selectedCategory === cat.id
+                                        ? {
+                                            borderColor: themeColor,
+                                            backgroundColor: `${themeColor}15`,
+                                            color: themeColor,
+                                        }
+                                        : {}
+                                }
                             >
                                 <span className="text-2xl">{cat.icon}</span>
                                 <span className="text-[11px] font-bold sm:text-xs truncate">{cat.name}</span>
@@ -854,7 +926,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                                         {product.image_url ? (
                                             <Image
-                                                src={product.image_url}
+                                                src={product.image_url.split(',')[0].trim()}
                                                 alt={product.name}
                                                 width={400}
                                                 height={400}
@@ -871,6 +943,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         <span className="absolute left-2.5 top-2.5 rounded-full bg-white/95 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-800 shadow-xs backdrop-blur-md">
                                             ✓ In Stock
                                         </span>
+
+                                        {product.image_url && product.image_url.includes(',') && (
+                                            <span className="absolute right-2.5 bottom-2.5 rounded-md bg-slate-900/80 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs backdrop-blur-xs">
+                                                +{product.image_url.split(',').length - 1} photos
+                                            </span>
+                                        )}
 
                                         {/* Quick WhatsApp Single Order Button */}
                                         <button
@@ -1059,7 +1137,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             <div key={item.id} className="flex items-center gap-3 p-2">
                                                 {item.image_url ? (
                                                     <Image
-                                                        src={item.image_url}
+                                                        src={item.image_url.split(',')[0].trim()}
                                                         alt={item.name}
                                                         width={52}
                                                         height={52}
@@ -1289,11 +1367,20 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                             {/* Status or error feedback */}
                             {orderStatus && (
-                                <div className={`rounded-xl border p-3 text-xs ${orderError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
-                                    <p className="font-semibold">{orderStatus}</p>
+                                <div className={`rounded-2xl border p-4 text-xs space-y-3 ${orderError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-900 shadow-sm'}`}>
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-base">{orderError ? '⚠️' : '✅'}</span>
+                                        <div className="flex-1 font-semibold leading-relaxed">{orderStatus}</div>
+                                    </div>
                                     {whatsappLink && (
-                                        <a href={whatsappLink} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex font-bold underline">
-                                            Open WhatsApp Link
+                                        <a
+                                            href={whatsappLink}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 font-bold text-white shadow-md hover:bg-emerald-500 active:scale-95 transition"
+                                        >
+                                            <MessageCircle size={16} />
+                                            <span>Open Order in WhatsApp</span>
                                         </a>
                                     )}
                                 </div>

@@ -473,7 +473,7 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
                             <img
-                              src={p.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'}
+                              src={p.image_url?.split(',')[0].trim() || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'}
                               alt={p.name}
                               className="size-10 rounded-lg object-cover"
                             />
@@ -763,14 +763,17 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Image URL</label>
+                <label className="block font-bold text-slate-700 mb-1">Product Image URL(s)</label>
                 <input
-                  type="url"
+                  type="text"
                   value={productForm.image_url}
                   onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="https://images.unsplash.com/... (comma-separated for multiple)"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:border-emerald-600 focus:outline-none"
                 />
+                <p className="mt-1 text-[10px] text-slate-400">
+                  Enter 1 URL or multiple image URLs separated by commas. First image is the main cover.
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">

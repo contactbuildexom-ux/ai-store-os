@@ -263,31 +263,37 @@ export function VoiceStoreAssistant({
 
       {/* EXPANDED VOICE ASSISTANT CONSOLE MODAL */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-700/80 bg-slate-900 text-white shadow-2xl transition-all duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
+          {/* Backdrop click to dismiss */}
+          <div 
+            className="fixed inset-0"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div className="relative z-10 w-full max-w-md max-h-[85vh] flex flex-col rounded-3xl border border-slate-700/80 bg-slate-900 text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             
-            {/* Header Strip */}
-            <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-5 py-4">
+            {/* 1. Header Strip (Fixed at top) */}
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 sm:px-5 sm:py-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="grid size-9 place-items-center rounded-2xl bg-linear-to-tr from-emerald-500 to-blue-500 text-white shadow-md">
-                  <Sparkles size={18} />
+                <div className="grid size-8 place-items-center rounded-xl bg-linear-to-tr from-emerald-500 to-blue-500 text-white shadow-md">
+                  <Sparkles size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold tracking-tight">Voice-to-Action AI</h3>
-                  <p className="text-[11px] text-slate-400">Natural voice control for your store</p>
+                  <h3 className="text-xs sm:text-sm font-extrabold tracking-tight">Voice-to-Action AI</h3>
+                  <p className="text-[10px] text-slate-400">Natural voice control for your store</p>
                 </div>
               </div>
 
               {/* Language & Sound Controls */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* Language Switcher */}
                 <button
                   type="button"
                   onClick={() => setLanguage(l => l === 'en' ? 'ur' : 'en')}
-                  className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition"
+                  className="rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold text-slate-200 hover:bg-slate-700 transition"
                   title="Switch Language (English / Urdu)"
                 >
-                  {language === 'en' ? '🇺🇸 English' : '🇵🇰 اردو (Urdu)'}
+                  {language === 'en' ? '🇺🇸 EN' : '🇵🇰 اردو'}
                 </button>
 
                 {/* Sound Mute Toggle */}
@@ -297,7 +303,7 @@ export function VoiceStoreAssistant({
                   className={`rounded-lg p-1.5 transition ${isSoundMuted ? 'text-slate-500 hover:text-slate-300' : 'text-emerald-400 hover:bg-slate-800'}`}
                   title={isSoundMuted ? 'Unmute voice' : 'Mute voice'}
                 >
-                  {isSoundMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  {isSoundMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
                 </button>
 
                 {/* Close Button */}
@@ -306,46 +312,46 @@ export function VoiceStoreAssistant({
                   onClick={() => setIsOpen(false)}
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
             </div>
 
-            {/* Central Listening & Assistant Response Area */}
-            <div className="p-5 space-y-4">
+            {/* 2. Central Listening & Assistant Response Area (Scrollable with custom scrollbar) */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 overscroll-contain">
               
-              {/* Voice Orb & Microphone Button */}
-              <div className="flex flex-col items-center justify-center py-4 text-center">
+              {/* Voice Orb & Microphone Button (Compact Size) */}
+              <div className="flex flex-col items-center justify-center py-2 text-center">
                 <div className="relative">
                   {/* Pulsing Audio Waves Ring */}
                   {isListening && (
                     <>
-                      <span className="absolute -inset-4 rounded-full bg-emerald-500/20 animate-ping duration-1000" />
-                      <span className="absolute -inset-2 rounded-full bg-emerald-500/30 animate-pulse duration-700" />
+                      <span className="absolute -inset-3 rounded-full bg-emerald-500/20 animate-ping duration-1000" />
+                      <span className="absolute -inset-1.5 rounded-full bg-emerald-500/30 animate-pulse duration-700" />
                     </>
                   )}
 
                   <button
                     type="button"
                     onClick={toggleListening}
-                    className={`relative grid size-20 place-items-center rounded-full text-white shadow-xl transition-all duration-300 active:scale-90 ${
+                    className={`relative grid size-16 place-items-center rounded-full text-white shadow-xl transition-all duration-300 active:scale-90 ${
                       isListening
                         ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/40 ring-4 ring-rose-400/50'
                         : 'bg-linear-to-tr from-emerald-600 to-teal-500 hover:scale-105 shadow-emerald-600/40'
                     }`}
                   >
                     {isListening ? (
-                      <MicOff size={32} className="animate-pulse" />
+                      <MicOff size={26} className="animate-pulse" />
                     ) : (
-                      <Mic size={32} />
+                      <Mic size={26} />
                     )}
                   </button>
                 </div>
 
                 {/* Status Indicator */}
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-2.5 flex items-center gap-2">
                   <span className={`size-2 rounded-full ${isListening ? 'bg-emerald-400 animate-ping' : 'bg-slate-500'}`} />
-                  <span className="text-xs font-semibold text-slate-300">
+                  <span className="text-[11px] font-semibold text-slate-300">
                     {isListening 
                       ? (language === 'ur' ? 'Sun raha hoon... Boliye' : 'Listening... Speak now') 
                       : (isProcessing ? 'Processing command...' : 'Tap microphone to speak')}
@@ -354,17 +360,17 @@ export function VoiceStoreAssistant({
 
                 {/* Live Transcript Bubble */}
                 {transcript && (
-                  <div className="mt-2.5 max-w-sm rounded-xl border border-slate-700/60 bg-slate-800/80 px-3.5 py-1.5 text-xs italic text-emerald-300">
+                  <div className="mt-2 max-w-sm rounded-xl border border-slate-700/60 bg-slate-800/80 px-3 py-1 text-xs italic text-emerald-300">
                     "{transcript}"
                   </div>
                 )}
               </div>
 
               {/* Assistant Reply Card */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5">
                 <div className="flex items-start gap-2.5">
-                  <div className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-lg bg-emerald-500/20 text-emerald-400">
-                    <Sparkles size={14} />
+                  <div className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-md bg-emerald-500/20 text-emerald-400">
+                    <Sparkles size={12} />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs leading-relaxed text-slate-200 whitespace-pre-wrap">
@@ -376,9 +382,9 @@ export function VoiceStoreAssistant({
 
               {/* SAFETY CONFIRMATION CARD (For Sensitive Actions) */}
               {pendingAction && (
-                <div className="overflow-hidden rounded-2xl border border-amber-500/50 bg-amber-950/40 p-4 animate-in slide-in-from-top-2">
-                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
-                    <AlertTriangle size={15} />
+                <div className="overflow-hidden rounded-2xl border border-amber-500/50 bg-amber-950/40 p-3.5 animate-in slide-in-from-top-2">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                    <AlertTriangle size={14} />
                     <span>Safety Confirmation Required</span>
                   </div>
 
@@ -386,22 +392,22 @@ export function VoiceStoreAssistant({
                     {pendingAction.confirmationMessage || 'Please confirm this action to proceed.'}
                   </p>
 
-                  <div className="mt-3.5 flex items-center gap-2.5">
+                  <div className="mt-3 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={handleConfirmAction}
                       disabled={isProcessing}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-95 disabled:opacity-50"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-95 disabled:opacity-50"
                     >
-                      <Check size={14} /> Confirm & Execute
+                      <Check size={13} /> Confirm & Execute
                     </button>
                     <button
                       type="button"
                       onClick={handleCancelAction}
                       disabled={isProcessing}
-                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 active:scale-95"
+                      className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 active:scale-95"
                     >
-                      <X size={14} /> Cancel
+                      <X size={13} /> Cancel
                     </button>
                   </div>
                 </div>
@@ -409,19 +415,19 @@ export function VoiceStoreAssistant({
 
               {/* LIVE INSIGHTS CARDS (When Merchant Asks About Orders/Sales) */}
               {insightsData && (
-                <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-2 gap-2.5 pt-0.5">
                   {insightsData.insightType === 'ORDERS_TODAY' && (
                     <>
-                      <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-3 text-center">
+                      <div className="rounded-xl border border-blue-500/40 bg-blue-950/30 p-2.5 text-center">
                         <span className="text-[10px] uppercase font-bold text-blue-300">Orders Today</span>
-                        <div className="mt-1 flex items-center justify-center gap-1.5 text-lg font-black text-white">
-                          <ShoppingBag size={18} className="text-blue-400" />
+                        <div className="mt-0.5 flex items-center justify-center gap-1.5 text-base font-black text-white">
+                          <ShoppingBag size={15} className="text-blue-400" />
                           <span>{insightsData.ordersCount}</span>
                         </div>
                       </div>
-                      <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3 text-center">
+                      <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-2.5 text-center">
                         <span className="text-[10px] uppercase font-bold text-emerald-300">Today's Revenue</span>
-                        <div className="mt-1 flex items-center justify-center gap-1 text-base font-black text-white">
+                        <div className="mt-0.5 flex items-center justify-center gap-1 text-sm font-black text-white">
                           <span>Rs. {Number(insightsData.revenue || 0).toLocaleString()}</span>
                         </div>
                       </div>
@@ -429,13 +435,13 @@ export function VoiceStoreAssistant({
                   )}
 
                   {insightsData.insightType === 'TOP_SELLING' && (
-                    <div className="col-span-2 rounded-xl border border-purple-500/40 bg-purple-950/30 p-3 flex items-center justify-between">
+                    <div className="col-span-2 rounded-xl border border-purple-500/40 bg-purple-950/30 p-2.5 flex items-center justify-between">
                       <div>
                         <span className="text-[10px] uppercase font-bold text-purple-300">Top Selling Product</span>
-                        <h4 className="text-sm font-extrabold text-white mt-0.5">{insightsData.topProduct}</h4>
+                        <h4 className="text-xs font-extrabold text-white mt-0.5">{insightsData.topProduct}</h4>
                       </div>
-                      <span className="grid size-9 place-items-center rounded-xl bg-purple-500/20 text-purple-300">
-                        <TrendingUp size={18} />
+                      <span className="grid size-8 place-items-center rounded-xl bg-purple-500/20 text-purple-300">
+                        <TrendingUp size={16} />
                       </span>
                     </div>
                   )}
@@ -443,7 +449,7 @@ export function VoiceStoreAssistant({
               )}
 
               {/* QUICK VOICE PROMPT PILLS */}
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1.5 pt-0.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {language === 'ur' ? 'Aap yeh keh sakte hain:' : 'Try saying:'}
                 </span>
@@ -470,7 +476,7 @@ export function VoiceStoreAssistant({
                         setTranscript(phrase);
                         handleVoiceCommand(phrase);
                       }}
-                      className="rounded-full border border-slate-800 bg-slate-950 px-2.5 py-1 text-[11px] text-slate-300 hover:border-slate-700 hover:bg-slate-800 transition"
+                      className="rounded-full border border-slate-800 bg-slate-950 px-2.5 py-1 text-[10px] text-slate-300 hover:border-slate-700 hover:bg-slate-800 transition"
                     >
                       🎙️ {phrase}
                     </button>
@@ -478,25 +484,28 @@ export function VoiceStoreAssistant({
                 </div>
               </div>
 
-              {/* KEYBOARD INPUT FALLBACK */}
-              <form onSubmit={handleManualSubmit} className="flex gap-2 pt-2 border-t border-slate-800">
+            </div>
+
+            {/* 3. KEYBOARD INPUT FALLBACK (Fixed at bottom) */}
+            <div className="shrink-0 border-t border-slate-800 bg-slate-950/90 p-3">
+              <form onSubmit={handleManualSubmit} className="flex gap-2">
                 <input
                   type="text"
-                  placeholder={language === 'ur' ? 'Ya yahan type karein...' : 'Or type a command...'}
+                  placeholder={language === 'ur' ? 'Ya yahan command likhein...' : 'Or type a command...'}
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
-                  className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                  className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!textInput.trim() || isProcessing}
                   className="rounded-xl bg-emerald-600 px-3.5 py-2 text-white font-bold hover:bg-emerald-500 disabled:opacity-50 transition"
                 >
-                  <Send size={14} />
+                  <Send size={13} />
                 </button>
               </form>
-
             </div>
+
           </div>
         </div>
       )}
