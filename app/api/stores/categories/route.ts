@@ -60,6 +60,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
     const body = await req.json();
     const storeId = textValue(body?.store_id);
     const name = textValue(body?.name);
@@ -95,6 +98,10 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
+
     const body = await req.json();
     const id = textValue(body?.id);
     const storeId = textValue(body?.store_id);
@@ -128,6 +135,10 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const supabase = getSupabase();
+    if (!supabase) {
+      return NextResponse.json({ error: "Database is not configured." }, { status: 503 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = textValue(searchParams.get("id"));
     const storeId = textValue(searchParams.get("store_id"));
