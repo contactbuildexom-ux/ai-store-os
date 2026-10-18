@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BUILDEXOM_ICON_DATA_URL } from "@/components/store-qr-code";
 
 /* ============ CONFIG ============ */
 const CTA_HREF = "/login"; // signup page ka path
@@ -215,7 +216,7 @@ export default function QrCodeSection() {
 
                   <div className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-white p-1 shadow-md ring-1 ring-slate-100">
                     <img
-                      src="/buildexom-icon.png"
+                      src={BUILDEXOM_ICON_DATA_URL}
                       alt="Buildexom Logo"
                       className="size-full object-contain"
                     />
