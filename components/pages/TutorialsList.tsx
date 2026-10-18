@@ -103,24 +103,6 @@ function ArrowRight() {
   );
 }
 
-function ArrowLeft() {
-  return (
-    <svg
-      className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M19 12H5" />
-      <path d="m11 18-6-6 6-6" />
-    </svg>
-  );
-}
-
 /* ───────────────────────── CARD VISUAL ───────────────────────── */
 
 function Visual({
@@ -187,19 +169,8 @@ export default function TutorialsList() {
   return (
     <>
       {/* ───────── HERO (light blue) ───────── */}
-      <section className="relative pb-12 pt-8 sm:pb-16 sm:pt-10">
+      <section className="relative pb-12 pt-10 sm:pb-16 sm:pt-14">
         <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6">
-          {/* Back to home */}
-          <div className="mb-8 flex justify-start">
-            <Link
-              href="/"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0b2545] shadow-sm ring-1 ring-blue-100 transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-            >
-              <ArrowLeft />
-              Back to Home
-            </Link>
-          </div>
-
           <div className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#1976d2] shadow-sm ring-1 ring-blue-100">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1976d2]" />
@@ -386,16 +357,16 @@ export default function TutorialsList() {
             </p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/login?mode=signup"
+                href="/user/signup"
                 className="w-full rounded-full bg-white px-8 py-3.5 text-sm font-bold text-[#0b2545] shadow-xl transition duration-200 hover:-translate-y-0.5 hover:bg-blue-50 active:scale-95 sm:w-auto"
               >
                 Get Started Free
               </Link>
               <Link
-                href="/"
+                href="/blogs"
                 className="w-full rounded-full border border-white/30 px-8 py-3.5 text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 active:scale-95 sm:w-auto"
               >
-                Back to Home
+                Read the Blog
               </Link>
             </div>
           </div>

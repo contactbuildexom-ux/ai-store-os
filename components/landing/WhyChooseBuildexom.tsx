@@ -115,20 +115,6 @@ export default function WhyChooseBuildexom() {
                 className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0b2545] via-[#1556a8] to-[#1976d2] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
               />
 
-              {/* Large faint icon in the corner */}
-              <svg
-                aria-hidden="true"
-                className="pointer-events-none absolute -right-5 -top-5 h-32 w-32 text-[#1976d2]/[0.07] transition duration-500 group-hover:rotate-6 group-hover:scale-110 group-hover:text-white/10"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                {f.icon}
-              </svg>
-
               {/* Icon tile (turns white on hover) */}
               <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white shadow-lg shadow-blue-500/30 ring-4 ring-[#1976d2]/10 transition duration-300 group-hover:scale-105 group-hover:bg-white group-hover:from-white group-hover:to-white group-hover:text-[#1976d2] group-hover:ring-white/20">
                 <svg
@@ -179,7 +165,7 @@ export default function WhyChooseBuildexom() {
         {/* Bottom CTA */}
         <div className="mt-12 text-center">
           <Link
-            href="/#generate-store"
+           href="/user/signup"
             className="inline-flex items-center gap-2 rounded-xl bg-[#1976d2] px-7 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:-translate-y-0.5 hover:bg-[#1565c0]"
           >
             Start building free <span aria-hidden>→</span>

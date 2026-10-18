@@ -36,8 +36,7 @@ type IconName =
   | "rocket"
   | "alert"
   | "chat"
-  | "arrowRight"
-  | "arrowLeft";
+  | "arrowRight";
 
 const ICONS: Record<IconName, React.ReactNode> = {
   sparkles: (
@@ -254,12 +253,6 @@ const ICONS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M5 12h14" />
       <path d="m13 6 6 6-6 6" />
-    </>
-  ),
-  arrowLeft: (
-    <>
-      <path d="M19 12H5" />
-      <path d="m11 18-6-6 6-6" />
     </>
   ),
 };
@@ -530,22 +523,8 @@ export default function AiGuide() {
   return (
     <>
       {/* ───────── HERO (light blue) ───────── */}
-      <section className="relative pb-12 pt-8 sm:pb-16 sm:pt-10">
+      <section className="relative pb-12 pt-10 sm:pb-16 sm:pt-14">
         <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6">
-          <div className="mb-8 flex justify-start">
-            <Link
-              href="/"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0b2545] shadow-sm ring-1 ring-blue-100 transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-            >
-              <Icon
-                name="arrowLeft"
-                className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1"
-                stroke={2}
-              />
-              Back to Home
-            </Link>
-          </div>
-
           <div className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#1976d2] shadow-sm ring-1 ring-blue-100">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1976d2]" />
@@ -578,7 +557,7 @@ export default function AiGuide() {
         </div>
       </section>
 
-      {/* mobile chips */}
+      {/* Mobile section chips */}
       <div className="sticky top-[72px] z-30 mb-6 lg:hidden">
         <div className="mx-4 overflow-x-auto rounded-full border border-blue-100 bg-white/95 p-1.5 shadow-lg backdrop-blur">
           <div className="flex w-max gap-1">
@@ -786,7 +765,7 @@ export default function AiGuide() {
                     {copied === "builder" ? "Copied" : "Copy my prompt"}
                   </button>
                   <Link
-                    href="/login?mode=signup"
+                    href="/user/signup"
                     className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-6 py-3 text-center text-sm font-semibold text-white transition duration-200 hover:-translate-y-0.5 hover:bg-white/10 active:scale-95"
                   >
                     Try it in Buildexom
@@ -1042,7 +1021,7 @@ export default function AiGuide() {
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <Link
-                    href="/login?mode=signup"
+                    href="/user/signup"
                     className="w-full rounded-full bg-white px-8 py-3.5 text-sm font-bold text-[#0b2545] shadow-xl transition duration-200 hover:-translate-y-0.5 hover:bg-blue-50 active:scale-95 sm:w-auto"
                   >
                     Get Started Free
@@ -1054,17 +1033,6 @@ export default function AiGuide() {
                     Watch tutorials
                   </Link>
                 </div>
-                <Link
-                  href="/"
-                  className="group mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-200 transition hover:text-white"
-                >
-                  <Icon
-                    name="arrowLeft"
-                    className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1"
-                    stroke={2}
-                  />
-                  Back to Home
-                </Link>
               </div>
             </div>
           </div>

@@ -138,7 +138,7 @@ export default function FinalCta() {
 
             <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row lg:items-center">
               <Link
-                href="/#generate-store"
+                href="/user/signup"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-brand-blue-dark transition hover:-translate-y-0.5 hover:bg-blue-50 sm:w-auto"
               >
                 Start building free <span aria-hidden>→</span>

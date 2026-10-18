@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 
 /* ============ CONFIG ============ */
-const CTA_HREF = "/login"; // "Use template" button ka path
+const CTA_HREF = "/user/signup"; // "Use template" button ka path
 /* ================================== */
 
 const templates = [

@@ -7,6 +7,7 @@ import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession }
 import { generateStoreFromPrompt } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
+import { getStoreUrl, isReservedSlug } from "@/lib/store-url";
 
 type GeneratedProduct = { name: string; price: number; description: string; category_name: string; image_url?: string | null };
 type SocialLinks = Partial<Record<"instagram" | "facebook" | "youtube" | "tiktok" | "x", string>>;
@@ -21,6 +22,10 @@ type GeneratedStore = {
   products: GeneratedProduct[];
 };
 
+// Slugs become subdomains (<slug>.domain.com). A DNS label can be at most 63 characters,
+// so base slugs stop at 54 and a suffix such as "-2" or "-12" is added only if needed.
+const MAX_BASE_SLUG_LENGTH = 54;
+
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
@@ -33,7 +38,7 @@ function slugify(value: string) {
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 70)
+    .slice(0, MAX_BASE_SLUG_LENGTH)
     .replace(/-+$/g, "");
 }
 
@@ -259,10 +264,26 @@ function planLimits(planValue: unknown) {
   return { plan: "basic", categories: 2, products: 20 };
 }
 
+// Returns a slug that is free and safe to use as a subdomain:
+// shoe-store, then shoe-store-2, shoe-store-3, ... Reserved names (www, admin, api, ...) are never returned as-is.
 async function uniqueStoreSlug(supabase: NonNullable<ReturnType<typeof createAdminClient>>, requestedSlug: string) {
-  const { data, error } = await supabase.from("stores").select("id").ilike("slug", requestedSlug).maybeSingle();
+  const base = requestedSlug.slice(0, MAX_BASE_SLUG_LENGTH).replace(/-+$/g, "") || "store";
+
+  const { data, error } = await supabase
+    .from("stores")
+    .select("slug")
+    .ilike("slug", `${base}%`)
+    .limit(200);
   if (error) throw error;
-  return data ? `${requestedSlug.slice(0, 61)}-${crypto.randomUUID().slice(0, 8)}` : requestedSlug;
+
+  const taken = new Set((data ?? []).map((row) => String(row.slug ?? "").toLowerCase()));
+  if (!isReservedSlug(base) && !taken.has(base)) return base;
+
+  for (let n = 2; n < 200; n += 1) {
+    const candidate = `${base}-${n}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 export async function POST(request: Request) {
@@ -351,12 +372,14 @@ export async function POST(request: Request) {
         if (lookupError) throw lookupError;
         if (existingStore) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
-                  if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
+        }
+        // Email OTP check. (After the merge this block sat inside the `existingStore` branch,
+        // right after its `return`, so it never ran. It now runs for every new signup.)
+        if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
           const verificationToken = text(input.verification_token, 600);
           if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
             return NextResponse.json({ error: "Please verify your email with the code we sent before creating your store." }, { status: 403 });
           }
-        }
         }
       } else {
         if (requestedUserId && requestedUserId !== user.id) {
@@ -383,7 +406,11 @@ export async function POST(request: Request) {
       if (productsResult.error) throw productsResult.error;
       if (categoriesResult.error) throw categoriesResult.error;
       if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
-        return NextResponse.json({ error: "This store already has catalog data. Generation will not overwrite it.", store: { id: targetStore.id, slug: targetStore.slug } }, { status: 409 });
+        return NextResponse.json({
+          error: "This store already has catalog data. Generation will not overwrite it.",
+          store: { id: targetStore.id, slug: targetStore.slug },
+          store_url: getStoreUrl(targetStore.slug),
+        }, { status: 409 });
       }
     }
 
@@ -464,7 +491,7 @@ export async function POST(request: Request) {
         user_id: user?.id ?? null,
         owner_email: merchantEmail,
         password_hash,
-                whatsapp_number: requestedWhatsapp || null,
+        whatsapp_number: requestedWhatsapp || null,
         ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
         plan: planToStore,
         selected_plan: selectedPlan,
@@ -603,7 +630,11 @@ export async function POST(request: Request) {
       },
       product_count: generated.products.length,
       category_count: generated.categories.length,
+      // storefront_url is kept as before so existing screens keep working.
+      // store_url is the public subdomain address (falls back to the /store/<slug> path
+      // when NEXT_PUBLIC_ROOT_DOMAIN is not set).
       storefront_url: `/store/${encodeURIComponent(resolvedStore.slug)}`,
+      store_url: getStoreUrl(resolvedStore.slug),
       dashboard_url: `/merchant/${resolvedStore.slug}/dashboard`,
     }, { status: 201 });
 

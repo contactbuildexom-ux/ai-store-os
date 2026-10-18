@@ -36,6 +36,9 @@ type GeneratedPreview = {
 type GeneratedStoreResponse = {
   slug: string;
   storefrontUrl: string;
+  // Public address of the store. Subdomain URL (https://shoe-store.domain.com) when
+  // NEXT_PUBLIC_ROOT_DOMAIN is configured, otherwise the same /store/<slug> path.
+  storeUrl: string;
   dashboardUrl: string;
   storeName: string;
   preview: GeneratedPreview;
@@ -79,9 +82,11 @@ function parseGeneratedStoreResponse(value: unknown): GeneratedStoreResponse | n
     }];
   });
   if (!products.length || products.length !== previewValue.products.length) return null;
+  const storefrontUrl = typeof value.storefront_url === 'string' ? value.storefront_url : `/store/${encodeURIComponent(value.slug)}`;
   return {
     slug: value.slug,
-    storefrontUrl: typeof value.storefront_url === 'string' ? value.storefront_url : `/store/${encodeURIComponent(value.slug)}`,
+    storefrontUrl,
+    storeUrl: typeof value.store_url === 'string' ? value.store_url : storefrontUrl,
     dashboardUrl: typeof value.dashboard_url === 'string' ? value.dashboard_url : `/merchant/${encodeURIComponent(value.slug)}/dashboard`,
     storeName: typeof value.store.name === 'string' ? value.store.name : previewValue.store_name,
     preview: {
@@ -243,6 +248,21 @@ export default function MerchantStoreSetupModal({
     }
   };
 
+  const isAbsoluteUrl = (url: string) => /^https?:\/\//i.test(url);
+
+  // Opens the store on its own subdomain (full page load). If no root domain is
+  // configured, store_url is just /store/<slug>, so the normal router is used.
+  const openStorefront = () => {
+    if (!successData) return;
+    const target = successData.storeUrl;
+    onClose();
+    if (isAbsoluteUrl(target)) {
+      window.location.assign(target);
+    } else {
+      router.push(target);
+    }
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-[#0b2545]/60 p-3 backdrop-blur-sm sm:p-4"
@@ -290,6 +310,11 @@ export default function MerchantStoreSetupModal({
                 <p className="mx-auto mt-2 max-w-md text-sm text-[#2c4a73]">
                   <span className="font-semibold text-emerald-600">{successData.storeName}</span> is live with automated WhatsApp checkout and integrated social media footer.
                 </p>
+                {isAbsoluteUrl(successData.storeUrl) && (
+                  <p className="mx-auto mt-2 max-w-md break-all text-xs font-semibold text-[#1976d2]">
+                    {successData.storeUrl.replace(/^https?:\/\//i, '')}
+                  </p>
+                )}
                 {plan !== 'basic' && (
                   <p className="mx-auto mt-3 max-w-md rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     Your {plan === 'advanced' ? 'Advanced' : 'Pro'} plan selection is pending payment approval; the store starts with Basic limits until it is approved.
@@ -335,7 +360,7 @@ export default function MerchantStoreSetupModal({
               <div className="mx-auto max-w-sm pt-2">
                 <StoreQRCode
                   storeSlug={successData.slug}
-                  storePath={successData.storefrontUrl}
+                  storePath={successData.storeUrl}
                   title="Your store QR"
                   badge="Live Store"
                 />
@@ -344,10 +369,7 @@ export default function MerchantStoreSetupModal({
               <div className="mx-auto grid max-w-md gap-3 pt-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    onClose();
-                    router.push(successData.storefrontUrl);
-                  }}
+                  onClick={openStorefront}
                   className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3.5 text-xs font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-500"
                 >
                   <Store size={16} /> View Live Storefront

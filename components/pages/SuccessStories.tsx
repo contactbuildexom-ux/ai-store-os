@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PageShell } from "@/components/landing/PageShell";
 
 type Story = {
   id: string;
@@ -47,8 +48,7 @@ type IconName =
   | "message"
   | "shield"
   | "check"
-  | "arrowRight"
-  | "arrowLeft";
+  | "arrowRight";
 
 const ICONS: Record<IconName, React.ReactNode> = {
   star: (
@@ -119,12 +119,6 @@ const ICONS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M5 12h14" />
       <path d="m13 6 6 6-6 6" />
-    </>
-  ),
-  arrowLeft: (
-    <>
-      <path d="M19 12H5" />
-      <path d="m11 18-6-6 6-6" />
     </>
   ),
 };
@@ -250,24 +244,10 @@ export default function SuccessStories() {
     active === "All" ? STORIES : STORIES.filter((s) => s.category === active);
 
   return (
-    <>
+    <PageShell>
       {/* ───────── HERO (light blue) ───────── */}
-      <section className="relative pb-12 pt-8 sm:pb-16 sm:pt-10">
+      <section className="relative pb-12 pt-10 sm:pb-16 sm:pt-14">
         <div className="relative mx-auto max-w-[1200px] px-4 sm:px-6">
-          <div className="mb-8 flex justify-start">
-            <Link
-              href="/"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#0b2545] shadow-sm ring-1 ring-blue-100 transition duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-            >
-              <Icon
-                name="arrowLeft"
-                className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1"
-                stroke={2}
-              />
-              Back to Home
-            </Link>
-          </div>
-
           <div className="text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#1976d2] shadow-sm ring-1 ring-blue-100">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#1976d2]" />
@@ -377,7 +357,7 @@ export default function SuccessStories() {
               </p>
               <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
-                  href="/login?mode=signup"
+                  href="/user/signup"
                   className="w-full rounded-full bg-[#1976d2] px-6 py-3 text-sm font-bold text-white shadow-md shadow-blue-400/40 transition duration-200 hover:-translate-y-0.5 hover:bg-[#1565c0] active:scale-95 sm:w-auto"
                 >
                   Build your store
@@ -487,7 +467,7 @@ export default function SuccessStories() {
             </p>
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/login?mode=signup"
+                href="/user/signup"
                 className="w-full rounded-full bg-white px-8 py-3.5 text-sm font-bold text-[#0b2545] shadow-xl transition duration-200 hover:-translate-y-0.5 hover:bg-blue-50 active:scale-95 sm:w-auto"
               >
                 Get Started Free
@@ -499,20 +479,9 @@ export default function SuccessStories() {
                 Read the AI Guide
               </Link>
             </div>
-            <Link
-              href="/"
-              className="group mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-200 transition hover:text-white"
-            >
-              <Icon
-                name="arrowLeft"
-                className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1"
-                stroke={2}
-              />
-              Back to Home
-            </Link>
           </div>
         </div>
       </div>
-    </>
+    </PageShell>
   );
 }

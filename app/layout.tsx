@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     ...(keywords.length > 0 ? { keywords } : {}),
     openGraph: { title, description, type: "website", images },
     twitter: { card: images ? "summary_large_image" : "summary", title, description, images },
-    icons: { icon: settings.logoUrl || "/logo.jpeg" },
+    icons: { icon: settings.logoUrl || "/icon.png" },
   };
 }
 

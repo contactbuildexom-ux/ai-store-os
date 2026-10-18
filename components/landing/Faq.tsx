@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -76,17 +75,17 @@ export default function Faq() {
       <style>{CSS}</style>
 
       <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-        {/* Left: heading + help card */}
-        <div className="lg:sticky lg:top-28 lg:self-start">
+        {/* Left: heading + help card (centered) */}
+        <div className="text-center lg:sticky lg:top-28 lg:self-start">
           <span>FAQ</span>
           <h2 className="text-brand-navy">
             Questions? <span className="text-gradient">We have answers</span>
           </h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-slate-600">
+          <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-slate-600">
             Everything you need to know before you launch your store.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4 rounded-2xl border border-blue-100 bg-white p-5 shadow-[0_12px_32px_-22px_rgba(11,37,69,0.4)]">
+          <div className="mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-4 rounded-2xl border border-blue-100 bg-white p-5 text-left shadow-[0_12px_32px_-22px_rgba(11,37,69,0.4)]">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white shadow-md shadow-blue-500/30">
               <svg
                 width="22"
