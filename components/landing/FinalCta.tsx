@@ -1,21 +1,16 @@
 ﻿"use client";
 
 import Link from "next/link";
-import type { MouseEvent } from "react";
+import { usePlatformBranding } from "@/components/platform-branding";
+
+/* ============ CONFIG ============ */
+
+const WHATSAPP_FALLBACK = "923374257290";
+const WHATSAPP_MESSAGE =
+  "Hi Buildexom team, I would like to know more about building my online store.";
+/* ================================== */
 
 const perks = ["Free plan available", "No credit card needed", "Live in minutes"];
-
-/* "Talk to our team" -> Footer ke social icons tak scroll + blink */
-function goToSocials(e: MouseEvent<HTMLAnchorElement>) {
-  const box = document.getElementById("contact-socials");
-  if (!box) return; 
-  e.preventDefault();
-  box.scrollIntoView({ behavior: "smooth", block: "center" });
-  box.classList.remove("blink-attention");
-  void box.offsetWidth; // animation dobara chalane ke liye
-  box.classList.add("blink-attention");
-  window.setTimeout(() => box.classList.remove("blink-attention"), 4500);
-}
 
 function Tick() {
   return (
@@ -33,6 +28,24 @@ function Tick() {
         <path d="M5 12.5l4.5 4.5L19 7.5" />
       </svg>
     </span>
+  );
+}
+
+function WhatsAppIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21" />
+      <path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" />
+    </svg>
   );
 }
 
@@ -97,6 +110,10 @@ function StoreVisual() {
 }
 
 export default function FinalCta() {
+  const { settings } = usePlatformBranding();
+  const number = (settings.whatsapp || WHATSAPP_FALLBACK).replace(/\D/g, "");
+  const whatsappHref = `https://wa.me/${number}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+
   return (
     <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <div className="bg-brand-gradient relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] px-6 py-12 sm:px-10 lg:px-14 lg:py-14">
@@ -127,13 +144,15 @@ export default function FinalCta() {
                 Start building free <span aria-hidden>→</span>
               </Link>
 
-              <Link
-                href="/#contact-socials"
-                onClick={goToSocials}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10 sm:w-auto"
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10 sm:w-auto"
               >
+                <WhatsAppIcon />
                 Talk to our team
-              </Link>
+              </a>
             </div>
 
             <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
@@ -152,4 +171,4 @@ export default function FinalCta() {
       </div>
     </section>
   );
-} 
+}

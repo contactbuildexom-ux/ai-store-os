@@ -5,8 +5,9 @@ import Link from "next/link";
 
 type Tab = "login" | "signup";
 
-/* User login page (admin /login se alag) */
+/* User login / signup pages (admin /login se alag) */
 const USER_LOGIN_HREF = "/user/login";
+const USER_SIGNUP_HREF = "/user/signup";
 
 export default function AuthModal({
   open,
@@ -111,7 +112,7 @@ export default function AuthModal({
           {tab === "signup" ? (
             <>
               <Link
-                href="/login?mode=signup"
+                href={USER_SIGNUP_HREF}
                 onClick={onClose}
                 className="block rounded-full bg-[#1976d2] px-6 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-[#1565c0]"
               >

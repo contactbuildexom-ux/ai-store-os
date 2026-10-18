@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
 import { generateStoreFromPrompt } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
+import { verifyEmailVerificationToken } from "@/lib/email-otp";
 
 type GeneratedProduct = { name: string; price: number; description: string; category_name: string; image_url?: string | null };
 type SocialLinks = Partial<Record<"instagram" | "facebook" | "youtube" | "tiktok" | "x", string>>;
@@ -350,6 +351,12 @@ export async function POST(request: Request) {
         if (lookupError) throw lookupError;
         if (existingStore) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
+                  if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
+          const verificationToken = text(input.verification_token, 600);
+          if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
+            return NextResponse.json({ error: "Please verify your email with the code we sent before creating your store." }, { status: 403 });
+          }
+        }
         }
       } else {
         if (requestedUserId && requestedUserId !== user.id) {
@@ -457,7 +464,8 @@ export async function POST(request: Request) {
         user_id: user?.id ?? null,
         owner_email: merchantEmail,
         password_hash,
-        whatsapp_number: requestedWhatsapp || null,
+                whatsapp_number: requestedWhatsapp || null,
+        ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
         plan: planToStore,
         selected_plan: selectedPlan,
         payment_status: "pending",
