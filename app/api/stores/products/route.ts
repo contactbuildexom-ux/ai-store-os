@@ -94,36 +94,50 @@ export async function POST(req: Request) {
     if (price === null) {
       return NextResponse.json({ error: "Enter a valid product price." }, { status: 400 });
     }
-    if (categoryId) {
-      const { data: category, error: categoryError } = await supabase.from("store_categories")
-        .select("id").eq("id", categoryId).eq("store_id", storeId).maybeSingle();
-      if (categoryError) throw categoryError;
-      if (!category) return NextResponse.json({ error: "The selected category does not belong to this store." }, { status: 400 });
+
+    if (supabase) {
+      if (categoryId) {
+        const { data: category, error: categoryError } = await supabase.from("store_categories")
+          .select("id").eq("id", categoryId).eq("store_id", storeId).maybeSingle();
+        if (categoryError) throw categoryError;
+        if (!category) return NextResponse.json({ error: "The selected category does not belong to this store." }, { status: 400 });
+      }
+
+      const limitCheck = await checkStoreLimits(storeId, "product", categoryId ?? undefined);
+      if (!limitCheck.allowed) {
+        return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+      }
+
+      const { data, error } = await supabase
+        .from("store_products")
+        .insert([
+          {
+            store_id: storeId,
+            name,
+            price,
+            description: optionalText(body?.description),
+            image_url: optionalText(body?.image_url),
+            category_id: categoryId,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return NextResponse.json({ success: true, product: data, message: "Product added successfully." });
     }
 
-    const limitCheck = await checkStoreLimits(storeId, "product", categoryId ?? undefined);
-    if (!limitCheck.allowed) {
-      return NextResponse.json({ error: limitCheck.message }, { status: 403 });
-    }
+    // Fallback storeRepo
+    const repoProd = await storeRepo.addProduct(storeId, {
+      name,
+      price,
+      description: optionalText(body?.description) || '',
+      image_url: optionalText(body?.image_url) || '',
+      category: categoryId || 'General',
+    });
 
-    const { data, error } = await supabase
-      .from("store_products")
-      .insert([
-        {
-          store_id: storeId,
-          name,
-          price,
-          description: optionalText(body?.description),
-          image_url: optionalText(body?.image_url),
-          category_id: categoryId,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json({ success: true, product: data, message: "Product added successfully." });
+    return NextResponse.json({ success: true, product: repoProd, message: "Product added successfully." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to save product.";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -142,7 +156,7 @@ export async function PUT(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
-    const updates: Record<string, string | number | null> = {};
+    const updates: Record<string, unknown> = {};
     if ("name" in body) {
       const name = textValue(body.name);
       if (!name) return NextResponse.json({ error: "Product name cannot be empty." }, { status: 400 });
@@ -157,7 +171,7 @@ export async function PUT(req: Request) {
     if ("image_url" in body) updates.image_url = optionalText(body.image_url);
     if ("category_id" in body) {
       const categoryId = optionalText(body.category_id);
-      if (categoryId) {
+      if (categoryId && supabase) {
         const { data: category, error: categoryError } = await supabase.from("store_categories")
           .select("id").eq("id", categoryId).eq("store_id", storeId).maybeSingle();
         if (categoryError) throw categoryError;
@@ -170,17 +184,23 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "No product fields were provided to update." }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from("store_products")
-      .update(updates)
-      .eq("id", id)
-      .eq("store_id", storeId)
-      .select()
-      .single();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("store_products")
+        .update(updates)
+        .eq("id", id)
+        .eq("store_id", storeId)
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    return NextResponse.json({ success: true, product: data, message: "Product updated successfully." });
+      return NextResponse.json({ success: true, product: data, message: "Product updated successfully." });
+    }
+
+    // Fallback storeRepo
+    const updated = await storeRepo.updateProduct(storeId, id, updates as any);
+    return NextResponse.json({ success: true, product: updated, message: "Product updated successfully." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to update product.";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -199,14 +219,20 @@ export async function DELETE(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
-    const { error } = await supabase
-      .from("store_products")
-      .delete()
-      .eq("id", id)
-      .eq("store_id", storeId);
+    if (supabase) {
+      const { error } = await supabase
+        .from("store_products")
+        .delete()
+        .eq("id", id)
+        .eq("store_id", storeId);
 
-    if (error) throw error;
+      if (error) throw error;
 
+      return NextResponse.json({ success: true, message: "Product deleted successfully." });
+    }
+
+    // Fallback storeRepo
+    await storeRepo.deleteProduct(storeId, id);
     return NextResponse.json({ success: true, message: "Product deleted successfully." });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to delete product.";

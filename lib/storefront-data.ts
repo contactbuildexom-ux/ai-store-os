@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { storeRepo } from "@/lib/store-repository";
 import type {
   PublicStore,
   PublicStoreProduct,
@@ -23,87 +24,118 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
   }
 
   const supabase = createAdminClient();
-  if (!supabase) {
-    throw new StorefrontDataError("Store database is not configured.", 503);
+  if (supabase) {
+    try {
+      const { data: store, error: storeError } = await supabase
+        .from("stores")
+        .select("*")
+        .eq("slug", normalizedSlug)
+        .maybeSingle();
+
+      if (!storeError && store) {
+        const [legacyResult, builderResult, categoryResult] = await Promise.all([
+          supabase
+            .from("products")
+            .select("id, name, description, price, image_url, category, created_at")
+            .eq("store_id", store.id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("store_products")
+            .select("id, name, description, price, image_url, category_id, created_at")
+            .eq("store_id", store.id)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("store_categories")
+            .select("id, name")
+            .eq("store_id", store.id),
+        ]);
+
+        const categoryById = new Map(
+          (categoryResult.data ?? []).map((category) => [category.id, category.name])
+        );
+        const productsById = new Map<string, PublicStoreProduct>();
+
+        for (const product of legacyResult.data ?? []) {
+          productsById.set(String(product.id), {
+            id: String(product.id),
+            name: String(product.name ?? ""),
+            description: typeof product.description === "string" ? product.description : "",
+            price: Number(product.price ?? 0),
+            image_url: typeof product.image_url === "string" ? product.image_url : "",
+            category: typeof product.category === "string" && product.category.trim()
+              ? product.category.trim()
+              : "General",
+          });
+        }
+
+        for (const product of builderResult.data ?? []) {
+          productsById.set(String(product.id), {
+            id: String(product.id),
+            name: String(product.name ?? ""),
+            description: typeof product.description === "string" ? product.description : "",
+            price: Number(product.price ?? 0),
+            image_url: typeof product.image_url === "string" ? product.image_url : "",
+            category: (product.category_id && categoryById.get(product.category_id)) || "General",
+          });
+        }
+
+        const products = [...productsById.values()];
+        const publicStore: PublicStore = {
+          id: String(store.id),
+          name: String(store.name ?? store.store_name ?? ""),
+          slug: String(store.slug),
+          plan: String(store.plan ?? store.plan_type ?? "free"),
+          tagline: String(store.tagline ?? store.header_title ?? "Welcome to our store."),
+          description: String(store.description ?? ""),
+          whatsapp_number: String(store.whatsapp_number ?? ""),
+          selected_theme: String(store.selected_theme ?? "emerald"),
+          primary_color: String(store.primary_color ?? "#1d7555"),
+          secondary_color: String(store.secondary_color ?? "#0f172a"),
+        };
+
+        return {
+          success: true,
+          store: publicStore,
+          categories: [...new Set(products.map((product) => product.category))],
+          products,
+        };
+      }
+    } catch (e) {
+      console.warn("Supabase fetch public storefront failed, checking storeRepo:", e);
+    }
   }
 
-  const { data: store, error: storeError } = await supabase
-    .from("stores")
-    .select("*")
-    .eq("slug", normalizedSlug)
-    .maybeSingle();
+  // Fallback to in-memory store repository
+  const repoStore = await storeRepo.getStore(normalizedSlug);
+  if (repoStore) {
+    const repoProducts = await storeRepo.getProducts(repoStore.id);
+    const publicProducts: PublicStoreProduct[] = repoProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || "",
+      price: p.price,
+      image_url: p.image_url || "",
+      category: p.category || "General",
+    }));
 
-  if (storeError) throw storeError;
-  if (!store) return null;
-
-  const [legacyResult, builderResult, categoryResult] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id, name, description, price, image_url, category, created_at")
-      .eq("store_id", store.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("store_products")
-      .select("id, name, description, price, image_url, category_id, created_at")
-      .eq("store_id", store.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("store_categories")
-      .select("id, name")
-      .eq("store_id", store.id),
-  ]);
-
-  if (legacyResult.error) throw legacyResult.error;
-  if (builderResult.error) throw builderResult.error;
-  if (categoryResult.error) throw categoryResult.error;
-
-  const categoryById = new Map(
-    (categoryResult.data ?? []).map((category) => [category.id, category.name])
-  );
-  const productsById = new Map<string, PublicStoreProduct>();
-
-  for (const product of legacyResult.data ?? []) {
-    productsById.set(String(product.id), {
-      id: String(product.id),
-      name: String(product.name ?? ""),
-      description: typeof product.description === "string" ? product.description : "",
-      price: Number(product.price ?? 0),
-      image_url: typeof product.image_url === "string" ? product.image_url : "",
-      category: typeof product.category === "string" && product.category.trim()
-        ? product.category.trim()
-        : "General",
-    });
+    return {
+      success: true,
+      store: {
+        id: repoStore.id,
+        name: repoStore.name,
+        slug: repoStore.slug,
+        plan: repoStore.plan || "free",
+        tagline: repoStore.tagline || "Welcome to our store.",
+        description: repoStore.description || "",
+        whatsapp_number: repoStore.whatsapp_number || "",
+        selected_theme: "emerald",
+        primary_color: "#1d7555",
+        secondary_color: "#0f172a",
+      },
+      categories: [...new Set(publicProducts.map((p) => p.category))],
+      products: publicProducts,
+    };
   }
 
-  for (const product of builderResult.data ?? []) {
-    productsById.set(String(product.id), {
-      id: String(product.id),
-      name: String(product.name ?? ""),
-      description: typeof product.description === "string" ? product.description : "",
-      price: Number(product.price ?? 0),
-      image_url: typeof product.image_url === "string" ? product.image_url : "",
-      category: (product.category_id && categoryById.get(product.category_id)) || "General",
-    });
-  }
-
-  const products = [...productsById.values()];
-  const publicStore: PublicStore = {
-    id: String(store.id),
-    name: String(store.name ?? store.store_name ?? ""),
-    slug: String(store.slug),
-    plan: String(store.plan ?? store.plan_type ?? "free"),
-    tagline: String(store.tagline ?? store.header_title ?? "Welcome to our store."),
-    description: String(store.description ?? ""),
-    whatsapp_number: String(store.whatsapp_number ?? ""),
-    selected_theme: String(store.selected_theme ?? "emerald"),
-    primary_color: String(store.primary_color ?? "#1d7555"),
-    secondary_color: String(store.secondary_color ?? "#0f172a"),
-  };
-
-  return {
-    success: true,
-    store: publicStore,
-    categories: [...new Set(products.map((product) => product.category))],
-    products,
-  };
+  return null;
 }
