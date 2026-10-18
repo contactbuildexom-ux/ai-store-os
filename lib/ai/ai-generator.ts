@@ -328,14 +328,14 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
  */
 function detectNiche(prompt: string): string {
   const p = prompt.toLowerCase();
-  if (p.includes('wedding') || p.includes('bridal') || p.includes('shaadi') || p.includes('groom') || p.includes('bride') || p.includes('marriage')) return 'wedding';
-  if (p.includes('shoe') || p.includes('footwear') || p.includes('sneaker') || p.includes('jogger') || p.includes('boot')) return 'footwear';
-  if (p.includes('perfume') || p.includes('fragrance') || p.includes('scent') || p.includes('oud') || p.includes('attar')) return 'perfume';
-  if (p.includes('cloth') || p.includes('dress') || p.includes('fashion') || p.includes('wear') || p.includes('hoodie') || p.includes('kurta') || p.includes('suit') || p.includes('apparel')) return 'clothing';
-  if (p.includes('skin') || p.includes('cosmetic') || p.includes('beauty') || p.includes('serum') || p.includes('cream') || p.includes('lotion') || p.includes('makeup')) return 'skincare';
-  if (p.includes('jewel') || p.includes('ring') || p.includes('necklace') || p.includes('earring') || p.includes('gold') || p.includes('silver') || p.includes('bracelet')) return 'jewelry';
-  if (p.includes('tech') || p.includes('phone') || p.includes('gadget') || p.includes('headphone') || p.includes('watch') || p.includes('electronic') || p.includes('laptop')) return 'tech';
-  if (p.includes('coffee') || p.includes('tea') || p.includes('food') || p.includes('cake') || p.includes('sweet') || p.includes('chocolate') || p.includes('bakery')) return 'food';
+  if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|choker|dupatta|favor|shagun)\b/i.test(p)) return 'wedding';
+  if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|boot|boots|jootay|joota|chappal|heels|sandals)\b/i.test(p)) return 'footwear';
+  if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne)\b/i.test(p)) return 'perfume';
+  if (/\b(skin|skincare|cosmetic|cosmetics|beauty|serum|serums|cream|lotion|makeup|glow|face wash|sunscreen)\b/i.test(p)) return 'skincare';
+  if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bangles|jhumka|jhumkay|chain)\b/i.test(p)) return 'jewelry';
+  if (/\b(tech|phone|phones|mobile|gadget|gadgets|headphone|headphones|watch|watches|electronic|electronics|laptop|earbuds|charger)\b/i.test(p)) return 'tech';
+  if (/\b(coffee|tea|chai|food|cake|cakes|sweet|sweets|mithai|chocolate|chocolates|bakery|beans|cafe|roast)\b/i.test(p)) return 'food';
+  if (/\b(cloth|clothes|clothing|dress|dresses|fashion|wear|hoodie|hoodies|kurta|kurtas|suit|suits|apparel|kapray|shirt|shirts|pret|lawn|chiffon)\b/i.test(p)) return 'clothing';
   return 'clothing'; // default versatile fallback
 }
 

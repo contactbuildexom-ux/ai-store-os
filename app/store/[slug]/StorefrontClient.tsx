@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
+import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
 import {
     Menu,
     X,
@@ -112,9 +113,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [whatsappLink, setWhatsappLink] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Becni AI Chat states
+    // Dynamic Niche & Hero Info
+    const heroInfo = useMemo(() => resolveStoreHero(liveStore, liveProducts), [liveStore, liveProducts]);
+
+    // Bexi AI Chat states
     const [aiMessages, setAiMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
-        { sender: 'ai', text: `Assalam-o-Alaikum! 👋 I am **Becni AI**, your personal shopping assistant for **${liveStore.name}**.\n\nAsk me about our products, recommendations, pricing, or delivery details!` }
+        {
+            sender: 'ai',
+            text: `Assalam-o-Alaikum / Hello! 👋 Main hoon **Bexi AI**, **${liveStore.name}** ka personal shopping assistant.\n\nAap mujh se Roman Urdu ya English mein products, prices, bestsellers, ya delivery ke baray mein pooch saktay hain! 🛍️`
+        }
     ]);
     const [aiInput, setAiInput] = useState('');
     const [aiSending, setAiSending] = useState(false);
@@ -435,7 +442,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
         } catch {
             setAiMessages((prev) => [
                 ...prev,
-                { sender: 'ai', text: `I am here to help you shop at ${liveStore.name}! You can browse our ${liveProducts.length} items above, or tap any product card to add to cart or order directly via WhatsApp.` }
+                { sender: 'ai', text: `Main **${liveStore.name}** par aap ki shopping mein madad ke liye hazir hoon! Aap hamaray catalog items dekh saktay hain ya kisi bhi card par click karke direct WhatsApp par order bhej saktay hain.` }
             ]);
         } finally {
             setAiSending(false);
@@ -693,13 +700,16 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     borderColor: `${themeColor}35`
                                 }}
                             >
-                                ✨ Style • Comfort • Performance
+                                {heroInfo.badge}
                             </span>
                             <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-tight">
-                                {liveStore.name || 'Premium Footwear'}
+                                {heroInfo.headlineMain}{' '}
+                                {heroInfo.headlineHighlight && (
+                                    <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
+                                )}
                             </h2>
                             <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed font-medium">
-                                {liveStore.tagline || 'Style • Comfort • Performance'}
+                                {liveStore.tagline || heroInfo.subtext}
                             </p>
 
                             <div className="pt-3 flex flex-wrap items-center gap-3">
@@ -721,12 +731,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </div>
                         </div>
 
-                        {/* Floating Performance Sneaker Hero Image (Matching Post Screen Studio Footwear) */}
-                        <div className="w-52 sm:w-72 lg:w-84 shrink-0 relative">
+                        {/* Floating Concept-Matched Hero Image */}
+                        <div className="w-52 sm:w-72 lg:w-84 shrink-0 relative flex items-center justify-center">
                             <img
-                                src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80"
-                                alt="Premium Footwear"
-                                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
+                                src={heroInfo.heroImage}
+                                alt={heroInfo.altText}
+                                className="max-h-72 w-full object-contain rounded-2xl drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
                             />
                         </div>
                     </div>
@@ -1417,7 +1427,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </button>
             </div>
 
-            {/* FLOATING BECNI AI ASSISTANT WIDGET */}
+            {/* FLOATING BEXI AI ASSISTANT WIDGET */}
             <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
                 {!isAiOpen ? (
                     <button
@@ -1428,7 +1438,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
                             <Sparkles size={13} />
                         </span>
-                        <span>Ask Becni AI</span>
+                        <span>Ask Bexi AI</span>
                     </button>
                 ) : (
                     <div className="relative flex h-[480px] w-80 sm:w-96 flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs">
@@ -1439,8 +1449,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     <Sparkles size={14} />
                                 </span>
                                 <div>
-                                    <p className="font-bold text-xs">Becni AI Assistant</p>
-                                    <p className="text-[10px] text-emerald-400 font-mono">Shopping Catalog Active</p>
+                                    <p className="font-bold text-xs">Bexi AI Assistant</p>
+                                    <p className="text-[10px] text-emerald-400 font-mono">Roman Urdu & English Active</p>
                                 </div>
                             </div>
                             <button
@@ -1485,7 +1495,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
                             <input
                                 type="text"
-                                placeholder="Ask about products, prices..."
+                                placeholder="Roman Urdu ya English mein poochain (e.g. delivery kab hogi?)..."
                                 value={aiInput}
                                 maxLength={500}
                                 onChange={(e) => setAiInput(e.target.value)}

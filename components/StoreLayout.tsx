@@ -10,6 +10,7 @@ import {
   isStoreAssistantResponse,
   type StoreAssistantRequest,
 } from '@/lib/storefront-types';
+import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
 import { 
   ShoppingBag, 
   Search, 
@@ -152,10 +153,19 @@ export default function StoreLayout({
     return defaultFeatured;
   }, [products]);
 
-  // AI Shopping Assistant chat state
+  // Dynamic Niche & Hero Info
+  const heroInfo = useMemo(
+    () => resolveStoreHero({ name: storeName, tagline, description }, products),
+    [storeName, tagline, description, products]
+  );
+
+  // Bexi AI Shopping Assistant chat state
   const [isAiChatOpen, setIsAiChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
-    { sender: 'ai', text: `Hi! 👋 I am your AI Shopping Assistant for ${storeName}. Ask me anything about our products, categories, or pricing!` }
+    {
+      sender: 'ai',
+      text: `Assalam-o-Alaikum / Hello! 👋 Main hoon **Bexi AI**, **${storeName}** ka personal shopping assistant.\n\nAap mujh se Roman Urdu ya English mein products, prices, bestsellers, ya delivery ke baray mein pooch saktay hain! 🛍️`
+    }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [isChatSending, setIsChatSending] = useState(false);
@@ -584,14 +594,16 @@ export default function StoreLayout({
                   borderColor: `${themeColor}35`
                 }}
               >
-                Style • Comfort • Performance
+                {heroInfo.badge}
               </span>
               <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.08]">
-                Premium<br />
-                <span style={{ color: themeColor }}>Footwear</span>
+                {heroInfo.headlineMain}<br />
+                {heroInfo.headlineHighlight && (
+                  <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
+                )}
               </h2>
               <p className="mt-3 text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
-                Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.
+                {tagline || heroInfo.subtext}
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -613,12 +625,12 @@ export default function StoreLayout({
               </div>
             </div>
 
-            {/* Performance Athletic Sneaker Hero Image (Matching Instagram Post) */}
-            <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative">
+            {/* Dynamic Concept-Matched Hero Image */}
+            <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative flex items-center justify-center">
               <img
-                src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80"
-                alt="Premium Footwear Sneaker"
-                className="size-full object-contain drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105 -rotate-6"
+                src={heroInfo.heroImage}
+                alt={heroInfo.altText}
+                className="max-h-80 w-full object-contain rounded-2xl drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
               />
               <div className="mx-auto mt-[-18px] h-3.5 w-3/4 rounded-full bg-slate-400/25 blur-md" />
             </div>
@@ -1071,7 +1083,7 @@ export default function StoreLayout({
         socialLinks={socialLinks}
       />
 
-      {/* 8. Floating AI Shopping Assistant Widget */}
+      {/* 8. Floating Bexi AI Shopping Assistant Widget */}
       <div className="fixed bottom-6 right-6 z-40">
         {!isAiChatOpen ? (
           <button
@@ -1081,7 +1093,7 @@ export default function StoreLayout({
             <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
               <Sparkles size={13} />
             </span>
-            <span>Ask AI Assistant</span>
+            <span>Ask Bexi AI</span>
           </button>
         ) : (
           <div className="relative flex h-[480px] w-80 sm:w-96 flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs">
@@ -1092,8 +1104,8 @@ export default function StoreLayout({
                   <Sparkles size={14} />
                 </span>
                 <div>
-                  <p className="font-bold text-xs">{storeName} AI</p>
-                  <p className="text-[10px] text-emerald-400 font-mono">Catalog Assistant Active</p>
+                  <p className="font-bold text-xs">{storeName} Bexi AI</p>
+                  <p className="text-[10px] text-emerald-400 font-mono">Roman Urdu & English Active</p>
                 </div>
               </div>
               <button
@@ -1112,7 +1124,7 @@ export default function StoreLayout({
                   className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed ${
+                    className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
                       msg.sender === 'user'
                         ? 'bg-emerald-600 text-white font-medium'
                         : 'bg-slate-900 border border-slate-800 text-slate-200'
@@ -1137,7 +1149,7 @@ export default function StoreLayout({
             <form onSubmit={handleSendChatMessage} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
               <input
                 type="text"
-                placeholder="Ask about perfumes, prices..."
+                placeholder="Roman Urdu ya English mein poochain (e.g. delivery kab hogi?)..."
                 value={chatInput}
                 maxLength={500}
                 onChange={(e) => setChatInput(e.target.value)}
