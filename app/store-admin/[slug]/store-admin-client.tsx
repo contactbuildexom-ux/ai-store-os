@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { THEME_PRESETS } from '@/lib/ai/ai-generator';
 import type { ProductRecord, StoreRecord } from '@/lib/store-repository';
+import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 
 interface StoreAdminClientProps {
   store: StoreRecord;
@@ -791,6 +792,26 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
           </div>
         </div>
       )}
+
+      {/* AI Voice-Controlled Store Management Assistant (Bilingual: English & Urdu) */}
+      <VoiceStoreAssistant 
+        storeId={currentStore.id}
+        storeSlug={currentStore.slug}
+        onActionExecuted={(actionType, actionData) => {
+          if (actionType === 'ADD_PRODUCT' && actionData.createdProduct) {
+            setProducts(prev => [actionData.createdProduct, ...prev]);
+            showNotice('success', `Voice AI added '${actionData.createdProduct.name}' to catalog!`);
+          } else if (actionType === 'DELETE_PRODUCT' && actionData.deletedItem) {
+            setProducts(prev => prev.filter(p => p.name.toLowerCase() !== actionData.deletedItem.toLowerCase()));
+            showNotice('success', `Voice AI deleted '${actionData.deletedItem}' from catalog.`);
+          } else if (actionType === 'UPDATE_PRODUCT' && actionData.updatedProduct) {
+            setProducts(prev => prev.map(p => p.id === actionData.updatedProduct.id ? actionData.updatedProduct : p));
+            showNotice('success', `Voice AI updated price for '${actionData.updatedProduct.name}'!`);
+          } else {
+            showNotice('success', 'Voice AI updated store settings.');
+          }
+        }}
+      />
     </div>
   );
 }

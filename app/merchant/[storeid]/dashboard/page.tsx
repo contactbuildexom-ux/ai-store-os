@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
+import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
@@ -979,6 +980,17 @@ export default function MerchantDashboardMaster() {
                     )}
                 </div>
             </main>
+
+            {/* AI Voice-Controlled Store Management Assistant (Bilingual: English & Urdu) */}
+            <VoiceStoreAssistant 
+                storeId={resolvedStoreId}
+                storeSlug={storeSlug}
+                onActionExecuted={() => {
+                    if (resolvedStoreId) {
+                        fetchMeshData(resolvedStoreId);
+                    }
+                }}
+            />
         </div>
     );
 }
