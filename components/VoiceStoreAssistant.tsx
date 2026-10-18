@@ -299,7 +299,18 @@ export function VoiceStoreAssistant({
                 {/* Sound Mute Toggle */}
                 <button
                   type="button"
-                  onClick={() => setIsSoundMuted(m => !m)}
+                  onClick={() => {
+                    setIsSoundMuted((m) => {
+                      const next = !m;
+                      if (next) {
+                        try {
+                          synthRef.current?.cancel();
+                          window.speechSynthesis?.cancel();
+                        } catch {}
+                      }
+                      return next;
+                    });
+                  }}
                   className={`rounded-lg p-1.5 transition ${isSoundMuted ? 'text-slate-500 hover:text-slate-300' : 'text-emerald-400 hover:bg-slate-800'}`}
                   title={isSoundMuted ? 'Unmute voice' : 'Mute voice'}
                 >
@@ -309,7 +320,13 @@ export function VoiceStoreAssistant({
                 {/* Close Button */}
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    try {
+                      synthRef.current?.cancel();
+                      window.speechSynthesis?.cancel();
+                    } catch {}
+                    setIsOpen(false);
+                  }}
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 >
                   <X size={16} />

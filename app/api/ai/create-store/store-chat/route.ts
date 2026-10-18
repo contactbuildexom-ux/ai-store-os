@@ -74,6 +74,61 @@ export async function POST(req: Request) {
       image_url: p.image_url,
     }));
 
+    // Try Gemini LLM for dynamic contextual conversational response in the user's exact language
+    const apiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
+    if (apiKey) {
+      try {
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+        const catalogOverview = bexiProducts.slice(0, 30).map(p => `- ${p.name} (Rs. ${p.price}): ${p.description || ''}`).join('\n');
+        const systemPrompt = `You are Bexi AI, the expert shopping assistant for "${storeInfo.name}".
+Store details:
+- Name: ${storeInfo.name}
+- Tagline: ${storeInfo.tagline || 'Verified Online Brand'}
+- WhatsApp: ${storeInfo.whatsapp_number}
+- Products Catalog:
+${catalogOverview}
+
+Instructions:
+1. Always respond in the EXACT same language and script as the customer:
+   - If they write in native Urdu script, reply in Urdu script.
+   - If they write in Roman Urdu (e.g. "ye kaisa hai?", "delivery kab hogi?", "size mil jayega?"), reply in natural, fluent Roman Urdu.
+   - If they write in English, reply in clear, professional English.
+2. Answer the specific question directly, concisely (2 to 3 sentences max), and helpfully.
+3. Be warm and encouraging, mentioning that they can order via WhatsApp or Add to Cart.
+4. Do not invent products not in the catalog.`;
+
+        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: 'POST',
+          signal: AbortSignal.timeout(6000),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              { role: 'user', parts: [{ text: `${systemPrompt}\n\nCustomer message: "${message}"` }] }
+            ],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 300 }
+          })
+        });
+
+        if (resp.ok) {
+          const geminiData = await resp.json();
+          const cand = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (typeof cand === 'string' && cand.trim()) {
+            return NextResponse.json({
+              success: true,
+              reply: cand.trim(),
+              store_name: storeInfo.name,
+              engine: 'gemini',
+            });
+          }
+        }
+      } catch (gemErr) {
+        console.warn('Gemini chat lookup failed, falling back to rule engine:', gemErr);
+      }
+    }
+
     const result = generateBexiReply({
       message: String(message),
       store: storeInfo,
@@ -86,6 +141,7 @@ export async function POST(req: Request) {
       store_name: storeInfo.name,
       language: result.languageDetected,
       matches_count: result.matchesCount,
+      engine: 'bexi-engine'
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Chat error' }, { status: 500 });

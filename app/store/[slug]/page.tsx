@@ -104,16 +104,20 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     notFound();
   }
 
+  const repoStoreFallback = await storeRepo.getStore(slug);
   const safeStore = {
     id: store.id,
     name: store.name,
     slug: store.slug,
-    plan: store.plan ?? 'basic',
-    whatsapp_number: store.whatsapp_number ?? '',
+    plan: store.plan ?? repoStoreFallback?.plan ?? 'basic',
+    whatsapp_number: store.whatsapp_number ?? repoStoreFallback?.whatsapp_number ?? '',
     accepts_cod: store.accepts_cod ?? true,
     accepts_advance: store.accepts_advance ?? false,
     advance_percentage: store.advance_percentage ?? 50,
-    tagline: (store as Record<string, unknown>).tagline as string ?? null,
+    tagline: (store as Record<string, unknown>).tagline as string ?? repoStoreFallback?.tagline ?? null,
+    primary_color: (store as Record<string, unknown>).primary_color as string ?? repoStoreFallback?.primary_color ?? '#1976d2',
+    theme_color: settingsData?.theme_color ?? (store as Record<string, unknown>).primary_color as string ?? repoStoreFallback?.primary_color ?? '#1976d2',
+    selected_theme: settingsData?.selected_theme ?? (store as Record<string, unknown>).selected_theme as string ?? repoStoreFallback?.selected_theme ?? 'royal-gold',
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)

@@ -10,7 +10,7 @@ export interface StoreRecord {
   tagline: string;
   header_title?: string;
   description?: string;
-  plan: 'free' | 'pro' | 'advanced';
+  plan: 'free' | 'basic' | 'pro' | 'advanced';
   selected_theme: string;
   primary_color: string;
   secondary_color?: string;
@@ -499,6 +499,41 @@ class StoreRepository {
     }
 
     return store;
+  }
+
+  async updateStore(storeSlugOrId: string, updates: Partial<StoreRecord>): Promise<StoreRecord> {
+    const store = await this.getStore(storeSlugOrId);
+    if (!store) throw new Error(`Store ${storeSlugOrId} not found`);
+
+    const updated = { ...store, ...updates };
+    memoryStores.set(updated.slug, updated);
+    memoryStores.set(updated.id, updated);
+
+    const supabase = this.getSupabase();
+    if (supabase) {
+      try {
+        const payload: Record<string, any> = {};
+        if (updates.name) payload.name = updates.name;
+        if (updates.plan) {
+          payload.plan = updates.plan;
+          payload.plan_type = updates.plan;
+        }
+        if (updates.whatsapp_number) payload.whatsapp_number = updates.whatsapp_number;
+        if (updates.primary_color) payload.primary_color = updates.primary_color;
+        if (updates.selected_theme) payload.selected_theme = updates.selected_theme;
+        if (updates.tagline) {
+          payload.tagline = updates.tagline;
+          payload.header_title = updates.tagline;
+        }
+        if (Object.keys(payload).length > 0) {
+          await supabase.from('stores').update(payload).eq('id', store.id);
+        }
+      } catch (e) {
+        console.warn('Supabase updateStore warning:', e);
+      }
+    }
+
+    return updated;
   }
 }
 

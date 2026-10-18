@@ -81,13 +81,32 @@ function whatsappPhone(value: string) {
     return phone;
 }
 
+function getCategoryIcon(name: string): string {
+    const n = name.toLowerCase();
+    if (n.includes('shoe') || n.includes('sneak') || n.includes('footwear') || n.includes('boot') || n.includes('kick') || n.includes('trainer')) return '👟';
+    if (n.includes('perfume') || n.includes('fragrance') || n.includes('oud') || n.includes('attar') || n.includes('scent')) return '🌸';
+    if (n.includes('cloth') || n.includes('shirt') || n.includes('dress') || n.includes('wear') || n.includes('pret') || n.includes('kurta') || n.includes('hoodie') || n.includes('lawn')) return '👗';
+    if (n.includes('men') || n.includes('suit') || n.includes('groom') || n.includes('waistcoat')) return '🤵';
+    if (n.includes('watch') || n.includes('smartwatch')) return '⌚';
+    if (n.includes('bag') || n.includes('leather') || n.includes('wallet') || n.includes('clutch')) return '🎒';
+    if (n.includes('jewel') || n.includes('ring') || n.includes('necklace') || n.includes('gold') || n.includes('kundan')) return '💍';
+    if (n.includes('skin') || n.includes('beauty') || n.includes('serum') || n.includes('cosmetic') || n.includes('cleanser')) return '🧴';
+    if (n.includes('phone') || n.includes('tech') || n.includes('electronic') || n.includes('gadget')) return '📱';
+    if (n.includes('headphone') || n.includes('audio') || n.includes('earbud')) return '🎧';
+    if (n.includes('home') || n.includes('decor') || n.includes('candle') || n.includes('furni') || n.includes('vase')) return '🛋️';
+    if (n.includes('honey') || n.includes('tea') || n.includes('food') || n.includes('organic') || n.includes('superfood')) return '🌿';
+    if (n.includes('gym') || n.includes('sport') || n.includes('fitness')) return '⚡';
+    if (n.includes('baby') || n.includes('kid') || n.includes('toy')) return '🧸';
+    return '✨';
+}
+
 export default function StorefrontClient({ store, settings, products, delivery }: Props) {
     const [liveStore, setLiveStore] = useState(store);
     const [liveProducts, setLiveProducts] = useState(products);
     const [catalogLoading, setCatalogLoading] = useState(true);
     const [catalogError, setCatalogError] = useState('');
 
-    const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.theme?.primaryColor || '#10b981';
+    const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.primary_color || (liveStore as any)?.theme?.primaryColor || '#1976d2';
     const bannerText = settings?.banner_text || '✨ Free delivery nationwide on orders above Rs. 3,000!';
     const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
 
@@ -98,6 +117,11 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [toastMessage, setToastMessage] = useState('');
+
+    // Product detail modal state (supports multiple images carousel & quick order)
+    const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
+    const [modalQty, setModalQty] = useState(1);
+    const [modalActiveImgIdx, setModalActiveImgIdx] = useState(0);
 
     // Cart and checkout states
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -133,16 +157,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
         return () => clearTimeout(timer);
     }, [toastMessage]);
 
-    // Derived catalog values
+    // Derived catalog values (dynamically relatable to store niche, never irrelevant categories)
     const categories = useMemo(() => {
         const set = new Set<string>();
         liveProducts.forEach((p) => {
             const cat = (p as any).category || (p as any).category_name;
-            if (cat) set.add(cat);
+            if (cat && cat.trim() && cat !== 'All') set.add(cat.trim());
         });
-        if (set.size === 0) return ['All', 'Electronics', 'Fashion', 'Home', 'Accessories'];
-        return ['All', ...Array.from(set)];
-    }, [liveProducts]);
+        if (set.size > 0) return ['All', ...Array.from(set)];
+        const name = `${liveStore.name} ${(liveStore as any).tagline || ''}`.toLowerCase();
+        if (name.includes('shoe') || name.includes('sneaker') || name.includes('kicks')) return ['All', 'Running Shoes', 'Streetwear Sneakers', 'Casual Kicks', 'Athletic Trainers'];
+        if (name.includes('perfume') || name.includes('oud') || name.includes('fragrance') || name.includes('attar')) return ['All', 'Artisanal Ouds', 'French EDP', 'Floral Scents', 'Gift Sets'];
+        if (name.includes('pret') || name.includes('lawn') || name.includes('dress') || name.includes('couture') || name.includes('suit')) return ['All', 'Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Dupattas'];
+        if (name.includes('mens') || name.includes('men') || name.includes('kurta')) return ['All', 'Tailored Kurtas', 'Waistcoats', 'Formal Shirts', 'Accessories'];
+        if (name.includes('skin') || name.includes('glow') || name.includes('serum') || name.includes('beauty')) return ['All', 'Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'];
+        return ['All', 'Featured Collection', 'Bestsellers', 'New Arrivals'];
+    }, [liveProducts, liveStore]);
 
     const filteredProducts = useMemo(() => {
         return liveProducts.filter((p) => {
@@ -450,7 +480,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-28">
+        <div
+            className="min-h-screen font-sans text-slate-900 pb-28"
+            style={{
+                backgroundColor: `${themeColor}09`,
+                backgroundImage: `radial-gradient(${themeColor}15 1px, transparent 1px)`,
+                backgroundSize: '24px 24px',
+            }}
+        >
             {/* Live Catalog Status Messages */}
             {catalogLoading && (
                 <div role="status" className="bg-blue-600 px-4 py-1.5 text-center text-xs font-medium text-white animate-pulse">
@@ -514,20 +551,11 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         <a href="#featured" className="transition hover:text-blue-600">Shop</a>
                         <a href="#categories" className="transition hover:text-blue-600">Categories</a>
                         <a href="#products" className="transition hover:text-blue-600">All Products</a>
-                        <a href="#feature-strip" className="transition hover:text-blue-600">About</a>
+                        <a href="#about" className="transition hover:text-blue-600">About</a>
                     </nav>
 
-                    {/* Right: WhatsApp & Cart Icon Button with Counter Badge */}
+                    {/* Right: Cart Icon Button with Counter Badge */}
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <a
-                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
-                        >
-                            <MessageCircle size={14} className="text-emerald-600" /> WhatsApp
-                        </a>
-
                         <button
                             type="button"
                             onClick={() => setIsCartOpen(true)}
@@ -544,27 +572,6 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </span>
                             )}
                         </button>
-                    </div>
-                </div>
-
-                {/* Sub-Header Desktop Navigation Strip */}
-                <div className="hidden border-t border-slate-100 bg-slate-50/60 px-6 py-2 md:block">
-                    <div className="mx-auto flex max-w-7xl items-center justify-between text-xs text-slate-600">
-                        <div className="flex items-center gap-4">
-                            <span className="font-semibold text-emerald-700">✓ Verified Merchant</span>
-                            <span>•</span>
-                            <span>🚚 Nationwide Express Delivery</span>
-                            <span>•</span>
-                            <span>💳 Cash on Delivery Available</span>
-                        </div>
-                        <a
-                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 font-semibold text-emerald-700 hover:text-emerald-800"
-                        >
-                            <MessageCircle size={14} /> Official WhatsApp Support
-                        </a>
                     </div>
                 </div>
             </header>
@@ -674,73 +681,68 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* Main Page Body */}
-            <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 space-y-6">
-                {/* 1. Hero Promo Section (Matching Instagram Post Screen) */}
-                <section
-                    id="hero"
-                    className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-slate-100/70 p-6 sm:p-10 shadow-sm transition duration-500"
-                >
-                    <div
-                        className="absolute -right-16 -top-16 size-72 rounded-full blur-3xl opacity-20 pointer-events-none"
-                        style={{ backgroundColor: themeColor }}
-                    />
-                    <div
-                        className="absolute -left-16 -bottom-16 size-72 rounded-full blur-3xl opacity-10 pointer-events-none"
-                        style={{ backgroundColor: themeColor }}
-                    />
+            {/* 1. Full-Width Hero Section covering full screen width, styled with chosen store theme */}
+            <section
+                id="hero"
+                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
+                style={{
+                    background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
+                    borderColor: `${themeColor}30`,
+                }}
+            >
+                <div
+                    className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
+                    style={{ backgroundColor: themeColor }}
+                />
+                <div
+                    className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-15 pointer-events-none"
+                    style={{ backgroundColor: themeColor }}
+                />
 
-                    <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-8 relative z-10">
-                        <div className="max-w-xl text-left space-y-3">
-                            <span
-                                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold tracking-wide"
-                                style={{
-                                    backgroundColor: `${themeColor}15`,
-                                    color: themeColor,
-                                    borderColor: `${themeColor}35`
-                                }}
+                <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:py-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
+                    <div className="max-w-xl text-left space-y-4">
+                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.12]">
+                            {heroInfo.headlineMain}{' '}
+                            {heroInfo.headlineHighlight && (
+                                <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
+                            )}
+                        </h2>
+                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
+                            {liveStore.tagline || heroInfo.subtext}
+                        </p>
+
+                        <div className="pt-2 flex flex-wrap items-center gap-3">
+                            <a
+                                href="#featured"
+                                className="rounded-full px-7 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
                             >
-                                {heroInfo.badge}
-                            </span>
-                            <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-tight">
-                                {heroInfo.headlineMain}{' '}
-                                {heroInfo.headlineHighlight && (
-                                    <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
-                                )}
-                            </h2>
-                            <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed font-medium">
-                                {liveStore.tagline || heroInfo.subtext}
-                            </p>
-
-                            <div className="pt-3 flex flex-wrap items-center gap-3">
-                                <a
-                                    href="#featured"
-                                    className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    Shop Now →
-                                </a>
-                                <a
-                                    href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:border-slate-300"
-                                >
-                                    <MessageCircle size={14} className="text-emerald-600" /> Order on WhatsApp
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Floating Concept-Matched Hero Image */}
-                        <div className="w-52 sm:w-72 lg:w-84 shrink-0 relative flex items-center justify-center">
-                            <img
-                                src={heroInfo.heroImage}
-                                alt={heroInfo.altText}
-                                className="max-h-72 w-full object-contain rounded-2xl drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
-                            />
+                                Shop Collection →
+                            </a>
+                            <a
+                                href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-5 py-3 text-xs font-semibold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
+                            >
+                                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
+                            </a>
                         </div>
                     </div>
-                </section>
+
+                    {/* Floating Concept-Matched Hero Image */}
+                    <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative flex items-center justify-center">
+                        <img
+                            src={heroInfo.heroImage}
+                            alt={heroInfo.altText}
+                            className="max-h-72 sm:max-h-84 lg:max-h-96 w-full object-contain rounded-2xl drop-shadow-[0_20px_30px_rgba(0,0,0,0.14)] transition duration-500 hover:scale-105"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Main Page Body */}
+            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
 
                 {/* 2. Featured Products Section (Matching Post Grid) */}
                 <section id="featured" className="space-y-4 pt-1">
@@ -766,7 +768,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         {featuredItems.map((item) => (
                             <article
                                 key={item.id}
-                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                                onClick={() => {
+                                    setSelectedProductForModal(item);
+                                    setModalQty(1);
+                                    setModalActiveImgIdx(0);
+                                }}
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                             >
                                 <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
                                     <img
@@ -787,7 +794,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         {/* Dynamic circular cart button matching theme */}
                                         <button
                                             type="button"
-                                            onClick={() => addToCart(item, true)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                addToCart(item, true);
+                                            }}
                                             aria-label={`Add ${item.name} to cart`}
                                             className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
                                             style={{ backgroundColor: themeColor }}
@@ -801,42 +811,54 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 3. Category Icons Strip (Matching Screenshot) */}
+                {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
                 <section id="categories" className="pt-1">
-                    <div className="grid grid-cols-4 gap-2 sm:gap-4">
-                        {[
-                            { id: 'Electronics', name: 'Electronics', icon: '📱' },
-                            { id: 'Fashion', name: 'Fashion', icon: '👕' },
-                            { id: 'Home', name: 'Home', icon: '🏠' },
-                            { id: 'Accessories', name: 'Accessories', icon: '🎧' },
-                        ].map((cat) => (
+                    <div className="flex items-center justify-between pb-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                            Explore Categories
+                        </h4>
+                        {selectedCategory !== 'All' && (
                             <button
-                                key={cat.id}
                                 type="button"
-                                onClick={() => {
-                                    setSelectedCategory(cat.id);
-                                    const el = document.getElementById('products');
-                                    el?.scrollIntoView({ behavior: 'smooth' });
-                                }}
-                                className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 text-center transition hover:shadow-xs active:scale-95 ${
-                                    selectedCategory === cat.id
-                                        ? 'shadow-xs font-bold'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                                }`}
-                                style={
-                                    selectedCategory === cat.id
-                                        ? {
-                                            borderColor: themeColor,
-                                            backgroundColor: `${themeColor}15`,
-                                            color: themeColor,
-                                        }
-                                        : {}
-                                }
+                                onClick={() => setSelectedCategory('All')}
+                                className="text-xs font-bold text-blue-600 hover:underline"
                             >
-                                <span className="text-2xl">{cat.icon}</span>
-                                <span className="text-[11px] font-bold sm:text-xs truncate">{cat.name}</span>
+                                Reset to All
                             </button>
-                        ))}
+                        )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3.5">
+                        {categories.filter((c) => c !== 'All').map((cat) => {
+                            const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+                            return (
+                                <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedCategory(isSelected ? 'All' : cat);
+                                        const el = document.getElementById('products');
+                                        el?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                    className={`flex items-center gap-2.5 rounded-2xl border p-3 text-left transition hover:shadow-xs active:scale-95 ${
+                                        isSelected
+                                            ? 'shadow-xs font-bold'
+                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                    }`}
+                                    style={
+                                        isSelected
+                                            ? {
+                                                borderColor: themeColor,
+                                                backgroundColor: `${themeColor}15`,
+                                                color: themeColor,
+                                            }
+                                            : {}
+                                    }
+                                >
+                                    <span className="text-2xl shrink-0">{getCategoryIcon(cat)}</span>
+                                    <span className="text-xs font-bold truncate leading-tight">{cat}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </section>
 
@@ -930,7 +952,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             {filteredProducts.map((product) => (
                                 <article
                                     key={product.id}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                                    onClick={() => {
+                                        setSelectedProductForModal(product);
+                                        setModalQty(1);
+                                        setModalActiveImgIdx(0);
+                                    }}
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                                 >
                                     {/* Image Container with Badges */}
                                     <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
@@ -963,7 +990,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         {/* Quick WhatsApp Single Order Button */}
                                         <button
                                             type="button"
-                                            onClick={() => handleDirectWhatsApp(product)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDirectWhatsApp(product);
+                                            }}
                                             title="Order this product directly on WhatsApp"
                                             className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-600 hover:scale-110 active:scale-95"
                                         >
@@ -998,7 +1028,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             {/* Circular Floating Cart Button (Matching Screenshot) */}
                                             <button
                                                 type="button"
-                                                onClick={() => addToCart(product, true)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    addToCart(product, true);
+                                                }}
                                                 aria-label={`Add ${product.name} to cart`}
                                                 className="grid size-9 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95 sm:size-10"
                                                 style={{ backgroundColor: themeColor }}
@@ -1046,7 +1079,31 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 5. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
+                {/* 5. About Store Section (Linked directly from header navigation) */}
+                <section id="about" className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
+                    <div className="max-w-3xl space-y-3">
+                        <span
+                            className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+                            style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+                        >
+                            About {liveStore.name}
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                            Crafted for Quality & Seamless Shopping
+                        </h3>
+                        <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
+                            {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ''}
+                            Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
+                        </p>
+                        <div className="pt-2 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
+                            <span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-emerald-600" /> 100% Genuine Items</span>
+                            <span className="flex items-center gap-1.5"><Truck size={16} className="text-blue-600" /> Cash on Delivery Nationwide</span>
+                            <span className="flex items-center gap-1.5"><MessageCircle size={16} className="text-emerald-600" /> Direct WhatsApp Assistance</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 6. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
                 <section className="overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
                     <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
@@ -1254,7 +1311,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         <input
                                             type="text"
                                             required
-                                            placeholder="e.g. Abeera Munir"
+                                            placeholder=""
                                             value={customerName}
                                             onChange={(e) => setCustomerName(e.target.value)}
                                             className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
@@ -1266,9 +1323,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         <input
                                             type="tel"
                                             required
-                                            placeholder="0300 1234567"
+                                            placeholder="0300-1234567"
                                             value={customerPhone}
-                                            onChange={(e) => setCustomerPhone(e.target.value)}
+                                            onChange={(e) => {
+                                                const raw = e.target.value.replace(/[^\d\-/]/g, '');
+                                                setCustomerPhone(raw);
+                                            }}
                                             className="mt-1 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                         />
                                     </div>
@@ -1512,6 +1572,207 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 )}
             </div>
+
+            {/* Interactive Product Details Modal (Supports multiple images gallery, quantity, Add to Cart & WhatsApp Order) */}
+            {selectedProductForModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0" onClick={() => setSelectedProductForModal(null)} />
+                    <div className="relative z-10 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 sm:p-7 shadow-2xl text-slate-900 animate-in zoom-in-95 duration-200">
+                        {/* Close button */}
+                        <button
+                            type="button"
+                            onClick={() => setSelectedProductForModal(null)}
+                            aria-label="Close product modal"
+                            className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition z-20"
+                        >
+                            <X size={16} />
+                        </button>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {/* Images Gallery */}
+                            <div className="space-y-3">
+                                {(() => {
+                                    const rawImages = (selectedProductForModal.image_url || '').split(',').map((s) => s.trim()).filter(Boolean);
+                                    const images = rawImages.length > 0 ? rawImages : [];
+                                    const activeImg = images[modalActiveImgIdx] || images[0] || '';
+
+                                    return (
+                                        <>
+                                            <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-200/80">
+                                                {activeImg ? (
+                                                    <Image
+                                                        src={activeImg}
+                                                        alt={selectedProductForModal.name}
+                                                        width={600}
+                                                        height={600}
+                                                        unoptimized
+                                                        className="size-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="grid size-full place-items-center bg-slate-100 text-4xl font-black text-slate-300">
+                                                        {selectedProductForModal.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                                <span className="absolute left-3 top-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-xs">
+                                                    ✓ Verified Stock
+                                                </span>
+
+                                                {images.length > 1 && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setModalActiveImgIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                                                            aria-label="Previous image"
+                                                            className="absolute left-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
+                                                        >
+                                                            ‹
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setModalActiveImgIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                                                            aria-label="Next image"
+                                                            className="absolute right-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
+                                                        >
+                                                            ›
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Thumbnail carousel / scroll */}
+                                            {images.length > 1 && (
+                                                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                                                    {images.map((img, idx) => (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            onClick={() => setModalActiveImgIdx(idx)}
+                                                            className={`relative size-16 shrink-0 overflow-hidden rounded-xl border-2 transition ${
+                                                                modalActiveImgIdx === idx
+                                                                    ? 'ring-2 ring-offset-1'
+                                                                    : 'opacity-70 hover:opacity-100 border-slate-200'
+                                                            }`}
+                                                            style={modalActiveImgIdx === idx ? { borderColor: themeColor } : {}}
+                                                        >
+                                                            <Image
+                                                                src={img}
+                                                                alt=""
+                                                                width={80}
+                                                                height={80}
+                                                                unoptimized
+                                                                className="size-full object-cover"
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Product Info & Controls */}
+                            <div className="flex flex-col justify-between space-y-4">
+                                <div className="space-y-2">
+                                    {(selectedProductForModal as any).category && (
+                                        <span
+                                            className="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                            style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
+                                        >
+                                            {(selectedProductForModal as any).category}
+                                        </span>
+                                    )}
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+                                        {selectedProductForModal.name}
+                                    </h3>
+                                    <div className="text-2xl font-extrabold" style={{ color: themeColor }}>
+                                        {money(Number(selectedProductForModal.price) * modalQty)}
+                                        {modalQty > 1 && (
+                                            <span className="text-xs font-normal text-slate-500 ml-2">
+                                                ({money(selectedProductForModal.price)} each)
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-1">
+                                        {selectedProductForModal.description || 'Premium hand-selected store item with verified durability and comfort.'}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3 pt-2 border-t border-slate-100">
+                                    {/* Quantity Selector */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-700">Quantity</span>
+                                        <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalQty((q) => Math.max(1, q - 1))}
+                                                className="grid size-7 place-items-center rounded-lg bg-white font-bold text-slate-700 shadow-xs hover:bg-slate-100 active:scale-95"
+                                            >
+                                                -
+                                            </button>
+                                            <span className="w-10 text-center text-xs font-bold text-slate-900">
+                                                {modalQty}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalQty((q) => q + 1)}
+                                                className="grid size-7 place-items-center rounded-lg bg-white font-bold text-slate-700 shadow-xs hover:bg-slate-100 active:scale-95"
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="grid grid-cols-1 gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                for (let i = 0; i < modalQty; i++) {
+                                                    addToCart(selectedProductForModal, false);
+                                                }
+                                                setIsCartOpen(true);
+                                                setSelectedProductForModal(null);
+                                            }}
+                                            className="flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95"
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            <ShoppingBag size={15} /> Add to Cart ({modalQty})
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const phone = whatsappPhone(liveStore.whatsapp_number || '923001234567');
+                                                const totalPrice = Number(selectedProductForModal.price) * modalQty;
+                                                const text =
+                                                    `🛍️ *INSTANT ORDER — ${liveStore.name.toUpperCase()}*\n` +
+                                                    `----------------------------------------\n` +
+                                                    `Hello! I want to order:\n` +
+                                                    `• *Product:* ${selectedProductForModal.name}\n` +
+                                                    `• *Quantity:* ${modalQty}\n` +
+                                                    `• *Total Price:* ${money(totalPrice)}\n` +
+                                                    `• *Store URL:* https://${liveStore.slug}.buildexom.store\n\n` +
+                                                    `Please confirm my order and share delivery details!`;
+                                                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+                                            }}
+                                            className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 py-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100"
+                                        >
+                                            <MessageCircle size={15} className="text-emerald-600" /> Order on WhatsApp
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-center gap-3 pt-1 text-[10px] text-slate-500">
+                                        <span>🚚 Fast Nationwide Courier</span>
+                                        <span>•</span>
+                                        <span>📦 Cash on Delivery</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Quick Toast Notification */}
             {toastMessage && (

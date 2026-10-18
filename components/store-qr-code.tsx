@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { Download, ExternalLink, QrCode } from 'lucide-react';
+import { Download, ExternalLink, QrCode, Copy, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
 
@@ -30,6 +30,7 @@ export function StoreQRCode({
   const safeSlug = storeSlug.trim();
   const [storeUrl, setStoreUrl] = useState('');
   const [qrError, setQrError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!safeSlug) return;
@@ -81,6 +82,13 @@ export function StoreQRCode({
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }
+
+  function handleCopy() {
+    if (!storeUrl) return;
+    navigator.clipboard.writeText(storeUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
   if (!safeSlug) return null;
@@ -155,32 +163,31 @@ export function StoreQRCode({
         )}
       </div>
 
-      {/* Storefront Link & Actions */}
+      {/* Storefront Actions: Copy Link & Download (Only 'Download') */}
       {storeUrl && (
-        <div className="mt-3 text-center">
-          <a
-            href={storeUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex max-w-full items-center gap-1.5 text-xs font-semibold text-[#1976d2] hover:text-[#0b2545] hover:underline"
+        <div className="mt-4 flex items-center justify-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:border-slate-300"
           >
-            <span className="truncate">{storeUrl}</span>
-            <ExternalLink size={13} className="shrink-0" aria-hidden="true" />
-          </a>
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-slate-500" />}
+            <span>{copied ? 'Copied!' : 'Copy Link'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={downloadQrCode}
+            disabled={!storeUrl}
+            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50"
+          >
+            <Download size={14} />
+            <span>Download</span>
+          </button>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={downloadQrCode}
-        disabled={!storeUrl}
-        className="mt-3.5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#0b2545] px-4 text-xs font-bold text-white transition hover:bg-[#1976d2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
-      >
-        <Download size={15} aria-hidden="true" />
-        Download QR code (SVG)
-      </button>
       <p className="mt-2 text-center text-[10px] leading-4 text-slate-400">
-        Scalable vector QR code ready to print on product packaging, delivery bags, and flyers.
+        Scalable vector QR code ready to print on packaging and flyers.
       </p>
     </section>
   );
