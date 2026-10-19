@@ -616,7 +616,7 @@ export default function MerchantStoreSetupModal({
                     onChange={(e) => handleSelectIdea(e.target.value)}
                     className={`${INPUT} font-medium`}
                   >
-                    <option value="">✨ Select a Curated Store Idea / Niche (or write your own)</option>
+                    <option value="">Select a Curated Store Idea / Niche (or write your own)</option>
                     {STORE_IDEA_PRESETS.map((grp) => (
                       <optgroup key={grp.category} label={grp.category}>
                         {grp.options.map((opt) => (

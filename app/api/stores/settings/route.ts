@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
+import { getStoreNicheColor, THEME_PALETTES } from "@/lib/store-theme";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -152,7 +153,8 @@ export async function GET(req: Request) {
     if (!supabase) {
       const { storeRepo } = await import("@/lib/store-repository");
       const repoStore = await storeRepo.getStore(storeId);
-      const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || "#1d7555";
+      const nicheColor = getStoreNicheColor(repoStore?.name, repoStore?.slug);
+      const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || (repoStore?.selected_theme && THEME_PALETTES[repoStore.selected_theme]) || nicheColor;
       return NextResponse.json({
         success: true,
         settings: {
@@ -175,6 +177,8 @@ export async function GET(req: Request) {
           name: repoStore.name,
           slug: repoStore.slug,
           plan: repoStore.plan || "basic",
+          primary_color: themeColor,
+          selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
           whatsapp_number: repoStore.whatsapp_number,
           accepts_cod: true,
           accepts_advance: false,
@@ -186,7 +190,7 @@ export async function GET(req: Request) {
 
     const [settingsResult, storeResult, paymentResult] = await Promise.all([
       supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
-      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
+      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
       supabase.from("store_payments").select("provider_name, account_number, is_active").eq("store_id", storeId).eq("is_active", true),
     ]);
 
@@ -202,7 +206,7 @@ export async function GET(req: Request) {
     if (settingsError && settingsError.code !== "PGRST116") throw settingsError;
     if (isMissingStoreColumn(storeError)) {
       const fallback = await supabase.from("stores").select("id, name, slug").eq("id", storeId).maybeSingle();
-      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
+      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, primary_color: null, selected_theme: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
       storeError = fallback.error;
     }
     if (storeError) throw storeError;
@@ -210,10 +214,19 @@ export async function GET(req: Request) {
 
     const accountNumber = (provider: string) => paymentMethods?.find((method) => method.provider_name.toLowerCase().includes(provider) && method.account_number)?.account_number ?? "";
 
+    const nicheColor = getStoreNicheColor(store?.name, store?.slug);
+    const resolvedThemeColor = settings?.theme_color 
+      || (store as any)?.primary_color 
+      || ((store as any)?.selected_theme && THEME_PALETTES[(store as any).selected_theme])
+      || (settings?.selected_theme && THEME_PALETTES[settings.selected_theme])
+      || nicheColor;
+
     return NextResponse.json({
       success: true,
       settings: settings ? {
         ...settings,
+        theme_color: resolvedThemeColor,
+        selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
         accepts_cod: store?.accepts_cod ?? true,
         accepts_advance: store?.accepts_advance ?? false,
@@ -222,6 +235,8 @@ export async function GET(req: Request) {
         jazzcash_number: accountNumber("jazz") || settings.jazzcash_number || "",
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
+        theme_color: resolvedThemeColor,
+        selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
         accepts_cod: store?.accepts_cod ?? true,
         accepts_advance: store?.accepts_advance ?? false,
@@ -230,7 +245,10 @@ export async function GET(req: Request) {
         jazzcash_number: accountNumber("jazz"),
         easypaisa_number: accountNumber("easy"),
       },
-      store,
+      store: store ? {
+        ...store,
+        primary_color: resolvedThemeColor,
+      } : null,
     });
   } catch (error) {
     try {

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
+import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
 import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
@@ -200,7 +201,15 @@ export default function MerchantDashboardMaster() {
                     : {},
             });
             const payload: {
-                store?: { id: string; name: string | null; slug: string | null; plan: string | null; whatsapp_number: string | null };
+                store?: { 
+                    id: string; 
+                    name: string | null; 
+                    slug: string | null; 
+                    plan: string | null; 
+                    whatsapp_number: string | null;
+                    primary_color?: string | null;
+                    selected_theme?: string | null;
+                };
                 error?: string;
             } = await response.json();
             if (!response.ok) throw new Error(payload.error || 'Unable to load your store.');
@@ -230,8 +239,16 @@ export default function MerchantDashboardMaster() {
                 }),
                 fetchMeshData(storeData.id),
             ]);
+
+            const nicheColor = getStoreNicheColor(storeData.name, storeData.slug);
+            const resolvedColor = settingsData?.settings?.theme_color 
+                || storeData.primary_color 
+                || (settingsData?.settings?.selected_theme && THEME_PALETTES[settingsData.settings.selected_theme])
+                || (storeData.selected_theme && THEME_PALETTES[storeData.selected_theme])
+                || nicheColor;
+            setThemeColor(resolvedColor);
+
             if (settingsData.settings) {
-                setThemeColor(settingsData.settings.theme_color || '#1d7555');
                 setBannerText(settingsData.settings.banner_text || '');
                 setLogoUrl(settingsData.settings.logo_url || '');
                 setWhatsappNumber(settingsData.settings.whatsapp_number || '');
@@ -469,10 +486,14 @@ export default function MerchantDashboardMaster() {
             </aside>
 
             {/* Main Content Area */}
-            <main className="min-w-0 flex-1 flex flex-col overflow-y-auto">
-                <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:px-8">
-                    <div><p className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">Merchant workspace</p><h1 className="mt-1 text-lg font-semibold capitalize tracking-tight text-slate-900">{activeTab === 'overview' ? 'Store overview' : activeTab}</h1></div>
-                    <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+            <main className="merchant-main min-w-0 flex-1 flex flex-col overflow-y-auto bg-slate-50" data-dashboard-main>
+                <div className="h-1 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}88, transparent)` }} />
+                <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Merchant workspace</p>
+                        <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">{activeTab === 'overview' ? 'Store overview' : activeTab}</h1>
+                    </div>
+                    <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
                         <Eye size={14} /> <span className="hidden sm:inline">View storefront</span><ExternalLink size={12} />
                     </a>
                 </header>
@@ -487,16 +508,44 @@ export default function MerchantDashboardMaster() {
                     {/* OVERVIEW */}
                     {activeTab === 'overview' && (
                         <>
-                            <section className="relative overflow-hidden rounded-2xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
-                                <div className="absolute -right-12 -top-24 size-72 rounded-full border border-white/10" />
-                                <div className="absolute -right-2 -top-14 size-52 rounded-full border border-white/10" />
-                                <div className="relative flex flex-wrap items-end justify-between gap-5">
+                            <section 
+                                className="relative overflow-hidden rounded-2xl p-6 text-white shadow-md sm:p-8"
+                                style={{
+                                    background: `linear-gradient(135deg, ${themeColor} 0%, ${darkenColor(themeColor, 35)} 100%)`,
+                                    color: '#ffffff',
+                                }}
+                            >
+                                <div className="absolute -right-12 -top-24 size-72 rounded-full border border-white/15 pointer-events-none" />
+                                <div className="absolute -right-2 -top-14 size-52 rounded-full border border-white/10 pointer-events-none" />
+                                <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
                                     <div className="max-w-xl">
-                                        <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-200"><Sparkles size={12} /> Store workspace</p>
-                                        <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back, {storeName}</h2>
-                                        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">Your products, orders, and storefront performance at a glance. Keep your catalog fresh and stay on top of every order.</p>
+                                        <span 
+                                            className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white border border-white/25 shadow-xs"
+                                            style={{ color: '#ffffff' }}
+                                        >
+                                            <Sparkles size={12} className="text-white" /> Store workspace
+                                        </span>
+                                        <h2 
+                                            className="mt-3.5 text-2xl font-black tracking-tight drop-shadow-sm sm:text-3xl text-white"
+                                            style={{ color: '#ffffff' }}
+                                        >
+                                            Welcome back, {storeName}
+                                        </h2>
+                                        <p 
+                                            className="mt-2 max-w-lg text-sm font-medium leading-relaxed drop-shadow-xs"
+                                            style={{ color: 'rgba(255, 255, 255, 0.95)' }}
+                                        >
+                                            Your products, orders, and storefront performance at a glance. Keep your catalog fresh and stay on top of every order.
+                                        </p>
                                     </div>
-                                    <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-sm transition hover:opacity-90" style={{ backgroundColor: themeColor }}><CirclePlus size={15} /> Add a product</button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
+                                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-xs font-bold shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl active:scale-95" 
+                                        style={{ color: themeColor }}
+                                    >
+                                        <CirclePlus size={16} /> Add a product
+                                    </button>
                                 </div>
                             </section>
 
@@ -609,9 +658,52 @@ export default function MerchantDashboardMaster() {
                                         <input type="url" value={logoUrl} onChange={event => { setLogoUrl(event.target.value); setLogoFile(null); }} placeholder="https://example.com/logo.png" className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </label>
                                 </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">Theme Color</label>
-                                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 border rounded cursor-pointer" />
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-900">Store Theme & Accent Color</label>
+                                            <p className="text-[11px] text-slate-500">Pick a professional niche preset or select custom brand hex:</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
+                                            <span className="size-3.5 rounded-full" style={{ backgroundColor: themeColor }} />
+                                            <span className="font-mono text-xs font-bold uppercase text-slate-800">{themeColor}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Preset Chips */}
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 pt-1">
+                                        {THEME_OPTIONS.map((opt) => {
+                                            const isSelected = themeColor.toLowerCase() === opt.color.toLowerCase();
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setThemeColor(opt.color)}
+                                                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
+                                                        isSelected
+                                                            ? 'border-slate-900 bg-white shadow-xs ring-2 ring-slate-900'
+                                                            : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'
+                                                    }`}
+                                                >
+                                                    <span className="size-4 shrink-0 rounded-full shadow-2xs" style={{ backgroundColor: opt.color }} />
+                                                    <span className="truncate text-[11px] font-semibold text-slate-800">{opt.name.split(' ')[0]}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Custom Color Input */}
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                            <input 
+                                                type="color" 
+                                                value={themeColor} 
+                                                onChange={e => setThemeColor(e.target.value)} 
+                                                className="size-8 rounded-lg border border-slate-300 cursor-pointer p-0.5" 
+                                            />
+                                            <span>Custom Color Picker</span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <section className="space-y-3 rounded-xl border border-slate-200 p-4">
                                     <div><h4 className="text-xs font-semibold text-slate-900">Social profiles</h4><p className="mt-1 text-[10px] text-slate-500">Valid profile URLs are shown as linked icons in your public storefront footer.</p></div>

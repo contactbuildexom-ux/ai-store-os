@@ -302,8 +302,8 @@ export default function Hero() {
             className="animate-float absolute left-0 top-1 z-30 flex -rotate-3 cursor-pointer items-center gap-2.5 rounded-2xl bg-white px-3.5 py-2.5 text-left shadow-[0_18px_34px_-16px_rgba(25,118,210,0.65)] sm:left-2"
             style={{ animationDelay: "0s" }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#ece9ff] text-[#6d4aff]">
-              <Ico size={16}>{Icons.sparkle}</Ico>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e8f1ff] text-[#1976d2]">
+              <Ico size={16}>{Icons.bolt}</Ico>
             </span>
             <span className="leading-tight">
               <span className="block text-xs font-extrabold text-[#0b2545]">Build with AI</span>

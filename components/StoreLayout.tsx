@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { StoreQRCode } from '@/components/store-qr-code';
+import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import { StoreSocialLinks } from '@/components/store-social-links';
 import { StoreFooter } from '@/components/store-footer';
 import {
@@ -400,11 +400,13 @@ export default function StoreLayout({
               <Menu size={20} />
             </button>
             <div className="flex items-center gap-2.5">
-              <img
-                src="/buildexom-icon.png"
-                alt="Buildexom"
-                className="size-9 rounded-xl object-contain shadow-xs"
-              />
+              <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                <img
+                  src={BUILDEXOM_ICON_DATA_URL}
+                  alt={storeName}
+                  className="size-full object-contain"
+                />
+              </div>
               <div>
                 <h1 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
                   {storeName}
@@ -495,11 +497,12 @@ export default function StoreLayout({
           <div className="relative flex h-full w-full max-w-xs flex-col bg-white shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div 
-                  className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" 
-                  style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
-                >
-                  {storeName.charAt(0)}
+                <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                  <img
+                    src={BUILDEXOM_ICON_DATA_URL}
+                    alt={storeName}
+                    className="size-full object-contain"
+                  />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">{storeName}</h3>
@@ -545,7 +548,7 @@ export default function StoreLayout({
                         selectedCategory === cat ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <span>{cat === 'All' ? '🛍️ All Products' : cat}</span>
+                      <span>{cat === 'All' ? 'All Products' : cat}</span>
                       <ChevronRight size={14} className="opacity-50" />
                     </button>
                   ))}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
 import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
+import { BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import {
     Menu,
     X,
@@ -89,23 +90,17 @@ function whatsappPhone(value: string) {
     return phone;
 }
 
-function getCategoryIcon(name: string): string {
-    const n = name.toLowerCase();
-    if (n.includes('shoe') || n.includes('sneak') || n.includes('footwear') || n.includes('boot') || n.includes('kick') || n.includes('trainer')) return '👟';
-    if (n.includes('perfume') || n.includes('fragrance') || n.includes('oud') || n.includes('attar') || n.includes('scent')) return '🌸';
-    if (n.includes('cloth') || n.includes('shirt') || n.includes('dress') || n.includes('wear') || n.includes('pret') || n.includes('kurta') || n.includes('hoodie') || n.includes('lawn')) return '👗';
-    if (n.includes('men') || n.includes('suit') || n.includes('groom') || n.includes('waistcoat')) return '🤵';
-    if (n.includes('watch') || n.includes('smartwatch')) return '⌚';
-    if (n.includes('bag') || n.includes('leather') || n.includes('wallet') || n.includes('clutch')) return '🎒';
-    if (n.includes('jewel') || n.includes('ring') || n.includes('necklace') || n.includes('gold') || n.includes('kundan')) return '💍';
-    if (n.includes('skin') || n.includes('beauty') || n.includes('serum') || n.includes('cosmetic') || n.includes('cleanser')) return '🧴';
-    if (n.includes('phone') || n.includes('tech') || n.includes('electronic') || n.includes('gadget')) return '📱';
-    if (n.includes('headphone') || n.includes('audio') || n.includes('earbud')) return '🎧';
-    if (n.includes('home') || n.includes('decor') || n.includes('candle') || n.includes('furni') || n.includes('vase')) return '🛋️';
-    if (n.includes('honey') || n.includes('tea') || n.includes('food') || n.includes('organic') || n.includes('superfood')) return '🌿';
-    if (n.includes('gym') || n.includes('sport') || n.includes('fitness')) return '⚡';
-    if (n.includes('baby') || n.includes('kid') || n.includes('toy')) return '🧸';
-    return '✨';
+function getCategorySymbol(name: string): string {
+    const clean = name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    if (!clean || clean.toLowerCase() === 'all') return 'ALL';
+    const words = clean.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    return clean.slice(0, 2).toUpperCase();
+}
+
+function isFoodOrEdible(storeName: string, category?: string | null, productName?: string): boolean {
+    const text = `${storeName} ${category || ''} ${productName || ''}`.toLowerCase();
+    return /\b(food|coffee|tea|brew|roast|bean|beans|bakery|cake|cakes|bread|snack|cookie|cookies|mithai|sweet|sweets|honey|oil|spice|spices|herb|herbs|dry fruit|organic food|cafe|dining|edible)\b/i.test(text);
 }
 
 export default function StorefrontClient({ store, settings, products, delivery }: Props) {
@@ -115,7 +110,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [catalogError, setCatalogError] = useState('');
 
     const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.primary_color || (liveStore as any)?.theme?.primaryColor || '#1976d2';
-    const bannerText = settings?.banner_text || '✨ Free delivery nationwide on orders above Rs. 3,000!';
+    const bannerText = settings?.banner_text || 'Free delivery nationwide on orders above Rs. 3,000!';
     const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
 
     // UI state
@@ -177,31 +172,65 @@ export default function StorefrontClient({ store, settings, products, delivery }
         return () => clearTimeout(timer);
     }, [toastMessage]);
 
-    // Derived catalog values (dynamically relatable to store niche, never irrelevant categories)
+    // Derived catalog values (strictly relatable to store niche, minimum 4 categories, zero emojis/stars)
     const categories = useMemo(() => {
         const set = new Set<string>();
         liveProducts.forEach((p) => {
             const cat = (p as any).category || (p as any).category_name;
-            if (cat && cat.trim() && cat !== 'All') set.add(cat.trim());
+            if (cat && cat.trim() && cat.toLowerCase() !== 'all') {
+                set.add(cat.trim());
+            }
         });
-        if (set.size > 0) return ['All', ...Array.from(set)];
+        const fromProducts = Array.from(set);
+
+        // Niche relatable fallback pool if fewer than 4 categories exist
         const name = `${liveStore.name} ${(liveStore as any).tagline || ''}`.toLowerCase();
-        if (name.includes('shoe') || name.includes('sneaker') || name.includes('kicks')) return ['All', 'Running Shoes', 'Streetwear Sneakers', 'Casual Kicks', 'Athletic Trainers'];
-        if (name.includes('perfume') || name.includes('oud') || name.includes('fragrance') || name.includes('attar')) return ['All', 'Artisanal Ouds', 'French EDP', 'Floral Scents', 'Gift Sets'];
-        if (name.includes('pret') || name.includes('lawn') || name.includes('dress') || name.includes('couture') || name.includes('suit')) return ['All', 'Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Dupattas'];
-        if (name.includes('mens') || name.includes('men') || name.includes('kurta')) return ['All', 'Tailored Kurtas', 'Waistcoats', 'Formal Shirts', 'Accessories'];
-        if (name.includes('skin') || name.includes('glow') || name.includes('serum') || name.includes('beauty')) return ['All', 'Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'];
-        return ['All', 'Featured Collection', 'Bestsellers', 'New Arrivals'];
+        let nicheDefaults = ['Featured Collection', 'Bestsellers', 'New Arrivals', 'Signature Series'];
+        if (name.includes('shoe') || name.includes('sneaker') || name.includes('kicks') || name.includes('footwear')) {
+            nicheDefaults = ['Running Shoes', 'Streetwear Sneakers', 'Casual Kicks', 'Athletic Trainers', 'Lifestyle Footwear'];
+        } else if (name.includes('perfume') || name.includes('oud') || name.includes('fragrance') || name.includes('attar')) {
+            nicheDefaults = ['Artisanal Ouds', 'French EDP', 'Floral Scents', 'Signature Attars', 'Luxury Gift Sets'];
+        } else if (name.includes('nature') || name.includes('plant') || name.includes('grass') || name.includes('flora') || name.includes('green') || name.includes('botanical')) {
+            nicheDefaults = ['Indoor Plants', 'Air-Purifying Succulents', 'Botanical Teas', 'Organic Planters', 'Herbal Essentials'];
+        } else if (name.includes('handbag') || name.includes('bag') || name.includes('clutch') || name.includes('purse')) {
+            nicheDefaults = ['Velvet Clutches', 'Bridal Evening Bags', 'Shoulder Totes', 'Leather Wallets', 'Crossbody Bags'];
+        } else if (name.includes('jewel') || name.includes('gold') || name.includes('ring')) {
+            nicheDefaults = ['Solitaire Rings', 'Gold Plated Necklaces', 'Baroque Pearls', 'Statement Earrings', 'Bangles'];
+        } else if (name.includes('pret') || name.includes('lawn') || name.includes('dress') || name.includes('couture') || name.includes('suit') || name.includes('cloth')) {
+            nicheDefaults = ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Embroidered Dupattas', 'Casual Tunics'];
+        } else if (name.includes('coffee') || name.includes('tea') || name.includes('brew') || name.includes('food') || name.includes('bakery')) {
+            nicheDefaults = ['Artisan Roast Beans', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Truffles', 'Brew Accessories'];
+        } else if (name.includes('skin') || name.includes('glow') || name.includes('serum') || name.includes('beauty')) {
+            nicheDefaults = ['Glow Serums', 'Face Cleansers', 'Barrier Creams', 'Mineral Sunscreens', 'Hydrating Toners'];
+        } else if (name.includes('tech') || name.includes('gadget') || name.includes('headphone') || name.includes('audio')) {
+            nicheDefaults = ['ANC Headphones', 'Smart Wearables', 'Wireless Chargers', 'Mechanical Keyboards', 'Ergonomic Accessories'];
+        }
+
+        // Combine product categories first, then add from niche defaults to ensure at least 4 categories
+        const combined = [...fromProducts];
+        for (const defaultCat of nicheDefaults) {
+            if (combined.length >= 4) break;
+            if (!combined.some(c => c.toLowerCase() === defaultCat.toLowerCase())) {
+                combined.push(defaultCat);
+            }
+        }
+        return ['All', ...combined];
     }, [liveProducts, liveStore]);
 
     const filteredProducts = useMemo(() => {
         return liveProducts.filter((p) => {
-            const cat = (p as any).category || (p as any).category_name || '';
-            const matchesCat = selectedCategory === 'All' || cat.toLowerCase() === selectedCategory.toLowerCase();
+            const cat = ((p as any).category || (p as any).category_name || '').toLowerCase();
+            const selected = selectedCategory.toLowerCase();
+            const matchesCat = selectedCategory === 'All' ||
+                cat === selected ||
+                cat.includes(selected) ||
+                selected.includes(cat) ||
+                p.name.toLowerCase().includes(selected) ||
+                (p.description && p.description.toLowerCase().includes(selected));
             const matchesSearch = !searchQuery.trim() ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-            return matchesCat && matchesSearch;
+            return (selectedCategory === 'All' || matchesCat) && matchesSearch;
         });
     }, [liveProducts, selectedCategory, searchQuery]);
 
@@ -561,22 +590,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </button>
 
                         <div className="flex items-center gap-2.5">
-                            {settings?.logo_url ? (
-                                <Image
-                                    src={settings.logo_url}
-                                    alt={`${liveStore.name} logo`}
-                                    width={32}
-                                    height={32}
-                                    unoptimized
-                                    className="size-8 rounded-lg object-cover shadow-xs"
-                                />
-                            ) : (
+                            <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
                                 <img
-                                    src="/buildexom-icon.png"
-                                    alt="Buildexom"
-                                    className="size-8 object-contain"
+                                    src={settings?.logo_url || BUILDEXOM_ICON_DATA_URL}
+                                    alt={`${liveStore.name} logo`}
+                                    className="size-full object-contain"
                                 />
-                            )}
+                            </div>
                             <div className="min-w-0 text-left">
                                 <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
                                     {liveStore.name}
@@ -628,13 +648,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                             <div className="flex items-center gap-2.5">
-                                {settings?.logo_url ? (
-                                    <Image src={settings.logo_url} alt="" width={32} height={32} unoptimized className="size-8 rounded-lg object-cover" />
-                                ) : (
-                                    <div className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" style={{ backgroundColor: themeColor }}>
-                                        {liveStore.name.charAt(0)}
-                                    </div>
-                                )}
+                                <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                                    <img
+                                        src={settings?.logo_url || BUILDEXOM_ICON_DATA_URL}
+                                        alt=""
+                                        className="size-full object-contain"
+                                    />
+                                </div>
                                 <div>
                                     <h3 className="font-bold text-sm text-slate-900">{liveStore.name}</h3>
                                     <p className="text-[10px] text-slate-400 font-mono">{liveStore.slug}.buildexom.store</p>
@@ -722,7 +742,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* 1. Full-Width Hero Section covering full screen width, styled with chosen store theme */}
+            {/* 1. Balanced Hero Section (Medium proportion, concept-matched authentic image) */}
             <section
                 id="hero"
                 className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
@@ -740,22 +760,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:py-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="max-w-xl text-left space-y-4">
-                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.12]">
+                <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
+                    <div className="max-w-lg text-left space-y-4">
+                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
                             {heroInfo.headlineMain}{' '}
                             {heroInfo.headlineHighlight && (
                                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
                             )}
                         </h2>
-                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
+                        <p className="text-xs sm:text-sm text-slate-700 max-w-md leading-relaxed font-medium">
                             {liveStore.tagline || heroInfo.subtext}
                         </p>
 
                         <div className="pt-2 flex flex-wrap items-center gap-3">
                             <a
                                 href="#featured"
-                                className="rounded-full px-7 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 Shop Collection →
@@ -764,20 +784,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-5 py-3 text-xs font-semibold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
+                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-4 py-2.5 text-xs font-semibold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
                             >
                                 <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
                             </a>
                         </div>
                     </div>
 
-                    {/* Floating Concept-Matched Hero Image */}
-                    <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative flex items-center justify-center">
-                        <img
-                            src={heroInfo.heroImage}
-                            alt={heroInfo.altText}
-                            className="max-h-72 sm:max-h-84 lg:max-h-96 w-full object-contain rounded-2xl drop-shadow-[0_20px_30px_rgba(0,0,0,0.14)] transition duration-500 hover:scale-105"
-                        />
+                    {/* Balanced Medium-Width Elegant Concept-Matched Hero Image */}
+                    <div className="w-full sm:w-80 lg:w-[380px] shrink-0 relative flex items-center justify-center">
+                        <div className="relative w-full max-w-sm lg:max-w-md overflow-hidden rounded-2xl shadow-xl border border-white/60 bg-white/40 backdrop-blur-xs">
+                            <img
+                                src={heroInfo.heroImage}
+                                alt={heroInfo.altText}
+                                className="h-56 sm:h-64 md:h-72 lg:h-[300px] w-full object-cover transition duration-500 hover:scale-105"
+                            />
+                        </div>
                     </div>
                 </div>
             </section>
@@ -785,8 +807,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
             {/* Main Page Body */}
             <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
 
-                {/* 2. Featured Products Section (Matching Post Grid) */}
-                <section id="featured" className="space-y-4 pt-1">
+                {/* 2. Featured Products Section (Container styled with chosen theme) */}
+                <section 
+                    id="featured" 
+                    className="rounded-3xl border p-5 sm:p-7 space-y-4 shadow-xs transition"
+                    style={{
+                        backgroundColor: `${themeColor}08`,
+                        borderColor: `${themeColor}24`,
+                    }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
@@ -810,9 +839,16 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             <article
                                 key={item.id}
                                 onClick={() => openProductModal(item)}
-                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                style={{
+                                    backgroundColor: `${themeColor}08`,
+                                    borderColor: `${themeColor}24`,
+                                }}
                             >
-                                <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
+                                <div 
+                                    className="relative aspect-square w-full overflow-hidden p-4"
+                                    style={{ backgroundColor: `${themeColor}0d` }}
+                                >
                                     <img
                                         src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                                         alt={item.name}
@@ -876,7 +912,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         const el = document.getElementById('products');
                                         el?.scrollIntoView({ behavior: 'smooth' });
                                     }}
-                                    className={`flex items-center gap-2.5 rounded-2xl border p-3 text-left transition hover:shadow-xs active:scale-95 ${
+                                    className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition hover:shadow-xs active:scale-95 ${
                                         isSelected
                                             ? 'shadow-xs font-bold'
                                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -888,10 +924,21 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 backgroundColor: `${themeColor}15`,
                                                 color: themeColor,
                                             }
-                                            : {}
+                                            : {
+                                                backgroundColor: `${themeColor}05`,
+                                                borderColor: `${themeColor}20`
+                                            }
                                     }
                                 >
-                                    <span className="text-2xl shrink-0">{getCategoryIcon(cat)}</span>
+                                    <span 
+                                        className="grid size-8 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition"
+                                        style={{
+                                            backgroundColor: isSelected ? themeColor : `${themeColor}18`,
+                                            color: isSelected ? '#ffffff' : themeColor
+                                        }}
+                                    >
+                                        {getCategorySymbol(cat)}
+                                    </span>
                                     <span className="text-xs font-bold truncate leading-tight">{cat}</span>
                                 </button>
                             );
@@ -938,7 +985,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     }`}
                                     style={isSelected ? { backgroundColor: themeColor } : {}}
                                 >
-                                    {cat === 'All' ? '🛍️ All Products' : cat}
+                                    {cat === 'All' ? 'All Products' : cat}
                                 </button>
                             );
                         })}
@@ -990,10 +1037,17 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <article
                                     key={product.id}
                                     onClick={() => openProductModal(product)}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                    style={{
+                                        backgroundColor: `${themeColor}08`,
+                                        borderColor: `${themeColor}24`,
+                                    }}
                                 >
                                     {/* Image Container with Badges */}
-                                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                                    <div 
+                                        className="relative aspect-square w-full overflow-hidden"
+                                        style={{ backgroundColor: `${themeColor}0d` }}
+                                    >
                                         {product.image_url ? (
                                             <Image
                                                 src={product.image_url.split(',')[0].trim()}
@@ -1585,11 +1639,32 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             )}
                         </div>
 
+                        {/* Quick Suggestion Questions */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50">
+                            {[
+                                "Delivery timeline?",
+                                "Payment methods?",
+                                "Bestseller items?",
+                                "Order on WhatsApp?"
+                            ].map((q) => (
+                                <button
+                                    key={q}
+                                    type="button"
+                                    onClick={() => {
+                                        setAiInput(q);
+                                    }}
+                                    className="shrink-0 rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[10px] text-slate-300 hover:border-emerald-500 hover:text-white transition"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Chat Input */}
                         <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
                             <input
                                 type="text"
-                                placeholder="Roman Urdu ya English mein poochain (e.g. delivery kab hogi?)..."
+                                placeholder="Ask a question..."
                                 value={aiInput}
                                 maxLength={500}
                                 onChange={(e) => setAiInput(e.target.value)}
@@ -1755,61 +1830,99 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </div>
 
                                 <div className="space-y-3 pt-2 border-t border-slate-100">
-                                    {/* Size Selector */}
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                            <span>Select Size</span>
-                                            <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                    {isFoodOrEdible(liveStore.name, (selectedProductForModal as any).category, selectedProductForModal.name) ? (
+                                        /* For Food, Coffee, Edibles, Bakery: Show Pack / Weight Selection */
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                <span>Select Pack / Weight</span>
+                                                <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {['Standard Pack', '250g', '500g', '1 kg', 'Pack of 2', 'Family Pack'].map((pack) => (
+                                                    <button
+                                                        key={pack}
+                                                        type="button"
+                                                        onClick={() => setModalSelectedSize(pack)}
+                                                        className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                            modalSelectedSize === pack
+                                                                ? 'text-white border-transparent shadow-xs'
+                                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                        }`}
+                                                        style={modalSelectedSize === pack ? { backgroundColor: themeColor } : {}}
+                                                    >
+                                                        {pack}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'].map((size) => (
-                                                <button
-                                                    key={size}
-                                                    type="button"
-                                                    onClick={() => setModalSelectedSize(size)}
-                                                    className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
-                                                        modalSelectedSize === size
-                                                            ? 'text-white border-transparent shadow-xs'
-                                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                    }`}
-                                                    style={modalSelectedSize === size ? { backgroundColor: themeColor } : {}}
-                                                >
-                                                    {size}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    ) : (
+                                        /* For Apparel, Shoes, Handbags, Accessories: Show Size & Color */
+                                        <>
+                                            {/* Size Selector */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                    <span>Select Size</span>
+                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {(() => {
+                                                        const isFootwear = /\b(shoe|shoes|sneaker|sneakers|kicks|boot|boots|jogger|joggers|footwear)\b/i.test(
+                                                            `${liveStore.name} ${(selectedProductForModal as any).category || ''} ${selectedProductForModal.name}`
+                                                        );
+                                                        const sizes = isFootwear
+                                                            ? ['EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44']
+                                                            : ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'];
+                                                        return sizes.map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                type="button"
+                                                                onClick={() => setModalSelectedSize(size)}
+                                                                className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                                    modalSelectedSize === size
+                                                                        ? 'text-white border-transparent shadow-xs'
+                                                                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                                }`}
+                                                                style={modalSelectedSize === size ? { backgroundColor: themeColor } : {}}
+                                                            >
+                                                                {size}
+                                                            </button>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
 
-                                    {/* Color Selector */}
-                                    <div className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                            <span>Select Color</span>
-                                            <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor}</span>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                            {[
-                                                { name: 'Default', hex: '#0f172a' },
-                                                { name: 'Emerald', hex: '#059669' },
-                                                { name: 'Navy', hex: '#1d4ed8' },
-                                                { name: 'Maroon', hex: '#9f1239' },
-                                                { name: 'Gold', hex: '#d97706' },
-                                            ].map((c) => (
-                                                <button
-                                                    key={c.name}
-                                                    type="button"
-                                                    onClick={() => setModalSelectedColor(c.name)}
-                                                    className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                                                        modalSelectedColor === c.name
-                                                            ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
-                                                            : 'border-slate-200 bg-white hover:border-slate-300'
-                                                    }`}
-                                                >
-                                                    <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
-                                                    <span>{c.name}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                            {/* Color Selector */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                    <span>Select Color</span>
+                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor}</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {[
+                                                        { name: 'Default', hex: '#0f172a' },
+                                                        { name: 'Emerald', hex: '#059669' },
+                                                        { name: 'Navy', hex: '#1d4ed8' },
+                                                        { name: 'Maroon', hex: '#9f1239' },
+                                                        { name: 'Gold', hex: '#d97706' },
+                                                    ].map((c) => (
+                                                        <button
+                                                            key={c.name}
+                                                            type="button"
+                                                            onClick={() => setModalSelectedColor(c.name)}
+                                                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                                                modalSelectedColor === c.name
+                                                                    ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
+                                                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
+                                                            <span>{c.name}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
 
                                     {/* Quantity Selector */}
                                     <div className="flex items-center justify-between pt-1">

@@ -8,10 +8,13 @@ type StoreRow = {
   slug: string | null;
   plan: string | null;
   payment_status: string | null;
+  primary_color?: string | null;
+  selected_theme?: string | null;
+  whatsapp_number?: string | null;
 };
 
 async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAdminClient>>, userId: string) {
-  const baseSelect = "id, name, slug, plan, payment_status";
+  const baseSelect = "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number";
   const byOwner = await supabase
     .from("stores")
     .select(baseSelect)
@@ -40,8 +43,11 @@ export async function GET(request: Request) {
 
     if (requestedId) {
       const { storeRepo } = await import("@/lib/store-repository");
+      const { getStoreNicheColor, THEME_PALETTES } = await import("@/lib/store-theme");
       const repoStore = await storeRepo.getStore(requestedId);
       if (repoStore) {
+        const nicheColor = getStoreNicheColor(repoStore.name, repoStore.slug);
+        const resolvedColor = repoStore.theme?.primaryColor || repoStore.primary_color || (repoStore.selected_theme && THEME_PALETTES[repoStore.selected_theme]) || nicheColor;
         return NextResponse.json({
           store: {
             id: repoStore.id,
@@ -50,6 +56,8 @@ export async function GET(request: Request) {
             plan: repoStore.plan || "basic",
             payment_status: repoStore.payment_status || "active",
             whatsapp_number: repoStore.whatsapp_number,
+            primary_color: resolvedColor,
+            selected_theme: repoStore.theme?.id || repoStore.selected_theme || "emerald",
           } as StoreRow,
         });
       }
