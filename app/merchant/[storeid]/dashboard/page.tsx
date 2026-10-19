@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
@@ -35,10 +35,69 @@ type Order = {
 type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
 type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
-const PLAN_DETAILS: Record<Plan, { title: string; productLimit: number | null; categoryLimit: number | null; perCategoryLimit?: number; checkout: string }> = {
-    basic: { title: 'Basic', productLimit: 20, categoryLimit: 2, checkout: 'Standard checkout' },
-    pro: { title: 'Pro', productLimit: 75, categoryLimit: 5, perCategoryLimit: 15, checkout: 'Standard + WhatsApp ordering' },
-    business: { title: 'Business', productLimit: null, categoryLimit: null, checkout: 'Standard + WhatsApp ordering' },
+const PLAN_DETAILS: Record<Plan, { 
+    title: string; 
+    pricePKR: number;
+    priceLabel: string;
+    productLimit: number | null; 
+    categoryLimit: number | null; 
+    perCategoryLimit?: number; 
+    checkout: string;
+    badge?: string;
+    features: string[];
+}> = {
+    basic: { 
+        title: 'Basic', 
+        pricePKR: 0,
+        priceLabel: 'Free forever',
+        productLimit: 20, 
+        categoryLimit: 2, 
+        checkout: 'Standard checkout',
+        features: [
+            'Up to 20 products in catalog',
+            'Up to 2 organized categories',
+            'Standard COD checkout',
+            'Buildexom QR code sharing',
+            'Essential sales dashboard'
+        ]
+    },
+    pro: { 
+        title: 'Pro', 
+        pricePKR: 2499,
+        priceLabel: 'PKR 2,499 / mo',
+        productLimit: 75, 
+        categoryLimit: 5, 
+        perCategoryLimit: 15, 
+        checkout: 'Standard + WhatsApp ordering',
+        badge: 'Recommended',
+        features: [
+            'Up to 75 products in catalog',
+            'Up to 5 categories (15 per category)',
+            'Direct WhatsApp 1-Click Ordering',
+            'Bexi Voice & AI Shopping Assistant',
+            'Custom theme colors & branding',
+            'Multiple product images upload',
+            'Advance payment verification'
+        ]
+    },
+    business: { 
+        title: 'Business', 
+        pricePKR: 4999,
+        priceLabel: 'PKR 4,999 / mo',
+        productLimit: null, 
+        categoryLimit: null, 
+        checkout: 'Standard + WhatsApp ordering',
+        badge: 'Unlimited Growth',
+        features: [
+            'Unlimited catalog products (no cap)',
+            'Unlimited categories (no cap)',
+            'Direct WhatsApp 1-Click Ordering',
+            'Priority AI Catalog Search',
+            'Custom domain integration ready',
+            'Advance payment gateways',
+            '24/7 dedicated merchant concierge'
+        ]
+    },
 };
 
 function normalizePlan(value: string | null | undefined): Plan {
@@ -101,6 +160,46 @@ export default function MerchantDashboardMaster() {
 
     // Category Form
     const [catName, setCatName] = useState('');
+
+    // Plan Upgrade & Payment States
+    const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'jazzcash' | 'easypaisa' | 'bank' | 'whatsapp'>('card');
+    const [cardHolder, setCardHolder] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardExp, setCardExp] = useState('');
+    const [cardCvc, setCardCvc] = useState('');
+    const [trxRef, setTrxRef] = useState('');
+    const [isUpgrading, setIsUpgrading] = useState(false);
+    const [upgradeSuccess, setUpgradeSuccess] = useState('');
+
+    async function handleActivatePlan(targetPlan: Plan) {
+        if (!resolvedStoreId && !paramId) return;
+        setIsUpgrading(true);
+        try {
+            const sid = resolvedStoreId || paramId;
+            const res = await fetch('/api/stores/plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: sid,
+                    plan: targetPlan,
+                    payment_method: paymentMethod,
+                    transaction_ref: trxRef || (paymentMethod === 'card' ? `CARD-${Date.now().toString().slice(-6)}` : `TRX-${Date.now().toString().slice(-6)}`),
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to activate plan.');
+
+            setStorePlan(targetPlan);
+            setUpgradeSuccess(`🎉 Success! Your store is now active on the ${PLAN_DETAILS[targetPlan].title} plan! WhatsApp ordering and higher catalog limits are now unlocked.`);
+            setUpgradeModalPlan(null);
+            setTimeout(() => setUpgradeSuccess(''), 7000);
+        } catch (err: any) {
+            alert(err.message || 'Payment activation failed. Please try again.');
+        } finally {
+            setIsUpgrading(false);
+        }
+    }
 
     const planDetails = PLAN_DETAILS[storePlan];
     const canUseWhatsapp = storePlan === 'pro' || storePlan === 'business';
@@ -508,6 +607,18 @@ export default function MerchantDashboardMaster() {
                     {/* OVERVIEW */}
                     {activeTab === 'overview' && (
                         <>
+                            {upgradeSuccess && (
+                                <div className="flex items-center justify-between rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-900 shadow-sm animate-in fade-in duration-300">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                                        <span>{upgradeSuccess}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setUpgradeSuccess('')} className="p-1 text-emerald-700 hover:text-emerald-900">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            )}
+
                             <section 
                                 className="relative overflow-hidden rounded-2xl p-6 text-white shadow-md sm:p-8"
                                 style={{
@@ -600,6 +711,17 @@ export default function MerchantDashboardMaster() {
                                             {planDetails.perCategoryLimit && <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Products per category</span><span className="font-medium text-slate-700">Up to {planDetails.perCategoryLimit}</span></div>}
                                         </div>
                                         <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600"><Check size={13} className="shrink-0 text-emerald-600" />Plan features are based on the limits enabled for your store.</div>
+                                        {storePlan !== 'business' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setUpgradeModalPlan(storePlan === 'basic' ? 'pro' : 'business')}
+                                                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                                                style={{ backgroundColor: themeColor }}
+                                            >
+                                                <Sparkles size={14} />
+                                                Upgrade to {storePlan === 'basic' ? 'Pro Plan' : 'Business Plan'}
+                                            </button>
+                                        )}
                                     </section>
 
                                     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -610,22 +732,78 @@ export default function MerchantDashboardMaster() {
                             </section>
 
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                                <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p><h3 className="mt-1 text-base font-semibold text-slate-900">What your plan includes</h3><p className="mt-1 text-xs text-slate-500">Limits shown here reflect the active product and category rules in the platform.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize text-slate-600">Current: {storePlan}</span></div>
-                                <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                                <div className="flex flex-wrap items-end justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p>
+                                        <h3 className="mt-1 text-base font-semibold text-slate-900">What your plan includes</h3>
+                                        <p className="mt-1 text-xs text-slate-500">Upgrade your plan to unlock WhatsApp ordering, higher catalog caps, and AI features.</p>
+                                    </div>
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize text-slate-600">Current: {storePlan}</span>
+                                </div>
+                                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {(['basic', 'pro', 'business'] as Plan[]).map((plan) => {
                                         const details = PLAN_DETAILS[plan];
                                         const isCurrent = plan === storePlan;
-                                        return <article key={plan} className={`rounded-xl border p-4 ${isCurrent ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-100' : 'border-slate-200 bg-white'}`}>
-                                            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold capitalize text-slate-900">{details.title}</h4>{isCurrent && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-bold uppercase text-blue-700">Active</span>}</div>
-                                            <ul className="mt-3 space-y-2.5 text-[11px] text-slate-600">
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.productLimit === null ? 'No product cap enforced' : `Up to ${details.productLimit} products`}</li>
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.categoryLimit === null ? 'No category cap enforced' : `Up to ${details.categoryLimit} categories`}</li>
-                                                {details.perCategoryLimit && <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />Up to {details.perCategoryLimit} products per category</li>}
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.checkout}</li>
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />Store branding and payment account settings</li>
-                                            </ul>
-                                            {plan === 'business' && <p className="mt-3 border-t border-slate-200 pt-3 text-[10px] leading-4 text-slate-500">Business has no product or category caps configured in the current plan-limit rules.</p>}
-                                        </article>;
+                                        return (
+                                            <article 
+                                                key={plan} 
+                                                className={`relative flex flex-col justify-between rounded-2xl border p-5 transition shadow-xs ${
+                                                    isCurrent 
+                                                        ? 'border-blue-400 bg-blue-50/40 ring-2 ring-blue-100' 
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                                                }`}
+                                            >
+                                                {details.badge && (
+                                                    <span 
+                                                        className="absolute -top-2.5 right-4 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs"
+                                                        style={{ backgroundColor: plan === 'pro' ? themeColor : '#0f172a' }}
+                                                    >
+                                                        {details.badge}
+                                                    </span>
+                                                )}
+                                                <div>
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-base font-extrabold capitalize text-slate-900">{details.title}</h4>
+                                                        {isCurrent && (
+                                                            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[9px] font-bold uppercase text-blue-700">
+                                                                Active
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-1 text-xs font-bold text-slate-700">{details.priceLabel}</p>
+
+                                                    <ul className="mt-4 space-y-2.5 text-[11px] text-slate-600">
+                                                        {details.features.map((feat) => (
+                                                            <li key={feat} className="flex items-start gap-2">
+                                                                <Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />
+                                                                <span>{feat}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <div className="pt-5 mt-4 border-t border-slate-100">
+                                                    {isCurrent ? (
+                                                        <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700">
+                                                            <CheckCircle2 size={14} className="text-blue-600" /> Current Active Plan
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setUpgradeModalPlan(plan)}
+                                                            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95"
+                                                            style={{
+                                                                backgroundColor: plan === 'business' ? '#0f172a' : themeColor,
+                                                            }}
+                                                        >
+                                                            {plan === 'basic' 
+                                                                ? 'Switch to Basic (Free)' 
+                                                                : `Upgrade to ${details.title} — ${details.priceLabel}`}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </article>
+                                        );
                                     })}
                                 </div>
                             </section>
@@ -1150,6 +1328,287 @@ export default function MerchantDashboardMaster() {
                     )}
                 </div>
             </main>
+
+            {/* Plan Upgrade & Payment Modal */}
+            {upgradeModalPlan && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="relative flex flex-col w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-slate-100 space-y-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <span 
+                                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
+                                    style={{ backgroundColor: upgradeModalPlan === 'business' ? '#0f172a' : themeColor }}
+                                >
+                                    <Sparkles size={11} /> Upgrade Plan
+                                </span>
+                                <h3 className="mt-1.5 text-lg sm:text-xl font-extrabold text-slate-900">
+                                    {PLAN_DETAILS[upgradeModalPlan].title} Plan Subscription
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    {upgradeModalPlan === 'basic' ? 'No payment required for Basic plan.' : `Billed monthly at ${PLAN_DETAILS[upgradeModalPlan].priceLabel}. Cancel or switch anytime.`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan(null)}
+                                className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Plan Features Preview */}
+                        <div 
+                            className="rounded-2xl p-4 border space-y-2 text-xs"
+                            style={{ backgroundColor: `${themeColor}0a`, borderColor: `${themeColor}24` }}
+                        >
+                            <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                                <CheckCircle2 size={15} style={{ color: themeColor }} />
+                                Features unlocked on {PLAN_DETAILS[upgradeModalPlan].title}:
+                            </p>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                                {PLAN_DETAILS[upgradeModalPlan].features.map((feat) => (
+                                    <li key={feat} className="flex items-center gap-1.5">
+                                        <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: themeColor }} />
+                                        <span>{feat}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Payment Options (Only for paid plans: Pro & Business) */}
+                        {upgradeModalPlan !== 'basic' ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                        Select Payment Method
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {[
+                                            { id: 'card', label: 'Credit Card', icon: CreditCard },
+                                            { id: 'jazzcash', label: 'JazzCash', icon: Wallet },
+                                            { id: 'easypaisa', label: 'EasyPaisa', icon: Wallet },
+                                            { id: 'bank', label: 'Bank Transfer', icon: Landmark },
+                                        ].map((method) => {
+                                            const isSelected = paymentMethod === method.id;
+                                            const Icon = method.icon;
+                                            return (
+                                                <button
+                                                    key={method.id}
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod(method.id as any)}
+                                                    className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 text-center transition ${
+                                                        isSelected
+                                                            ? 'border-blue-600 bg-blue-50/70 font-bold text-blue-700 shadow-xs ring-1 ring-blue-600'
+                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <Icon size={18} className={isSelected ? 'text-blue-600' : 'text-slate-500'} />
+                                                    <span className="text-[10px] leading-tight">{method.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Method Detail Forms */}
+                                {paymentMethod === 'card' && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 border-b border-slate-200 pb-2">
+                                            <span>Visa / Mastercard Checkout</span>
+                                            <span className="text-[10px] text-emerald-600 flex items-center gap-1 font-bold">
+                                                <ShieldCheck size={13} /> 256-Bit SSL
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Cardholder Name</label>
+                                            <input
+                                                type="text"
+                                                value={cardHolder}
+                                                onChange={(e) => setCardHolder(e.target.value)}
+                                                placeholder="e.g. Abeera Munir"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Card Number</label>
+                                            <input
+                                                type="text"
+                                                maxLength={19}
+                                                value={cardNumber}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                                                    setCardNumber(val);
+                                                }}
+                                                placeholder="4242 •••• •••• 4242"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono tracking-wider outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Expiry (MM/YY)</label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={5}
+                                                    value={cardExp}
+                                                    onChange={(e) => setCardExp(e.target.value)}
+                                                    placeholder="12/28"
+                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">CVC / CVV</label>
+                                                <input
+                                                    type="password"
+                                                    maxLength={4}
+                                                    value={cardCvc}
+                                                    onChange={(e) => setCardCvc(e.target.value)}
+                                                    placeholder="•••"
+                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
+                                            <span>Send payment via {paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
+                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
+                                        </div>
+                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Number:</span>
+                                                <span className="font-mono font-bold text-slate-900 select-all">0300-1234567</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Title:</span>
+                                                <span className="font-bold text-slate-900">Buildexom Billing</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                                Enter Transaction ID (TID / TRX Number)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trxRef}
+                                                onChange={(e) => setTrxRef(e.target.value)}
+                                                placeholder="e.g. TID-9842104"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
+                                            />
+                                            <p className="mt-1 text-[10px] text-slate-400">
+                                                Copy the TID received from your JazzCash / EasyPaisa SMS receipt.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'bank' && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
+                                            <span>Direct Bank Deposit</span>
+                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
+                                        </div>
+                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Bank Name:</span>
+                                                <span className="font-bold text-slate-900">Meezan Bank Ltd</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Title:</span>
+                                                <span className="font-bold text-slate-900">Buildexom AI Store OS</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Number:</span>
+                                                <span className="font-mono font-bold text-slate-900 select-all">0101-0105678901</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">IBAN:</span>
+                                                <span className="font-mono text-[11px] font-bold text-slate-900 select-all">PK92MEZN0001010105678901</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                                Bank Reference / Deposit Slip No.
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trxRef}
+                                                onChange={(e) => setTrxRef(e.target.value)}
+                                                placeholder="e.g. MEZN-874291"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* WhatsApp Instant Confirmation Link */}
+                                <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-xs text-emerald-900">
+                                    <div className="flex items-center gap-2">
+                                        <MessageCircle size={15} className="text-emerald-600 shrink-0" />
+                                        <span className="text-[11px]">Need billing help or manual invoice?</span>
+                                    </div>
+                                    <a
+                                        href={`https://wa.me/923001234567?text=Hello%20Buildexom!%20I%20want%20to%20activate%20the%20${PLAN_DETAILS[upgradeModalPlan].title}%20plan%20for%20my%20store%20${encodeURIComponent(storeName)}%20(${storeSlug}).`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-bold text-emerald-700 hover:underline shrink-0 text-[11px]"
+                                    >
+                                        WhatsApp Concierge →
+                                    </a>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl bg-slate-50 p-4 text-center text-xs text-slate-600 border border-slate-200">
+                                Switching to the Basic plan is free of charge. Your product limit will be 20 items.
+                            </div>
+                        )}
+
+                        {/* Total Due & Activation Button */}
+                        <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="text-left w-full sm:w-auto">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Due</span>
+                                <span className="text-base sm:text-lg font-black text-slate-900">
+                                    {PLAN_DETAILS[upgradeModalPlan].priceLabel}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setUpgradeModalPlan(null)}
+                                    className="flex-1 sm:flex-none rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isUpgrading}
+                                    onClick={() => handleActivatePlan(upgradeModalPlan)}
+                                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
+                                    style={{
+                                        backgroundColor: upgradeModalPlan === 'business' ? '#0f172a' : themeColor,
+                                    }}
+                                >
+                                    {isUpgrading ? (
+                                        <>
+                                            <RefreshCw size={14} className="animate-spin" />
+                                            Activating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={14} />
+                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : `Confirm Payment & Activate ${PLAN_DETAILS[upgradeModalPlan].title}`}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* AI Voice-Controlled Store Management Assistant (Bilingual: English & Urdu) */}
             <VoiceStoreAssistant 

@@ -349,7 +349,13 @@ export default function StoreLayout({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-500 selection:text-white">
+    <div 
+      className="min-h-screen font-sans text-slate-900 selection:bg-slate-900 selection:text-white"
+      style={{
+        background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
+        backgroundColor: `${themeColor}08`,
+      }}
+    >
       {catalogLoading && (
         <p role="status" className="bg-blue-50 px-4 py-2 text-center text-xs text-blue-800">
           Refreshing the live catalog…
@@ -576,7 +582,7 @@ export default function StoreLayout({
       )}
 
       {/* 3. Hero Promo Banner (Matching Instagram Post Studio Footwear Showcase) */}
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 space-y-6">
+      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8 space-y-6 w-full">
         <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-slate-100/70 p-6 sm:p-10 shadow-sm transition duration-500">
           <div
             className="absolute -right-16 -top-16 size-72 rounded-full blur-3xl opacity-20 pointer-events-none"

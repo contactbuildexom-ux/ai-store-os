@@ -321,6 +321,10 @@ export async function POST(req: Request) {
         }
         if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
         if (body.logo_url) repoStore.logo_url = String(body.logo_url);
+        if (typeof body.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
+          repoStore.plan = body.plan.toLowerCase() as any;
+          repoStore.payment_status = "active";
+        }
       }
       return NextResponse.json({
         success: true,
@@ -376,6 +380,15 @@ export async function POST(req: Request) {
         .update({ whatsapp_number: optionalText(body.whatsapp_number) })
         .eq("id", storeId);
       if (storeError && !isMissingStoreColumn(storeError)) throw storeError;
+    }
+
+    if (typeof body?.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
+      const updatedPlan = body.plan.toLowerCase();
+      const { error: planError } = await supabase
+        .from("stores")
+        .update({ plan: updatedPlan, payment_status: "active" })
+        .eq("id", storeId);
+      if (planError && !isMissingStoreColumn(planError)) console.warn("Plan update error:", planError);
     }
 
     const selectedTheme = textValue(body?.selected_theme).toLowerCase().replace(/\s+/g, "-");

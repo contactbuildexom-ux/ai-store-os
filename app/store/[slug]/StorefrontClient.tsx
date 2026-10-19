@@ -551,11 +551,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
     return (
         <div
-            className="min-h-screen font-sans text-slate-900 pb-28"
+            className="min-h-screen font-sans text-slate-900 pb-28 relative"
             style={{
-                backgroundColor: `${themeColor}09`,
-                backgroundImage: `radial-gradient(${themeColor}15 1px, transparent 1px)`,
-                backgroundSize: '24px 24px',
+                background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
+                backgroundColor: `${themeColor}08`,
             }}
         >
             {/* Live Catalog Status Messages */}
@@ -760,7 +759,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
                     <div className="max-w-lg text-left space-y-4">
                         <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
                             {heroInfo.headlineMain}{' '}
@@ -805,12 +804,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
             </section>
 
             {/* Main Page Body */}
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
+            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 sm:py-8 space-y-8 w-full">
 
                 {/* 2. Featured Products Section (Container styled with chosen theme) */}
                 <section 
                     id="featured" 
-                    className="rounded-3xl border p-5 sm:p-7 space-y-4 shadow-xs transition"
+                    className="w-full rounded-3xl border p-5 sm:p-6 lg:p-7 space-y-5 shadow-xs transition"
                     style={{
                         backgroundColor: `${themeColor}08`,
                         borderColor: `${themeColor}24`,
@@ -885,8 +884,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
-                <section id="categories" className="pt-1">
-                    <div className="flex items-center justify-between pb-2">
+                <section id="categories" className="w-full pt-1 space-y-3">
+                    <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Explore Categories
                         </h4>
@@ -900,7 +899,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </button>
                         )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3.5">
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 w-full">
                         {categories.filter((c) => c !== 'All').map((cat) => {
                             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
                             return (
@@ -947,7 +946,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 2. Search & Category Bar */}
-                <section className="space-y-3">
+                <section className="w-full space-y-3">
                     {/* Search Input */}
                     <div className="relative">
                         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -970,7 +969,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
 
                     {/* Category Scrollable Pills (Matching Screenshot) */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                         {categories.map((cat) => {
                             const isSelected = selectedCategory === cat;
                             return (
@@ -992,8 +991,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 3. Product Catalog Grid (Matching Screenshot) */}
-                <section id="products" className="space-y-4 pt-2">
+                {/* 3. Product Catalog Grid */}
+                <section 
+                    id="products" 
+                    className="w-full rounded-3xl border p-5 sm:p-6 lg:p-7 space-y-5 shadow-xs transition"
+                    style={{
+                        backgroundColor: `${themeColor}08`,
+                        borderColor: `${themeColor}24`,
+                    }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
@@ -1032,7 +1038,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-3.5 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 w-full">
                             {filteredProducts.map((product) => (
                                 <article
                                     key={product.id}
