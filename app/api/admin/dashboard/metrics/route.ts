@@ -8,7 +8,7 @@ export async function GET() {
   if (!supabase) return NextResponse.json({ error: "Dashboard database is not configured." }, { status: 503 });
   const [stores, sellers, products, orders] = await Promise.all([
     supabase.from("stores").select("id", { count: "exact", head: true }),
-    supabase.from("stores").select("id", { count: "exact", head: true }),
+    supabase.from("merchants").select("id", { count: "exact", head: true }),
     supabase.from("store_products").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("id", { count: "exact", head: true }),
   ]);

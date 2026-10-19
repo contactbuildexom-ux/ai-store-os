@@ -347,6 +347,9 @@ export async function POST(request: Request) {
     const requestedStoreName = text(input.name ?? input.store_name, 100);
     const requestedTheme = text(input.theme ?? input.selected_theme ?? "", 40);
     const requestedPlan = text(input.plan, 20).toLowerCase();
+    const isMerchantRegistration =
+      input.registration === "merchant" ||
+      (typeof input.password === "string" && Boolean(input.owner_email ?? input.email));
     if (prompt.length < 8) {
       return NextResponse.json({ error: "Enter a store description with at least 8 characters." }, { status: 400 });
     }
@@ -361,7 +364,9 @@ export async function POST(request: Request) {
     const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
     const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
-    const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+    const merchantSession = isMerchantRegistration
+      ? null
+      : verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
     if (merchantSession && supabase) {
@@ -390,7 +395,7 @@ export async function POST(request: Request) {
         };
       }
     }
-    if (!merchantSession && supabase) {
+    if (!isMerchantRegistration && !merchantSession && supabase) {
       user = await getAuthenticatedUser(request, supabase);
     }
     if (!targetStore) {
@@ -556,15 +561,23 @@ export async function POST(request: Request) {
           owner_email: merchantEmail,
           password_hash,
           whatsapp_number: requestedWhatsapp || null,
-          ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
           plan: planToStore,
           selected_plan: selectedPlan,
           payment_status: "pending",
         }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
         if (error) throw error;
-        store = data;
         createdStoreId = String(data.id);
         targetStoreId = String(data.id);
+        const { error: merchantError } = await supabase.from("merchants").upsert({
+          store_id: data.id,
+          name: data.name,
+          email: merchantEmail,
+          whatsapp_number: requestedWhatsapp || "",
+          address: "",
+          contact_phone: text(input.owner_phone, 30) || requestedWhatsapp || null,
+        }, { onConflict: "store_id" });
+        if (merchantError) throw merchantError;
+        store = data;
       } else {
         // Supabase is not configured (local development): use the local store repository.
         const fallbackStoreId = `store_${crypto.randomUUID().slice(0, 12)}`;

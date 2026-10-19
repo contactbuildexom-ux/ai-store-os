@@ -334,6 +334,7 @@ export default function MerchantStoreSetupModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          registration: 'merchant',
           store_name: storeName.trim() || undefined,
           name: storeName.trim() || undefined,
           prompt: prompt.trim(),

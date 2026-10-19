@@ -56,6 +56,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: duplicate ? 'A store with this email or slug already exists.' : error.message }, { status: duplicate ? 409 : 500 });
     }
 
+    const { error: merchantError } = await supabase.from('merchants').upsert({
+      store_id: data.id,
+      name,
+      email: owner_email,
+      whatsapp_number: whatsapp_number || '',
+      address: '',
+      contact_phone: whatsapp_number || null,
+    }, { onConflict: 'store_id' });
+    if (merchantError) {
+      const { error: cleanupError } = await supabase.from('stores').delete().eq('id', data.id);
+      const message = cleanupError
+        ? `Unable to save merchant details (${merchantError.message}); store cleanup also failed (${cleanupError.message}).`
+        : `Unable to save merchant details: ${merchantError.message}`;
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+
     const supabaseAdmin = createAdminClient();
     if (!supabaseAdmin) {
       await supabase.from('stores').delete().eq('id', data.id);

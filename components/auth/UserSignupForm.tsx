@@ -62,6 +62,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          registration: "merchant",
           store_name: storeName.trim() || undefined,
           prompt: prompt.trim(),
           plan,

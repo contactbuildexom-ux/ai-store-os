@@ -13,12 +13,29 @@ export type DashboardEditField = {
 };
 
 type DashboardRecordActionsProps = {
-  resource: "stores" | "products" | "orders";
+  resource: "stores" | "sellers" | "products" | "orders";
   recordId: string;
   values: Array<{ label: string; value: string }>;
   fields: DashboardEditField[];
   viewHref?: string;
 };
+
+async function readApiResponse(response: Response, action: string): Promise<{ error?: string }> {
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`${action} failed: server returned a non-JSON response (HTTP ${response.status}).`);
+  }
+
+  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) {
+    throw new Error(`${action} failed: server returned an invalid response (HTTP ${response.status}).`);
+  }
+
+  return {
+    error: "error" in payload && typeof payload.error === "string" ? payload.error : undefined,
+  };
+}
 
 export function DashboardRecordActions({ resource, recordId, values, fields, viewHref }: DashboardRecordActionsProps) {
   const router = useRouter();
@@ -38,7 +55,8 @@ export function DashboardRecordActions({ resource, recordId, values, fields, vie
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       });
-      const result: { error?: string } = await response.json();
+      const action = `Unable to update ${resource.slice(0, -1)}`;
+      const result = await readApiResponse(response, action);
       if (!response.ok) throw new Error(result.error ?? `Unable to update ${resource.slice(0, -1)}.`);
       setDialog(null);
       router.refresh();
@@ -54,8 +72,12 @@ export function DashboardRecordActions({ resource, recordId, values, fields, vie
     setPending(true);
     setError("");
     try {
-      const response = await fetch(`/api/admin/${resource}/${encodeURIComponent(recordId)}`, { method: "DELETE" });
-      const result: { error?: string } = await response.json();
+      const endpoint = resource === "stores"
+        ? `/api/admin/stores?id=${encodeURIComponent(recordId)}`
+        : `/api/admin/${resource}/${encodeURIComponent(recordId)}`;
+      const response = await fetch(endpoint, { method: "DELETE" });
+      const action = `Unable to delete ${resource.slice(0, -1)}`;
+      const result = await readApiResponse(response, action);
       if (!response.ok) throw new Error(result.error ?? `Unable to delete ${resource.slice(0, -1)}.`);
       router.refresh();
     } catch (deleteError) {
