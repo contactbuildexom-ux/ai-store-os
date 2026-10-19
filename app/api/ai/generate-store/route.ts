@@ -7,6 +7,7 @@ import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession }
 import { generateStoreFromPrompt } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
+import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
 import { getStoreUrl, isReservedSlug } from "@/lib/store-url";
 
 type GeneratedProduct = { name: string; price: number; description: string; category_name: string; image_url?: string | null };
@@ -476,7 +477,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
         }
         // Email OTP check. It runs for every new signup (it must not sit inside the `existingStore` branch).
-        if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
+        if (EMAIL_OTP_REQUIRED) {
           const verificationToken = text(input.verification_token, 600);
           if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
             return NextResponse.json({ error: "Please verify your email with the code we sent before creating your store." }, { status: 403 });
