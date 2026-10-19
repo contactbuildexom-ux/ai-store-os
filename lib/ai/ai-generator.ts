@@ -37,6 +37,7 @@ export interface GeneratedStore {
   theme: StoreThemeConfig;
   categories: string[];
   products: GeneratedProduct[];
+  password_hash?: string;
   social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
   delivery: {
     store_city: string;

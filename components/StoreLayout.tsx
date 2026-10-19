@@ -28,7 +28,11 @@ import {
   Sparkles,
   ArrowRight,
   Menu,
-  ChevronRight
+  ChevronRight,
+  LogIn,
+  PackagePlus,
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 
 export interface ProductItem {
@@ -102,6 +106,43 @@ export default function StoreLayout({
   const [customerAddress, setCustomerAddress] = useState('');
   const [showAllProducts, setShowAllProducts] = useState(false);
   const INITIAL_PRODUCT_LIMIT = 12;
+
+  // Store Owner Login Modal States
+  const [isOwnerLoginOpen, setIsOwnerLoginOpen] = useState(false);
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerLoginLoading, setOwnerLoginLoading] = useState(false);
+  const [ownerLoginError, setOwnerLoginError] = useState('');
+  const [ownerLoginSuccess, setOwnerLoginSuccess] = useState('');
+
+  const handleOwnerLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOwnerLoginError('');
+    setOwnerLoginLoading(true);
+    try {
+      const res = await fetch('/api/stores/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: ownerEmail.trim(),
+          password: ownerPassword,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Invalid owner email or password.');
+      }
+      setOwnerLoginSuccess('✓ Logged in! Redirecting to merchant dashboard...');
+      setTimeout(() => {
+        const targetSlug = data.store?.slug || storeSlug;
+        window.location.href = `/merchant/${targetSlug}/dashboard?tab=products`;
+      }, 600);
+    } catch (err) {
+      setOwnerLoginError(err instanceof Error ? err.message : 'Login failed. Please check your email and password.');
+    } finally {
+      setOwnerLoginLoading(false);
+    }
+  };
 
   const themeColor = theme?.primaryColor || '#10b981';
 
@@ -185,9 +226,9 @@ export default function StoreLayout({
       return products.slice(0, 4);
     }
     if (products.length > 0) {
-      return [...products, ...defaultFeatured.slice(products.length, 4)];
+      return products;
     }
-    return defaultFeatured;
+    return [];
   }, [products]);
 
   // Dynamic Niche & Hero Info
@@ -467,7 +508,7 @@ export default function StoreLayout({
           </div>
 
           {/* Desktop Navigation Links (Matching Instagram Post Mockup) */}
-          <nav className="hidden items-center gap-7 lg:flex">
+          <nav className="hidden items-center gap-5 lg:gap-6 lg:flex">
             <a href="#" className="text-xs font-bold text-slate-900 transition hover:text-blue-600">
               Home
             </a>
@@ -483,10 +524,31 @@ export default function StoreLayout({
             <a href="#footer" className="text-xs font-semibold text-slate-600 transition hover:text-blue-600">
               About
             </a>
+
+            {/* Store Owner Button alongside Home, Shop, About etc. */}
+            <button
+              type="button"
+              onClick={() => setIsOwnerLoginOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 hover:shadow-sm active:scale-95 shrink-0"
+              style={{ backgroundColor: themeColor }}
+            >
+              <LogIn size={13} />
+              <span>Login to your Dashboard and add a product</span>
+            </button>
           </nav>
 
           {/* Search bar & Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setIsOwnerLoginOpen(true)}
+              title="Login to Dashboard and add product"
+              className="inline-flex lg:hidden items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-800 shadow-2xs hover:bg-slate-50 active:scale-95"
+            >
+              <LogIn size={13} style={{ color: themeColor }} />
+              <span>Owner</span>
+            </button>
+
             <div className="relative hidden max-w-xs md:block">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -643,33 +705,23 @@ export default function StoreLayout({
           style={{ backgroundColor: themeColor }}
         />
 
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
-          {/* Left Column: Prominent, Bigger Text & CTAs */}
-          <div className="w-full lg:max-w-xl text-left space-y-4">
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider"
-              style={{
-                backgroundColor: `${themeColor}15`,
-                color: themeColor,
-                borderColor: `${themeColor}35`
-              }}
-            >
-              {heroInfo.badge}
-            </span>
-            <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-9 lg:py-11 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+          {/* Left Column: Polished, Balanced Text & CTAs */}
+          <div className="w-full lg:max-w-lg text-left space-y-3.5 sm:space-y-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-[1.16]">
               {heroInfo.headlineMain}<br />
               {heroInfo.headlineHighlight && (
                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
               )}
             </h2>
-            <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-semibold">
+            <p className="text-xs sm:text-sm text-slate-700 max-w-md leading-relaxed font-semibold">
               {tagline || heroInfo.subtext}
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="pt-1.5 flex flex-wrap items-center gap-3">
               <a
                 href="#catalog"
-                className="rounded-full px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-105 active:scale-95"
+                className="rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
                 style={{ backgroundColor: themeColor }}
               >
                 Shop Now →
@@ -678,9 +730,9 @@ export default function StoreLayout({
                 href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-2xs transition hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-slate-50"
               >
-                <MessageCircle size={16} className="text-emerald-600" /> WhatsApp Support
+                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
               </a>
             </div>
           </div>
@@ -740,75 +792,77 @@ export default function StoreLayout({
 
       <div className="w-full px-2 sm:px-4 lg:px-6 pt-6 space-y-6">
 
-        {/* 4. Featured Products Section (Background matching hero section background, flush card boxes) */}
-        <section 
-          id="featured" 
-          className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 shadow-xs transition"
-          style={{
-            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
-            borderColor: `${themeColor}28`,
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
-              Featured Products
-            </h3>
-            <a
-              href="#catalog"
-              className="flex items-center gap-1 text-xs font-bold transition hover:opacity-80"
-              style={{ color: themeColor }}
-            >
-              <span>View All</span>
-              <ArrowRight size={13} />
-            </a>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
-            {featuredItems.map((item) => (
-              <article
-                key={item.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg w-full"
-                style={{
-                  backgroundColor: `${themeColor}08`,
-                  borderColor: `${themeColor}24`,
-                }}
+        {/* 4. Featured Products Section (Only rendered when real products exist) */}
+        {featuredItems.length > 0 && (
+          <section 
+            id="featured" 
+            className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 shadow-xs transition"
+            style={{
+              background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+              borderColor: `${themeColor}28`,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+                Featured Products
+              </h3>
+              <a
+                href="#catalog"
+                className="flex items-center gap-1 text-xs font-bold transition hover:opacity-80"
+                style={{ color: themeColor }}
               >
-                <div 
-                  className="relative aspect-square w-full overflow-hidden"
-                  style={{ backgroundColor: `${themeColor}0d` }}
-                >
-                  <img
-                    src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
-                    alt={item.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="size-full object-cover transition duration-500 group-hover:scale-105"
-                  />
-                </div>
+                <span>View All</span>
+                <ArrowRight size={13} />
+              </a>
+            </div>
 
-                <div className="p-3 sm:p-3.5">
-                  <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
-                    {item.name}
-                  </h4>
-                  <div className="mt-2.5 flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
-                      Rs. {item.price.toLocaleString()}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(item)}
-                      aria-label={`Add ${item.name} to cart`}
-                      className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
-                      style={{ backgroundColor: themeColor }}
-                    >
-                      <ShoppingBag size={14} />
-                    </button>
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+              {featuredItems.map((item) => (
+                <article
+                  key={item.id}
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg w-full"
+                  style={{
+                    backgroundColor: `${themeColor}08`,
+                    borderColor: `${themeColor}24`,
+                  }}
+                >
+                  <div 
+                    className="relative aspect-square w-full overflow-hidden"
+                    style={{ backgroundColor: `${themeColor}0d` }}
+                  >
+                    <img
+                      src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
+                      alt={item.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="size-full object-cover transition duration-500 group-hover:scale-105"
+                    />
                   </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+
+                  <div className="p-3 sm:p-3.5">
+                    <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
+                      {item.name}
+                    </h4>
+                    <div className="mt-2.5 flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
+                        Rs. {item.price.toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => addToCart(item)}
+                        aria-label={`Add ${item.name} to cart`}
+                        className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
+                        style={{ backgroundColor: themeColor }}
+                      >
+                        <ShoppingBag size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 5. Category Strip (Dynamic 4 Working Categories) */}
         <section id="categories" className="w-full pt-1">
@@ -898,7 +952,6 @@ export default function StoreLayout({
       >
         <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-end">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Curated Catalog</span>
             <h3 className="text-2xl font-bold tracking-tight text-slate-900">
               {selectedCategory === 'All' ? 'All Products' : selectedCategory}
             </h3>
@@ -969,9 +1022,6 @@ export default function StoreLayout({
                     <span className="text-xs sm:text-sm font-extrabold text-slate-900">
                       Rs. {product.price.toLocaleString()}
                     </span>
-                    <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                      ✓ In Stock
-                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-1.5">
@@ -993,7 +1043,26 @@ export default function StoreLayout({
             </div>
           ))}
 
-          {filteredProducts.length === 0 && (
+          {products.length === 0 ? (
+            <div className="col-span-full rounded-3xl border border-dashed border-slate-300 bg-white/90 backdrop-blur-sm p-8 sm:p-14 text-center">
+              <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-500 mb-4 shadow-xs">
+                <PackagePlus size={32} />
+              </div>
+              <h4 className="text-base sm:text-lg font-black text-slate-900">No products added yet</h4>
+              <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                This store is live and ready! If you are the store owner, log in to your dashboard to add your products. They will appear right here in this grid.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsOwnerLoginOpen(true)}
+                className="mt-5 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                style={{ backgroundColor: themeColor }}
+              >
+                <LogIn size={15} />
+                <span>Login to your Dashboard and add a product</span>
+              </button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
               <ShoppingBag size={32} className="mx-auto text-slate-400" />
               <h4 className="mt-3 text-base font-semibold text-slate-800">No products match your filter</h4>
@@ -1005,7 +1074,7 @@ export default function StoreLayout({
                 Reset Filters
               </button>
             </div>
-          )}
+          ) : null}
         </div>
 
         {filteredProducts.length > INITIAL_PRODUCT_LIMIT && selectedCategory === 'All' && !searchQuery.trim() && (
@@ -1358,6 +1427,112 @@ export default function StoreLayout({
           </div>
         </button>
       </div>
+
+      {/* Store Owner Login & Dashboard Modal */}
+      {isOwnerLoginOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span 
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
+                  style={{ backgroundColor: themeColor }}
+                >
+                  <Sparkles size={11} /> Merchant Access
+                </span>
+                <h3 className="mt-1 text-lg font-black text-slate-900">
+                  Store Owner Dashboard
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Enter your credentials to add products and manage {storeName}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOwnerLoginOpen(false);
+                  setOwnerLoginError('');
+                  setOwnerLoginSuccess('');
+                }}
+                className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {ownerLoginSuccess ? (
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-2">
+                <CheckCircle2 size={28} className="mx-auto text-emerald-600 animate-bounce" />
+                <p className="text-xs font-bold text-emerald-900">{ownerLoginSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleOwnerLogin} className="space-y-3.5">
+                {ownerLoginError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700">
+                    {ownerLoginError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Owner Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={ownerEmail}
+                    onChange={(e) => setOwnerEmail(e.target.value)}
+                    placeholder="merchant@example.com"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    The email address you used when generating this store.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Account Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={ownerPassword}
+                    onChange={(e) => setOwnerPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={ownerLoginLoading}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
+                    style={{ backgroundColor: themeColor }}
+                  >
+                    {ownerLoginLoading ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        Logging in...
+                      </>
+                    ) : (
+                      <>
+                        <LogIn size={14} />
+                        Login to Dashboard & Add Products
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-center text-slate-400">
+                  Once logged in, you will be taken directly to your products catalog.
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

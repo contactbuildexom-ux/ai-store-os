@@ -21,6 +21,13 @@ export interface StoreRecord {
   theme?: any;
   social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
   logo_url?: string;
+  password_hash?: string;
+  delivery?: {
+    store_city?: string;
+    city_rate?: number;
+    other_city_rate?: number;
+    free_delivery_above?: number;
+  };
 }
 
 export interface ProductRecord {
@@ -169,7 +176,7 @@ class StoreRepository {
   private getSupabase() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (url && key && !url.includes('your-project')) {
+    if (url && key && !url.includes('placeholder-project') && !url.includes('your-project')) {
       return createClient(url, key);
     }
     return null;
@@ -194,6 +201,8 @@ class StoreRepository {
       created_at: new Date().toISOString(),
       theme: generated.theme,
       social_links: generated.social_links ?? {},
+      password_hash: (generated as any).password_hash,
+      delivery: (generated as any).delivery,
     };
 
     // Save in memory cache
@@ -463,6 +472,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return newProd;
   }
 
@@ -489,6 +499,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return updated;
   }
 
@@ -510,6 +521,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return true;
   }
 

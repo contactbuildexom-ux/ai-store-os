@@ -157,6 +157,10 @@ export default function MerchantDashboardMaster() {
     const [prodCategory, setProdCategory] = useState('');
     const [prodImageFiles, setProdImageFiles] = useState<File[]>([]);
     const [editingProdId, setEditingProdId] = useState<string | null>(null);
+    const [keepAddingMultiple, setKeepAddingMultiple] = useState(false);
+    const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+    const [bulkText, setBulkText] = useState('');
+    const [bulkLoading, setBulkLoading] = useState(false);
 
     // Category Form
     const [catName, setCatName] = useState('');
@@ -479,6 +483,16 @@ export default function MerchantDashboardMaster() {
         };
     }, [paramId, resolveStoreAndData]);
 
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam && ['overview', 'products', 'categories', 'orders', 'branding', 'payments', 'plans', 'ai'].includes(tabParam)) {
+                setActiveTab(tabParam);
+            }
+        }
+    }, []);
+
     // Save Settings & Integrations (Plan Gated)
     const handleSaveSettings = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -568,32 +582,111 @@ export default function MerchantDashboardMaster() {
             const data = await res.json();
 
             if (data.success) {
-                setMessage(editingProdId ? 'Product updated successfully!' : 'Product added successfully!');
+                setMessage(editingProdId ? 'Product updated successfully!' : 'Product added! You can add another product below.');
+                setMessageError(false);
                 setProdName('');
                 setProdPrice('');
                 setProdDesc('');
                 setProdImageFiles([]);
                 setEditingProdId(null);
-                setActiveTab('overview');
+                if (!keepAddingMultiple) {
+                    setActiveTab('products');
+                }
                 await fetchMeshData(resolvedStoreId);
             } else {
                 setMessage(data.error || 'Failed to save product');
+                setMessageError(true);
             }
         } catch (err) {
             setMessage(err instanceof Error ? err.message : 'An error occurred');
+            setMessageError(true);
         } finally {
             setUploadingImage(false);
         }
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm('Delete this product?')) return;
-        const res = await fetch(`/api/stores/products?id=${id}&store_id=${resolvedStoreId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-            setMessage('Product deleted.');
+        if (!confirm('Are you sure you want to delete this product from your store?')) return;
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+        try {
+            const res = await fetch(`/api/stores/products?id=${encodeURIComponent(id)}&store_id=${encodeURIComponent(resolvedStoreId)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (data.success) {
+                setMessage('Product deleted successfully.');
+                setMessageError(false);
+            } else {
+                setMessage(data.error || 'Failed to delete product');
+                setMessageError(true);
+            }
+        } catch (err) {
+            setMessage(err instanceof Error ? err.message : 'Error deleting product');
+            setMessageError(true);
+        } finally {
             await fetchMeshData(resolvedStoreId);
         }
+    };
+
+    const handleDeleteAllAiProducts = async () => {
+        if (!confirm(`Are you sure you want to delete all ${products.length} products to clear the starter catalog?`)) return;
+        setProducts([]);
+        try {
+            await Promise.all(
+                products.map((p) =>
+                    fetch(`/api/stores/products?id=${encodeURIComponent(p.id)}&store_id=${encodeURIComponent(resolvedStoreId)}`, { method: 'DELETE' })
+                )
+            );
+            setMessage('All products deleted. You can now add your custom items.');
+            setMessageError(false);
+        } catch {
+            setMessage('Error deleting some products.');
+            setMessageError(true);
+        } finally {
+            await fetchMeshData(resolvedStoreId);
+        }
+    };
+
+    const handleBulkAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!bulkText.trim() || bulkLoading) return;
+        setBulkLoading(true);
+        setMessage('');
+
+        const lines = bulkText.split('\n').map(l => l.trim()).filter(Boolean);
+        let successCount = 0;
+
+        for (const line of lines) {
+            const parts = line.split(',').map(p => p.trim());
+            const name = parts[0];
+            const price = Number(parts[1]) || 1000;
+            const cat = parts[2] || 'General';
+
+            if (name) {
+                try {
+                    const res = await fetch('/api/stores/products', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            store_id: resolvedStoreId,
+                            name,
+                            price,
+                            description: `Handcrafted ${name} with quality verified guarantee.`,
+                            category_id: categories.find(c => c.name.toLowerCase() === cat.toLowerCase())?.id || null,
+                        }),
+                    });
+                    const d = await res.json().catch(() => ({}));
+                    if (d.success) successCount++;
+                } catch {
+                    // continue
+                }
+            }
+        }
+
+        setMessage(`Successfully added ${successCount} products!`);
+        setMessageError(false);
+        setBulkText('');
+        setIsBulkAddOpen(false);
+        setBulkLoading(false);
+        await fetchMeshData(resolvedStoreId);
     };
 
     const handleAddCategory = async (e: React.FormEvent) => {
@@ -1186,6 +1279,18 @@ export default function MerchantDashboardMaster() {
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">Description</label>
                                         <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </div>
+
+                                    {/* Keep Adding Multiple Checkbox */}
+                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                                        <input
+                                            type="checkbox"
+                                            checked={keepAddingMultiple}
+                                            onChange={(e) => setKeepAddingMultiple(e.target.checked)}
+                                            className="size-4 rounded accent-emerald-600 cursor-pointer"
+                                        />
+                                        <span className="font-semibold text-[11px]">Keep adding products (stays here after saving)</span>
+                                    </label>
+
                                     <button type="submit" disabled={uploadingImage || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                                         {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
                                     </button>
@@ -1194,9 +1299,137 @@ export default function MerchantDashboardMaster() {
                                 </form>
                             </div>
 
-                            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                                <div className="border-b border-slate-100 px-5 py-4"><h3 className="text-sm font-semibold text-slate-900">Product inventory</h3><p className="mt-1 text-[11px] text-slate-500">All {products.length} products in this store</p></div>
-                                {products.length === 0 ? <p className="px-5 py-10 text-center text-xs text-slate-500">No products yet. Add your first product using the form.</p> : <div className="divide-y divide-slate-100">{products.map((product) => <div key={product.id} className="flex items-center gap-3 px-4 py-3"><div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">{product.image_url ? <Image src={product.image_url.split(',')[0].trim()} alt="" width={40} height={40} unoptimized className="size-full object-cover" /> : <Package size={16} />}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-slate-800">{product.name}</p><p className="mt-1 truncate text-[10px] text-slate-500">{categories.find((category) => category.id === product.category_id)?.name || 'Uncategorized'}</p></div><span className="text-xs font-semibold text-slate-800">{formatPKR(product.price)}</span><button aria-label={`Edit ${product.name}`} onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFiles([]); }} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button><button aria-label={`Delete ${product.name}`} onClick={() => handleDeleteProduct(product.id)} className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button></div>)}</div>}
+                            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
+                                <div>
+                                    <div className="border-b border-slate-100 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-slate-900">Product inventory</h3>
+                                            <p className="mt-1 text-[11px] text-slate-500">All {products.length} products in this store</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsBulkAddOpen(true)}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs"
+                                            >
+                                                <Plus size={13} /> Bulk Add
+                                            </button>
+                                            {products.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDeleteAllAiProducts}
+                                                    className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/60 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition shadow-2xs"
+                                                >
+                                                    <Trash2 size={13} /> Clear All
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {products.length === 0 ? (
+                                        <div className="px-5 py-12 text-center text-xs text-slate-500 space-y-3">
+                                            <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
+                                                <Package size={24} />
+                                            </div>
+                                            <p className="font-semibold text-slate-800">Your store has no products yet.</p>
+                                            <p className="text-slate-400 text-[11px] max-w-xs mx-auto">
+                                                Use the form on the left to add your first product with multiple photos, title, price, and description.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-slate-100">
+                                            {products.map((product) => (
+                                                <div key={product.id} className="flex items-center gap-3 px-4 py-3">
+                                                    <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">
+                                                        {product.image_url ? (
+                                                            <Image src={product.image_url.split(',')[0].trim()} alt="" width={40} height={40} unoptimized className="size-full object-cover" />
+                                                        ) : (
+                                                            <Package size={16} />
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-xs font-semibold text-slate-800">{product.name}</p>
+                                                        <p className="mt-1 truncate text-[10px] text-slate-500">
+                                                            {categories.find((category) => category.id === product.category_id)?.name || 'Uncategorized'}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-slate-800">{formatPKR(product.price)}</span>
+                                                    <button
+                                                        aria-label={`Edit ${product.name}`}
+                                                        onClick={() => {
+                                                            setEditingProdId(product.id);
+                                                            setProdName(product.name);
+                                                            setProdPrice(String(product.price));
+                                                            setProdDesc(product.description || '');
+                                                            setProdCategory(product.category_id || '');
+                                                            setProdImageFiles([]);
+                                                        }}
+                                                        className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700 transition"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                    <button
+                                                        aria-label={`Delete ${product.name}`}
+                                                        onClick={() => handleDeleteProduct(product.id)}
+                                                        className="flex items-center gap-1 rounded-md px-2 py-1 text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        <span className="text-[10px] font-semibold hidden sm:inline">Delete</span>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bulk Add Products Modal */}
+                    {isBulkAddOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+                            <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4">
+                                <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+                                    <div>
+                                        <h3 className="text-base font-bold text-slate-900">Bulk Add Products</h3>
+                                        <p className="text-xs text-slate-500">Add multiple products quickly. Format: Name, Price, Category (one per line)</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsBulkAddOpen(false)}
+                                        className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                                <form onSubmit={handleBulkAdd} className="space-y-4">
+                                    <textarea
+                                        rows={6}
+                                        value={bulkText}
+                                        onChange={(e) => setBulkText(e.target.value)}
+                                        placeholder={`Casual White Sneaker, 3500, Footwear\nOversized Cotton Hoodie, 2800, Clothing\nMinimal Leather Wallet, 1950, Accessories`}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-mono outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    />
+                                    <p className="text-[10px] text-slate-400">
+                                        Tip: Each line will be added as a separate product in your store catalog.
+                                    </p>
+                                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsBulkAddOpen(false)}
+                                            className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={bulkLoading || !bulkText.trim()}
+                                            className="rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:opacity-95 disabled:opacity-50"
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            {bulkLoading ? 'Adding Products...' : 'Add All Products'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     )}

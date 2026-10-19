@@ -161,88 +161,12 @@ function normalizeGeneratedStore(
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
 
   const rawCategories = Array.isArray(source.categories) ? source.categories : [];
-  let categories = [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, 20);
-  const rawProducts = Array.isArray(source.products) ? source.products : [];
-  const products: GeneratedProduct[] = rawProducts.slice(0, productLimit).flatMap((item) => {
-    if (!item || typeof item !== "object") return [];
-    const product = item as Record<string, unknown>;
-    const name = text(product.name, 100);
-    const price = Number(product.price);
-    if (!name || !Number.isFinite(price) || price <= 0) return [];
-    const candidateImage = text(product.image_url, 1000);
-    let imageUrl: string | null = null;
-    if (candidateImage) {
-      try {
-        const url = new URL(candidateImage);
-        if (url.protocol === "https:" || url.protocol === "http:") imageUrl = url.toString();
-      } catch {
-        imageUrl = null;
-      }
-    }
-    return [{
-      name,
-      price: Math.round(price * 100) / 100,
-      description: text(product.description, 500),
-      category_name: text(product.category_name, 60),
-      image_url: imageUrl,
-    }];
-  });
+  let categories = [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, categoryLimit);
+  if (!categories.length) categories = ["Featured", "Best Sellers", "New Arrivals", "Trending"];
 
-  if (!products.length) throw new Error("The AI did not return any valid products. Please try a more specific prompt.");
-
-  // Guarantee minimum 30 products as required by user
-  if (products.length > 0 && products.length < 30) {
-    const originalCount = products.length;
-    const editions = ["Premium", "Signature", "Luxe", "Classic", "Reserve", "Essential", "Elite"];
-    let i = 0;
-    while (products.length < Math.min(32, productLimit)) {
-      const base = products[i % originalCount];
-      const edition = editions[Math.floor(i / originalCount) % editions.length];
-      const category = base.category_name || (categories.length > 0 ? categories[i % categories.length] : "Featured");
-      const priceOffset = ((i % 5) + 1) * 250;
-      products.push({
-        name: `${base.name} · ${edition}`,
-        price: Math.max(150, Math.round(base.price + priceOffset)),
-        description: base.description ? `${base.description} (Special ${edition} edition)` : `Exclusive ${edition} quality craftsmanship for ${base.name}.`,
-        category_name: category,
-        image_url: base.image_url,
-      });
-      i++;
-    }
-  }
-
-  categories = categories.slice(0, categoryLimit);
-  for (const product of products) {
-    if (product.category_name && !categories.some((category) => category.toLowerCase() === product.category_name.toLowerCase())) {
-      if (categories.length >= categoryLimit) product.category_name = categories[0];
-      else categories.push(product.category_name);
-    }
-  }
-  if (!categories.length) categories.push("Featured");
-  for (const product of products) {
-    if (!product.category_name) product.category_name = categories[0];
-    const matchingCategory = categories.find((category) => category.toLowerCase() === product.category_name.toLowerCase());
-    product.category_name = matchingCategory ?? categories[0];
-  }
-
-  // Ensure every category strictly has products
-  for (const cat of categories) {
-    const hasProducts = products.some((p) => p.category_name.toLowerCase() === cat.toLowerCase());
-    if (!hasProducts && products.length > 0) {
-      const base = products[Math.floor(Math.random() * products.length)];
-      products.push({
-        name: `${cat} Special Edition`,
-        price: Math.max(150, Math.round(base.price * 1.05)),
-        description: `Handcrafted premium selection for ${cat}. Built for quality and durability.`,
-        category_name: cat,
-        image_url: base.image_url,
-      });
-    }
-  }
-
-  // Filter categories so only categories that actually have products are returned
-  categories = categories.filter((cat) => products.some((p) => p.category_name.toLowerCase() === cat.toLowerCase()));
-  if (!categories.length) categories.push("Featured");
+  // As requested by user: Products are not AI generated at store creation.
+  // The merchant personally adds and manages products from their merchant dashboard.
+  const products: GeneratedProduct[] = [];
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
@@ -378,19 +302,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
     }
     const input = body as Record<string, unknown>;
-    const rawPrompt = input.prompt;
-    if (typeof rawPrompt !== "string" || rawPrompt.trim().length > 2000) {
+    const rawPrompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
+    if (rawPrompt.length > 2000) {
       return NextResponse.json({ error: "Enter a store description of no more than 2,000 characters." }, { status: 400 });
     }
-    const prompt = rawPrompt.trim();
+    const requestedStoreName = text(input.name ?? input.store_name, 100);
+    const prompt = rawPrompt.length >= 8
+      ? rawPrompt
+      : `A modern e-commerce storefront for ${requestedStoreName || "My Online Store"} featuring curated quality products and nationwide cash on delivery.`;
     const requestedUserId = text(input.user_id, 100);
     const requestedStoreId = text(input.store_id, 100);
-    const requestedStoreName = text(input.name ?? input.store_name, 100);
     const requestedTheme = text(input.theme ?? input.selected_theme ?? "", 40);
     const requestedPlan = text(input.plan, 20).toLowerCase();
-    if (prompt.length < 8) {
-      return NextResponse.json({ error: "Enter a store description with at least 8 characters." }, { status: 400 });
-    }
     if (requestedPlan && !["basic", "free", "pro", "business", "advanced", "advance"].includes(requestedPlan)) {
       return NextResponse.json({ error: "Choose a supported store plan." }, { status: 400 });
     }
@@ -581,6 +504,7 @@ export async function POST(request: Request) {
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
     let store = targetStore;
+    let password_hash: string | null = null;
     if (!store) {
       const requestedSlug = slugify(text(input.slug, 80));
       const slug = await uniqueStoreSlug(supabase, requestedSlug || generated.slug);
@@ -588,7 +512,6 @@ export async function POST(request: Request) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(merchantEmail)) {
         throw new Error("A valid merchant email address is required to create a store.");
       }
-      let password_hash: string | null = null;
       if (!user && typeof input.password === "string") {
         password_hash = await bcrypt.hash(input.password, 12);
       }
@@ -703,6 +626,7 @@ export async function POST(request: Request) {
         plan: (resolvedStore.plan === "pro" ? "pro" : resolvedStore.plan === "business" ? "advanced" : "free") as any,
         whatsapp_number: resolvedStore.whatsapp_number || requestedWhatsapp || "923001234567",
         owner_email: resolvedStore.owner_email || "merchant@buildexom.store",
+        password_hash: password_hash || undefined,
         theme: {
           id: generated.selected_theme,
           name: generated.selected_theme,

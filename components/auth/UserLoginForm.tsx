@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/landing/logo";
 
 
@@ -21,7 +21,7 @@ type LoginResponse = {
  * Asli login: /api/stores/login par email + password bhejta hai.
  * Kamyab hone par us user ke dashboard ka path wapas karta hai.
  */
-async function authenticateUser(payload: LoginPayload): Promise<string> {
+async function authenticateUser(payload: LoginPayload, fallbackSlug?: string): Promise<string> {
   const response = await fetch("/api/stores/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -39,7 +39,7 @@ async function authenticateUser(payload: LoginPayload): Promise<string> {
     throw new Error(data.error || "Login failed. Please check your email and password.");
   }
 
-  const slug = data.store?.slug;
+  const slug = data.store?.slug || fallbackSlug;
   return slug ? `/merchant/${encodeURIComponent(slug)}/dashboard` : AFTER_LOGIN_HREF;
 }
 
@@ -53,12 +53,23 @@ const highlights = [
 
 export default function UserLoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+  const isCreated = searchParams?.get("created") === "true";
+  const emailParam = searchParams?.get("email") || "";
+  const slugParam = searchParams?.get("slug") || "";
+
+  const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (emailParam && !email) {
+      setEmail(emailParam);
+    }
+  }, [emailParam, email]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,7 +88,7 @@ export default function UserLoginForm() {
     setError("");
     setLoading(true);
     try {
-      const nextPath = await authenticateUser({ email: cleanEmail, password, remember });
+      const nextPath = await authenticateUser({ email: cleanEmail, password, remember }, slugParam);
       router.push(nextPath);
       router.refresh();
     } catch (err) {
@@ -158,6 +169,17 @@ export default function UserLoginForm() {
             <p className="mt-1 text-sm text-[#2c4a73]">Log in to manage your store.</p>
 
             <form onSubmit={onSubmit} noValidate className="mt-6 space-y-4">
+              {isCreated && (
+                <div role="status" className="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 text-xs text-emerald-900 shadow-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-800 text-sm">
+                    <span>🎉</span> Store & Account Created!
+                  </div>
+                  <p className="text-emerald-700 font-medium">
+                    Please enter your password to log in and open your store dashboard.
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <p
                   role="alert"
