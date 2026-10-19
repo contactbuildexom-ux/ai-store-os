@@ -50,7 +50,7 @@ export function DashboardTableScroll({ children }: { children: ReactNode }) {
           aria-label="Scroll table horizontally"
           tabIndex={0}
           onScroll={syncContent}
-          className="dashboard-table-scrollbar sticky top-[76px] z-20 h-4 w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden border-b border-slate-100 bg-white"
+          className="dashboard-table-scrollbar sticky top-[76px] z-20 h-5 w-full min-w-0 max-w-full overflow-x-auto overflow-y-hidden border-b border-slate-200 bg-white"
         >
           <div aria-hidden="true" style={{ width: contentWidth, height: 1 }} />
         </div>

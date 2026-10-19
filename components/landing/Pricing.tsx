@@ -22,7 +22,7 @@ type Plan = {
 
 const VISIBLE_COUNT = 6;
 
-const plans: Plan[] = [
+const defaultPlans: Plan[] = [
   {
     id: "basic",
     name: "Basic",
@@ -45,7 +45,7 @@ const plans: Plan[] = [
   {
     id: "pro",
     name: "Pro",
-    price: "Advanced",
+    price: "PKR 3,500 / month",
     description: "For growing stores that need more flexibility.",
     popular: true,
     features: [
@@ -69,7 +69,7 @@ const plans: Plan[] = [
   {
     id: "business",
     name: "Business",
-    price: "Unlimited",
+    price: "PKR 7,500 / month",
     description: "For businesses ready to scale their online store.",
     features: [
       { label: "Unlimited Products" },
@@ -95,6 +95,73 @@ const plans: Plan[] = [
     href: "/user/signup?plan=business",
   },
 ];
+
+type ApiPlan = {
+  id: string;
+  name: string;
+  price: number | string;
+  billing_cycle: string;
+  features: string[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isApiPlan(value: unknown): value is ApiPlan {
+  if (!isRecord(value)) return false;
+  if (typeof value.price !== "number" && typeof value.price !== "string") return false;
+  if (typeof value.price === "string" && !value.price.trim()) return false;
+  const price = typeof value.price === "number" ? value.price : Number(value.price);
+  return typeof value.id === "string"
+    && value.id.length > 0
+    && typeof value.name === "string"
+    && value.name.trim().length > 0
+    && (typeof value.price === "number" || typeof value.price === "string")
+    && Number.isFinite(price)
+    && price >= 0
+    && typeof value.billing_cycle === "string"
+    && value.billing_cycle.trim().length > 0
+    && Array.isArray(value.features)
+    && value.features.every((feature) => typeof feature === "string" && feature.trim().length > 0);
+}
+
+function toPlan(record: ApiPlan): Plan {
+  const planName = record.name.trim();
+  const normalizedName = planName.toLowerCase();
+  const amount = Number(record.price);
+  const presentation = {
+    basic: {
+      description: "Perfect for starting your online store.",
+      cta: "Get Started Free",
+      href: "/user/signup",
+    },
+    pro: {
+      description: "For growing stores that need more flexibility.",
+      cta: "Upgrade to Pro",
+      href: "/user/signup?plan=pro",
+      popular: true,
+    },
+    business: {
+      description: "For businesses ready to scale their online store.",
+      cta: "Go Business",
+      href: "/user/signup?plan=business",
+    },
+  }[normalizedName];
+
+  return {
+    id: record.id,
+    name: planName,
+    price: amount === 0
+      ? "Free"
+      : `PKR ${amount.toLocaleString("en-PK", { maximumFractionDigits: 2 })} / ${record.billing_cycle}`,
+    description: presentation?.description ?? "A flexible plan for your online store.",
+    features: record.features.map((label) => ({ label })),
+    cta: presentation?.cta ?? "Get Started",
+    href: presentation?.href ?? "/user/signup",
+    popular: presentation?.popular,
+  };
+}
 
 function PlanCard({ plan, index }: { plan: Plan; index: number }) {
   const [open, setOpen] = useState(false);
@@ -195,9 +262,9 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
 
         {/* Features */}
         <ul className="space-y-3">
-          {visible.map((feature) => (
+          {visible.map((feature, featureIndex) => (
             <li
-              key={feature.label}
+              key={`${plan.id}-${featureIndex}-${feature.label}`}
               title={
                 feature.locked ? "Payment ke baad enable ho jayega" : undefined
               }
@@ -345,6 +412,44 @@ function PlanCard({ plan, index }: { plan: Plan; index: number }) {
 }
 
 export default function Pricing() {
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPlans() {
+      try {
+        const response = await fetch("/api/pricing", { cache: "no-store", signal: controller.signal });
+        let body: unknown;
+        try {
+          body = await response.json();
+        } catch {
+          throw new Error("The pricing service returned an invalid response.");
+        }
+        if (!response.ok) {
+          const message = isRecord(body) && typeof body.error === "string"
+            ? body.error
+            : "Unable to load pricing plans.";
+          throw new Error(message);
+        }
+        if (!isRecord(body) || !Array.isArray(body.plans) || !body.plans.every(isApiPlan)) {
+          throw new Error("The pricing service returned invalid plan data.");
+        }
+        setPlans(body.plans.map(toPlan));
+      } catch (reason) {
+        if (controller.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : "Unable to load pricing plans.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void loadPlans();
+    return () => controller.abort();
+  }, []);
+
   return (
     <section
       id="pricing"
@@ -366,12 +471,16 @@ export default function Pricing() {
           </p>
         </div>
 
+        {error && <p role="alert" className="mt-8 text-center text-sm text-red-600">{error}</p>}
+
         {/* Cards */}
         <div className="mt-8 grid items-stretch gap-6 sm:mt-10 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan, i) => (
             <PlanCard key={plan.id} plan={plan} index={i} />
           ))}
         </div>
+        {loading && <p role="status" className="mt-8 text-center text-sm text-slate-500">Loading pricing plans…</p>}
+        {!loading && !error && plans.length === 0 && <p role="status" className="mt-8 text-center text-sm text-slate-500">No pricing plans are currently available.</p>}
       </div>
     </section>
   );
