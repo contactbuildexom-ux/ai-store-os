@@ -25,7 +25,10 @@ import {
     MapPin,
     Mail,
     ChevronRight,
-    Send
+    Send,
+    ShoppingCart,
+    ZoomIn,
+    ZoomOut
 } from 'lucide-react';
 
 export type Product = {
@@ -39,7 +42,12 @@ export type Product = {
     badge?: string | null;
 };
 
-export type CartItem = Product & { quantity: number };
+export type CartItem = Product & {
+    quantity: number;
+    selectedSize?: string;
+    selectedColor?: string;
+    cartKey?: string;
+};
 
 export type DeliverySettings = {
     delivery_fee?: number | string | null;
@@ -118,10 +126,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [toastMessage, setToastMessage] = useState('');
 
-    // Product detail modal state (supports multiple images carousel & quick order)
+    // Product detail modal state (supports multiple images carousel, zoom, sizes & colors)
     const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
     const [modalQty, setModalQty] = useState(1);
     const [modalActiveImgIdx, setModalActiveImgIdx] = useState(0);
+    const [modalSelectedSize, setModalSelectedSize] = useState('Standard');
+    const [modalSelectedColor, setModalSelectedColor] = useState('Default');
+    const [isImageZoomed, setIsImageZoomed] = useState(false);
+
+    const openProductModal = (product: Product) => {
+        setSelectedProductForModal(product);
+        setModalQty(1);
+        setModalActiveImgIdx(0);
+        setIsImageZoomed(false);
+        setModalSelectedSize('Standard');
+        setModalSelectedColor('Default');
+    };
 
     // Cart and checkout states
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -279,28 +299,35 @@ export default function StorefrontClient({ store, settings, products, delivery }
     }, [store.slug]);
 
     // Cart actions
-    function addToCart(product: Product, openDrawer = false) {
+    function addToCart(product: Product, openDrawer = false, size = 'Standard', color = 'Default') {
+        const itemKey = `${product.id}_${size}_${color}`;
         setCart((current) => {
-            const existing = current.find((item) => item.id === product.id);
+            const existing = current.find((item) => (item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`) === itemKey);
             if (existing) {
-                return current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                return current.map((item) => ((item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`) === itemKey) ? { ...item, quantity: item.quantity + 1 } : item);
             }
-            return [...current, { ...product, quantity: 1 }];
+            return [...current, { ...product, quantity: 1, selectedSize: size, selectedColor: color, cartKey: itemKey }];
         });
-        setToastMessage(`✓ Added "${product.name}" to cart`);
+        setToastMessage(`✓ Added "${product.name}"${size && size !== 'Standard' ? ` (${size})` : ''} to cart`);
         if (openDrawer) setIsCartOpen(true);
         setOrderStatus('');
         setWhatsappLink('');
     }
 
-    function changeQuantity(productId: string, amount: number) {
+    function changeQuantity(cartKeyOrId: string, amount: number) {
         setCart((current) => current
-            .map((item) => item.id === productId ? { ...item, quantity: item.quantity + amount } : item)
+            .map((item) => {
+                const k = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`;
+                return (k === cartKeyOrId || item.id === cartKeyOrId) ? { ...item, quantity: item.quantity + amount } : item;
+            })
             .filter((item) => item.quantity > 0));
     }
 
-    function removeFromCart(productId: string) {
-        setCart((current) => current.filter((item) => item.id !== productId));
+    function removeFromCart(cartKeyOrId: string) {
+        setCart((current) => current.filter((item) => {
+            const k = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`;
+            return k !== cartKeyOrId && item.id !== cartKeyOrId;
+        }));
     }
 
     // Direct WhatsApp order for single item
@@ -330,7 +357,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
         // Prepare order items text
         const itemLines = cart
-            .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
+            .map((item, idx) => {
+                const variants = [
+                    item.selectedSize && item.selectedSize !== 'Standard' ? `Size: ${item.selectedSize}` : null,
+                    item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
+                ].filter(Boolean);
+                const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
+                return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+            })
             .join('\n');
 
         const fallbackSummary = [
@@ -389,7 +423,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             const targetPhone = whatsappPhone(String(result.whatsapp_number || merchantPhone || '923001234567'));
             const confirmedLines = (result.items as Array<{ name: string; quantity: number; price: number }> || cart)
-                .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
+                .map((item: any, idx) => {
+                    const variants = [
+                        item.selectedSize && item.selectedSize !== 'Standard' ? `Size: ${item.selectedSize}` : null,
+                        item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
+                    ].filter(Boolean);
+                    const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
+                    return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+                })
                 .join('\n');
 
             const fullSummary = [
@@ -768,11 +809,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         {featuredItems.map((item) => (
                             <article
                                 key={item.id}
-                                onClick={() => {
-                                    setSelectedProductForModal(item);
-                                    setModalQty(1);
-                                    setModalActiveImgIdx(0);
-                                }}
+                                onClick={() => openProductModal(item)}
                                 className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                             >
                                 <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
@@ -802,7 +839,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
                                             style={{ backgroundColor: themeColor }}
                                         >
-                                            <ShoppingBag size={14} />
+                                            <ShoppingCart size={15} />
                                         </button>
                                     </div>
                                 </div>
@@ -952,11 +989,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             {filteredProducts.map((product) => (
                                 <article
                                     key={product.id}
-                                    onClick={() => {
-                                        setSelectedProductForModal(product);
-                                        setModalQty(1);
-                                        setModalActiveImgIdx(0);
-                                    }}
+                                    onClick={() => openProductModal(product)}
                                     className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                                 >
                                     {/* Image Container with Badges */}
@@ -1025,7 +1058,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 </span>
                                             </div>
 
-                                            {/* Circular Floating Cart Button (Matching Screenshot) */}
+                                            {/* Circular Floating Cart Button (Matching Screenshot with Trolley Icon) */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -1036,7 +1069,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 className="grid size-9 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95 sm:size-10"
                                                 style={{ backgroundColor: themeColor }}
                                             >
-                                                <Plus size={16} />
+                                                <ShoppingCart size={16} />
                                             </button>
                                         </div>
                                     </div>
@@ -1200,55 +1233,63 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <div className="space-y-3">
                                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Order Items ({cart.length})</p>
                                     <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-slate-50/50 p-2">
-                                        {cart.map((item) => (
-                                            <div key={item.id} className="flex items-center gap-3 p-2">
-                                                {item.image_url ? (
-                                                    <Image
-                                                        src={item.image_url.split(',')[0].trim()}
-                                                        alt={item.name}
-                                                        width={52}
-                                                        height={52}
-                                                        unoptimized
-                                                        className="size-13 rounded-xl object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="size-13 grid place-items-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
-                                                        {item.name.charAt(0)}
-                                                    </div>
-                                                )}
+                                        {cart.map((item, idx) => {
+                                            const itemKey = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}_${idx}`;
+                                            return (
+                                                <div key={itemKey} className="flex items-center gap-3 p-2">
+                                                    {item.image_url ? (
+                                                        <Image
+                                                            src={item.image_url.split(',')[0].trim()}
+                                                            alt={item.name}
+                                                            width={52}
+                                                            height={52}
+                                                            unoptimized
+                                                            className="size-13 rounded-xl object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="size-13 grid place-items-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
+                                                            {item.name.charAt(0)}
+                                                        </div>
+                                                    )}
 
-                                                <div className="min-w-0 flex-1">
-                                                    <h5 className="truncate text-xs font-bold text-slate-900">{item.name}</h5>
-                                                    <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{money(item.price)}</p>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h5 className="truncate text-xs font-bold text-slate-900">{item.name}</h5>
+                                                        {(item.selectedSize || (item.selectedColor && item.selectedColor !== 'Default')) && (
+                                                            <div className="flex flex-wrap gap-1.5 mt-0.5 text-[10px] text-slate-500 font-medium">
+                                                                {item.selectedSize && <span className="bg-slate-100 rounded px-1.5 py-0.5">{item.selectedSize}</span>}
+                                                                {item.selectedColor && item.selectedColor !== 'Default' && <span className="bg-slate-100 rounded px-1.5 py-0.5">• {item.selectedColor}</span>}
+                                                            </div>
+                                                        )}
+                                                        <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{money(item.price)}</p>
 
-                                                    <div className="mt-2 flex items-center gap-2">
-                                                        <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                                                        <div className="mt-2 flex items-center gap-2">
+                                                            <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => changeQuantity(item.cartKey || item.id, -1)}
+                                                                    className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => changeQuantity(item.cartKey || item.id, 1)}
+                                                                    className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+
                                                             <button
                                                                 type="button"
-                                                                onClick={() => changeQuantity(item.id, -1)}
-                                                                className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                onClick={() => removeFromCart(item.cartKey || item.id)}
+                                                                className="p-1 text-rose-500 hover:text-rose-700"
                                                             >
-                                                                −
-                                                            </button>
-                                                            <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => changeQuantity(item.id, 1)}
-                                                                className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
-                                                            >
-                                                                +
+                                                                <Trash2 size={13} />
                                                             </button>
                                                         </div>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeFromCart(item.id)}
-                                                            className="p-1 text-rose-500 hover:text-rose-700"
-                                                        >
-                                                            <Trash2 size={13} />
-                                                        </button>
                                                     </div>
-                                                </div>
 
                                                 <div className="text-right">
                                                     <span className="text-xs font-bold text-slate-900">
@@ -1256,7 +1297,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                     </span>
                                                 </div>
                                             </div>
-                                        ))}
+                                        );
+                                    })}
                                     </div>
                                 </div>
                             )}
@@ -1460,32 +1502,24 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* FLOATING BOTTOM BAR (MATCHING SCREENSHOT) */}
-            <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-40">
-                <button
-                    type="button"
-                    onClick={() => setIsCartOpen(true)}
-                    className="w-full sm:w-auto flex items-center justify-between gap-4 rounded-full bg-slate-950/95 text-white px-5 py-3.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 hover:scale-[1.02] active:scale-95"
-                >
-                    <div className="flex items-center gap-2.5">
-                        <span className="grid size-8 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
-                            <MessageCircle size={16} />
+            {/* COMPACT CART FLOATING BAR (NO ARROW, APPEARS ONLY WHEN ITEMS IN CART) */}
+            {totalCartCount > 0 && (
+                <div className="fixed bottom-4 right-4 sm:right-6 z-40 animate-in fade-in slide-in-from-bottom-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsCartOpen(true)}
+                        className="flex items-center gap-2.5 rounded-full bg-slate-950/95 text-white px-4 py-2.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 active:scale-95"
+                    >
+                        <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+                            <MessageCircle size={13} />
                         </span>
-                        <div className="text-left">
-                            <p className="text-xs font-bold leading-none">Order via WhatsApp</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Quick • Easy • Secure</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {totalCartCount > 0 && (
-                            <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-slate-950">
-                                {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
-                            </span>
-                        )}
-                        <ArrowRight size={16} className="text-emerald-400" />
-                    </div>
-                </button>
-            </div>
+                        <span className="text-xs font-bold">Checkout on WhatsApp</span>
+                        <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-slate-950">
+                            {totalCartCount}
+                        </span>
+                    </button>
+                </div>
+            )}
 
             {/* FLOATING BEXI AI ASSISTANT WIDGET */}
             <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
@@ -1598,7 +1632,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                                     return (
                                         <>
-                                            <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-200/80">
+                                            <div 
+                                                className={`relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-200/80 ${isImageZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+                                                onClick={() => setIsImageZoomed((z) => !z)}
+                                            >
                                                 {activeImg ? (
                                                     <Image
                                                         src={activeImg}
@@ -1606,7 +1643,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                         width={600}
                                                         height={600}
                                                         unoptimized
-                                                        className="size-full object-cover"
+                                                        className={`size-full object-cover transition-transform duration-300 ${isImageZoomed ? 'scale-150' : 'scale-100'}`}
                                                     />
                                                 ) : (
                                                     <div className="grid size-full place-items-center bg-slate-100 text-4xl font-black text-slate-300">
@@ -1617,11 +1654,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                     ✓ Verified Stock
                                                 </span>
 
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsImageZoomed((z) => !z);
+                                                    }}
+                                                    aria-label="Toggle zoom"
+                                                    className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition z-10"
+                                                    title={isImageZoomed ? 'Zoom out' : 'Zoom in'}
+                                                >
+                                                    {isImageZoomed ? <ZoomOut size={15} /> : <ZoomIn size={15} />}
+                                                </button>
+
                                                 {images.length > 1 && (
                                                     <>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setModalActiveImgIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setModalActiveImgIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                                                            }}
                                                             aria-label="Previous image"
                                                             className="absolute left-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
                                                         >
@@ -1629,7 +1682,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setModalActiveImgIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setModalActiveImgIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                                                            }}
                                                             aria-label="Next image"
                                                             className="absolute right-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
                                                         >
@@ -1699,8 +1755,64 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </div>
 
                                 <div className="space-y-3 pt-2 border-t border-slate-100">
+                                    {/* Size Selector */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                            <span>Select Size</span>
+                                            <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'].map((size) => (
+                                                <button
+                                                    key={size}
+                                                    type="button"
+                                                    onClick={() => setModalSelectedSize(size)}
+                                                    className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                        modalSelectedSize === size
+                                                            ? 'text-white border-transparent shadow-xs'
+                                                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                                    style={modalSelectedSize === size ? { backgroundColor: themeColor } : {}}
+                                                >
+                                                    {size}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Color Selector */}
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                            <span>Select Color</span>
+                                            <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor}</span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            {[
+                                                { name: 'Default', hex: '#0f172a' },
+                                                { name: 'Emerald', hex: '#059669' },
+                                                { name: 'Navy', hex: '#1d4ed8' },
+                                                { name: 'Maroon', hex: '#9f1239' },
+                                                { name: 'Gold', hex: '#d97706' },
+                                            ].map((c) => (
+                                                <button
+                                                    key={c.name}
+                                                    type="button"
+                                                    onClick={() => setModalSelectedColor(c.name)}
+                                                    className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                                        modalSelectedColor === c.name
+                                                            ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
+                                                            : 'border-slate-200 bg-white hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
+                                                    <span>{c.name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {/* Quantity Selector */}
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between pt-1">
                                         <span className="text-xs font-bold text-slate-700">Quantity</span>
                                         <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
                                             <button
@@ -1729,7 +1841,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             type="button"
                                             onClick={() => {
                                                 for (let i = 0; i < modalQty; i++) {
-                                                    addToCart(selectedProductForModal, false);
+                                                    addToCart(selectedProductForModal, false, modalSelectedSize, modalSelectedColor);
                                                 }
                                                 setIsCartOpen(true);
                                                 setSelectedProductForModal(null);
@@ -1737,7 +1849,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             className="flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95"
                                             style={{ backgroundColor: themeColor }}
                                         >
-                                            <ShoppingBag size={15} /> Add to Cart ({modalQty})
+                                            <ShoppingCart size={15} /> Add to Cart ({modalQty})
                                         </button>
 
                                         <button
@@ -1745,11 +1857,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             onClick={() => {
                                                 const phone = whatsappPhone(liveStore.whatsapp_number || '923001234567');
                                                 const totalPrice = Number(selectedProductForModal.price) * modalQty;
+                                                const variantNotes = [
+                                                    modalSelectedSize && modalSelectedSize !== 'Standard' ? `Size: ${modalSelectedSize}` : null,
+                                                    modalSelectedColor && modalSelectedColor !== 'Default' ? `Color: ${modalSelectedColor}` : null,
+                                                ].filter(Boolean).join(', ');
                                                 const text =
                                                     `🛍️ *INSTANT ORDER — ${liveStore.name.toUpperCase()}*\n` +
                                                     `----------------------------------------\n` +
                                                     `Hello! I want to order:\n` +
-                                                    `• *Product:* ${selectedProductForModal.name}\n` +
+                                                    `• *Product:* ${selectedProductForModal.name}${variantNotes ? ` (${variantNotes})` : ''}\n` +
                                                     `• *Quantity:* ${modalQty}\n` +
                                                     `• *Total Price:* ${money(totalPrice)}\n` +
                                                     `• *Store URL:* https://${liveStore.slug}.buildexom.store\n\n` +

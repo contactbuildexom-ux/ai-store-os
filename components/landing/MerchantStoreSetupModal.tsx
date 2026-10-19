@@ -124,102 +124,177 @@ export const STORE_IDEA_PRESETS = [
     category: 'Trending Business Niches',
     options: [
       {
+        id: 'nature',
+        name: 'Nature, Indoor Plants & Organic Botanicals',
+        sampleName: 'Verdant Flora & Greens',
+        theme: 'emerald',
+        prompt: 'An organic botanical nursery and green living boutique offering natural indoor plants, air-purifying succulents, organic gardening essentials, fresh herbal teas, and natural planters.'
+      },
+      {
+        id: 'handbags',
+        name: 'Luxury Velvet Handbags, Clutches & Purses',
+        sampleName: 'Velvet Noir Handbags',
+        theme: 'velvet-rose',
+        prompt: 'A designer handbag and luxury leather accessories store featuring handcrafted velvet clutches, evening bridal party bags, structured leather shoulder totes, and wallets.'
+      },
+      {
         id: 'shoes',
-        name: '👟 Athletic Running Shoes & Streetwear Sneakers',
+        name: 'Athletic Running Shoes & Streetwear Sneakers',
         sampleName: 'Aura Kicks Atelier',
         theme: 'ocean-blue',
         prompt: 'A modern performance footwear brand featuring cushioned running sneakers, streetwear lifestyle kicks, and everyday comfortable trainers with nationwide delivery and Cash on Delivery.'
       },
       {
         id: 'perfume',
-        name: '🌸 Luxury Perfumes, Ouds & Artisanal Attars',
+        name: 'Luxury Perfumes, Ouds & Artisanal Attars',
         sampleName: 'Velvet Oud Fragrances',
         theme: 'royal-gold',
-        prompt: 'A luxury fragrance atelier offering artisanal concentrated oud oils, French long-lasting EDP perfumes, and curated gift boxes for weddings and celebrations.'
+        prompt: 'A luxury fragrance atelier offering artisanal concentrated oud oils, French long-lasting EDP perfumes, and curated gift boxes with nationwide delivery.'
+      },
+      {
+        id: 'jewelry',
+        name: '18K Gold Plated Jewelry, Rings & Pendants',
+        sampleName: 'Celestia Jewels',
+        theme: 'royal-gold',
+        prompt: 'Handcrafted luxury jewelry brand providing anti-tarnish 18K gold-plated coin necklaces, zirconia solitaire rings, baroque pearl chokers, and festive earrings.'
       },
       {
         id: 'women-fashion',
-        name: '👗 Women\'s Designer Pret, Lawn & Festive Suits',
+        name: 'Women\'s Designer Pret, Lawn & Festive Suits',
         sampleName: 'Zahra Festive Pret',
         theme: 'velvet-rose',
         prompt: 'A contemporary designer clothing boutique specializing in ready-to-wear printed lawn, luxury chiffon festive 3-piece suits, and embroidered organza dupattas.'
       },
       {
         id: 'men-fashion',
-        name: '🤵 Men\'s Bespoke Couture, Kurtas & Formal Wear',
+        name: 'Men\'s Bespoke Couture, Kurtas & Formal Wear',
         sampleName: 'Apex Heritage Menswear',
         theme: 'midnight-minimal',
         prompt: 'A premium menswear brand offering tailored cotton kurtas, bespoke waistcoats, formal shirts, and luxury accessories with cash on delivery nationwide.'
       },
       {
-        id: 'wedding',
-        name: '👰 Bridal Boutique, Wedding Favors & Keepsakes',
-        sampleName: 'Royal Shadi Boutique',
-        theme: 'royal-gold',
-        prompt: 'An exquisite wedding boutique featuring handcrafted bridal clutches, laser-cut gold wedding favor boxes, kundan jewelry sets, and festive party accessories.'
-      },
-      {
         id: 'skincare',
-        name: '🧴 Botanical Skincare, Glow Serums & Clean Beauty',
+        name: 'Botanical Skincare, Glow Serums & Clean Beauty',
         sampleName: 'Glow Botanica Organics',
         theme: 'mint-fresh',
         prompt: 'A clean skincare brand featuring hyaluronic acid glow serums, barrier repair ceramide creams, gentle green tea cleansers, and broad-spectrum mineral sunscreens.'
       },
       {
-        id: 'jewelry',
-        name: '💍 18K Gold Plated Jewelry, Rings & Pendants',
-        sampleName: 'Celestia Jewels',
+        id: 'wedding',
+        name: 'Bridal Wedding Couture, Favors & Keepsakes',
+        sampleName: 'Royal Shadi Boutique',
         theme: 'royal-gold',
-        prompt: 'Handcrafted luxury jewelry brand providing anti-tarnish 18K gold-plated coin necklaces, zirconia solitaire rings, baroque pearl chokers, and bridal earrings.'
+        prompt: 'An exquisite wedding boutique featuring handcrafted bridal clutches, laser-cut gold wedding favor boxes, luxury wedding keepsakes, and festive party accessories.'
       },
       {
         id: 'tech',
-        name: '📱 Smart Wearables, ANC Audio & Electronics',
+        name: 'Smart Wearables, ANC Audio & Electronics',
         sampleName: 'Pulse Wave Electronics',
         theme: 'ocean-blue',
         prompt: 'A cutting-edge tech store featuring active noise-cancelling wireless headphones, AMOLED smartwatches, magnetic wireless charging stations, and ergonomic desk accessories.'
       },
       {
         id: 'coffee',
-        name: '☕ Artisan Coffee Roasters, Single-Origin Beans',
+        name: 'Artisan Coffee Roasters, Single-Origin Beans',
         sampleName: 'Artisan Roast & Co.',
         theme: 'sunset-amber',
         prompt: 'A specialty coffee roastery featuring single-origin Ethiopian and Colombian beans, dark roast espresso blends, cold brew kits, and precision hand grinders.'
       },
       {
         id: 'bakery',
-        name: '🥐 Gourmet Patisserie, Artisan Cakes & Truffles',
+        name: 'Gourmet Patisserie, Artisan Cakes & Truffles',
         sampleName: 'Sweet Praline Confections',
         theme: 'sunset-amber',
         prompt: 'An artisan bakery offering fresh sourdough, custom buttercream celebration cakes, Belgian chocolate truffles, and delicate French macarons.'
       },
       {
         id: 'fitness',
-        name: '🏋️ Activewear, Gym Apparel & Training Gear',
+        name: 'Activewear, Gym Apparel & Training Gear',
         sampleName: 'Velocity Athletic Gear',
         theme: 'ocean-blue',
         prompt: 'A high-performance activewear store offering moisture-wicking gym tees, seamless compression leggings, water-resistant duffel bags, and fitness accessories.'
       },
       {
         id: 'home',
-        name: '🛋️ Modern Interior Decor & Scented Soy Candles',
+        name: 'Modern Interior Decor & Scented Soy Candles',
         sampleName: 'Luxe Living Interiors',
         theme: 'artisan-cream',
         prompt: 'A modern interior boutique featuring artisanal scented soy wax candles, ceramic vases, linen cushion covers, and aesthetic room decor accents.'
       },
       {
         id: 'leather',
-        name: '🎒 Handcrafted Leather Bags, Wallets & Belts',
+        name: 'Handcrafted Leather Bags, Wallets & Belts',
         sampleName: 'Heritage Leather Co.',
         theme: 'midnight-minimal',
         prompt: 'A genuine handcrafted leather goods boutique specializing in vintage laptop messenger bags, full-grain leather bi-fold wallets, and brass-buckle belts.'
       },
       {
         id: 'organic',
-        name: '🌿 Pure Sidr Honey, Organic Dry Fruits & Herbs',
+        name: 'Pure Sidr Honey, Organic Dry Fruits & Herbs',
         sampleName: 'Natura Harvest Superfoods',
         theme: 'mint-fresh',
         prompt: 'An authentic organic wellness store offering raw wild Sidr honey, premium roasted dry fruits, organic green teas, and cold-pressed pure oils.'
+      }
+    ]
+  },
+  {
+    category: 'Global Specialty & Lifestyle Niches',
+    options: [
+      {
+        id: 'baby-kids',
+        name: 'Baby & Kids Organic Apparel, Toys & Nursery',
+        sampleName: 'Little Sprout Nursery',
+        theme: 'mint-fresh',
+        prompt: 'An organic baby and toddler boutique offering soft organic cotton onesies, wooden Montessori toys, ergonomic nursery swaddles, and hypoallergenic baby care essentials.'
+      },
+      {
+        id: 'watches-eyewear',
+        name: 'Luxury Chronograph Watches & Designer Eyewear',
+        sampleName: 'Aero Chrono Atelier',
+        theme: 'midnight-minimal',
+        prompt: 'A luxury timepieces and designer sunglasses brand featuring sapphire crystal chronograph watches, polarized acetate sunglasses, and Italian leather watch rolls.'
+      },
+      {
+        id: 'pet-care',
+        name: 'Premium Pet Care, Organic Treats & Accessories',
+        sampleName: 'Paws & Whiskers Co.',
+        theme: 'sunset-amber',
+        prompt: 'A pet lifestyle store offering grain-free organic dog treats, orthopedic pet beds, durable braided leashes, and gentle grooming shampoos.'
+      },
+      {
+        id: 'modest-fashion',
+        name: 'Modest Wear, Premium Silk Hijabs & Abayas',
+        sampleName: 'Noor Modest Couture',
+        theme: 'royal-gold',
+        prompt: 'An elegant modest wear brand featuring handcrafted chiffon abayas, premium mulberry silk hijabs, inner caps, and modest maxi dresses.'
+      },
+      {
+        id: 'gaming-tech',
+        name: 'RGB Gaming Gear, Mechanical Keyboards & Setup',
+        sampleName: 'Nexus Battlestation Gear',
+        theme: 'cyber-slate',
+        prompt: 'A dedicated gaming peripherals brand featuring hot-swappable mechanical keyboards, ultra-lightweight gaming mice, RGB desk mats, and ergonomic wrist rests.'
+      },
+      {
+        id: 'spices-tea',
+        name: 'Artisanal Spices, Kashmiri Chai & Herbal Blends',
+        sampleName: 'Silk Route Spice Merchants',
+        theme: 'artisan-cream',
+        prompt: 'A heritage spice and tea emporium offering hand-ground organic spice blends, authentic Kashmiri pink tea, saffron infusions, and gourmet herbal loose leaves.'
+      },
+      {
+        id: 'candles-pottery',
+        name: 'Handcrafted Ceramic Pottery & Aromatherapy Candles',
+        sampleName: 'Clay & Flame Studio',
+        theme: 'artisan-cream',
+        prompt: 'An artisan studio offering wheel-thrown ceramic mugs, sculptural flower vases, and crackling wood-wick essential oil aromatherapy candles.'
+      },
+      {
+        id: 'stationery',
+        name: 'Luxury Leather Journals, Fountain Pens & Planners',
+        sampleName: 'Paper & Quill Atelier',
+        theme: 'royal-gold',
+        prompt: 'A bespoke stationery store offering refillable leather-bound travel notebooks, brass fountain pens, archival ink sets, and aesthetic daily productivity planners.'
       }
     ]
   }

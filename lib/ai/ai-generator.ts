@@ -169,6 +169,44 @@ export const THEME_PRESETS: Record<string, StoreThemeConfig> = {
 
 // Curated high quality product images categorized by niche
 const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; items: Array<{ name: string; price: number; desc: string }> }> = {
+  nature: {
+    categories: ['Indoor Plants', 'Air-Purifying Succulents', 'Organic Botanicals & Herbs', 'Artisan Planters'],
+    images: [
+      'https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1509423350716-97f9360b4e09?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1545241047-6083a3684587?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1512428813834-c702c7702b78?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1520412099551-62b6bafeb5bb?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Monstera Deliciosa Natural Potted Plant', price: 2800, desc: 'Lush tropical Swiss Cheese plant in an artisanal terracotta drainage pot for home and office.' },
+      { name: 'Sansevieria Snake Plant Air-Purifier', price: 1950, desc: 'Hardy low-light indoor air-purifying plant with architectural variegated upright leaves.' },
+      { name: 'Fiddle Leaf Fig Premium Tree (4 Ft)', price: 4900, desc: 'Dramatic broad-leaf indoor statement plant in modern eco-friendly woven planter basket.' },
+      { name: 'Rare Jade Succulent & Aloe Harmony Bowl', price: 2200, desc: 'Curated desktop arrangement of hardy drought-tolerant succulents in minimalist ceramic dish.' },
+      { name: 'Organic Cold-Pressed Neem Herbal Spray', price: 1250, desc: '100% natural organic botanical pest defense and leaf shine tonic for vibrant green foliage.' },
+      { name: 'Artisan Glazed Ceramic Drainage Pot', price: 1600, desc: 'Hand-thrown textured ceramic planter with matching saucer for healthy indoor root growth.' }
+    ]
+  },
+  handbags: {
+    categories: ['Velvet Clutches', 'Structured Shoulder Bags', 'Everyday Totes', 'Designer Evening Bags'],
+    images: [
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1575032617751-6ddec2089882?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Velvet Midnight Noir Luxury Clutch', price: 3800, desc: 'Rich velvet exterior with gold-tone hardware, clasp closure, and detachable cross-body chain.' },
+      { name: 'Embossed Crocodile Leather Shoulder Bag', price: 4950, desc: 'Structured silhouette crafted in vegan croc-embossed leather with dual interior compartments.' },
+      { name: 'Artisan Embroidered Zardozi Party Pouch', price: 4200, desc: 'Handcrafted raw silk and velvet evening pouch with intricate gold metallic wire embroidery.' },
+      { name: 'Minimalist Commuter Leather Tote', price: 5400, desc: 'Spacious daily tote featuring padded laptop sleeve, reinforced handles, and magnetic snap closure.' },
+      { name: 'Vintage Top-Handle Mini Satchel', price: 3600, desc: 'Timeless retro-inspired mini satchel with structured flap and adjustable shoulder strap.' },
+      { name: 'Quilted Velvet Evening Crossbody', price: 3200, desc: 'Chevron quilted soft velvet with polished chain strap, perfect for weddings and dinner soirees.' }
+    ]
+  },
   perfume: {
     categories: ['Luxury Oud', 'Eau De Parfum', 'Attars & Oils', 'Gift Discovery Sets'],
     images: [
@@ -328,13 +366,15 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
  */
 function detectNiche(prompt: string): string {
   const p = prompt.toLowerCase();
-  if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|choker|dupatta|favor|shagun)\b/i.test(p)) return 'wedding';
+  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|botanical|lawn)\b/i.test(p)) return 'nature';
+  if (/\b(handbag|handbags|hanbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets)\b/i.test(p)) return 'handbags';
+  if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bangles|jhumka|jhumkay|chain|choker)\b/i.test(p)) return 'jewelry';
   if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|boot|boots|jootay|joota|chappal|heels|sandals)\b/i.test(p)) return 'footwear';
   if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne)\b/i.test(p)) return 'perfume';
   if (/\b(skin|skincare|cosmetic|cosmetics|beauty|serum|serums|cream|lotion|makeup|glow|face wash|sunscreen)\b/i.test(p)) return 'skincare';
-  if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bangles|jhumka|jhumkay|chain)\b/i.test(p)) return 'jewelry';
   if (/\b(tech|phone|phones|mobile|gadget|gadgets|headphone|headphones|watch|watches|electronic|electronics|laptop|earbuds|charger)\b/i.test(p)) return 'tech';
   if (/\b(coffee|tea|chai|food|cake|cakes|sweet|sweets|mithai|chocolate|chocolates|bakery|beans|cafe|roast)\b/i.test(p)) return 'food';
+  if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|favor|shagun)\b/i.test(p)) return 'wedding';
   if (/\b(cloth|clothes|clothing|dress|dresses|fashion|wear|hoodie|hoodies|kurta|kurtas|suit|suits|apparel|kapray|shirt|shirts|pret|lawn|chiffon)\b/i.test(p)) return 'clothing';
   return 'clothing'; // default versatile fallback
 }
@@ -363,6 +403,8 @@ function extractStoreName(prompt: string, niche: string): string {
   }
 
   const nicheNames: Record<string, string[]> = {
+    nature: ['Verdant Flora & Botanica', 'Pure Earth Botanicals', 'Emerald Greens & Co.', 'Bloom Haven Organics'],
+    handbags: ['Velvet Noir Handbags', 'Aura Leather Atelier', 'Luxe Clutch & Co.', 'Heritage Handbags Studio'],
     footwear: ['Stride & Pace Footwear', 'Aura Kicks Atelier', 'Apex Footwear Co.', 'Urban Velocity Shoes'],
     perfume: ['Velvet Aura Fragrances', 'Royal Scent Co.', 'Oud & Amber Atelier', 'Luxe Essence'],
     clothing: ['Noor Couture', 'Urban Aura Threads', 'Zahra Pret & Festive', 'Vogue Loom'],
@@ -446,6 +488,8 @@ export async function generateStoreFromPrompt(options: {
 
   // Generate tagline and hero based on niche & prompt
   const taglines: Record<string, string> = {
+    nature: 'Nurture your home and workplace with fresh organic indoor plants, natural herbs, and sustainable botanical living.',
+    handbags: 'Curated artisanal velvet clutches, structured leather shoulder bags, and luxury evening purses handcrafted for elegance.',
     footwear: 'Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.',
     perfume: 'Captivating artisanal fragrances and pure concentrated attars crafted for unforgettable impressions.',
     clothing: 'Modern silhouettes, luxury festive fabrics, and timeless handcrafted essentials tailored for you.',
@@ -460,34 +504,34 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Determine number of products to include according to plan
-  // Free: 4 products, Pro: 6 products, Advanced: 6-8 products
-  let productLimit = 4;
-  if (plan === 'pro') productLimit = 6;
-  if (plan === 'advanced') productLimit = 6;
+  // Generate ~28 products spread across categories (matching user request for ~30 products)
+  const categories = nicheData.categories;
+  const targetProductCount = 28;
+  const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
 
-  // Categories allowed by plan
-  let categories = nicheData.categories.slice(0, plan === 'free' ? 3 : 5);
+  const products: GeneratedProduct[] = [];
+  for (let i = 0; i < targetProductCount; i++) {
+    const baseItem = nicheData.items[i % nicheData.items.length];
+    const cat = categories[i % categories.length];
+    const imgUrl = nicheData.images[i % nicheData.images.length];
+    const cycle = Math.floor(i / nicheData.items.length);
+    const editionSuffix = cycle === 1 ? ' · Signature Edition' : cycle === 2 ? ' · Luxe Edition' : cycle === 3 ? ' · Elite Series' : cycle === 4 ? ' · Reserve' : '';
+    const priceAdjustment = cycle * 350;
+    const finalPrice = baseItem.price + priceAdjustment;
 
-  // Products
-  const products: GeneratedProduct[] = nicheData.items.slice(0, productLimit).map((item, idx) => {
-    const imgUrl = nicheData.images[idx % nicheData.images.length];
-    const cat = categories[idx % categories.length];
-    const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick'];
-
-    return {
-      id: `prod_${idx + 1}_${Math.random().toString(36).substring(2, 7)}`,
-      name: item.name,
-      description: item.desc,
-      price: item.price,
+    products.push({
+      id: `prod_${i + 1}_${Math.random().toString(36).substring(2, 7)}`,
+      name: `${baseItem.name}${editionSuffix}`,
+      description: baseItem.desc,
+      price: finalPrice,
       category: cat,
       image_url: imgUrl,
-      wholesale_cost: Math.round(item.price * 0.55),
-      min_accept_price: Math.round(item.price * 0.85),
-      stock_status: idx === 1 ? 'low_stock' : 'in_stock',
-      badge: badges[idx % badges.length]
-    };
-  });
+      wholesale_cost: Math.round(finalPrice * 0.55),
+      min_accept_price: Math.round(finalPrice * 0.85),
+      stock_status: i % 5 === 2 ? 'low_stock' : 'in_stock',
+      badge: badges[i % badges.length]
+    });
+  }
 
   return {
     name: finalName,

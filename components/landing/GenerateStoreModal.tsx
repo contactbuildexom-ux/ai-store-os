@@ -3,15 +3,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 
+import { STORE_IDEA_PRESETS } from "./MerchantStoreSetupModal";
+
 /* User login page */
 const USER_LOGIN_HREF = "/user/login";
-
-const SUGGESTIONS = [
-  "Clothing store for women",
-  "Electronics and mobile accessories",
-  "Beauty and skincare products",
-  "Home-made food delivery",
-];
 
 const PERKS = ["No coding needed", "Free to start", "Ready in minutes"];
 
@@ -118,25 +113,38 @@ export default function GenerateStoreModal({
             </div>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#5b7aa3]">
-              Or pick an idea
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setPrompt(s);
+          <div className="rounded-2xl border border-[#cfe2fa] bg-[#f1f7ff] p-3.5">
+            <label htmlFor="gs-idea-select" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+              Or Choose from Global Business Ideas
+            </label>
+            <select
+              id="gs-idea-select"
+              defaultValue=""
+              onChange={(e) => {
+                const id = e.target.value;
+                if (!id) return;
+                for (const grp of STORE_IDEA_PRESETS) {
+                  const opt = grp.options.find((o) => o.id === id);
+                  if (opt) {
+                    setPrompt(opt.prompt);
                     inputRef.current?.focus();
-                  }}
-                  className="gs-chip cursor-pointer rounded-full border border-[#cfe2fa] bg-white px-3.5 py-1.5 text-[#0b2545] transition hover:border-[#1976d2] hover:bg-[#1976d2] hover:text-white"
-                >
-                  {s}
-                </button>
+                    break;
+                  }
+                }
+              }}
+              className="w-full rounded-xl border border-[#cfe2fa] bg-white px-3.5 py-2.5 text-xs font-semibold text-[#0b2545] outline-none transition focus:border-[#1976d2] focus:ring-2 focus:ring-[#1976d2]/20"
+            >
+              <option value="">Select a Curated Niche / Idea (World-wide Trends)...</option>
+              {STORE_IDEA_PRESETS.map((grp) => (
+                <optgroup key={grp.category} label={grp.category}>
+                  {grp.options.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
-            </div>
+            </select>
           </div>
 
           <ul className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl bg-[#f1f8ff] px-4 py-3">

@@ -113,7 +113,7 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
 
       {/* 2. Main Footer Body (Desktop Multi-Column & Mobile Responsive) */}
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:gap-12">
           {/* Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
@@ -171,23 +171,25 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
               <StoreSocialLinks links={socialLinks} />
             </div>
           </div>
+        </div>
 
-          {/* Store QR Code / Sharing */}
-          <div className="space-y-3">
+        {/* Centered Scan & Shop QR Code Section */}
+        {storeSlug && (
+          <div className="mt-12 border-t border-slate-100 pt-8 flex flex-col items-center text-center">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Scan & Shop</h4>
-            <p className="text-xs text-slate-500">
+            <p className="mt-1 max-w-sm text-xs text-slate-500">
               Scan this QR code with any smartphone camera to open and share this store.
             </p>
-            {storeSlug && (
+            <div className="mt-4 flex justify-center w-full">
               <StoreQRCode 
                 storeSlug={storeSlug} 
                 storePath={`/store/${encodeURIComponent(storeSlug)}`} 
-                title="Your store QR"
+                title={`${storeName} QR Code`}
                 badge="Active"
               />
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Advance Payment Details Section (if configured) */}
         {availableAccounts.length > 0 && (

@@ -88,9 +88,9 @@ async function generateWithOpenAI(prompt: string): Promise<unknown> {
         {
           role: "system",
           content: [
-            "Create a concise, realistic starter storefront from the user's request.",
+            "Create a comprehensive, realistic starter storefront from the user's request.",
             "Return only a JSON object with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name).",
-            "Generate 3 to 6 relevant categories and 6 to 10 plausible products. Product prices must be positive numbers in the local currency, with no currency symbols. Every product category_name must match one of the categories exactly.",
+            "Generate 4 to 6 relevant categories and 24 to 30 plausible, high-quality products spread across these categories. Product prices must be positive numbers in the local PKR currency (e.g. 1500 to 12000), with no currency symbols. Every product category_name must match one of the categories exactly.",
             "Do not include markdown, comments, or additional properties.",
           ].join(" "),
         },
@@ -127,7 +127,7 @@ async function generateWithGemini(prompt: string): Promise<unknown> {
         role: "user",
         parts: [{
           text: [
-            "Create a concise, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate relevant categories and plausible products. Prices must be positive numbers without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
+            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate 4 to 6 relevant categories and 24 to 30 plausible, high-quality products spread across these categories. Prices must be positive numbers in PKR currency without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
             `Store request: ${prompt}`,
           ].join("\n\n"),
         }],
@@ -361,7 +361,8 @@ export async function POST(request: Request) {
     const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
     const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
-    const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+    const isNewSignup = typeof input.password === "string" && input.password.length >= 8;
+    const merchantSession = isNewSignup ? null : verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
     if (merchantSession && supabase) {
@@ -467,12 +468,18 @@ export async function POST(request: Request) {
       ]);
       if (productsResult.error) throw productsResult.error;
       if (categoriesResult.error) throw categoriesResult.error;
-      if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
-        return NextResponse.json({
-          error: "This store already has catalog data. Generation will not overwrite it.",
-          store: { id: targetStore.id, slug: targetStore.slug },
-          store_url: getStoreUrl(targetStore.slug),
-        }, { status: 409 });
+      const hasCatalog = (productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0;
+      if (hasCatalog) {
+        // Clear previous catalog items so the new generation succeeds without duplication or blocking error
+        try {
+          await Promise.all([
+            supabase.from("store_products").delete().eq("store_id", targetStore.id),
+            supabase.from("store_categories").delete().eq("store_id", targetStore.id),
+            supabase.from("products").delete().eq("store_id", targetStore.id),
+          ]);
+        } catch (delErr) {
+          console.warn("Could not clear previous catalog in Supabase:", delErr);
+        }
       }
     }
 

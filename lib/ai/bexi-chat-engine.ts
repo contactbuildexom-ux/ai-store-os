@@ -371,7 +371,107 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
-  // 12. CONTACT DETAILS / WHATSAPP NUMBER
+  // 12. STORE LOCATION / PHYSICAL SHOP / ADDRESS (dukan kahan hai, address, outlet, kahan se operate)
+  if (/\b(location|address|kahan hai|kidhar hai|shop kahan|dukan kahan|outlet|physical store|office kahan|shehar|city kahan|kahan se operate)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `📍 **${storeName}** ایک تصدیق شدہ آن لائن برانڈ ہے جو پورے پاکستان میں تیز رفتار کوریئر اور کیش آن ڈیلیوری کی سہولت فراہم کرتا ہے۔ تمام آرڈرز محفوظ پیکنگ کے ساتھ سیدھے آپ کے گھر کی دہلیز پر پہنچائے جاتے ہیں۔ آرڈر یا معلومات کے لیے ہمارے واٹس ایپ (+${whatsappNum}) پر رابطہ کریں۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `📍 **${storeName}** ek verified online e-commerce brand hai jo poore Pakistan mein TCS/Leopard couriers ke zariye Cash on Delivery par orders dispatch karta hai! Hamara central fulfillment warehouse Lahore/Karachi mein operate karta hai jahan se safely packed parcels aap ke ghar pohanchaye jatay hain. Mazeed details ke liye WhatsApp (+${whatsappNum}) par rabta karein!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `📍 **${storeName}** operates as a verified direct-to-consumer online brand delivering nationwide with Cash on Delivery! Orders are safely packaged and dispatched directly from our central fulfillment hubs to your doorstep. Contact us on WhatsApp (+${whatsappNum}) for any custom requests!`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 13. REAL PICTURES / LIVE PHOTOS / VIDEOS (real pics, unboxing, video dikhao, asli tasveer)
+  if (/\b(real pic|real photo|real picture|video|live pic|original photo|tasveer|tasweer|asli photo|unboxing|photo dikhao|tasveer dikhao)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `📸 ویب سائٹ پر دکھائی گئی تمام تصاویر ہمارے اصل پروڈکٹس کی اصل اور تفصیلی فوٹو گرافی ہیں۔ اگر آپ کو کسی مخصوص پروڈکٹ کی لائیو ویڈیو یا ان باکسنگ تصویر چاہیے تو نیچے دیے گئے کارڈ پر واٹس ایپ بٹن دبائیں، ہمارا نمائندہ آپ کو فوری لائیو میڈیا بھیج دے گا۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `📸 Storefront par display ki gayi tamam pictures 100% actual product ki high-definition photography hain! Agar aap ko kisi item ki live unboxing picture ya 360-degree video dekhni ho, to simply us product ke WhatsApp button par click karein — hamari customer care team foran WhatsApp (+${whatsappNum}) par live video/photos share kar degi!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `📸 All images displayed on **${storeName}** are real, high-resolution product photos of our actual inventory. If you need a live unboxing clip or close-up video of any item, just click the WhatsApp button on that product and our support team (+${whatsappNum}) will gladly share it with you!`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 14. MATERIAL / FABRIC / LEATHER / QUALITY SPECS (kapra kaisa hai, pure leather, stuff, washing)
+  if (/\b(kapra|kapray|stuff|fabric|material|leather|washable|pure hai|mix hai|color fade|silai|stitching|durable)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `🧵 **${storeName}** پر استعمال شدہ میٹریل پریمیئم اور پائیدار ہے۔ سلائی، رنگ کی پختگی اور فیبرک کوالٹی پر خصوصی توجہ دی جاتی ہے۔ کسی بھی سائز یا مٹیریل مسئلے کی صورت میں ہماری 7 روزہ ایکسچینج پالیسی دستیاب ہے۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `🧵 **${storeName}** ke tamam items premium export-quality material, fine stitching aur durable finish ke sath tayar hotay hain. Color fade ya shrink nahi hota. Sath hi hamari **7-Day Exchange Guarantee** bhi hai taake aap baghair kisi shak ke shopping karein!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `🧵 All items at **${storeName}** are manufactured using premium, durable materials and reinforced stitching. Our products are colorfast and built for everyday endurance, backed by our 7-day hassle-free exchange guarantee!`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 15. TRUST / SCAM / RELIABILITY (bharosa kaise karun, scam to nahi, fraud to nahi, safe hai)
+  if (/\b(bharosa|scam|fraud|dhoka|safe hai|trust|fake to nahi|yaqeen|check karke)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `🛡️ آپ کا اعتماد ہماری اولین ترجیح ہے! **${storeName}** پر مکمل تحفظ کے ساتھ شاپنگ کریں:\n• **کیش آن ڈیلیوری**: پارسل موصول ہونے پر رقم ادا کریں\n• **7 روزہ ایکسچینج**: کوئی بھی مسئلہ ہو تو باآسانی تبدیل کروائیں\n• **براہ راست واٹس ایپ سپورٹ**: تصدیق شدہ کوریئر ٹریکنگ کے ساتھ۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `🛡️ Aap bilkul be-fikar hokar shopping kar saktay hain! **${storeName}** par:\n1. **Cash on Delivery (COD)**: Pehle koi advance dene ki zaroorat nahi — parcel hath mein aane par rider ko pay karein!\n2. **7-Day Hassle-Free Exchange**: Agar koi issue ho to replacement milti hai.\n3. **Live WhatsApp Support**: Official number (+${whatsappNum}) par live tracking updates di jati hain!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `🛡️ You can shop with 100% confidence at **${storeName}**!\n• **Cash on Delivery**: Pay only when your parcel arrives at your door\n• **7-Day Exchange Policy**: Hassle-free replacement for any size or quality issue\n• **Dedicated WhatsApp Tracking**: Official support line (+${whatsappNum}) available 7 days a week.`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 16. ORDER TRACKING & STATUS (mera order kahan hai, tracking number, dispatch kab hoga)
+  if (/\b(tracking|track|kahan pohancha|dispatch kab|mera order|order status|parcel kahan)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `📦 اپنے آرڈر کی لائیو ٹریکنگ کے لیے براہ کرم اپنا آرڈر نمبر یا نام ہمارے واٹس ایپ (+${whatsappNum}) پر بھیجیں۔ ہماری سپورٹ ٹیم آپ کو کوریئر کا لائیو ٹریکنگ لنک فراہم کر دے گی۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `📦 Apne order ki real-time tracking ke liye apna Order ID ya phone number hamaray WhatsApp (+${whatsappNum}) par send karein. Hamari team foran TCS/Leopard ka live tracking ID provide karegi!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `📦 To track your order in real time, please share your Order ID or contact number on our WhatsApp (+${whatsappNum}) and our dispatch team will immediately send your courier tracking link!`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 17. CONTACT DETAILS / WHATSAPP NUMBER
   if (/\b(contact|number|rabta|phone|whatsapp|call|admin|owner|madad|help)\b/i.test(cleanMsg)) {
     if (style === 'ur-script') {
       return {
@@ -391,7 +491,7 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
-  // 13. GRATITUDE & POLITE CLOSURES (Shukriya, Thanks, Theek hai, Ok)
+  // 18. GRATITUDE & POLITE CLOSURES (Shukriya, Thanks, Theek hai, Ok)
   if (/\b(shukriya|thanks|thank you|theek hai|thek hai|ok|acha|achha|bohat shukriya|jazakallah|great|nice)\b/i.test(cleanMsg)) {
     if (style === 'ur-script') {
       return {
@@ -411,16 +511,37 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
-  // 14. PRODUCT KEYWORD SEARCH IN STORE CATALOG
+  // 19. PRODUCT KEYWORD & SYNONYM SEARCH IN STORE CATALOG
+  const synonymMap: Record<string, string[]> = {
+    shoes: ['shoe', 'shoes', 'sneaker', 'sneakers', 'kicks', 'jogger', 'joggers', 'footwear', 'boots'],
+    bags: ['bag', 'bags', 'handbag', 'handbags', 'clutch', 'clutches', 'purse', 'purses', 'tote', 'wallet'],
+    perfume: ['perfume', 'perfumes', 'scent', 'fragrance', 'oud', 'attar', 'musk', 'oil', 'amber'],
+    plants: ['plant', 'plants', 'green', 'greens', 'flora', 'succulent', 'botanical', 'herb', 'nature', 'pot'],
+    jewelry: ['jewel', 'jewelry', 'jewellery', 'gold', 'silver', 'ring', 'rings', 'necklace', 'earring', 'pendant', 'choker', 'jhumka'],
+    clothes: ['cloth', 'clothes', 'clothing', 'kurta', 'suit', 'dress', 'shirt', 'hoodie', 'pret', 'lawn'],
+    tech: ['tech', 'headphone', 'headphones', 'watch', 'smartwatch', 'earbuds', 'charger', 'audio', 'magsafe']
+  };
+
   const stopWords = new Set([
     'show', 'find', 'have', 'what', 'with', 'from', 'under', 'below', 'less', 'than',
     'product', 'products', 'please', 'chahiye', 'dikhao', 'dikhayein', 'batao', 'mujhe',
-    'kuch', 'hai', 'hain', 'mein', 'kya', 'kia', 'bhai', 'store', 'shop', 'online'
+    'kuch', 'hai', 'hain', 'mein', 'kya', 'kia', 'bhai', 'store', 'shop', 'online', 'kaise', 'kaisi'
   ]);
-  const searchTerms = cleanMsg
+  const rawTerms = cleanMsg
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter((w) => w.length > 2 && !stopWords.has(w));
+
+  const expandedTerms = new Set<string>(rawTerms);
+  for (const term of rawTerms) {
+    for (const [, synList] of Object.entries(synonymMap)) {
+      if (synList.some((s) => term.includes(s) || s.includes(term))) {
+        synList.forEach((s) => expandedTerms.add(s));
+      }
+    }
+  }
+
+  const searchTerms = Array.from(expandedTerms);
 
   const matches = products.filter((p) => {
     const text = `${p.name} ${p.category || ''} ${p.description || ''}`.toLowerCase();
@@ -454,23 +575,32 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
-  // 15. DYNAMIC CONVERSATIONAL FALLBACK (Mirroring user's question and language)
+  // 20. SMART CONTEXTUAL FALLBACK (Non-repetitive, questions answered dynamically)
+  const sampleItems = products.slice(0, 3).map((p) => `• **${p.name}** (${money(p.price)})`).join('\n');
+  const isQuestion = message.includes('?') || /\b(kya|kia|kab|kese|kaise|kitna|why|how|when|where|which)\b/i.test(cleanMsg);
+
   if (style === 'ur-script') {
     return {
-      reply: `آپ کے سوال "${message}" کا شکریہ! **${storeName}** پر ہمارے پاس **${products.length} معیاری پروڈکٹس** دستیاب ہیں (${categoriesList})۔ آپ کیش آن ڈیلیوری اور واٹس ایپ پر آرڈر کر سکتے ہیں۔ کوئی خاص آئٹم دیکھنا چاہتے ہیں؟`,
+      reply: isQuestion
+        ? `آپ کے سوال کے حوالے سے: **${storeName}** پر ہم 100٪ اصلی کوالٹی اور ملک گیر کیش آن ڈیلیوری فراہم کرتے ہیں۔ ہماری مقبول کیٹیگریز: **${categoriesList}**۔\n\nکچھ خاص پروڈکٹس:\n${sampleItems}\n\nآپ کسی بھی پروڈکٹ پر کلک کر کے واٹس ایپ پر تفصیلات معلوم کر سکتے ہیں!`
+        : `خوش آمدید! **${storeName}** پر ہمارے پاس **${products.length} معیاری پروڈکٹس** دستیاب ہیں (${categoriesList})۔ آپ کیش آن ڈیلیوری پر آرڈر کر سکتے ہیں۔ کوئی خاص آئٹم دیکھنا چاہتے ہیں؟`,
       languageDetected: 'ur',
     };
   }
 
   if (style === 'ur-roman') {
     return {
-      reply: `Aap ke sawal "${message}" ke silsilay mein: **${storeName}** par hamaray paas **${products.length} curated products** dastiyab hain (${categoriesList}). Tamam items nationwide Cash on Delivery par available hain. Agar aap ko kisi specific cheez ki price ya picture chahiye to batayein, ya WhatsApp (+${whatsappNum}) par direct pooch saktay hain!`,
+      reply: isQuestion
+        ? `Aap ke sawal ke hawalay se: **${storeName}** par hum verified quality, fast shipping aur Cash on Delivery provide kartay hain (${categoriesList})!\n\nHamare kuch top items:\n${sampleItems}\n\nAap in mein se kisi bhi item par tap karein ya hamaray WhatsApp (+${whatsappNum}) par direct pooch lein!`
+        : `Welcome to **${storeName}**! Hamaray paas **${products.length} premium products** available hain (${categoriesList}) nationwide Cash on Delivery ke sath. Agar aap ko kisi specific cheez ke baray mein janna ho to zaroor batayein!`,
       languageDetected: 'ur',
     };
   }
 
   return {
-    reply: `Regarding your query "${message}": At **${storeName}**, we offer **${products.length} premium products** across categories: **${categoriesList}** with nationwide Cash on Delivery. Feel free to browse the catalog above or chat with us directly on WhatsApp (+${whatsappNum})!`,
+    reply: isQuestion
+      ? `Regarding your inquiry: At **${storeName}**, we guarantee 100% verified quality with nationwide Cash on Delivery across categories: **${categoriesList}**.\n\nHere are some of our popular picks:\n${sampleItems}\n\nFeel free to tap any product card or reach out via WhatsApp (+${whatsappNum}) for instant help!`
+      : `Welcome to **${storeName}**! We feature **${products.length} premium items** across **${categoriesList}** with nationwide Cash on Delivery. How may I assist you today?`,
     languageDetected: 'en',
   };
 }
