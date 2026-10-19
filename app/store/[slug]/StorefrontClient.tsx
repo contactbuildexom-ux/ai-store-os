@@ -759,8 +759,19 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="max-w-lg text-left space-y-4">
+                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12 lg:py-14 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-10 relative z-10">
+                    {/* Left Column: Text & CTAs */}
+                    <div className="lg:col-span-6 xl:col-span-5 text-left space-y-4">
+                        <span
+                            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider shadow-2xs border"
+                            style={{
+                                backgroundColor: `${themeColor}18`,
+                                color: themeColor,
+                                borderColor: `${themeColor}30`,
+                            }}
+                        >
+                            ✓ Premium Curated Store
+                        </span>
                         <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
                             {heroInfo.headlineMain}{' '}
                             {heroInfo.headlineHighlight && (
@@ -790,14 +801,43 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                     </div>
 
-                    {/* Balanced Medium-Width Elegant Concept-Matched Hero Image */}
-                    <div className="w-full sm:w-80 lg:w-[380px] shrink-0 relative flex items-center justify-center">
-                        <div className="relative w-full max-w-sm lg:max-w-md overflow-hidden rounded-2xl shadow-xl border border-white/60 bg-white/40 backdrop-blur-xs">
+                    {/* Right Column: Wide Concept-Matched Image with Seamless Merge & Glow */}
+                    <div className="lg:col-span-6 xl:col-span-7 relative flex items-center justify-center w-full">
+                        {/* Ambient Color Glow behind image matching store theme */}
+                        <div 
+                            className="absolute -inset-2 rounded-3xl blur-2xl opacity-35 pointer-events-none transition duration-700"
+                            style={{ backgroundColor: themeColor }}
+                        />
+
+                        {/* Wide Image Showcase Container */}
+                        <div 
+                            className="relative w-full overflow-hidden rounded-3xl shadow-xl border bg-white/60 backdrop-blur-xs group"
+                            style={{ borderColor: `${themeColor}35` }}
+                        >
                             <img
                                 src={heroInfo.heroImage}
                                 alt={heroInfo.altText}
-                                className="h-56 sm:h-64 md:h-72 lg:h-[300px] w-full object-cover transition duration-500 hover:scale-105"
+                                className="h-64 sm:h-80 md:h-96 lg:h-[390px] xl:h-[420px] w-full object-cover transition duration-700 group-hover:scale-105"
                             />
+
+                            {/* Left-edge soft gradient blend towards text on desktop */}
+                            <div 
+                                className="absolute inset-y-0 left-0 w-28 pointer-events-none hidden lg:block"
+                                style={{
+                                    background: `linear-gradient(to right, ${themeColor}25 0%, transparent 100%)`,
+                                }}
+                            />
+
+                            {/* Bottom subtle ambient gradient overlay */}
+                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
+
+                            {/* Sleek Floating Authentic Badge Overlay */}
+                            <div className="absolute bottom-3.5 left-3.5 sm:bottom-4 sm:left-4 z-10 flex items-center gap-2 rounded-full bg-white/90 backdrop-blur-md px-3.5 py-1.5 shadow-md border border-white/70">
+                                <span className="size-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor }} />
+                                <span className="text-[10px] sm:text-[11px] font-bold text-slate-900 tracking-wide">
+                                    Official Brand Collection
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
