@@ -6,9 +6,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/landing/logo";
 
-
-const AFTER_LOGIN_HREF = "/dashboard"; 
+/* ---------- Settings ---------- */
+const AFTER_LOGIN_HREF = "/dashboard"; // fallback if the API returns no store slug
 const SIGNUP_HREF = "/user/signup";
+const FORGOT_PASSWORD_HREF = "/contact"; // password resets are handled by the team for now
+
+const SIGNUP_HINT =
+  "No account found with these details, or the password is wrong. New here? Sign up first, then log in.";
 
 type LoginPayload = { email: string; password: string; remember: boolean };
 
@@ -18,8 +22,8 @@ type LoginResponse = {
 };
 
 /**
- * Asli login: /api/stores/login par email + password bhejta hai.
- * Kamyab hone par us user ke dashboard ka path wapas karta hai.
+ * Real login: posts the email and password to /api/stores/login.
+ * On success, returns the path of that user's merchant dashboard.
  */
 async function authenticateUser(payload: LoginPayload): Promise<string> {
   const response = await fetch("/api/stores/login", {
@@ -32,7 +36,7 @@ async function authenticateUser(payload: LoginPayload): Promise<string> {
   try {
     data = (await response.json()) as LoginResponse;
   } catch {
-    // JSON na aaye to neeche generic error chalega
+    // If the response is not JSON, the generic error below is used
   }
 
   if (!response.ok) {
@@ -81,7 +85,14 @@ export default function UserLoginForm() {
       router.push(nextPath);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      const message = err instanceof Error ? err.message : "";
+      // Wrong email/password and "no such store" share one server message,
+      // so show a clearer hint that points new users to sign up first.
+      setError(
+        /invalid/i.test(message)
+          ? SIGNUP_HINT
+          : message || "Login failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -143,7 +154,7 @@ export default function UserLoginForm() {
       {/* ================= Form side ================= */}
       <div className="flex items-center justify-center px-4 py-10 sm:px-6">
         <div className="w-full max-w-md">
-          {/* Mobile par left panel nahi hota, is liye logo yahan dikhta hai */}
+          {/* The brand panel is hidden on mobile, so the logo is shown here instead */}
           <Link href="/" aria-label="Buildexom home" className="mb-8 inline-block lg:hidden">
             <Logo />
           </Link>
@@ -164,6 +175,14 @@ export default function UserLoginForm() {
                   className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700"
                 >
                   {error}
+                  {error === SIGNUP_HINT && (
+                    <>
+                      {" "}
+                      <Link href={SIGNUP_HREF} className="font-bold underline">
+                        Create a free account
+                      </Link>
+                    </>
+                  )}
                 </p>
               )}
 
@@ -218,15 +237,24 @@ export default function UserLoginForm() {
                 </div>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-[#2c4a73]">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="h-4 w-4 rounded accent-[#1976d2]"
-                />
-                Remember me
-              </label>
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-[#2c4a73]">
+                  <input
+                    type="checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="h-4 w-4 rounded accent-[#1976d2]"
+                  />
+                  Remember me
+                </label>
+
+                <Link
+                  href={FORGOT_PASSWORD_HREF}
+                  className="text-sm font-semibold text-[#1976d2] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
 
               <button
                 type="submit"

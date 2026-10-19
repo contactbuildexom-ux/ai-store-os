@@ -33,7 +33,7 @@ export function hashOtpCode(email: string, code: string) {
   return hmac(`otp:${email.toLowerCase()}:${code}`);
 }
 
-/** Code sahi hone ke baad milne wala signed token (30 minute valid) */
+/** Signed token issued after the code is verified (valid for 30 minutes) */
 export function createEmailVerificationToken(email: string) {
   const payload = Buffer.from(
     JSON.stringify({
@@ -73,8 +73,8 @@ function otpEmailHtml(code: string) {
 }
 
 /**
- * Email bhejta hai. Provider: Brevo ya Resend (jis ki API key set ho).
- * Dono na hon aur site local (development) par ho to code terminal mein print hota hai.
+ * Sends the verification email. Provider: Brevo or Resend (whichever API key is set).
+ * If neither is set and the site runs locally (development), the code is printed to the terminal.
  */
 export async function sendOtpEmail(email: string, code: string): Promise<"sent" | "dev"> {
   const from = process.env.OTP_FROM_EMAIL;
