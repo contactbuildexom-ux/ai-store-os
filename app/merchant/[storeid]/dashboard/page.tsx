@@ -192,7 +192,8 @@ export default function MerchantDashboardMaster() {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) throw sessionError;
 
-            const response = await fetch('/api/stores/current', {
+            const queryParam = identifier ? `?store_id=${encodeURIComponent(identifier)}` : '';
+            const response = await fetch(`/api/stores/current${queryParam}`, {
                 cache: 'no-store',
                 headers: session?.access_token
                     ? { Authorization: `Bearer ${session.access_token}` }
@@ -208,7 +209,10 @@ export default function MerchantDashboardMaster() {
             if (!storeData) {
                 throw new Error('No store is linked to this account.');
             }
-            if (storeData.id !== identifier && storeData.slug !== identifier) {
+            const normIdentifier = decodeURIComponent(identifier).toLowerCase();
+            const normStoreId = (storeData.id || '').toLowerCase();
+            const normStoreSlug = (storeData.slug || '').toLowerCase();
+            if (normStoreId !== normIdentifier && normStoreSlug !== normIdentifier) {
                 throw new Error('You are not authorized to access this store.');
             }
 

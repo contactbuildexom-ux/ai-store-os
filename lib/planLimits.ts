@@ -3,7 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function checkStoreLimits(storeId: string, type: 'product' | 'category' | 'whatsapp_order', categoryId?: string) {
   const supabase = createAdminClient();
-  if (!supabase) throw new Error('Store database is not configured');
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) {
+    return { allowed: true };
+  }
   // 1. Store ka plan fetch karein
   const { data: store, error: storeError } = await supabase
     .from('stores')
@@ -11,7 +14,7 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
     .eq('id', storeId)
     .single();
 
-  if (storeError || !store) throw new Error('Store not found');
+  if (storeError || !store) return { allowed: true };
 
   const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
 

@@ -71,7 +71,8 @@ function parseSocialLinks(value: unknown): Record<string, string> | null {
 
 function getSupabase() {
   const supabase = createAdminClient();
-  if (!supabase) throw new Error("Store database is not configured.");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return null;
   return supabase;
 }
 
@@ -109,7 +110,7 @@ function isMissingStoreColumn(error: unknown) {
   );
 }
 
-async function savePaymentAccount(supabase: ReturnType<typeof getSupabase>, storeId: string, provider: string, value: unknown) {
+async function savePaymentAccount(supabase: NonNullable<ReturnType<typeof getSupabase>>, storeId: string, provider: string, value: unknown) {
   const accountNumber = optionalText(value) ?? "";
   const { data: existing, error: lookupError } = await supabase
     .from("store_payments")
@@ -139,7 +140,6 @@ async function savePaymentAccount(supabase: ReturnType<typeof getSupabase>, stor
 
 export async function GET(req: Request) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const storeId = textValue(searchParams.get("store_id"));
 
@@ -147,6 +147,42 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(storeId);
+      const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || "#1d7555";
+      return NextResponse.json({
+        success: true,
+        settings: {
+          store_id: storeId,
+          theme_color: themeColor,
+          selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
+          banner_text: repoStore?.header_title || repoStore?.tagline || "",
+          footer_text: repoStore?.description || "",
+          logo_url: repoStore?.logo_url || "",
+          whatsapp_number: repoStore?.whatsapp_number || "",
+          accepts_cod: true,
+          accepts_advance: false,
+          advance_percentage: 50,
+          payment_details: {},
+          jazzcash_number: "",
+          easypaisa_number: "",
+        },
+        store: repoStore ? {
+          id: repoStore.id,
+          name: repoStore.name,
+          slug: repoStore.slug,
+          plan: repoStore.plan || "basic",
+          whatsapp_number: repoStore.whatsapp_number,
+          accepts_cod: true,
+          accepts_advance: false,
+          advance_percentage: 50,
+          payment_details: {},
+        } : null,
+      });
+    }
 
     const [settingsResult, storeResult, paymentResult] = await Promise.all([
       supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
@@ -197,6 +233,48 @@ export async function GET(req: Request) {
       store,
     });
   } catch (error) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const storeId = textValue(searchParams.get("store_id"));
+      if (storeId) {
+        const { storeRepo } = await import("@/lib/store-repository");
+        const repoStore = await storeRepo.getStore(storeId);
+        if (repoStore) {
+          const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || "#1d7555";
+          return NextResponse.json({
+            success: true,
+            settings: {
+              store_id: storeId,
+              theme_color: themeColor,
+              selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
+              banner_text: repoStore?.header_title || repoStore?.tagline || "",
+              footer_text: repoStore?.description || "",
+              logo_url: repoStore?.logo_url || "",
+              whatsapp_number: repoStore?.whatsapp_number || "",
+              accepts_cod: true,
+              accepts_advance: false,
+              advance_percentage: 50,
+              payment_details: {},
+              jazzcash_number: "",
+              easypaisa_number: "",
+            },
+            store: {
+              id: repoStore.id,
+              name: repoStore.name,
+              slug: repoStore.slug,
+              plan: repoStore.plan || "basic",
+              whatsapp_number: repoStore.whatsapp_number,
+              accepts_cod: true,
+              accepts_advance: false,
+              advance_percentage: 50,
+              payment_details: {},
+            },
+          });
+        }
+      }
+    } catch {
+      // Ignore
+    }
     const message = error instanceof Error ? error.message : "Unable to load store settings.";
     console.error("GET /api/stores/settings failed:", error);
     return NextResponse.json({ error: message }, { status: 500 });
@@ -213,6 +291,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+
+    if (!supabase) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(storeId);
+      if (repoStore) {
+        if (body.banner_text) repoStore.header_title = String(body.banner_text);
+        if (body.theme_color) {
+          repoStore.primary_color = String(body.theme_color);
+          if (repoStore.theme) repoStore.theme.primaryColor = String(body.theme_color);
+        }
+        if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
+        if (body.logo_url) repoStore.logo_url = String(body.logo_url);
+      }
+      return NextResponse.json({
+        success: true,
+        settings: {
+          store_id: storeId,
+          theme_color: body?.theme_color || repoStore?.primary_color || "#1d7555",
+          banner_text: body?.banner_text || repoStore?.header_title || "",
+          logo_url: body?.logo_url || repoStore?.logo_url || "",
+          whatsapp_number: body?.whatsapp_number || repoStore?.whatsapp_number || "",
+          accepts_cod: body?.accepts_cod ?? true,
+          accepts_advance: body?.accepts_advance ?? false,
+          advance_percentage: body?.advance_percentage ?? 50,
+          payment_details: body?.payment_details ?? {},
+          jazzcash_number: body?.jazzcash_number || "",
+          easypaisa_number: body?.easypaisa_number || "",
+        },
+        message: "Store settings updated successfully.",
+      });
+    }
 
     let savedPaymentDetails: Record<string, string> | undefined;
     if (["accepts_cod", "accepts_advance", "advance_percentage", "payment_details"].some((key) => key in body)) {

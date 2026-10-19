@@ -32,17 +32,37 @@ async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAd
 
 export async function GET(request: Request) {
   try {
-    const merchantStore = await getMerchantSessionStore();
+    const { searchParams } = new URL(request.url);
+    const requestedId = searchParams.get("store_id") || searchParams.get("id") || searchParams.get("slug");
+
+    const merchantStore = await getMerchantSessionStore(requestedId || undefined);
     if (merchantStore) return NextResponse.json({ store: merchantStore as StoreRow });
+
+    if (requestedId) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(requestedId);
+      if (repoStore) {
+        return NextResponse.json({
+          store: {
+            id: repoStore.id,
+            name: repoStore.name,
+            slug: repoStore.slug,
+            plan: repoStore.plan || "basic",
+            payment_status: repoStore.payment_status || "active",
+            whatsapp_number: repoStore.whatsapp_number,
+          } as StoreRow,
+        });
+      }
+    }
 
     const supabase = createAdminClient();
     if (!supabase) {
-      return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
+      return NextResponse.json({ error: "Store not found." }, { status: 404 });
     }
 
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
-      return NextResponse.json({ error: "Authentication token is required." }, { status: 401 });
+      return NextResponse.json({ error: "Store not found or authentication required." }, { status: 404 });
     }
 
     const {

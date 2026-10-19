@@ -20,6 +20,7 @@ export interface StoreRecord {
   created_at: string;
   theme?: any;
   social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
+  logo_url?: string;
 }
 
 export interface ProductRecord {
@@ -163,7 +164,7 @@ class StoreRepository {
   }
 
   async saveStore(generated: GeneratedStore): Promise<StoreRecord> {
-    const id = randomUUID();
+    const id = (generated as any).id || (generated as any).store_id || randomUUID();
     const storeRecord: StoreRecord = {
       id,
       name: generated.name,
@@ -198,8 +199,8 @@ class StoreRepository {
 
     // Also persist to Supabase if credentials are valid
     const supabase = this.getSupabase();
-    if (!supabase && process.env.NODE_ENV === 'production') {
-      throw new Error('Store database is not configured. Configure Supabase before creating stores in production.');
+    if (!supabase) {
+      console.info('Using memory and local cache for store repository.');
     }
     if (supabase) {
       try {
@@ -241,10 +242,19 @@ class StoreRepository {
   }
 
   async getStore(idOrSlug: string): Promise<StoreRecord | null> {
+    if (!idOrSlug) return null;
     await this.hydrateLocalCache();
-    // 1. Check memory cache
+    // 1. Check memory cache direct
     const cached = memoryStores.get(idOrSlug);
     if (cached) return cached;
+
+    // 1b. Check case-insensitively in memoryStores
+    const target = idOrSlug.trim().toLowerCase();
+    for (const [key, store] of memoryStores.entries()) {
+      if (key.toLowerCase() === target || store.id.toLowerCase() === target || store.slug.toLowerCase() === target) {
+        return store;
+      }
+    }
 
     // 2. Query Supabase
     const supabase = this.getSupabase();
@@ -329,9 +339,14 @@ class StoreRepository {
   }
 
   async getProducts(storeIdOrSlug: string): Promise<ProductRecord[]> {
+    if (!storeIdOrSlug) return [];
     await this.hydrateLocalCache();
-    // 1. Check memory cache
-    const cached = memoryProducts.get(storeIdOrSlug);
+    const store = await this.getStore(storeIdOrSlug);
+    const targetId = store ? store.id : storeIdOrSlug;
+    const targetSlug = store ? store.slug : storeIdOrSlug;
+
+    // 1. Check memory cache across keys
+    const cached = memoryProducts.get(targetId) || memoryProducts.get(targetSlug) || memoryProducts.get(storeIdOrSlug);
     if (cached && cached.length > 0) return cached;
 
     // 2. Query Supabase

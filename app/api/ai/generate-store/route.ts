@@ -653,6 +653,7 @@ export async function POST(request: Request) {
 
     try {
       await storeRepo.saveStore({
+        id: resolvedStore.id,
         name: resolvedStore.name,
         slug: resolvedStore.slug,
         tagline: generated.banner_text,

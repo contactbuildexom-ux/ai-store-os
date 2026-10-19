@@ -25,6 +25,7 @@ export interface GeneratedProduct {
 }
 
 export interface GeneratedStore {
+  id?: string;
   name: string;
   slug: string;
   tagline: string;
