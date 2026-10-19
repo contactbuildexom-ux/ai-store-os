@@ -21,6 +21,13 @@ export interface StoreRecord {
   theme?: any;
   social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
   logo_url?: string;
+  password_hash?: string;
+  delivery?: {
+    store_city?: string;
+    city_rate?: number;
+    other_city_rate?: number;
+    free_delivery_above?: number;
+  };
 }
 
 export interface ProductRecord {
@@ -126,7 +133,12 @@ memoryProducts.set(defaultVelvetAura.slug, defaultVelvetProducts);
 memoryProducts.set(defaultVelvetAura.id, defaultVelvetProducts);
 
 class StoreRepository {
+  private isHydrated = false;
+  private pendingPersistTimer: NodeJS.Timeout | null = null;
+
   private async hydrateLocalCache() {
+    if (this.isHydrated) return;
+    this.isHydrated = true;
     const cache = await readLocalStoreCache();
     if (!cache || typeof cache !== 'object') return;
     const saved = cache as { stores?: unknown; products?: unknown };
@@ -146,18 +158,25 @@ class StoreRepository {
     }
   }
 
-  private async persistLocalCache() {
-    const stores = [...new Map([...memoryStores.values()].map((store) => [store.id, store])).values()];
-    await writeLocalStoreCache({
-      stores,
-      products: Object.fromEntries(memoryProducts.entries()),
-    });
+  private persistLocalCache() {
+    if (this.pendingPersistTimer) clearTimeout(this.pendingPersistTimer);
+    this.pendingPersistTimer = setTimeout(async () => {
+      try {
+        const stores = [...new Map([...memoryStores.values()].map((store) => [store.id, store])).values()];
+        await writeLocalStoreCache({
+          stores,
+          products: Object.fromEntries(memoryProducts.entries()),
+        });
+      } catch (err) {
+        console.warn("Local store cache write failed:", err);
+      }
+    }, 200);
   }
 
   private getSupabase() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (url && key && !url.includes('your-project')) {
+    if (url && key && !url.includes('placeholder-project') && !url.includes('your-project')) {
       return createClient(url, key);
     }
     return null;
@@ -182,6 +201,8 @@ class StoreRepository {
       created_at: new Date().toISOString(),
       theme: generated.theme,
       social_links: generated.social_links ?? {},
+      password_hash: (generated as any).password_hash,
+      delivery: (generated as any).delivery,
     };
 
     // Save in memory cache
@@ -197,7 +218,7 @@ class StoreRepository {
     memoryProducts.set(storeRecord.slug, prods);
     memoryProducts.set(storeRecord.id, prods);
 
-    // Also persist to Supabase if credentials are valid
+    // Also persist to Supabase if credentials are valid (batch upsert for high concurrency)
     const supabase = this.getSupabase();
     if (!supabase) {
       console.info('Using memory and local cache for store repository.');
@@ -217,8 +238,8 @@ class StoreRepository {
         });
         if (storeError) throw storeError;
 
-        for (const p of prods) {
-          const { error: productError } = await supabase.from('products').upsert({
+        if (prods.length > 0) {
+          const productRows = prods.map(p => ({
             id: p.id,
             store_id: id,
             name: p.name,
@@ -228,7 +249,8 @@ class StoreRepository {
             category: p.category,
             wholesale_cost: p.wholesale_cost || 0,
             min_accept_price: p.min_accept_price || 0
-          });
+          }));
+          const { error: productError } = await supabase.from('products').upsert(productRows);
           if (productError) throw productError;
         }
       } catch (e) {
@@ -236,9 +258,30 @@ class StoreRepository {
       }
     }
 
-    await this.persistLocalCache();
+    this.persistLocalCache();
 
     return storeRecord;
+  }
+
+  async getStoreByEmail(email: string): Promise<StoreRecord | null> {
+    if (!email) return null;
+    await this.hydrateLocalCache();
+    const target = email.trim().toLowerCase();
+    for (const store of memoryStores.values()) {
+      if (store.owner_email && store.owner_email.trim().toLowerCase() === target) {
+        return store;
+      }
+    }
+    const supabase = this.getSupabase();
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('stores').select('*').eq('owner_email', target).limit(1).maybeSingle();
+        if (data) return data as unknown as StoreRecord;
+      } catch {
+        // ignore
+      }
+    }
+    return null;
   }
 
   async getStore(idOrSlug: string): Promise<StoreRecord | null> {
@@ -393,7 +436,7 @@ class StoreRepository {
     // Plan Limits Validation
     const existing = await this.getProducts(storeIdOrSlug);
     const plan = store?.plan || 'free';
-    const maxAllowed = plan === 'free' ? 10 : plan === 'pro' ? 25 : 9999;
+    const maxAllowed = plan === 'free' || plan === 'basic' ? 40 : plan === 'pro' ? 80 : 9999;
 
     if (existing.length >= maxAllowed) {
       throw new Error(`Plan limit reached! ${plan.toUpperCase()} plan allows maximum ${maxAllowed} products. Please upgrade.`);
@@ -429,6 +472,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return newProd;
   }
 
@@ -455,6 +499,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return updated;
   }
 
@@ -476,6 +521,7 @@ class StoreRepository {
       }
     }
 
+    this.persistLocalCache();
     return true;
   }
 

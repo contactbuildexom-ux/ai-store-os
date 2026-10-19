@@ -43,7 +43,7 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
 
   const sidebar = (
     <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
-      <div className="flex h-[76px] items-center gap-3 border-b border-white/[0.08] px-6">
+      <div className="flex min-h-[88px] items-center gap-3 border-b border-white/[0.08] px-6 py-5">
         <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
           <PlatformLogo
             fallback={

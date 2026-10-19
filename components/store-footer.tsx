@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Landmark, Smartphone, ShieldCheck, Truck, Headphones, RotateCcw, MapPin, Phone, Mail } from 'lucide-react';
 import { StoreSocialLinks } from './store-social-links';
 import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from './store-qr-code';
+import { THEME_PALETTES, darkenColor } from '@/lib/store-theme';
 
 type StorePaymentDetails = {
   bank_name: string;
@@ -16,11 +17,18 @@ type StorePaymentDetails = {
   easypaisa_title: string;
 };
 
-export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks }: {
+export function StoreFooter({ 
+  storeName, 
+  storeSlug, 
+  paymentDetails, 
+  socialLinks,
+  themeColor,
+}: {
   storeName: string;
   storeSlug?: string;
   paymentDetails?: Partial<StorePaymentDetails>;
   socialLinks?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
+  themeColor?: string;
 }) {
   const safePayments = {
     bank_name: paymentDetails?.bank_name || '',
@@ -67,45 +75,75 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
 
   const availableAccounts = accounts.filter((account) => account.values.length > 0);
 
+  const resolvedThemeColor = themeColor?.startsWith('#') 
+    ? themeColor 
+    : (themeColor && THEME_PALETTES[themeColor]) || '#0f172a';
+  const footerBgDark = darkenColor(resolvedThemeColor, 60);
+  const footerBgDarker = darkenColor(resolvedThemeColor, 80);
+
   return (
-    <footer className="mt-12 border-t border-slate-200/90 bg-white">
+    <footer 
+      className="mt-12 border-t text-white transition-colors"
+      style={{
+        background: `linear-gradient(180deg, ${footerBgDark} 0%, ${footerBgDarker} 100%)`,
+        borderColor: `${resolvedThemeColor}40`,
+      }}
+    >
       {/* 1. Value Proposition & Trust Badges Strip (Responsive Grid) */}
-      <div className="border-b border-slate-100 bg-slate-50/70 px-4 py-8 sm:px-8">
+      <div 
+        className="border-b px-4 py-8 sm:px-8"
+        style={{
+          backgroundColor: `${resolvedThemeColor}18`,
+          borderColor: `${resolvedThemeColor}30`,
+        }}
+      >
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-100 text-blue-700 shadow-xs">
+            <span 
+              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
+              style={{ backgroundColor: resolvedThemeColor }}
+            >
               <Truck size={18} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Nationwide Delivery</h4>
-              <p className="text-[11px] text-slate-500">Fast Cash on Delivery</p>
+              <h4 className="text-xs font-bold text-white">Nationwide Delivery</h4>
+              <p className="text-[11px] text-slate-300">Fast Cash on Delivery</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-100 text-emerald-700 shadow-xs">
+            <span 
+              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
+              style={{ backgroundColor: resolvedThemeColor }}
+            >
               <ShieldCheck size={18} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">100% Genuine</h4>
-              <p className="text-[11px] text-slate-500">Verified Quality Items</p>
+              <h4 className="text-xs font-bold text-white">100% Genuine</h4>
+              <p className="text-[11px] text-slate-300">Verified Quality Items</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-purple-100 text-purple-700 shadow-xs">
+            <span 
+              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
+              style={{ backgroundColor: resolvedThemeColor }}
+            >
               <Headphones size={18} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">WhatsApp Support</h4>
-              <p className="text-[11px] text-slate-500">Instant Order Updates</p>
+              <h4 className="text-xs font-bold text-white">WhatsApp Support</h4>
+              <p className="text-[11px] text-slate-300">Instant Order Updates</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700 shadow-xs">
+            <span 
+              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
+              style={{ backgroundColor: resolvedThemeColor }}
+            >
               <RotateCcw size={18} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Easy Exchanges</h4>
-              <p className="text-[11px] text-slate-500">Hassle-Free Policy</p>
+              <h4 className="text-xs font-bold text-white">Easy Exchanges</h4>
+              <p className="text-[11px] text-slate-300">Hassle-Free Policy</p>
             </div>
           </div>
         </div>
@@ -117,20 +155,20 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
           {/* Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
-              <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden">
+              <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-white/20 overflow-hidden">
                 <img
                   src={BUILDEXOM_ICON_DATA_URL}
                   alt={storeName}
                   className="size-full object-contain"
                 />
               </div>
-              <h3 className="text-base font-extrabold tracking-tight text-slate-900">{storeName}</h3>
+              <h3 className="text-base font-extrabold tracking-tight text-white">{storeName}</h3>
             </div>
-            <p className="text-xs leading-relaxed text-slate-500">
+            <p className="text-xs leading-relaxed text-slate-300">
               Welcome to our official online store. Explore our handpicked catalog of premium quality products with verified nationwide shipping and Cash on Delivery.
             </p>
             {storeSlug && (
-              <p className="font-mono text-[11px] font-semibold text-blue-700">
+              <p className="font-mono text-[11px] font-semibold text-emerald-300">
                 {storeSlug}.buildexom.store
               </p>
             )}
@@ -138,20 +176,20 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
 
           {/* Quick Links */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Quick Navigation</h4>
-            <ul className="space-y-2 text-xs text-slate-600">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Quick Navigation</h4>
+            <ul className="space-y-2 text-xs text-slate-300">
               <li>
-                <a href="#featured" className="transition hover:text-blue-600 hover:underline">
+                <a href="#featured" className="transition hover:text-white hover:underline">
                   Featured Products
                 </a>
               </li>
               <li>
-                <a href="#categories" className="transition hover:text-blue-600 hover:underline">
+                <a href="#categories" className="transition hover:text-white hover:underline">
                   Shop by Category
                 </a>
               </li>
               <li>
-                <a href="#products" className="transition hover:text-blue-600 hover:underline">
+                <a href="#products" className="transition hover:text-white hover:underline">
                   Full Catalog
                 </a>
               </li>
@@ -163,8 +201,8 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
 
           {/* Customer Support & Socials */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Connect With Us</h4>
-            <p className="text-xs text-slate-500">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Connect With Us</h4>
+            <p className="text-xs text-slate-300">
               Follow our official social profiles for special discounts and new product drops.
             </p>
             <div className="pt-1">
@@ -173,36 +211,46 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
           </div>
         </div>
 
-        {/* Centered Scan & Shop QR Code Section */}
+        {/* Centered Scan & Shop QR Code Section - ON CLEAN WHITE CARD FOR OPTIMAL CAMERA SCANNING */}
         {storeSlug && (
-          <div className="mt-12 border-t border-slate-100 pt-8 flex flex-col items-center text-center">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Scan & Shop</h4>
-            <p className="mt-1 max-w-sm text-xs text-slate-500">
+          <div 
+            className="mt-12 border-t pt-8 flex flex-col items-center text-center"
+            style={{ borderColor: `${resolvedThemeColor}35` }}
+          >
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Scan & Shop</h4>
+            <p className="mt-1 max-w-sm text-xs text-slate-300">
               Scan this QR code with any smartphone camera to open and share this store.
             </p>
             <div className="mt-4 flex justify-center w-full">
-              <StoreQRCode 
-                storeSlug={storeSlug} 
-                storePath={`/store/${encodeURIComponent(storeSlug)}`} 
-                title={`${storeName} QR Code`}
-                badge="Active"
-              />
+              {/* QR Code container explicitly kept on clean white background card */}
+              <div className="rounded-3xl bg-white p-5 shadow-2xl border border-slate-200 inline-block text-slate-900">
+                <StoreQRCode 
+                  storeSlug={storeSlug} 
+                  storePath={`/store/${encodeURIComponent(storeSlug)}`} 
+                  title={`${storeName} QR Code`}
+                  badge="Active"
+                />
+              </div>
             </div>
           </div>
         )}
 
         {/* Advance Payment Details Section (if configured) */}
         {availableAccounts.length > 0 && (
-          <section aria-labelledby="store-payment-details" className="mt-10 border-t border-slate-100 pt-8">
+          <section 
+            aria-labelledby="store-payment-details" 
+            className="mt-10 border-t pt-8"
+            style={{ borderColor: `${resolvedThemeColor}35` }}
+          >
             <div className="text-center">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Advance Payment Accounts</p>
-              <h4 id="store-payment-details" className="mt-1 text-sm font-bold text-slate-800">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">Advance Payment Accounts</p>
+              <h4 id="store-payment-details" className="mt-1 text-sm font-bold text-white">
                 Direct Bank & Wallet Details for {storeName}
               </h4>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {availableAccounts.map(({ name, icon: Icon, accent, values }) => (
-                <div key={name} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
+                <div key={name} className="rounded-xl border border-white/15 bg-white p-3.5 shadow-sm text-slate-900">
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
                     <span className={`grid size-7 place-items-center rounded-lg ${accent}`}><Icon size={14} /></span>
                     <span className="text-xs font-bold text-slate-900">{name}</span>
@@ -222,13 +270,16 @@ export function StoreFooter({ storeName, storeSlug, paymentDetails, socialLinks 
         )}
 
         {/* Bottom Copyright & OS badge */}
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-6 text-center text-xs text-slate-500 sm:flex-row">
+        <div 
+          className="mt-10 flex flex-col items-center justify-between gap-3 border-t pt-6 text-center text-xs text-slate-400 sm:flex-row"
+          style={{ borderColor: `${resolvedThemeColor}30` }}
+        >
           <p>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
-          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2 text-[11px] text-slate-300">
             <span>Powered by</span>
-            <span className="font-bold text-slate-800">Buildexom AI Store OS</span>
+            <span className="font-bold text-white">Buildexom AI Store OS</span>
             <span>•</span>
-            <span className="text-emerald-700 font-semibold">100% Secure Checkout</span>
+            <span className="text-emerald-400 font-semibold">100% Secure Checkout</span>
           </div>
         </div>
       </div>
