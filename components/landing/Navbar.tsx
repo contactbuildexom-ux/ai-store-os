@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -31,6 +31,8 @@ export default function Navbar() {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderPrompt, setBuilderPrompt] = useState("");
+  const [builderName, setBuilderName] = useState("");
+  const [builderTheme, setBuilderTheme] = useState("ocean-blue");
 
   const openAuth = (tab: "login" | "signup") => {
     setAuthTab(tab);
@@ -45,8 +47,10 @@ export default function Navbar() {
     setGenerateOpen(true);
   };
 
-  const handleGenerate = (prompt: string) => {
+  const handleGenerate = (prompt: string, name?: string, theme?: string) => {
     setBuilderPrompt(prompt);
+    setBuilderName(name || "");
+    if (theme) setBuilderTheme(theme);
     setGenerateOpen(false);
     setBuilderOpen(true);
   };
@@ -232,6 +236,8 @@ export default function Navbar() {
         isOpen={builderOpen}
         onClose={() => setBuilderOpen(false)}
         initialPrompt={builderPrompt}
+        initialStoreName={builderName}
+        initialTheme={builderTheme}
       />
     </>
   );

@@ -7,9 +7,9 @@ import { useRouter } from "next/navigation";
 import Logo from "@/components/landing/logo";
 import EmailVerifyField from "@/components/auth/EmailVerifyField";
 
-/* ---------- settings ---------- */
+/* ---------- Settings ---------- */
 const LOGIN_HREF = "/user/login";
-// NEXT_PUBLIC_REQUIRE_EMAIL_OTP=true hone par hi email verify karna zaroori hoga
+// Email verification is only enforced when NEXT_PUBLIC_REQUIRE_EMAIL_OTP=true
 const OTP_REQUIRED = process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -78,7 +78,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
       try {
         data = (await response.json()) as GenerateResponse;
       } catch {
-        // generic error neeche
+        // If the response is not JSON, the generic error below is used
       }
       if (!response.ok) throw new Error(data.error || "We could not create your store. Please try again.");
 
@@ -93,13 +93,13 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
   }
 
   const inputClass =
-    "h-12 w-full rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-4 focus:ring-[#1976d2]/15";
+    "h-12 w-full rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 text-[#0b2545] outline-none transition focus:border-[#1976d2] focus:bg-white focus:ring-4 focus:ring-[#1976d2]/15";
   const labelClass = "mb-1.5 block text-sm font-bold text-[#0b2545]";
 
   return (
     <main className="grid min-h-screen bg-[#e6f4ff] lg:grid-cols-[1fr_1.1fr]">
       {/* ================= Brand panel (desktop only) ================= */}
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0b2545] via-[#0f3a73] to-[#1976d2] p-12 text-white lg:flex">
+      <aside className="relative hidden flex-col justify-center gap-12 overflow-hidden bg-gradient-to-br from-[#0b2545] via-[#0f3a73] to-[#1976d2] p-12 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start">
         <Link href="/" aria-label="Buildexom home" className="inline-block w-fit transition-transform duration-300 hover:scale-[1.03]">
           <Image src="/logo-full.png" alt="Buildexom" width={888} height={277} priority className="h-16 w-auto brightness-0 invert" />
         </Link>
@@ -152,17 +152,17 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
 
               <div>
                 <label htmlFor="su-store" className={labelClass}>Store name <span className="font-medium text-[#5b7aa3]">(optional)</span></label>
-                <input id="su-store" type="text" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g. Noor Velvet Couture" className={inputClass} />
+                <input id="su-store" type="text" value={storeName} onChange={(e) => setStoreName(e.target.value)} className={inputClass} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="su-email" className={labelClass}>Email</label>
-                  <input id="su-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className={inputClass} />
+                  <input id="su-email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
                 </div>
                 <div>
                   <label htmlFor="su-phone" className={labelClass}>Contact number</label>
-                  <input id="su-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="923001234567" className={inputClass} />
+                  <input id="su-phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
                 </div>
               </div>
 
@@ -175,7 +175,6 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
                     maxLength={128}
                     className={`${inputClass} pr-16`}
                   />
@@ -199,8 +198,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                   maxLength={300}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g. A clothing store for women with a summer collection"
-                  className="w-full resize-none rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-3 text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-4 focus:ring-[#1976d2]/15"
+                  className="w-full resize-none rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-3 text-[#0b2545] outline-none transition focus:border-[#1976d2] focus:bg-white focus:ring-4 focus:ring-[#1976d2]/15"
                 />
               </div>
 

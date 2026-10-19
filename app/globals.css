@@ -141,35 +141,35 @@ button { cursor: pointer; }
 .blink-attention a { animation: blink-glow 0.9s ease-in-out 4; }
 
 /* ============================================================
-   SECTIONS: flat light-blue bands
+   SECTIONS: flat light-blue bands (Landing page only)
    ============================================================ */
 main { overflow-x: clip; }
 
-main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
+main:has(#hero) section:not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
   position: relative;
   isolation: isolate;
   overflow-x: clip;
   background: var(--bx-bg) !important;
 }
-main section:not(.bg-brand-gradient):not([class*="rounded-3xl"]):nth-of-type(even) {
+main:has(#hero) section:not(.bg-brand-gradient):not([class*="rounded-3xl"]):nth-of-type(even) {
   background: var(--bx-bg-deep) !important;
 }
 
 /* ---------- Section spacing: heading block upar shift (padding kam) ---------- */
-main section[id]:not(:first-of-type):not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
+main:has(#hero) section[id]:not(:first-of-type):not(.bg-brand-gradient):not([class*="rounded-3xl"]) {
   padding-top: clamp(2.75rem, 1.8rem + 2.6vw, 4rem) !important;
   padding-bottom: clamp(3.25rem, 2.25rem + 3vw, 5rem) !important;
 }
 
 /* old decorative blobs off */
-main section [class*="blur-3xl"],
-main section [class*="blur-2xl"],
-main section [class*="blur-[1"] {
+main:has(#hero) section [class*="blur-3xl"],
+main:has(#hero) section [class*="blur-2xl"],
+main:has(#hero) section [class*="blur-[1"] {
   display: none !important;
 }
 
 /* ---------- Section label (pill) ---------- */
-main section[id] :has(+ h2) {
+main:has(#hero) section[id] :has(+ h2) {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.6rem !important;
@@ -188,7 +188,7 @@ main section[id] :has(+ h2) {
   text-transform: uppercase !important;
   margin-bottom: 0.85rem !important;
 }
-main section[id] :has(+ h2)::before {
+main:has(#hero) section[id] :has(+ h2)::before {
   content: "";
   width: 8px;
   height: 8px;
@@ -197,7 +197,7 @@ main section[id] :has(+ h2)::before {
   background: #1976d2;
   animation: bx-pulse-dot 2s ease-in-out infinite;
 }
-main section[id] :has(+ h2) > * {
+main:has(#hero) section[id] :has(+ h2) > * {
   background: none !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -211,7 +211,7 @@ main section[id] :has(+ h2) > * {
 }
 
 /* ---------- Section headings: bara font, tight spacing (NO forced colour) ---------- */
-main section[id] h2 {
+main:has(#hero) section[id] h2 {
   font-size: clamp(2rem, 1.3rem + 2.5vw, 3.1rem) !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
@@ -220,28 +220,28 @@ main section[id] h2 {
 }
 
 /* ---------- Cards: lift + blue glow on hover ---------- */
-main section:not(:first-of-type) [class*="rounded-3xl"]:not(article),
-main section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article) {
+main:has(#hero) section:not(:first-of-type) [class*="rounded-3xl"]:not(article),
+main:has(#hero) section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article) {
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
-main section:not(:first-of-type) [class*="rounded-3xl"]:not(article):hover,
-main section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article):hover {
+main:has(#hero) section:not(:first-of-type) [class*="rounded-3xl"]:not(article):hover,
+main:has(#hero) section:not(:first-of-type) [class*="rounded-2xl"][class*="border"]:not(article):hover {
   transform: translateY(-5px);
   border-color: rgba(25, 118, 210, 0.55);
   box-shadow: 0 28px 55px -24px rgba(25, 118, 210, 0.45);
 }
 
 /* ---------- Buttons: simple lift + glow (inside sections only) ---------- */
-main section a[class*="rounded-xl"][class*="bg-"],
-main section a[class*="rounded-full"][class*="bg-"],
-main section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]),
-main section button[class*="rounded-full"][class*="bg-"]:not([aria-label]) {
+main:has(#hero) section a[class*="rounded-xl"][class*="bg-"],
+main:has(#hero) section a[class*="rounded-full"][class*="bg-"],
+main:has(#hero) section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]),
+main:has(#hero) section button[class*="rounded-full"][class*="bg-"]:not([aria-label]) {
   transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
-main section a[class*="rounded-xl"][class*="bg-"]:hover,
-main section a[class*="rounded-full"][class*="bg-"]:hover,
-main section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover,
-main section button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover {
+main:has(#hero) section a[class*="rounded-xl"][class*="bg-"]:hover,
+main:has(#hero) section a[class*="rounded-full"][class*="bg-"]:hover,
+main:has(#hero) section button[class*="rounded-xl"][class*="bg-"]:not([aria-label]):hover,
+main:has(#hero) section button[class*="rounded-full"][class*="bg-"]:not([aria-label]):hover {
   transform: translateY(-3px);
   filter: brightness(1.05);
   box-shadow: 0 16px 30px -12px rgba(25, 118, 210, 0.7);

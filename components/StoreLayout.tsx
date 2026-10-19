@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { StoreQRCode } from '@/components/store-qr-code';
+import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import { StoreSocialLinks } from '@/components/store-social-links';
 import { StoreFooter } from '@/components/store-footer';
 import {
@@ -10,7 +10,7 @@ import {
   isStoreAssistantResponse,
   type StoreAssistantRequest,
 } from '@/lib/storefront-types';
-import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
+import { resolveStoreHero, detectStoreNiche } from '@/lib/ai/hero-niche-resolver';
 import { 
   ShoppingBag, 
   Search, 
@@ -100,17 +100,54 @@ export default function StoreLayout({
   const [customerCity, setCustomerCity] = useState('Lahore');
   const [customerZip, setCustomerZip] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
+  const [showAllProducts, setShowAllProducts] = useState(false);
+  const INITIAL_PRODUCT_LIMIT = 12;
 
   const themeColor = theme?.primaryColor || '#10b981';
 
-  // Extract unique categories
+  // Extract strictly exactly 4 working categories
   const categories = useMemo(() => {
-    const set = new Set<string>();
+    const catMap = new Map<string, number>();
     products.forEach((p) => {
-      if (p.category) set.add(p.category);
+      const cat = (p.category || '').trim();
+      if (cat && cat.toLowerCase() !== 'all') {
+        catMap.set(cat, (catMap.get(cat) || 0) + 1);
+      }
     });
-    return ['All', ...Array.from(set)];
-  }, [products]);
+
+    let activeCats = Array.from(catMap.entries())
+      .filter(([_, count]) => count > 0)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => name);
+
+    if (activeCats.length < 4 && products.length >= 4) {
+      const niche = detectStoreNiche({ name: storeName, tagline, description } as any, products as any);
+      const fallbackNicheCats: Record<string, string[]> = {
+        nature: ['Indoor Plants', 'Succulents', 'Planters', 'Herbal Greens'],
+        handbags: ['Velvet Clutches', 'Shoulder Bags', 'Tote Bags', 'Evening Purses'],
+        jewelry: ['Rings', 'Necklaces', 'Earrings', 'Bracelets'],
+        perfume: ['Luxury Oud', 'Eau De Parfum', 'Attars & Oils', 'Gift Discovery Sets'],
+        footwear: ['Running Shoes', 'Sneakers', 'Casual Kicks', 'Athletic Trainers'],
+        clothing: ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Casual Tunics'],
+        skincare: ['Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'],
+        tech: ['Headphones', 'Smart Wearables', 'Wireless Audio', 'Accessories'],
+        food: ['Artisan Roast', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Treats'],
+        wedding: ['Bridal Accessories', 'Royal Boxes', 'Mehndi Keepsakes', 'Traditional Sets'],
+        general: ['Best Sellers', 'New Arrivals', 'Featured Items', 'Trending Now']
+      };
+      const suggestions = fallbackNicheCats[niche] || fallbackNicheCats.general;
+      for (const s of suggestions) {
+        if (activeCats.length >= 4) break;
+        if (!activeCats.some(c => c.toLowerCase() === s.toLowerCase())) {
+          activeCats.push(s);
+        }
+      }
+    }
+
+    activeCats = activeCats.slice(0, 4);
+    if (activeCats.length === 0) activeCats.push('Featured');
+    return ['All', ...activeCats];
+  }, [products, storeName, tagline, description]);
 
   const defaultFeatured: ProductItem[] = [
     {
@@ -266,6 +303,13 @@ export default function StoreLayout({
     });
   }, [products, selectedCategory, searchQuery]);
 
+  const displayedProducts = useMemo(() => {
+    if (showAllProducts || selectedCategory !== 'All' || searchQuery.trim() !== '') {
+      return filteredProducts;
+    }
+    return filteredProducts.slice(0, INITIAL_PRODUCT_LIMIT);
+  }, [filteredProducts, showAllProducts, selectedCategory, searchQuery]);
+
   // Cart operations
   const addToCart = (product: ProductItem) => {
     setCart((prev) => {
@@ -349,7 +393,13 @@ export default function StoreLayout({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-emerald-500 selection:text-white">
+    <div 
+      className="min-h-screen font-sans text-slate-900 selection:bg-slate-900 selection:text-white"
+      style={{
+        background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
+        backgroundColor: `${themeColor}08`,
+      }}
+    >
       {catalogLoading && (
         <p role="status" className="bg-blue-50 px-4 py-2 text-center text-xs text-blue-800">
           Refreshing the live catalog…
@@ -400,11 +450,13 @@ export default function StoreLayout({
               <Menu size={20} />
             </button>
             <div className="flex items-center gap-2.5">
-              <img
-                src="/buildexom-icon.png"
-                alt="Buildexom"
-                className="size-9 rounded-xl object-contain shadow-xs"
-              />
+              <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                <img
+                  src={BUILDEXOM_ICON_DATA_URL}
+                  alt={storeName}
+                  className="size-full object-contain"
+                />
+              </div>
               <div>
                 <h1 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
                   {storeName}
@@ -495,11 +547,12 @@ export default function StoreLayout({
           <div className="relative flex h-full w-full max-w-xs flex-col bg-white shadow-2xl z-10 animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
               <div className="flex items-center gap-2.5">
-                <div 
-                  className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" 
-                  style={{ backgroundColor: theme.primaryColor || '#0f172a' }}
-                >
-                  {storeName.charAt(0)}
+                <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                  <img
+                    src={BUILDEXOM_ICON_DATA_URL}
+                    alt={storeName}
+                    className="size-full object-contain"
+                  />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm text-slate-900">{storeName}</h3>
@@ -545,7 +598,7 @@ export default function StoreLayout({
                         selectedCategory === cat ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <span>{cat === 'All' ? '🛍️ All Products' : cat}</span>
+                      <span>{cat === 'All' ? 'All Products' : cat}</span>
                       <ChevronRight size={14} className="opacity-50" />
                     </button>
                   ))}
@@ -572,73 +625,130 @@ export default function StoreLayout({
         </div>
       )}
 
-      {/* 3. Hero Promo Banner (Matching Instagram Post Studio Footwear Showcase) */}
-      <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 space-y-6">
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-linear-to-br from-slate-50 via-white to-slate-100/70 p-6 sm:p-10 shadow-sm transition duration-500">
-          <div
-            className="absolute -right-16 -top-16 size-72 rounded-full blur-3xl opacity-20 pointer-events-none"
-            style={{ backgroundColor: themeColor }}
-          />
-          <div
-            className="absolute -left-16 -bottom-16 size-72 rounded-full blur-3xl opacity-10 pointer-events-none"
-            style={{ backgroundColor: themeColor }}
-          />
+      {/* 3. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
+      <section
+        id="hero"
+        className="relative w-full overflow-hidden border-t border-b transition duration-500 shadow-xs"
+        style={{
+          background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
+          borderColor: `${themeColor}28`,
+        }}
+      >
+        <div
+          className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
+          style={{ backgroundColor: themeColor }}
+        />
+        <div
+          className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-15 pointer-events-none"
+          style={{ backgroundColor: themeColor }}
+        />
 
-          <div className="flex flex-col-reverse sm:flex-row items-center justify-between gap-6 relative z-10">
-            <div className="max-w-xl text-left">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-[11px] font-bold uppercase tracking-wider"
-                style={{
-                  backgroundColor: `${themeColor}15`,
-                  color: themeColor,
-                  borderColor: `${themeColor}35`
-                }}
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+          {/* Left Column: Prominent, Bigger Text & CTAs */}
+          <div className="w-full lg:max-w-xl text-left space-y-4">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider"
+              style={{
+                backgroundColor: `${themeColor}15`,
+                color: themeColor,
+                borderColor: `${themeColor}35`
+              }}
+            >
+              {heroInfo.badge}
+            </span>
+            <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
+              {heroInfo.headlineMain}<br />
+              {heroInfo.headlineHighlight && (
+                <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
+              )}
+            </h2>
+            <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-semibold">
+              {tagline || heroInfo.subtext}
+            </p>
+
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <a
+                href="#catalog"
+                className="rounded-full px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-105 active:scale-95"
+                style={{ backgroundColor: themeColor }}
               >
-                {heroInfo.badge}
-              </span>
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.08]">
-                {heroInfo.headlineMain}<br />
-                {heroInfo.headlineHighlight && (
-                  <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
-                )}
-              </h2>
-              <p className="mt-3 text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
-                {tagline || heroInfo.subtext}
-              </p>
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <a
-                  href="#catalog"
-                  className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  Shop Now →
-                </a>
-                <a
-                  href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
-                >
-                  <MessageCircle size={14} className="text-emerald-600" /> WhatsApp Support
-                </a>
-              </div>
-            </div>
-
-            {/* Dynamic Concept-Matched Hero Image */}
-            <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative flex items-center justify-center">
-              <img
-                src={heroInfo.heroImage}
-                alt={heroInfo.altText}
-                className="max-h-80 w-full object-contain rounded-2xl drop-shadow-[0_20px_25px_rgba(0,0,0,0.12)] transition duration-500 hover:scale-105"
-              />
-              <div className="mx-auto mt-[-18px] h-3.5 w-3/4 rounded-full bg-slate-400/25 blur-md" />
+                Shop Now →
+              </a>
+              <a
+                href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-2xs transition hover:bg-slate-50"
+              >
+                <MessageCircle size={16} className="text-emerald-600" /> WhatsApp Support
+              </a>
             </div>
           </div>
-        </section>
 
-        {/* 4. Featured Products Section (Matching Screenshot) */}
-        <section id="featured" className="space-y-3 pt-1">
+          {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
+          <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-4 pb-2">
+            {/* Background Theme Ambient Glow */}
+            <div
+              className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
+              style={{ backgroundColor: themeColor }}
+            />
+
+            {/* 3-Image Merging Container */}
+            <div className="relative flex items-center">
+              {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
+              <div
+                className="relative w-44 sm:w-52 md:w-56 lg:w-60 h-56 sm:h-64 md:h-72 lg:h-80 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
+                style={{ borderColor: `${themeColor}35` }}
+              >
+                <img
+                  src={heroInfo.heroImage}
+                  alt={heroInfo.altText}
+                  className="size-full object-cover transition duration-500 hover:scale-105"
+                  loading="eager"
+                />
+              </div>
+
+              {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
+              <div
+                className="relative -ml-14 sm:-ml-18 md:-ml-20 mt-10 sm:mt-14 w-32 sm:w-36 md:w-40 lg:w-44 h-40 sm:h-46 md:h-50 lg:h-54 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
+                style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
+              >
+                <img
+                  src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                  alt={`${heroInfo.altText} - Highlight`}
+                  className="size-full object-cover transition duration-500 hover:scale-105"
+                  loading="eager"
+                />
+              </div>
+
+              {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
+              <div
+                className="relative -ml-8 sm:-ml-10 md:-ml-12 -mt-10 sm:-mt-14 w-28 sm:w-32 md:w-36 lg:w-40 h-36 sm:h-42 md:h-46 lg:h-50 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
+                style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
+              >
+                <img
+                  src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                  alt={`${heroInfo.altText} - Accent`}
+                  className="size-full object-cover transition duration-500 hover:scale-105"
+                  loading="eager"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="w-full px-2 sm:px-4 lg:px-6 pt-6 space-y-6">
+
+        {/* 4. Featured Products Section (Background matching hero section background, flush card boxes) */}
+        <section 
+          id="featured" 
+          className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 shadow-xs transition"
+          style={{
+            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+            borderColor: `${themeColor}28`,
+          }}
+        >
           <div className="flex items-center justify-between">
             <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
               Featured Products
@@ -653,21 +763,30 @@ export default function StoreLayout({
             </a>
           </div>
 
-          <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
             {featuredItems.map((item) => (
               <article
                 key={item.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg w-full"
+                style={{
+                  backgroundColor: `${themeColor}08`,
+                  borderColor: `${themeColor}24`,
+                }}
               >
-                <div className="relative aspect-square w-full overflow-hidden bg-slate-50 p-3">
+                <div 
+                  className="relative aspect-square w-full overflow-hidden"
+                  style={{ backgroundColor: `${themeColor}0d` }}
+                >
                   <img
                     src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                     alt={item.name}
-                    className="size-full object-contain transition duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
+                    className="size-full object-cover transition duration-500 group-hover:scale-105"
                   />
                 </div>
 
-                <div className="p-3.5">
+                <div className="p-3 sm:p-3.5">
                   <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
                     {item.name}
                   </h4>
@@ -691,29 +810,47 @@ export default function StoreLayout({
           </div>
         </section>
 
-        {/* 5. Category Icons Strip (Matching Screenshot) */}
-        <section id="categories" className="pt-1">
-          <div className="grid grid-cols-4 gap-2 sm:gap-4">
-            {[
-              { id: 'Electronics', name: 'Electronics', icon: '📱' },
-              { id: 'Fashion', name: 'Fashion', icon: '👕' },
-              { id: 'Home', name: 'Home', icon: '🏠' },
-              { id: 'Accessories', name: 'Accessories', icon: '🎧' },
-            ].map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(selectedCategory === cat.name ? 'All' : cat.name)}
-                className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 sm:p-4 text-center transition duration-200 active:scale-95 ${
-                  selectedCategory === cat.name
-                    ? 'border-blue-600 bg-blue-50 text-blue-800 font-bold shadow-xs'
-                    : 'border-slate-200/90 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs'
-                }`}
-              >
-                <span className="text-2xl sm:text-3xl">{cat.icon}</span>
-                <span className="text-[11px] sm:text-xs font-medium leading-none">{cat.name}</span>
-              </button>
-            ))}
+        {/* 5. Category Strip (Dynamic 4 Working Categories) */}
+        <section id="categories" className="w-full pt-1">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 w-full">
+            {categories.filter(c => c !== 'All').map((cat) => {
+              const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(isSelected ? 'All' : cat)}
+                  className={`flex items-center gap-2.5 rounded-2xl border p-3 text-left transition hover:shadow-xs active:scale-95 ${
+                    isSelected
+                      ? 'shadow-xs font-bold'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                  }`}
+                  style={
+                    isSelected
+                      ? {
+                          borderColor: themeColor,
+                          backgroundColor: `${themeColor}15`,
+                          color: themeColor,
+                        }
+                      : {
+                          backgroundColor: `${themeColor}05`,
+                          borderColor: `${themeColor}20`
+                        }
+                  }
+                >
+                  <span 
+                    className="grid size-7 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition"
+                    style={{
+                      backgroundColor: isSelected ? themeColor : `${themeColor}18`,
+                      color: isSelected ? '#ffffff' : themeColor
+                    }}
+                  >
+                    {cat.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="text-xs font-bold truncate leading-tight">{cat}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
       </div>
@@ -752,7 +889,13 @@ export default function StoreLayout({
       </div>
 
       {/* 5. Main Catalog & Category Filtering */}
-      <main id="catalog" className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+      <main 
+        id="catalog" 
+        className="w-full px-2 sm:px-4 lg:px-6 py-8 sm:py-10 space-y-6"
+        style={{
+          background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+        }}
+      >
         <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 md:flex-row md:items-end">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">Curated Catalog</span>
@@ -782,20 +925,21 @@ export default function StoreLayout({
           </div>
         </div>
 
-        {/* Product Grid */}
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredProducts.map((product) => (
+        {/* Product Grid - flush card boxes */}
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+          {displayedProducts.map((product) => (
             <div
               key={product.id}
-              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+              className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg w-full"
             >
               {/* Product Image & Badges */}
               <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
                 <img
                   src={product.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'}
                   alt={product.name}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  className="size-full object-cover transition duration-500 group-hover:scale-105"
                   loading="lazy"
+                  decoding="async"
                 />
                 {product.badge && (
                   <span className="absolute left-3 top-3 rounded-full bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
@@ -810,38 +954,38 @@ export default function StoreLayout({
               </div>
 
               {/* Product Details */}
-              <div className="flex flex-1 flex-col justify-between p-5">
+              <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4">
                 <div>
-                  <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition">
                     {product.name}
                   </h4>
-                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
                     {product.description || 'Premium quality product manufactured to exacting standards.'}
                   </p>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-4">
-                  <div className="flex items-baseline justify-between mb-3">
-                    <span className="text-lg font-black text-slate-900">
+                <div className="mt-3 border-t border-slate-100 pt-3">
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-900">
                       Rs. {product.price.toLocaleString()}
                     </span>
-                    <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
                       ✓ In Stock
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
                     <button
                       onClick={() => addToCart(product)}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                      className="flex items-center justify-center gap-1 rounded-xl border border-slate-300 bg-white py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
                     >
-                      <Plus size={13} /> Add to Cart
+                      <Plus size={12} /> Add
                     </button>
                     <button
                       onClick={() => handleDirectWhatsAppOrder(product)}
                       className="flex items-center justify-center gap-1 rounded-xl bg-emerald-600 py-2 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-500"
                     >
-                      <MessageCircle size={13} /> WhatsApp
+                      <MessageCircle size={12} /> WhatsApp
                     </button>
                   </div>
                 </div>
@@ -863,6 +1007,26 @@ export default function StoreLayout({
             </div>
           )}
         </div>
+
+        {filteredProducts.length > INITIAL_PRODUCT_LIMIT && selectedCategory === 'All' && !searchQuery.trim() && (
+          <div className="mt-8 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowAllProducts((prev) => !prev)}
+              className="flex items-center gap-2 rounded-2xl px-8 py-3.5 text-xs font-bold text-white shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
+              style={{ backgroundColor: themeColor }}
+            >
+              {showAllProducts ? (
+                <>Show Fewer Products</>
+              ) : (
+                <>
+                  View All {filteredProducts.length} Products
+                  <ArrowRight size={15} />
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {/* Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
         <section className="mt-12 overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
@@ -1081,6 +1245,7 @@ export default function StoreLayout({
         storeName={storeName}
         storeSlug={storeSlug}
         socialLinks={socialLinks}
+        themeColor={themeColor}
       />
 
       {/* 8. Floating Bexi AI Shopping Assistant Widget */}

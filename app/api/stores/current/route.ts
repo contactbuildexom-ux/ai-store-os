@@ -8,10 +8,14 @@ type StoreRow = {
   slug: string | null;
   plan: string | null;
   payment_status: string | null;
+  primary_color?: string | null;
+  selected_theme?: string | null;
+  whatsapp_number?: string | null;
+  created_at?: string | null;
 };
 
 async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAdminClient>>, userId: string) {
-  const baseSelect = "id, name, slug, plan, payment_status";
+  const baseSelect = "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at";
   const byOwner = await supabase
     .from("stores")
     .select(baseSelect)
@@ -32,17 +36,72 @@ async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAd
 
 export async function GET(request: Request) {
   try {
-    const merchantStore = await getMerchantSessionStore();
+    const { searchParams } = new URL(request.url);
+    const requestedId = searchParams.get("store_id") || searchParams.get("id") || searchParams.get("slug");
+
+    const merchantStore = await getMerchantSessionStore(requestedId || undefined);
     if (merchantStore) return NextResponse.json({ store: merchantStore as StoreRow });
 
+    if (requestedId) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const { getStoreNicheColor, THEME_PALETTES } = await import("@/lib/store-theme");
+      const repoStore = await storeRepo.getStore(requestedId);
+      if (repoStore) {
+        const nicheColor = getStoreNicheColor(repoStore.name, repoStore.slug);
+        const resolvedColor = repoStore.theme?.primaryColor || repoStore.primary_color || (repoStore.selected_theme && THEME_PALETTES[repoStore.selected_theme]) || nicheColor;
+        return NextResponse.json({
+          store: {
+            id: repoStore.id,
+            name: repoStore.name,
+            slug: repoStore.slug,
+            plan: repoStore.plan || "basic",
+            payment_status: repoStore.payment_status || "active",
+            whatsapp_number: repoStore.whatsapp_number,
+            primary_color: resolvedColor,
+            selected_theme: repoStore.theme?.id || repoStore.selected_theme || "emerald",
+            created_at: repoStore.created_at || new Date().toISOString(),
+          } as StoreRow,
+        });
+      }
+    }
+
     const supabase = createAdminClient();
+    const isSupabaseValid = supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
+
+    if (isSupabaseValid && supabase && requestedId) {
+      const { data: dbStore } = await supabase
+        .from("stores")
+        .select("id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at")
+        .or(`id.eq.${requestedId},slug.eq.${requestedId}`)
+        .maybeSingle();
+
+      if (dbStore) {
+        const { getStoreNicheColor, THEME_PALETTES } = await import("@/lib/store-theme");
+        const nicheColor = getStoreNicheColor(dbStore.name, dbStore.slug);
+        const resolvedColor = dbStore.primary_color || (dbStore.selected_theme && THEME_PALETTES[dbStore.selected_theme]) || nicheColor;
+        return NextResponse.json({
+          store: {
+            id: dbStore.id,
+            name: dbStore.name,
+            slug: dbStore.slug,
+            plan: dbStore.plan || "basic",
+            payment_status: dbStore.payment_status || "active",
+            whatsapp_number: dbStore.whatsapp_number,
+            primary_color: resolvedColor,
+            selected_theme: dbStore.selected_theme || "ocean-blue",
+            created_at: dbStore.created_at || new Date().toISOString(),
+          } as StoreRow,
+        });
+      }
+    }
+
     if (!supabase) {
-      return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
+      return NextResponse.json({ error: "Store not found." }, { status: 404 });
     }
 
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
-      return NextResponse.json({ error: "Authentication token is required." }, { status: 401 });
+      return NextResponse.json({ error: "Store not found or authentication required." }, { status: 404 });
     }
 
     const {

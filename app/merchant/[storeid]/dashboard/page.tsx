@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw } from 'lucide-react';
+import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
+import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
@@ -34,10 +35,69 @@ type Order = {
 type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
 type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
-const PLAN_DETAILS: Record<Plan, { title: string; productLimit: number | null; categoryLimit: number | null; perCategoryLimit?: number; checkout: string }> = {
-    basic: { title: 'Basic', productLimit: 20, categoryLimit: 2, checkout: 'Standard checkout' },
-    pro: { title: 'Pro', productLimit: 75, categoryLimit: 5, perCategoryLimit: 15, checkout: 'Standard + WhatsApp ordering' },
-    business: { title: 'Business', productLimit: null, categoryLimit: null, checkout: 'Standard + WhatsApp ordering' },
+const PLAN_DETAILS: Record<Plan, { 
+    title: string; 
+    pricePKR: number;
+    priceLabel: string;
+    productLimit: number | null; 
+    categoryLimit: number | null; 
+    perCategoryLimit?: number; 
+    checkout: string;
+    badge?: string;
+    features: string[];
+}> = {
+    basic: { 
+        title: 'Basic', 
+        pricePKR: 0,
+        priceLabel: 'Free forever',
+        productLimit: 20, 
+        categoryLimit: 2, 
+        checkout: 'Standard checkout',
+        features: [
+            'Up to 20 products in catalog',
+            'Up to 2 organized categories',
+            'Standard COD checkout',
+            'Buildexom QR code sharing',
+            'Essential sales dashboard'
+        ]
+    },
+    pro: { 
+        title: 'Pro', 
+        pricePKR: 2499,
+        priceLabel: 'PKR 2,499 / mo',
+        productLimit: 75, 
+        categoryLimit: 5, 
+        perCategoryLimit: 15, 
+        checkout: 'Standard + WhatsApp ordering',
+        badge: 'Recommended',
+        features: [
+            'Up to 75 products in catalog',
+            'Up to 5 categories (15 per category)',
+            'Direct WhatsApp 1-Click Ordering',
+            'Bexi Voice & AI Shopping Assistant',
+            'Custom theme colors & branding',
+            'Multiple product images upload',
+            'Advance payment verification'
+        ]
+    },
+    business: { 
+        title: 'Business', 
+        pricePKR: 4999,
+        priceLabel: 'PKR 4,999 / mo',
+        productLimit: null, 
+        categoryLimit: null, 
+        checkout: 'Standard + WhatsApp ordering',
+        badge: 'Unlimited Growth',
+        features: [
+            'Unlimited catalog products (no cap)',
+            'Unlimited categories (no cap)',
+            'Direct WhatsApp 1-Click Ordering',
+            'Priority AI Catalog Search',
+            'Custom domain integration ready',
+            'Advance payment gateways',
+            '24/7 dedicated merchant concierge'
+        ]
+    },
 };
 
 function normalizePlan(value: string | null | undefined): Plan {
@@ -100,6 +160,111 @@ export default function MerchantDashboardMaster() {
 
     // Category Form
     const [catName, setCatName] = useState('');
+
+    // Plan Upgrade & Payment States
+    const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'jazzcash' | 'easypaisa' | 'bank' | 'whatsapp'>('card');
+    const [cardHolder, setCardHolder] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
+    const [cardExp, setCardExp] = useState('');
+    const [cardCvc, setCardCvc] = useState('');
+    const [trxRef, setTrxRef] = useState('');
+    const [isUpgrading, setIsUpgrading] = useState(false);
+    const [upgradeSuccess, setUpgradeSuccess] = useState('');
+
+    // Trial duration & lock enforcement
+    const [isTrialExpired, setIsTrialExpired] = useState(false);
+    const [trialDaysLeft, setTrialDaysLeft] = useState(3);
+    const [isTrialActive, setIsTrialActive] = useState(false);
+
+    // Bexi AI Command Center states
+    const [bexiChatHistory, setBexiChatHistory] = useState<Array<{ sender: 'ai' | 'merchant'; text: string; time: string }>>([
+        {
+            sender: 'ai',
+            text: `Assalam-o-Alaikum! 👋 Main hoon **Bexi AI**, aapka dedicated AI Store Growth Manager.\n\nAap mujh se Urdu ya English mein store growth, WhatsApp campaigns, catalog pricing, ya sales strategy ke baray mein kuch bhi pooch saktay hain! 🛍️`,
+            time: 'Just now'
+        }
+    ]);
+    const [bexiInputText, setBexiInputText] = useState('');
+    const [isBexiThinking, setIsBexiThinking] = useState(false);
+
+    const handleSendBexiPrompt = async (promptText: string) => {
+        if (!promptText.trim()) return;
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setBexiChatHistory((prev) => [
+            ...prev,
+            { sender: 'merchant', text: promptText, time: nowTime }
+        ]);
+        setBexiInputText('');
+        setIsBexiThinking(true);
+
+        try {
+            const sid = resolvedStoreId || paramId;
+            const res = await fetch('/api/merchant/voice-assistant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: promptText,
+                    storeId: sid,
+                    storeSlug: storeSlug || paramId,
+                    language: 'en',
+                }),
+            });
+            const data = await res.json();
+            const reply = data.reply || data.message || `Here are actionable recommendations for ${storeName}:\n\n1. Run a 48-hour WhatsApp exclusive discount with Free Nationwide Cash on Delivery.\n2. Bundle your top 2 items at a 10% combo discount.\n3. Send automated order dispatch alerts to reduce customer cancellations.\n\nWould you like me to draft promotional messages for your products?`;
+            setBexiChatHistory((prev) => [
+                ...prev,
+                { sender: 'ai', text: reply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+            ]);
+        } catch {
+            setBexiChatHistory((prev) => [
+                ...prev,
+                {
+                    sender: 'ai',
+                    text: `Great strategy question for **${storeName}**! To maximize revenue right now:\n\n• **Direct WhatsApp Orders**: Share direct product links in your customer groups.\n• **Cash on Delivery**: Ensure fast dispatch within 24 hours to reduce RTO.\n• **High-Impact Visuals**: Make sure each product has at least 3 crisp gallery photos.\n\nLet me know if you would like me to generate specific copy or revise any catalog pricing!`,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+            ]);
+        } finally {
+            setIsBexiThinking(false);
+        }
+    };
+
+    const handleBexiSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSendBexiPrompt(bexiInputText);
+    };
+
+    async function handleActivatePlan(targetPlan: Plan) {
+        if (!resolvedStoreId && !paramId) return;
+        setIsUpgrading(true);
+        try {
+            const sid = resolvedStoreId || paramId;
+            const res = await fetch('/api/stores/plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: sid,
+                    plan: targetPlan,
+                    payment_method: paymentMethod,
+                    transaction_ref: trxRef || (paymentMethod === 'card' ? `CARD-${Date.now().toString().slice(-6)}` : `TRX-${Date.now().toString().slice(-6)}`),
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to activate plan.');
+
+            setStorePlan(targetPlan);
+            setIsTrialExpired(false);
+            setIsTrialActive(false);
+            setUpgradeSuccess(`🎉 Success! Your store is now active on the ${PLAN_DETAILS[targetPlan].title} plan! WhatsApp ordering and higher catalog limits are now unlocked.`);
+            setUpgradeModalPlan(null);
+            setTimeout(() => setUpgradeSuccess(''), 7000);
+        } catch (err: any) {
+            alert(err.message || 'Payment activation failed. Please try again.');
+        } finally {
+            setIsUpgrading(false);
+        }
+    }
 
     const planDetails = PLAN_DETAILS[storePlan];
     const canUseWhatsapp = storePlan === 'pro' || storePlan === 'business';
@@ -192,14 +357,23 @@ export default function MerchantDashboardMaster() {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) throw sessionError;
 
-            const response = await fetch('/api/stores/current', {
+            const queryParam = identifier ? `?store_id=${encodeURIComponent(identifier)}` : '';
+            const response = await fetch(`/api/stores/current${queryParam}`, {
                 cache: 'no-store',
                 headers: session?.access_token
                     ? { Authorization: `Bearer ${session.access_token}` }
                     : {},
             });
             const payload: {
-                store?: { id: string; name: string | null; slug: string | null; plan: string | null; whatsapp_number: string | null };
+                store?: { 
+                    id: string; 
+                    name: string | null; 
+                    slug: string | null; 
+                    plan: string | null; 
+                    whatsapp_number: string | null;
+                    primary_color?: string | null;
+                    selected_theme?: string | null;
+                };
                 error?: string;
             } = await response.json();
             if (!response.ok) throw new Error(payload.error || 'Unable to load your store.');
@@ -208,14 +382,38 @@ export default function MerchantDashboardMaster() {
             if (!storeData) {
                 throw new Error('No store is linked to this account.');
             }
-            if (storeData.id !== identifier && storeData.slug !== identifier) {
+            const normIdentifier = decodeURIComponent(identifier).toLowerCase();
+            const normStoreId = (storeData.id || '').toLowerCase();
+            const normStoreSlug = (storeData.slug || '').toLowerCase();
+            if (normStoreId !== normIdentifier && normStoreSlug !== normIdentifier) {
                 throw new Error('You are not authorized to access this store.');
             }
 
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name || 'Your store');
-            setStoreSlug(storeData.slug || '');
-            setStorePlan(normalizePlan(storeData.plan));
+            const normPlan = normalizePlan(storeData.plan);
+            setStorePlan(normPlan);
+
+            // 3-day Free Trial Check & Lock Enforcement
+            const isPaid = (storeData as any).payment_status === 'active';
+            const isFreeOrBasic = normPlan === 'basic' || (normPlan as any) === 'free';
+            const createdAtStr = (storeData as any).created_at || (storeData as any).createdAt;
+            const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
+            const elapsedDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (isFreeOrBasic && !isPaid) {
+                setIsTrialActive(true);
+                const remaining = Math.max(0, Math.ceil(3 - elapsedDays));
+                setTrialDaysLeft(remaining);
+                if (elapsedDays > 3) {
+                    setIsTrialExpired(true);
+                } else {
+                    setIsTrialExpired(false);
+                }
+            } else {
+                setIsTrialActive(false);
+                setIsTrialExpired(false);
+            }
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
             const [settingsData] = await Promise.all([
@@ -226,8 +424,16 @@ export default function MerchantDashboardMaster() {
                 }),
                 fetchMeshData(storeData.id),
             ]);
+
+            const nicheColor = getStoreNicheColor(storeData.name, storeData.slug);
+            const resolvedColor = settingsData?.settings?.theme_color 
+                || storeData.primary_color 
+                || (settingsData?.settings?.selected_theme && THEME_PALETTES[settingsData.settings.selected_theme])
+                || (storeData.selected_theme && THEME_PALETTES[storeData.selected_theme])
+                || nicheColor;
+            setThemeColor(resolvedColor);
+
             if (settingsData.settings) {
-                setThemeColor(settingsData.settings.theme_color || '#1d7555');
                 setBannerText(settingsData.settings.banner_text || '');
                 setLogoUrl(settingsData.settings.logo_url || '');
                 setWhatsappNumber(settingsData.settings.whatsapp_number || '');
@@ -425,50 +631,71 @@ export default function MerchantDashboardMaster() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
             {/* Sidebar */}
-            <aside className="w-full md:w-64 md:min-h-screen bg-slate-950 text-white flex flex-col shadow-xl md:sticky md:top-0 md:h-screen">
-                <div className="p-5 border-b border-white/10 flex items-center gap-3">
-                    <div className="grid size-10 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: themeColor }}><Boxes size={19} /></div>
+            <aside 
+                className="w-full md:w-64 md:min-h-screen text-white flex flex-col shadow-xl md:sticky md:top-0 md:h-screen transition-colors"
+                style={{ backgroundColor: darkenColor(themeColor, 75) }}
+            >
+                <div 
+                    className="p-5 border-b flex items-center gap-3 transition-colors"
+                    style={{ backgroundColor: darkenColor(themeColor, 65), borderColor: `${themeColor}35` }}
+                >
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl text-white shadow-xs" style={{ backgroundColor: themeColor }}>
+                        <Boxes size={19} />
+                    </div>
                     <div>
-                        <h2 className="text-sm font-semibold tracking-wide">{storeName}</h2>
-                        <span className="mt-1 inline-flex rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-200">{planDetails.title} plan</span>
+                        <h2 className="text-sm font-semibold tracking-wide text-white">{storeName}</h2>
+                        <span className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                            {planDetails.title} plan
+                        </span>
                     </div>
                 </div>
 
-                <nav className="grid grid-cols-3 gap-1.5 p-3 text-xs md:flex md:flex-1 md:flex-col md:space-y-1.5 md:p-4" aria-label="Merchant dashboard">
+                <nav className="grid grid-cols-2 gap-1.5 p-3 text-xs sm:grid-cols-4 md:flex md:flex-1 md:flex-col md:space-y-1.5 md:p-4" aria-label="Merchant dashboard">
                     {[
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
                         { id: 'products', label: `Products · ${products.length}`, icon: Package },
                         { id: 'orders', label: `Orders · ${orders.length}`, icon: ShoppingBag },
                         { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
-                        { id: 'payments', label: 'Payments', icon: CreditCard }
+                        { id: 'payments', label: 'Payments', icon: CreditCard },
+                        { id: 'bexi-ai', label: 'Ask Bexi AI', icon: Sparkles },
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left font-medium transition md:w-full md:px-3 ${
-                                activeTab === tab.id ? 'text-white shadow-sm' : 'text-slate-300 hover:bg-white/10'
+                            className={`flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-left font-semibold transition md:w-full md:px-3 ${
+                                activeTab === tab.id ? 'text-white shadow-md' : 'text-slate-100 hover:text-white hover:bg-white/10'
                             }`}
                             style={activeTab === tab.id ? { backgroundColor: themeColor } : {}}
                         >
                             <tab.icon size={15} className="shrink-0" />
-                            {tab.label}
+                            <span>{tab.label}</span>
                         </button>
                     ))}
                     <div className="hidden flex-1 md:block" />
-                    <div className="hidden rounded-xl border border-white/10 bg-white/[0.04] p-3 md:block">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Store status</p>
-                        <p className="mt-2 flex items-center gap-2 text-xs font-medium"><span className="size-2 rounded-full bg-emerald-400" /> Your store is live</p>
-                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-300 hover:text-white" href={`/store/${paramId}`} target="_blank" rel="noreferrer">Open storefront <ExternalLink size={12} /></a>
+                    <div className="hidden rounded-xl border border-white/15 bg-white/5 p-3 md:block">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Store status</p>
+                        <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-white">
+                            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Your store is live
+                        </p>
+                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-200 hover:text-white" href={`/store/${paramId}`} target="_blank" rel="noreferrer">
+                            Open storefront <ExternalLink size={12} />
+                        </a>
                     </div>
                 </nav>
             </aside>
 
             {/* Main Content Area */}
-            <main className="min-w-0 flex-1 flex flex-col overflow-y-auto">
-                <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-sm backdrop-blur sm:px-8">
-                    <div><p className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">Merchant workspace</p><h1 className="mt-1 text-lg font-semibold capitalize tracking-tight text-slate-900">{activeTab === 'overview' ? 'Store overview' : activeTab}</h1></div>
-                    <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+            <main className="merchant-main min-w-0 flex-1 flex flex-col overflow-y-auto bg-slate-50" data-dashboard-main>
+                <div className="h-1 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}88, transparent)` }} />
+                <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Merchant workspace</p>
+                        <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">
+                            {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
+                        </h1>
+                    </div>
+                    <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
                         <Eye size={14} /> <span className="hidden sm:inline">View storefront</span><ExternalLink size={12} />
                     </a>
                 </header>
@@ -480,19 +707,86 @@ export default function MerchantDashboardMaster() {
                         </div>
                     )}
 
+                    {/* 3-Day Free Trial Active Countdown Banner */}
+                    {isTrialActive && !isTrialExpired && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm text-slate-800">
+                            <div className="flex items-center gap-3">
+                                <span className="grid size-9 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
+                                    <Sparkles size={18} />
+                                </span>
+                                <div>
+                                    <p className="text-xs font-bold text-amber-950">
+                                        ⏳ 3-Day Free Trial Active: {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} remaining
+                                    </p>
+                                    <p className="text-[11px] text-amber-800">
+                                        Your store and dashboard are live! Upgrade to Pro or Business to keep your store active permanently and unlock WhatsApp ordering.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('pro')}
+                                className="shrink-0 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                Upgrade Now →
+                            </button>
+                        </div>
+                    )}
+
                     {/* OVERVIEW */}
                     {activeTab === 'overview' && (
                         <>
-                            <section className="relative overflow-hidden rounded-2xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
-                                <div className="absolute -right-12 -top-24 size-72 rounded-full border border-white/10" />
-                                <div className="absolute -right-2 -top-14 size-52 rounded-full border border-white/10" />
-                                <div className="relative flex flex-wrap items-end justify-between gap-5">
-                                    <div className="max-w-xl">
-                                        <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-200"><Sparkles size={12} /> Store workspace</p>
-                                        <h2 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">Welcome back, {storeName}</h2>
-                                        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-300">Your products, orders, and storefront performance at a glance. Keep your catalog fresh and stay on top of every order.</p>
+                            {upgradeSuccess && (
+                                <div className="flex items-center justify-between rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-900 shadow-sm animate-in fade-in duration-300">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                                        <span>{upgradeSuccess}</span>
                                     </div>
-                                    <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-xs font-semibold text-white shadow-sm transition hover:opacity-90" style={{ backgroundColor: themeColor }}><CirclePlus size={15} /> Add a product</button>
+                                    <button type="button" onClick={() => setUpgradeSuccess('')} className="p-1 text-emerald-700 hover:text-emerald-900">
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            )}
+
+                            <section 
+                                className="relative overflow-hidden rounded-2xl p-6 text-white shadow-md sm:p-8"
+                                style={{
+                                    background: `linear-gradient(135deg, ${themeColor} 0%, ${darkenColor(themeColor, 35)} 100%)`,
+                                    color: '#ffffff',
+                                }}
+                            >
+                                <div className="absolute -right-12 -top-24 size-72 rounded-full border border-white/15 pointer-events-none" />
+                                <div className="absolute -right-2 -top-14 size-52 rounded-full border border-white/10 pointer-events-none" />
+                                <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
+                                    <div className="max-w-xl">
+                                        <span 
+                                            className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white border border-white/25 shadow-xs"
+                                            style={{ color: '#ffffff' }}
+                                        >
+                                            <Sparkles size={12} className="text-white" /> Store workspace
+                                        </span>
+                                        <h2 
+                                            className="mt-3.5 text-2xl font-black tracking-tight drop-shadow-sm sm:text-3xl text-white"
+                                            style={{ color: '#ffffff' }}
+                                        >
+                                            Welcome back, {storeName}
+                                        </h2>
+                                        <p 
+                                            className="mt-2 max-w-lg text-sm font-medium leading-relaxed drop-shadow-xs"
+                                            style={{ color: 'rgba(255, 255, 255, 0.95)' }}
+                                        >
+                                            Your products, orders, and storefront performance at a glance. Keep your catalog fresh and stay on top of every order.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
+                                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-xs font-bold shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl active:scale-95" 
+                                        style={{ color: themeColor }}
+                                    >
+                                        <CirclePlus size={16} /> Add a product
+                                    </button>
                                 </div>
                             </section>
 
@@ -547,6 +841,17 @@ export default function MerchantDashboardMaster() {
                                             {planDetails.perCategoryLimit && <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Products per category</span><span className="font-medium text-slate-700">Up to {planDetails.perCategoryLimit}</span></div>}
                                         </div>
                                         <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600"><Check size={13} className="shrink-0 text-emerald-600" />Plan features are based on the limits enabled for your store.</div>
+                                        {storePlan !== 'business' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setUpgradeModalPlan(storePlan === 'basic' ? 'pro' : 'business')}
+                                                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                                                style={{ backgroundColor: themeColor }}
+                                            >
+                                                <Sparkles size={14} />
+                                                Upgrade to {storePlan === 'basic' ? 'Pro Plan' : 'Business Plan'}
+                                            </button>
+                                        )}
                                     </section>
 
                                     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -557,22 +862,78 @@ export default function MerchantDashboardMaster() {
                             </section>
 
                             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                                <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p><h3 className="mt-1 text-base font-semibold text-slate-900">What your plan includes</h3><p className="mt-1 text-xs text-slate-500">Limits shown here reflect the active product and category rules in the platform.</p></div><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize text-slate-600">Current: {storePlan}</span></div>
-                                <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                                <div className="flex flex-wrap items-end justify-between gap-3">
+                                    <div>
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p>
+                                        <h3 className="mt-1 text-base font-semibold text-slate-900">What your plan includes</h3>
+                                        <p className="mt-1 text-xs text-slate-500">Upgrade your plan to unlock WhatsApp ordering, higher catalog caps, and AI features.</p>
+                                    </div>
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize text-slate-600">Current: {storePlan}</span>
+                                </div>
+                                <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {(['basic', 'pro', 'business'] as Plan[]).map((plan) => {
                                         const details = PLAN_DETAILS[plan];
                                         const isCurrent = plan === storePlan;
-                                        return <article key={plan} className={`rounded-xl border p-4 ${isCurrent ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-100' : 'border-slate-200 bg-white'}`}>
-                                            <div className="flex items-center justify-between"><h4 className="text-sm font-semibold capitalize text-slate-900">{details.title}</h4>{isCurrent && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-bold uppercase text-blue-700">Active</span>}</div>
-                                            <ul className="mt-3 space-y-2.5 text-[11px] text-slate-600">
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.productLimit === null ? 'No product cap enforced' : `Up to ${details.productLimit} products`}</li>
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.categoryLimit === null ? 'No category cap enforced' : `Up to ${details.categoryLimit} categories`}</li>
-                                                {details.perCategoryLimit && <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />Up to {details.perCategoryLimit} products per category</li>}
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />{details.checkout}</li>
-                                                <li className="flex items-start gap-2"><Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />Store branding and payment account settings</li>
-                                            </ul>
-                                            {plan === 'business' && <p className="mt-3 border-t border-slate-200 pt-3 text-[10px] leading-4 text-slate-500">Business has no product or category caps configured in the current plan-limit rules.</p>}
-                                        </article>;
+                                        return (
+                                            <article 
+                                                key={plan} 
+                                                className={`relative flex flex-col justify-between rounded-2xl border p-5 transition shadow-xs ${
+                                                    isCurrent 
+                                                        ? 'border-blue-400 bg-blue-50/40 ring-2 ring-blue-100' 
+                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                                                }`}
+                                            >
+                                                {details.badge && (
+                                                    <span 
+                                                        className="absolute -top-2.5 right-4 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs"
+                                                        style={{ backgroundColor: plan === 'pro' ? themeColor : '#0f172a' }}
+                                                    >
+                                                        {details.badge}
+                                                    </span>
+                                                )}
+                                                <div>
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-base font-extrabold capitalize text-slate-900">{details.title}</h4>
+                                                        {isCurrent && (
+                                                            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[9px] font-bold uppercase text-blue-700">
+                                                                Active
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="mt-1 text-xs font-bold text-slate-700">{details.priceLabel}</p>
+
+                                                    <ul className="mt-4 space-y-2.5 text-[11px] text-slate-600">
+                                                        {details.features.map((feat) => (
+                                                            <li key={feat} className="flex items-start gap-2">
+                                                                <Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />
+                                                                <span>{feat}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+
+                                                <div className="pt-5 mt-4 border-t border-slate-100">
+                                                    {isCurrent ? (
+                                                        <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700">
+                                                            <CheckCircle2 size={14} className="text-blue-600" /> Current Active Plan
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setUpgradeModalPlan(plan)}
+                                                            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95"
+                                                            style={{
+                                                                backgroundColor: plan === 'business' ? '#0f172a' : themeColor,
+                                                            }}
+                                                        >
+                                                            {plan === 'basic' 
+                                                                ? 'Switch to Basic (Free)' 
+                                                                : `Upgrade to ${details.title} — ${details.priceLabel}`}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </article>
+                                        );
                                     })}
                                 </div>
                             </section>
@@ -605,9 +966,52 @@ export default function MerchantDashboardMaster() {
                                         <input type="url" value={logoUrl} onChange={event => { setLogoUrl(event.target.value); setLogoFile(null); }} placeholder="https://example.com/logo.png" className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </label>
                                 </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">Theme Color</label>
-                                    <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)} className="w-10 h-10 border rounded cursor-pointer" />
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-900">Store Theme & Accent Color</label>
+                                            <p className="text-[11px] text-slate-500">Pick a professional niche preset or select custom brand hex:</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
+                                            <span className="size-3.5 rounded-full" style={{ backgroundColor: themeColor }} />
+                                            <span className="font-mono text-xs font-bold uppercase text-slate-800">{themeColor}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Preset Chips */}
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 pt-1">
+                                        {THEME_OPTIONS.map((opt) => {
+                                            const isSelected = themeColor.toLowerCase() === opt.color.toLowerCase();
+                                            return (
+                                                <button
+                                                    key={opt.id}
+                                                    type="button"
+                                                    onClick={() => setThemeColor(opt.color)}
+                                                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
+                                                        isSelected
+                                                            ? 'border-slate-900 bg-white shadow-xs ring-2 ring-slate-900'
+                                                            : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'
+                                                    }`}
+                                                >
+                                                    <span className="size-4 shrink-0 rounded-full shadow-2xs" style={{ backgroundColor: opt.color }} />
+                                                    <span className="truncate text-[11px] font-semibold text-slate-800">{opt.name.split(' ')[0]}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Custom Color Input */}
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
+                                            <input 
+                                                type="color" 
+                                                value={themeColor} 
+                                                onChange={e => setThemeColor(e.target.value)} 
+                                                className="size-8 rounded-lg border border-slate-300 cursor-pointer p-0.5" 
+                                            />
+                                            <span>Custom Color Picker</span>
+                                        </label>
+                                    </div>
                                 </div>
                                 <section className="space-y-3 rounded-xl border border-slate-200 p-4">
                                     <div><h4 className="text-xs font-semibold text-slate-900">Social profiles</h4><p className="mt-1 text-[10px] text-slate-500">Valid profile URLs are shown as linked icons in your public storefront footer.</p></div>
@@ -1052,8 +1456,507 @@ export default function MerchantDashboardMaster() {
                             </div>
                         </div>
                     )}
+
+                    {/* BEXI AI COMMAND CENTER (LAST TAB) */}
+                    {activeTab === 'bexi-ai' && (
+                        <div className="space-y-6">
+                            {/* Header Banner */}
+                            <div 
+                                className="rounded-2xl p-6 text-white shadow-md relative overflow-hidden"
+                                style={{
+                                    background: `linear-gradient(135deg, ${themeColor} 0%, ${darkenColor(themeColor, 40)} 100%)`
+                                }}
+                            >
+                                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div>
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur-md">
+                                            <Sparkles size={13} /> Bexi AI Command Center
+                                        </span>
+                                        <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                                            AI Store Manager & Growth Strategist
+                                        </h2>
+                                        <p className="mt-1 text-xs text-white/90 max-w-xl leading-relaxed">
+                                            Ask Bexi AI anything in Urdu or English — get marketing copy, analyze orders, optimize your catalog, or launch sales campaigns with 1 click.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold backdrop-blur-md border border-white/20 text-white">
+                                            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                                            Urdu & English Active
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Strategy Prompts */}
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {[
+                                    {
+                                        title: '📈 Analyze Store & Sales',
+                                        desc: 'Review catalog performance and top opportunities',
+                                        prompt: `Analyze ${storeName}'s current catalog with ${products.length} products and suggest the best pricing strategy to maximize sales with Cash on Delivery.`
+                                    },
+                                    {
+                                        title: '💬 WhatsApp Marketing Copy',
+                                        desc: 'Ready-to-send promotional message for customers',
+                                        prompt: `Generate 3 high-converting WhatsApp promotional messages with emojis in Urdu/Roman Urdu for ${storeName} to announce a limited-time free delivery deal.`
+                                    },
+                                    {
+                                        title: '🔥 High-Converting Instagram Ad',
+                                        desc: 'Captivating caption with hashtags and call to action',
+                                        prompt: `Write an engaging Instagram reel caption and ad copy for ${storeName} that creates urgency for our bestselling products.`
+                                    },
+                                    {
+                                        title: '⚡ Boost Order Conversions',
+                                        desc: 'Proven e-commerce tips for Pakistani buyers',
+                                        prompt: `Give me 4 actionable recommendations to reduce return-to-origin (RTO) and increase customer trust for cash on delivery orders at ${storeName}.`
+                                    }
+                                ].map((card) => (
+                                    <button
+                                        key={card.title}
+                                        type="button"
+                                        onClick={() => handleSendBexiPrompt(card.prompt)}
+                                        className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-xs transition hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5"
+                                    >
+                                        <div>
+                                            <h4 className="text-xs font-bold text-slate-900">{card.title}</h4>
+                                            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{card.desc}</p>
+                                        </div>
+                                        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold" style={{ color: themeColor }}>
+                                            Ask Bexi AI →
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Interactive Chat Console */}
+                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-[520px]">
+                                {/* Console Header */}
+                                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50/70">
+                                    <div className="flex items-center gap-2.5">
+                                        <span 
+                                            className="grid size-8 place-items-center rounded-lg text-white font-bold"
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            <Sparkles size={15} />
+                                        </span>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-900">Bexi AI Copilot Session</h3>
+                                            <p className="text-[10px] text-slate-400">Context: {storeName} · {products.length} products · {orders.length} orders</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBexiChatHistory([{
+                                            sender: 'ai',
+                                            text: `Assalam-o-Alaikum! 👋 Main hoon **Bexi AI**, **${storeName}** ka dedicated AI store manager.\n\nAap mujh se Urdu ya English mein marketing campaigns, pricing, store growth, ya catalog optimization ke baray mein kuch bhi pooch saktay hain!`,
+                                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        }])}
+                                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                                    >
+                                        Clear chat
+                                    </button>
+                                </div>
+
+                                {/* Chat Messages Log */}
+                                <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/30">
+                                    {bexiChatHistory.map((msg, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex gap-3 ${msg.sender === 'merchant' ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            {msg.sender === 'ai' && (
+                                                <span 
+                                                    className="grid size-8 shrink-0 place-items-center rounded-xl text-white font-bold shadow-xs mt-0.5"
+                                                    style={{ backgroundColor: themeColor }}
+                                                >
+                                                    <Sparkles size={14} />
+                                                </span>
+                                            )}
+                                            <div
+                                                className={`max-w-xl rounded-2xl p-4 text-xs shadow-xs leading-relaxed ${
+                                                    msg.sender === 'merchant'
+                                                        ? 'bg-slate-900 text-white rounded-tr-none'
+                                                        : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
+                                                }`}
+                                            >
+                                                <div className="whitespace-pre-wrap">{msg.text}</div>
+                                                <span className={`block mt-2 text-[9px] ${msg.sender === 'merchant' ? 'text-slate-400' : 'text-slate-400'} text-right`}>
+                                                    {msg.time}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isBexiThinking && (
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                            <span 
+                                                className="grid size-7 place-items-center rounded-lg text-white animate-spin"
+                                                style={{ backgroundColor: themeColor }}
+                                            >
+                                                <Sparkles size={12} />
+                                            </span>
+                                            <span>Bexi AI is analyzing and generating response...</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Input Form */}
+                                <form 
+                                    onSubmit={handleBexiSubmit}
+                                    className="border-t border-slate-200 bg-white p-3 flex items-center gap-2"
+                                >
+                                    <input
+                                        type="text"
+                                        value={bexiInputText}
+                                        onChange={(e) => setBexiInputText(e.target.value)}
+                                        placeholder="Ask Bexi AI in Urdu or English (e.g. 'Hamari store ki sales kaise barhayein?')..."
+                                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!bexiInputText.trim() || isBexiThinking}
+                                        className="grid size-10 place-items-center rounded-xl text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40"
+                                        style={{ backgroundColor: themeColor }}
+                                    >
+                                        <Send size={15} />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
+
+            {/* Trial Expired Lock Screen Overlay Barrier */}
+            {isTrialExpired && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+                    <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-center shadow-2xl border border-slate-100 space-y-4">
+                        <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-600 shadow-md">
+                            <Lock size={32} />
+                        </span>
+                        <div className="space-y-1.5">
+                            <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                                3-Day Free Trial Ended
+                            </span>
+                            <h3 className="text-xl font-extrabold text-slate-900">
+                                Upgrade to Keep {storeName} Active
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                                Your free trial period has concluded. Activate a Pro or Business subscription to unlock all features, keep your live storefront accessible, and process orders.
+                            </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 text-left space-y-2 text-xs">
+                            <p className="font-bold text-slate-800">What unlocks immediately after payment:</p>
+                            <ul className="space-y-1.5 text-[11px] text-slate-600">
+                                <li className="flex items-center gap-2">✓ Instant reactivation of dashboard & live storefront</li>
+                                <li className="flex items-center gap-2">✓ Direct 1-Click WhatsApp customer ordering unlocked</li>
+                                <li className="flex items-center gap-2">✓ Full catalog access with higher product & category caps</li>
+                                <li className="flex items-center gap-2">✓ Bexi AI Store Assistant & marketing automation</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('pro')}
+                                className="flex-1 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                Activate Pro (PKR 3,500/mo)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('business')}
+                                className="flex-1 rounded-xl bg-slate-900 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                            >
+                                Activate Business (PKR 7,500/mo)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Plan Upgrade & Payment Modal */}
+            {upgradeModalPlan && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+                    <div className="relative flex flex-col w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-5 sm:p-7 shadow-2xl border border-slate-100 space-y-5">
+                        {/* Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <span 
+                                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
+                                    style={{ backgroundColor: upgradeModalPlan === 'business' ? '#0f172a' : themeColor }}
+                                >
+                                    <Sparkles size={11} /> Upgrade Plan
+                                </span>
+                                <h3 className="mt-1.5 text-lg sm:text-xl font-extrabold text-slate-900">
+                                    {PLAN_DETAILS[upgradeModalPlan].title} Plan Subscription
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">
+                                    {upgradeModalPlan === 'basic' ? 'No payment required for Basic plan.' : `Billed monthly at ${PLAN_DETAILS[upgradeModalPlan].priceLabel}. Cancel or switch anytime.`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan(null)}
+                                className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Plan Features Preview */}
+                        <div 
+                            className="rounded-2xl p-4 border space-y-2 text-xs"
+                            style={{ backgroundColor: `${themeColor}0a`, borderColor: `${themeColor}24` }}
+                        >
+                            <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                                <CheckCircle2 size={15} style={{ color: themeColor }} />
+                                Features unlocked on {PLAN_DETAILS[upgradeModalPlan].title}:
+                            </p>
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                                {PLAN_DETAILS[upgradeModalPlan].features.map((feat) => (
+                                    <li key={feat} className="flex items-center gap-1.5">
+                                        <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: themeColor }} />
+                                        <span>{feat}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Payment Options (Only for paid plans: Pro & Business) */}
+                        {upgradeModalPlan !== 'basic' ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                                        Select Payment Method
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                        {[
+                                            { id: 'card', label: 'Credit Card', icon: CreditCard },
+                                            { id: 'jazzcash', label: 'JazzCash', icon: Wallet },
+                                            { id: 'easypaisa', label: 'EasyPaisa', icon: Wallet },
+                                            { id: 'bank', label: 'Bank Transfer', icon: Landmark },
+                                        ].map((method) => {
+                                            const isSelected = paymentMethod === method.id;
+                                            const Icon = method.icon;
+                                            return (
+                                                <button
+                                                    key={method.id}
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod(method.id as any)}
+                                                    className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 text-center transition ${
+                                                        isSelected
+                                                            ? 'border-blue-600 bg-blue-50/70 font-bold text-blue-700 shadow-xs ring-1 ring-blue-600'
+                                                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <Icon size={18} className={isSelected ? 'text-blue-600' : 'text-slate-500'} />
+                                                    <span className="text-[10px] leading-tight">{method.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Method Detail Forms */}
+                                {paymentMethod === 'card' && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 border-b border-slate-200 pb-2">
+                                            <span>Visa / Mastercard Checkout</span>
+                                            <span className="text-[10px] text-emerald-600 flex items-center gap-1 font-bold">
+                                                <ShieldCheck size={13} /> 256-Bit SSL
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Cardholder Name</label>
+                                            <input
+                                                type="text"
+                                                value={cardHolder}
+                                                onChange={(e) => setCardHolder(e.target.value)}
+                                                placeholder="e.g. Abeera Munir"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Card Number</label>
+                                            <input
+                                                type="text"
+                                                maxLength={19}
+                                                value={cardNumber}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                                                    setCardNumber(val);
+                                                }}
+                                                placeholder="4242 •••• •••• 4242"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono tracking-wider outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Expiry (MM/YY)</label>
+                                                <input
+                                                    type="text"
+                                                    maxLength={5}
+                                                    value={cardExp}
+                                                    onChange={(e) => setCardExp(e.target.value)}
+                                                    placeholder="12/28"
+                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">CVC / CVV</label>
+                                                <input
+                                                    type="password"
+                                                    maxLength={4}
+                                                    value={cardCvc}
+                                                    onChange={(e) => setCardCvc(e.target.value)}
+                                                    placeholder="•••"
+                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
+                                            <span>Send payment via {paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
+                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
+                                        </div>
+                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Number:</span>
+                                                <span className="font-mono font-bold text-slate-900 select-all">0300-1234567</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Title:</span>
+                                                <span className="font-bold text-slate-900">Buildexom Billing</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                                Enter Transaction ID (TID / TRX Number)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trxRef}
+                                                onChange={(e) => setTrxRef(e.target.value)}
+                                                placeholder="e.g. TID-9842104"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
+                                            />
+                                            <p className="mt-1 text-[10px] text-slate-400">
+                                                Copy the TID received from your JazzCash / EasyPaisa SMS receipt.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {paymentMethod === 'bank' && (
+                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
+                                            <span>Direct Bank Deposit</span>
+                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
+                                        </div>
+                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Bank Name:</span>
+                                                <span className="font-bold text-slate-900">Meezan Bank Ltd</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Title:</span>
+                                                <span className="font-bold text-slate-900">Buildexom AI Store OS</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">Account Number:</span>
+                                                <span className="font-mono font-bold text-slate-900 select-all">0101-0105678901</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-500">IBAN:</span>
+                                                <span className="font-mono text-[11px] font-bold text-slate-900 select-all">PK92MEZN0001010105678901</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
+                                                Bank Reference / Deposit Slip No.
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={trxRef}
+                                                onChange={(e) => setTrxRef(e.target.value)}
+                                                placeholder="e.g. MEZN-874291"
+                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* WhatsApp Instant Confirmation Link */}
+                                <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-xs text-emerald-900">
+                                    <div className="flex items-center gap-2">
+                                        <MessageCircle size={15} className="text-emerald-600 shrink-0" />
+                                        <span className="text-[11px]">Need billing help or manual invoice?</span>
+                                    </div>
+                                    <a
+                                        href={`https://wa.me/923001234567?text=Hello%20Buildexom!%20I%20want%20to%20activate%20the%20${PLAN_DETAILS[upgradeModalPlan].title}%20plan%20for%20my%20store%20${encodeURIComponent(storeName)}%20(${storeSlug}).`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="font-bold text-emerald-700 hover:underline shrink-0 text-[11px]"
+                                    >
+                                        WhatsApp Concierge →
+                                    </a>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl bg-slate-50 p-4 text-center text-xs text-slate-600 border border-slate-200">
+                                Switching to the Basic plan is free of charge. Your product limit will be 20 items.
+                            </div>
+                        )}
+
+                        {/* Total Due & Activation Button */}
+                        <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="text-left w-full sm:w-auto">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Due</span>
+                                <span className="text-base sm:text-lg font-black text-slate-900">
+                                    {PLAN_DETAILS[upgradeModalPlan].priceLabel}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                                <button
+                                    type="button"
+                                    onClick={() => setUpgradeModalPlan(null)}
+                                    className="flex-1 sm:flex-none rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isUpgrading}
+                                    onClick={() => handleActivatePlan(upgradeModalPlan)}
+                                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
+                                    style={{
+                                        backgroundColor: upgradeModalPlan === 'business' ? '#0f172a' : themeColor,
+                                    }}
+                                >
+                                    {isUpgrading ? (
+                                        <>
+                                            <RefreshCw size={14} className="animate-spin" />
+                                            Activating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles size={14} />
+                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : `Confirm Payment & Activate ${PLAN_DETAILS[upgradeModalPlan].title}`}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* AI Voice-Controlled Store Management Assistant (Bilingual: English & Urdu) */}
             <VoiceStoreAssistant 

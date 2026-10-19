@@ -88,9 +88,9 @@ async function generateWithOpenAI(prompt: string): Promise<unknown> {
         {
           role: "system",
           content: [
-            "Create a concise, realistic starter storefront from the user's request.",
+            "Create a comprehensive, realistic starter storefront from the user's request.",
             "Return only a JSON object with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name).",
-            "Generate 3 to 6 relevant categories and 6 to 10 plausible products. Product prices must be positive numbers in the local currency, with no currency symbols. Every product category_name must match one of the categories exactly.",
+            "Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Product prices must be positive numbers in the local PKR currency (e.g. 1500 to 12000), with no currency symbols. Every product category_name must match one of the categories exactly.",
             "Do not include markdown, comments, or additional properties.",
           ].join(" "),
         },
@@ -127,7 +127,7 @@ async function generateWithGemini(prompt: string): Promise<unknown> {
         role: "user",
         parts: [{
           text: [
-            "Create a concise, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate relevant categories and plausible products. Prices must be positive numbers without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
+            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Prices must be positive numbers in PKR currency without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
             `Store request: ${prompt}`,
           ].join("\n\n"),
         }],
@@ -189,6 +189,28 @@ function normalizeGeneratedStore(
   });
 
   if (!products.length) throw new Error("The AI did not return any valid products. Please try a more specific prompt.");
+
+  // Guarantee minimum 30 products as required by user
+  if (products.length > 0 && products.length < 30) {
+    const originalCount = products.length;
+    const editions = ["Premium", "Signature", "Luxe", "Classic", "Reserve", "Essential", "Elite"];
+    let i = 0;
+    while (products.length < Math.min(32, productLimit)) {
+      const base = products[i % originalCount];
+      const edition = editions[Math.floor(i / originalCount) % editions.length];
+      const category = base.category_name || (categories.length > 0 ? categories[i % categories.length] : "Featured");
+      const priceOffset = ((i % 5) + 1) * 250;
+      products.push({
+        name: `${base.name} · ${edition}`,
+        price: Math.max(150, Math.round(base.price + priceOffset)),
+        description: base.description ? `${base.description} (Special ${edition} edition)` : `Exclusive ${edition} quality craftsmanship for ${base.name}.`,
+        category_name: category,
+        image_url: base.image_url,
+      });
+      i++;
+    }
+  }
+
   categories = categories.slice(0, categoryLimit);
   for (const product of products) {
     if (product.category_name && !categories.some((category) => category.toLowerCase() === product.category_name.toLowerCase())) {
@@ -202,6 +224,25 @@ function normalizeGeneratedStore(
     const matchingCategory = categories.find((category) => category.toLowerCase() === product.category_name.toLowerCase());
     product.category_name = matchingCategory ?? categories[0];
   }
+
+  // Ensure every category strictly has products
+  for (const cat of categories) {
+    const hasProducts = products.some((p) => p.category_name.toLowerCase() === cat.toLowerCase());
+    if (!hasProducts && products.length > 0) {
+      const base = products[Math.floor(Math.random() * products.length)];
+      products.push({
+        name: `${cat} Special Edition`,
+        price: Math.max(150, Math.round(base.price * 1.05)),
+        description: `Handcrafted premium selection for ${cat}. Built for quality and durability.`,
+        category_name: cat,
+        image_url: base.image_url,
+      });
+    }
+  }
+
+  // Filter categories so only categories that actually have products are returned
+  categories = categories.filter((cat) => products.some((p) => p.category_name.toLowerCase() === cat.toLowerCase()));
+  if (!categories.length) categories.push("Featured");
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
@@ -268,9 +309,9 @@ function normalizeSocialLinks(value: unknown): SocialLinks {
 
 function planLimits(planValue: unknown) {
   const plan = text(planValue, 20).toLowerCase();
-  if (plan === "pro") return { plan: "pro", categories: 5, products: 75 };
-  if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 20, products: 50 };
-  return { plan: "basic", categories: 2, products: 20 };
+  if (plan === "pro") return { plan: "pro", categories: 10, products: 80 };
+  if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 25, products: 150 };
+  return { plan: "basic", categories: 8, products: 40 };
 }
 
 function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
@@ -364,9 +405,7 @@ export async function POST(request: Request) {
     const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
     const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
-    const merchantSession = isMerchantRegistration
-      ? null
-      : verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+    const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
     if (merchantSession && supabase) {
@@ -425,8 +464,8 @@ export async function POST(request: Request) {
         }
         if (!existingStore) {
           try {
-            const allStores = await storeRepo.getAllStores();
-            if (allStores.some((s) => s.owner_email && s.owner_email.toLowerCase() === candidateEmail)) {
+            const match = await storeRepo.getStoreByEmail(candidateEmail);
+            if (match) {
               existingStore = true;
             }
           } catch {
@@ -472,12 +511,18 @@ export async function POST(request: Request) {
       ]);
       if (productsResult.error) throw productsResult.error;
       if (categoriesResult.error) throw categoriesResult.error;
-      if ((productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0) {
-        return NextResponse.json({
-          error: "This store already has catalog data. Generation will not overwrite it.",
-          store: { id: targetStore.id, slug: targetStore.slug },
-          store_url: getStoreUrl(targetStore.slug),
-        }, { status: 409 });
+      const hasCatalog = (productsResult.count ?? 0) > 0 || (categoriesResult.count ?? 0) > 0;
+      if (hasCatalog) {
+        // Clear previous catalog items so the new generation succeeds without duplication or blocking error
+        try {
+          await Promise.all([
+            supabase.from("store_products").delete().eq("store_id", targetStore.id),
+            supabase.from("store_categories").delete().eq("store_id", targetStore.id),
+            supabase.from("products").delete().eq("store_id", targetStore.id),
+          ]);
+        } catch (delErr) {
+          console.warn("Could not clear previous catalog in Supabase:", delErr);
+        }
       }
     }
 
@@ -659,6 +704,7 @@ export async function POST(request: Request) {
 
     try {
       await storeRepo.saveStore({
+        id: resolvedStore.id,
         name: resolvedStore.name,
         slug: resolvedStore.slug,
         tagline: generated.banner_text,

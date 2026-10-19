@@ -4,7 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
-import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
+import { resolveStoreHero, detectStoreNiche } from '@/lib/ai/hero-niche-resolver';
+import { BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import {
     Menu,
     X,
@@ -25,7 +26,10 @@ import {
     MapPin,
     Mail,
     ChevronRight,
-    Send
+    Send,
+    ShoppingCart,
+    ZoomIn,
+    ZoomOut
 } from 'lucide-react';
 
 export type Product = {
@@ -39,7 +43,12 @@ export type Product = {
     badge?: string | null;
 };
 
-export type CartItem = Product & { quantity: number };
+export type CartItem = Product & {
+    quantity: number;
+    selectedSize?: string;
+    selectedColor?: string;
+    cartKey?: string;
+};
 
 export type DeliverySettings = {
     delivery_fee?: number | string | null;
@@ -81,23 +90,17 @@ function whatsappPhone(value: string) {
     return phone;
 }
 
-function getCategoryIcon(name: string): string {
-    const n = name.toLowerCase();
-    if (n.includes('shoe') || n.includes('sneak') || n.includes('footwear') || n.includes('boot') || n.includes('kick') || n.includes('trainer')) return '👟';
-    if (n.includes('perfume') || n.includes('fragrance') || n.includes('oud') || n.includes('attar') || n.includes('scent')) return '🌸';
-    if (n.includes('cloth') || n.includes('shirt') || n.includes('dress') || n.includes('wear') || n.includes('pret') || n.includes('kurta') || n.includes('hoodie') || n.includes('lawn')) return '👗';
-    if (n.includes('men') || n.includes('suit') || n.includes('groom') || n.includes('waistcoat')) return '🤵';
-    if (n.includes('watch') || n.includes('smartwatch')) return '⌚';
-    if (n.includes('bag') || n.includes('leather') || n.includes('wallet') || n.includes('clutch')) return '🎒';
-    if (n.includes('jewel') || n.includes('ring') || n.includes('necklace') || n.includes('gold') || n.includes('kundan')) return '💍';
-    if (n.includes('skin') || n.includes('beauty') || n.includes('serum') || n.includes('cosmetic') || n.includes('cleanser')) return '🧴';
-    if (n.includes('phone') || n.includes('tech') || n.includes('electronic') || n.includes('gadget')) return '📱';
-    if (n.includes('headphone') || n.includes('audio') || n.includes('earbud')) return '🎧';
-    if (n.includes('home') || n.includes('decor') || n.includes('candle') || n.includes('furni') || n.includes('vase')) return '🛋️';
-    if (n.includes('honey') || n.includes('tea') || n.includes('food') || n.includes('organic') || n.includes('superfood')) return '🌿';
-    if (n.includes('gym') || n.includes('sport') || n.includes('fitness')) return '⚡';
-    if (n.includes('baby') || n.includes('kid') || n.includes('toy')) return '🧸';
-    return '✨';
+function getCategorySymbol(name: string): string {
+    const clean = name.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    if (!clean || clean.toLowerCase() === 'all') return 'ALL';
+    const words = clean.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    return clean.slice(0, 2).toUpperCase();
+}
+
+function isFoodOrEdible(storeName: string, category?: string | null, productName?: string): boolean {
+    const text = `${storeName} ${category || ''} ${productName || ''}`.toLowerCase();
+    return /\b(food|coffee|tea|brew|roast|bean|beans|bakery|cake|cakes|bread|snack|cookie|cookies|mithai|sweet|sweets|honey|oil|spice|spices|herb|herbs|dry fruit|organic food|cafe|dining|edible)\b/i.test(text);
 }
 
 export default function StorefrontClient({ store, settings, products, delivery }: Props) {
@@ -107,7 +110,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [catalogError, setCatalogError] = useState('');
 
     const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.primary_color || (liveStore as any)?.theme?.primaryColor || '#1976d2';
-    const bannerText = settings?.banner_text || '✨ Free delivery nationwide on orders above Rs. 3,000!';
+    const bannerText = settings?.banner_text || 'Free delivery nationwide on orders above Rs. 3,000!';
     const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
 
     // UI state
@@ -118,10 +121,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [toastMessage, setToastMessage] = useState('');
 
-    // Product detail modal state (supports multiple images carousel & quick order)
+    // Product detail modal state (supports multiple images carousel, zoom, sizes & colors)
     const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
     const [modalQty, setModalQty] = useState(1);
     const [modalActiveImgIdx, setModalActiveImgIdx] = useState(0);
+    const [modalSelectedSize, setModalSelectedSize] = useState('Standard');
+    const [modalSelectedColor, setModalSelectedColor] = useState('Default');
+    const [isImageZoomed, setIsImageZoomed] = useState(false);
+
+    const openProductModal = (product: Product) => {
+        setSelectedProductForModal(product);
+        setModalQty(1);
+        setModalActiveImgIdx(0);
+        setIsImageZoomed(false);
+        setModalSelectedSize('Standard');
+        setModalSelectedColor('Default');
+    };
 
     // Cart and checkout states
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -136,6 +151,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [orderError, setOrderError] = useState(false);
     const [whatsappLink, setWhatsappLink] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showAllProducts, setShowAllProducts] = useState(false);
+    const INITIAL_PRODUCT_LIMIT = 12;
 
     // Dynamic Niche & Hero Info
     const heroInfo = useMemo(() => resolveStoreHero(liveStore, liveProducts), [liveStore, liveProducts]);
@@ -157,33 +174,84 @@ export default function StorefrontClient({ store, settings, products, delivery }
         return () => clearTimeout(timer);
     }, [toastMessage]);
 
-    // Derived catalog values (dynamically relatable to store niche, never irrelevant categories)
+    // Derived catalog values: strictly exactly 4 working categories
     const categories = useMemo(() => {
-        const set = new Set<string>();
+        const catMap = new Map<string, number>();
         liveProducts.forEach((p) => {
-            const cat = (p as any).category || (p as any).category_name;
-            if (cat && cat.trim() && cat !== 'All') set.add(cat.trim());
+            const cat = ((p as any).category || (p as any).category_name || '').trim();
+            if (cat && cat.toLowerCase() !== 'all') {
+                catMap.set(cat, (catMap.get(cat) || 0) + 1);
+            }
         });
-        if (set.size > 0) return ['All', ...Array.from(set)];
-        const name = `${liveStore.name} ${(liveStore as any).tagline || ''}`.toLowerCase();
-        if (name.includes('shoe') || name.includes('sneaker') || name.includes('kicks')) return ['All', 'Running Shoes', 'Streetwear Sneakers', 'Casual Kicks', 'Athletic Trainers'];
-        if (name.includes('perfume') || name.includes('oud') || name.includes('fragrance') || name.includes('attar')) return ['All', 'Artisanal Ouds', 'French EDP', 'Floral Scents', 'Gift Sets'];
-        if (name.includes('pret') || name.includes('lawn') || name.includes('dress') || name.includes('couture') || name.includes('suit')) return ['All', 'Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Dupattas'];
-        if (name.includes('mens') || name.includes('men') || name.includes('kurta')) return ['All', 'Tailored Kurtas', 'Waistcoats', 'Formal Shirts', 'Accessories'];
-        if (name.includes('skin') || name.includes('glow') || name.includes('serum') || name.includes('beauty')) return ['All', 'Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'];
-        return ['All', 'Featured Collection', 'Bestsellers', 'New Arrivals'];
+
+        let activeCats = Array.from(catMap.entries())
+            .filter(([_, count]) => count > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name);
+
+        if (activeCats.length < 4) {
+            const niche = detectStoreNiche(liveStore, liveProducts);
+            const fallbackNicheCats: Record<string, string[]> = {
+                nature: ['Indoor Plants', 'Succulents', 'Planters', 'Herbal Greens'],
+                handbags: ['Velvet Clutches', 'Shoulder Bags', 'Tote Bags', 'Evening Purses'],
+                jewelry: ['Rings', 'Necklaces', 'Earrings', 'Bracelets'],
+                perfume: ['Luxury Oud', 'Eau De Parfum', 'Attars & Oils', 'Gift Discovery Sets'],
+                footwear: ['Running Shoes', 'Sneakers', 'Casual Kicks', 'Athletic Trainers'],
+                clothing: ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Casual Tunics'],
+                skincare: ['Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'],
+                tech: ['Headphones', 'Smart Wearables', 'Wireless Audio', 'Accessories'],
+                food: ['Artisan Roast', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Treats'],
+                wedding: ['Bridal Accessories', 'Royal Boxes', 'Mehndi Keepsakes', 'Traditional Sets'],
+                general: ['Best Sellers', 'New Arrivals', 'Featured Items', 'Trending Now']
+            };
+            const suggestions = fallbackNicheCats[niche] || fallbackNicheCats.general;
+            for (const s of suggestions) {
+                if (activeCats.length >= 4) break;
+                if (!activeCats.some(c => c.toLowerCase() === s.toLowerCase())) {
+                    activeCats.push(s);
+                }
+            }
+        }
+
+        activeCats = activeCats.slice(0, 4);
+        if (activeCats.length === 0) activeCats.push('Featured');
+        return ['All', ...activeCats];
     }, [liveProducts, liveStore]);
 
+    // Guarantees every product belongs to one of the 4 active categories so clicking any category shows products
+    const catalogProducts = useMemo(() => {
+        const activeCats = categories.filter((c) => c !== 'All');
+        if (activeCats.length === 0) return liveProducts;
+
+        return liveProducts.map((p, idx) => {
+            const rawCat = ((p as any).category || (p as any).category_name || '').trim();
+            const matched = activeCats.find((c) => c.toLowerCase() === rawCat.toLowerCase());
+            if (matched) {
+                return { ...p, category: matched };
+            }
+            const fallbackCat = activeCats[idx % activeCats.length];
+            return { ...p, category: fallbackCat };
+        });
+    }, [liveProducts, categories]);
+
     const filteredProducts = useMemo(() => {
-        return liveProducts.filter((p) => {
-            const cat = (p as any).category || (p as any).category_name || '';
-            const matchesCat = selectedCategory === 'All' || cat.toLowerCase() === selectedCategory.toLowerCase();
+        return catalogProducts.filter((p) => {
+            const cat = ((p as any).category || '').toLowerCase();
+            const selected = selectedCategory.toLowerCase();
+            const matchesCat = selectedCategory === 'All' || cat === selected;
             const matchesSearch = !searchQuery.trim() ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
             return matchesCat && matchesSearch;
         });
-    }, [liveProducts, selectedCategory, searchQuery]);
+    }, [catalogProducts, selectedCategory, searchQuery]);
+
+    const displayedProducts = useMemo(() => {
+        if (showAllProducts || selectedCategory !== 'All' || searchQuery.trim() !== '') {
+            return filteredProducts;
+        }
+        return filteredProducts.slice(0, INITIAL_PRODUCT_LIMIT);
+    }, [filteredProducts, showAllProducts, selectedCategory, searchQuery]);
 
     const defaultFeatured: Product[] = [
         {
@@ -279,28 +347,35 @@ export default function StorefrontClient({ store, settings, products, delivery }
     }, [store.slug]);
 
     // Cart actions
-    function addToCart(product: Product, openDrawer = false) {
+    function addToCart(product: Product, openDrawer = false, size = 'Standard', color = 'Default') {
+        const itemKey = `${product.id}_${size}_${color}`;
         setCart((current) => {
-            const existing = current.find((item) => item.id === product.id);
+            const existing = current.find((item) => (item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`) === itemKey);
             if (existing) {
-                return current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+                return current.map((item) => ((item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`) === itemKey) ? { ...item, quantity: item.quantity + 1 } : item);
             }
-            return [...current, { ...product, quantity: 1 }];
+            return [...current, { ...product, quantity: 1, selectedSize: size, selectedColor: color, cartKey: itemKey }];
         });
-        setToastMessage(`✓ Added "${product.name}" to cart`);
+        setToastMessage(`✓ Added "${product.name}"${size && size !== 'Standard' ? ` (${size})` : ''} to cart`);
         if (openDrawer) setIsCartOpen(true);
         setOrderStatus('');
         setWhatsappLink('');
     }
 
-    function changeQuantity(productId: string, amount: number) {
+    function changeQuantity(cartKeyOrId: string, amount: number) {
         setCart((current) => current
-            .map((item) => item.id === productId ? { ...item, quantity: item.quantity + amount } : item)
+            .map((item) => {
+                const k = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`;
+                return (k === cartKeyOrId || item.id === cartKeyOrId) ? { ...item, quantity: item.quantity + amount } : item;
+            })
             .filter((item) => item.quantity > 0));
     }
 
-    function removeFromCart(productId: string) {
-        setCart((current) => current.filter((item) => item.id !== productId));
+    function removeFromCart(cartKeyOrId: string) {
+        setCart((current) => current.filter((item) => {
+            const k = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}`;
+            return k !== cartKeyOrId && item.id !== cartKeyOrId;
+        }));
     }
 
     // Direct WhatsApp order for single item
@@ -330,7 +405,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
         // Prepare order items text
         const itemLines = cart
-            .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
+            .map((item, idx) => {
+                const variants = [
+                    item.selectedSize && item.selectedSize !== 'Standard' ? `Size: ${item.selectedSize}` : null,
+                    item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
+                ].filter(Boolean);
+                const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
+                return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+            })
             .join('\n');
 
         const fallbackSummary = [
@@ -389,7 +471,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             const targetPhone = whatsappPhone(String(result.whatsapp_number || merchantPhone || '923001234567'));
             const confirmedLines = (result.items as Array<{ name: string; quantity: number; price: number }> || cart)
-                .map((item, idx) => `${idx + 1}. *${item.name}* × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`)
+                .map((item: any, idx) => {
+                    const variants = [
+                        item.selectedSize && item.selectedSize !== 'Standard' ? `Size: ${item.selectedSize}` : null,
+                        item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
+                    ].filter(Boolean);
+                    const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
+                    return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+                })
                 .join('\n');
 
             const fullSummary = [
@@ -481,11 +570,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
     return (
         <div
-            className="min-h-screen font-sans text-slate-900 pb-28"
+            className="min-h-screen font-sans text-slate-900 pb-28 relative"
             style={{
-                backgroundColor: `${themeColor}09`,
-                backgroundImage: `radial-gradient(${themeColor}15 1px, transparent 1px)`,
-                backgroundSize: '24px 24px',
+                background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
+                backgroundColor: `${themeColor}08`,
             }}
         >
             {/* Live Catalog Status Messages */}
@@ -500,14 +588,24 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* Top Announcement Bar */}
-            <div className="px-4 py-2 text-center text-xs font-medium text-white shadow-xs" style={{ backgroundColor: themeColor }}>
-                {bannerText}
+            {/* Top Announcement Bar - Full width edge coverage */}
+            <div className="w-full border-b px-4 sm:px-6 lg:px-8 py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
+                <div className="mx-auto flex max-w-7xl items-center justify-between text-[11px] sm:text-xs">
+                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
+                        <Truck size={13} /> Fast Delivery Nationwide
+                    </span>
+                    <span className="w-full sm:w-auto text-center font-bold tracking-wide">
+                        {bannerText}
+                    </span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
+                        <MessageCircle size={13} /> WhatsApp Ordering Active
+                    </span>
+                </div>
             </div>
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
-            <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
                     {/* Left: Mobile Menu & Logo / Brand */}
                     <div className="flex items-center gap-3">
                         <button
@@ -520,22 +618,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </button>
 
                         <div className="flex items-center gap-2.5">
-                            {settings?.logo_url ? (
-                                <Image
-                                    src={settings.logo_url}
-                                    alt={`${liveStore.name} logo`}
-                                    width={32}
-                                    height={32}
-                                    unoptimized
-                                    className="size-8 rounded-lg object-cover shadow-xs"
-                                />
-                            ) : (
+                            <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
                                 <img
-                                    src="/buildexom-icon.png"
-                                    alt="Buildexom"
-                                    className="size-8 object-contain"
+                                    src={settings?.logo_url || BUILDEXOM_ICON_DATA_URL}
+                                    alt={`${liveStore.name} logo`}
+                                    className="size-full object-contain"
                                 />
-                            )}
+                            </div>
                             <div className="min-w-0 text-left">
                                 <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
                                     {liveStore.name}
@@ -545,13 +634,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                     </div>
 
-                    {/* Center: Desktop Navigation Links matching post screen (Home, Shop, Categories, About) */}
-                    <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-700">
-                        <a href="#hero" className="transition hover:text-blue-600">Home</a>
-                        <a href="#featured" className="transition hover:text-blue-600">Shop</a>
-                        <a href="#categories" className="transition hover:text-blue-600">Categories</a>
-                        <a href="#products" className="transition hover:text-blue-600">All Products</a>
-                        <a href="#about" className="transition hover:text-blue-600">About</a>
+                    {/* Center: Desktop Navigation Links with animated underlines */}
+                    <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-700">
+                        {[
+                            { name: 'Home', href: '#hero' },
+                            { name: 'Shop', href: '#featured' },
+                            { name: 'Categories', href: '#categories' },
+                            { name: 'All Products', href: '#products' },
+                            { name: 'About', href: '#about' },
+                        ].map((link) => (
+                            <a
+                                key={link.name}
+                                href={link.href}
+                                className="group relative py-1 text-slate-600 transition-colors duration-200 hover:text-slate-950 font-medium"
+                            >
+                                <span>{link.name}</span>
+                                <span 
+                                    className="absolute inset-x-0 -bottom-0.5 h-0.5 scale-x-0 rounded-full transition-transform duration-300 ease-out group-hover:scale-x-100"
+                                    style={{ backgroundColor: themeColor || '#1976d2' }}
+                                />
+                            </a>
+                        ))}
                     </nav>
 
                     {/* Right: Cart Icon Button with Counter Badge */}
@@ -587,13 +690,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         {/* Drawer Header */}
                         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                             <div className="flex items-center gap-2.5">
-                                {settings?.logo_url ? (
-                                    <Image src={settings.logo_url} alt="" width={32} height={32} unoptimized className="size-8 rounded-lg object-cover" />
-                                ) : (
-                                    <div className="grid size-8 place-items-center rounded-lg font-bold text-white text-xs" style={{ backgroundColor: themeColor }}>
-                                        {liveStore.name.charAt(0)}
-                                    </div>
-                                )}
+                                <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
+                                    <img
+                                        src={settings?.logo_url || BUILDEXOM_ICON_DATA_URL}
+                                        alt=""
+                                        className="size-full object-contain"
+                                    />
+                                </div>
                                 <div>
                                     <h3 className="font-bold text-sm text-slate-900">{liveStore.name}</h3>
                                     <p className="text-[10px] text-slate-400 font-mono">{liveStore.slug}.buildexom.store</p>
@@ -681,13 +784,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* 1. Full-Width Hero Section covering full screen width, styled with chosen store theme */}
+            {/* 1. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
             <section
                 id="hero"
-                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
+                className="relative w-full overflow-hidden border-t border-b transition duration-500 shadow-xs"
                 style={{
                     background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-                    borderColor: `${themeColor}30`,
+                    borderColor: `${themeColor}28`,
                 }}
             >
                 <div
@@ -699,22 +802,33 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16 lg:py-20 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 relative z-10">
-                    <div className="max-w-xl text-left space-y-4">
-                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl leading-[1.12]">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+                    {/* Left Column: Prominent, Bigger Text & CTAs */}
+                    <div className="w-full lg:max-w-xl text-left space-y-4">
+                        <span
+                            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider shadow-2xs border"
+                            style={{
+                                backgroundColor: `${themeColor}18`,
+                                color: themeColor,
+                                borderColor: `${themeColor}30`,
+                            }}
+                        >
+                            ✓ Premium Curated Store
+                        </span>
+                        <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl lg:text-5xl leading-[1.12]">
                             {heroInfo.headlineMain}{' '}
                             {heroInfo.headlineHighlight && (
                                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
                             )}
                         </h2>
-                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
+                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-semibold">
                             {liveStore.tagline || heroInfo.subtext}
                         </p>
 
                         <div className="pt-2 flex flex-wrap items-center gap-3">
                             <a
                                 href="#featured"
-                                className="rounded-full px-7 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                className="rounded-full px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-105 active:scale-95"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 Shop Collection →
@@ -723,29 +837,78 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-5 py-3 text-xs font-semibold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
+                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
                             >
-                                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
+                                <MessageCircle size={16} className="text-emerald-600" /> WhatsApp Support
                             </a>
                         </div>
                     </div>
 
-                    {/* Floating Concept-Matched Hero Image */}
-                    <div className="w-56 sm:w-72 lg:w-96 shrink-0 relative flex items-center justify-center">
-                        <img
-                            src={heroInfo.heroImage}
-                            alt={heroInfo.altText}
-                            className="max-h-72 sm:max-h-84 lg:max-h-96 w-full object-contain rounded-2xl drop-shadow-[0_20px_30px_rgba(0,0,0,0.14)] transition duration-500 hover:scale-105"
+                    {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
+                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-4 pb-2">
+                        {/* Background Theme Ambient Glow */}
+                        <div
+                            className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
+                            style={{ backgroundColor: themeColor }}
                         />
+
+                        {/* 3-Image Merging Container */}
+                        <div className="relative flex items-center">
+                            {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
+                            <div
+                                className="relative w-44 sm:w-52 md:w-56 lg:w-60 h-56 sm:h-64 md:h-72 lg:h-80 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
+                                style={{ borderColor: `${themeColor}35` }}
+                            >
+                                <img
+                                    src={heroInfo.heroImage}
+                                    alt={heroInfo.altText}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
+                            </div>
+
+                            {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
+                            <div
+                                className="relative -ml-14 sm:-ml-18 md:-ml-20 mt-10 sm:mt-14 w-32 sm:w-36 md:w-40 lg:w-44 h-40 sm:h-46 md:h-50 lg:h-54 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
+                                style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
+                            >
+                                <img
+                                    src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    alt={`${heroInfo.altText} - Curated Highlight`}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
+                            </div>
+
+                            {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
+                            <div
+                                className="relative -ml-8 sm:-ml-10 md:-ml-12 -mt-10 sm:-mt-14 w-28 sm:w-32 md:w-36 lg:w-40 h-36 sm:h-42 md:h-46 lg:h-50 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
+                                style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
+                            >
+                                <img
+                                    src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    alt={`${heroInfo.altText} - Collection Accent`}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* Main Page Body */}
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
+            {/* Main Page Body - No awkward left/right empty gutters */}
+            <main className="w-full px-2 sm:px-4 lg:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
-                {/* 2. Featured Products Section (Matching Post Grid) */}
-                <section id="featured" className="space-y-4 pt-1">
+                {/* 2. Featured Products Section (Background matching hero section background, flush responsive layout) */}
+                <section 
+                    id="featured" 
+                    className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
+                    style={{
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        borderColor: `${themeColor}28`,
+                    }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
@@ -763,27 +926,32 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </a>
                     </div>
 
-                    {/* 4-Column Grid on Desktop, 2-Column on Mobile matching post */}
-                    <div className="grid grid-cols-2 gap-3.5 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+                    {/* 4-Column Grid on Desktop, 2-Column on Mobile - flush card boxes */}
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
                         {featuredItems.map((item) => (
                             <article
                                 key={item.id}
-                                onClick={() => {
-                                    setSelectedProductForModal(item);
-                                    setModalQty(1);
-                                    setModalActiveImgIdx(0);
+                                onClick={() => openProductModal(item)}
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
+                                style={{
+                                    backgroundColor: `${themeColor}08`,
+                                    borderColor: `${themeColor}24`,
                                 }}
-                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                             >
-                                <div className="relative aspect-square w-full overflow-hidden bg-slate-50/60 p-4">
+                                <div 
+                                    className="relative aspect-square w-full overflow-hidden"
+                                    style={{ backgroundColor: `${themeColor}0d` }}
+                                >
                                     <img
                                         src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                                         alt={item.name}
-                                        className="size-full object-contain transition duration-500 group-hover:scale-105"
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="size-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                 </div>
 
-                                <div className="p-3.5">
+                                <div className="p-3 sm:p-3.5">
                                     <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
                                         {item.name}
                                     </h4>
@@ -802,7 +970,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
                                             style={{ backgroundColor: themeColor }}
                                         >
-                                            <ShoppingBag size={14} />
+                                            <ShoppingCart size={15} />
                                         </button>
                                     </div>
                                 </div>
@@ -812,8 +980,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
-                <section id="categories" className="pt-1">
-                    <div className="flex items-center justify-between pb-2">
+                <section id="categories" className="w-full pt-1 space-y-3">
+                    <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Explore Categories
                         </h4>
@@ -827,9 +995,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </button>
                         )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3.5">
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 w-full">
                         {categories.filter((c) => c !== 'All').map((cat) => {
                             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+                            const productCount = catalogProducts.filter(p => ((p as any).category || '').toLowerCase() === cat.toLowerCase()).length;
                             return (
                                 <button
                                     key={cat}
@@ -839,7 +1008,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         const el = document.getElementById('products');
                                         el?.scrollIntoView({ behavior: 'smooth' });
                                     }}
-                                    className={`flex items-center gap-2.5 rounded-2xl border p-3 text-left transition hover:shadow-xs active:scale-95 ${
+                                    className={`flex items-center gap-2.5 sm:gap-3 rounded-2xl border p-3 sm:p-3.5 text-left transition hover:shadow-md active:scale-95 w-full ${
                                         isSelected
                                             ? 'shadow-xs font-bold'
                                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -851,11 +1020,25 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 backgroundColor: `${themeColor}15`,
                                                 color: themeColor,
                                             }
-                                            : {}
+                                            : {
+                                                backgroundColor: `${themeColor}05`,
+                                                borderColor: `${themeColor}20`
+                                            }
                                     }
                                 >
-                                    <span className="text-2xl shrink-0">{getCategoryIcon(cat)}</span>
-                                    <span className="text-xs font-bold truncate leading-tight">{cat}</span>
+                                    <span 
+                                        className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition shadow-2xs"
+                                        style={{
+                                            backgroundColor: isSelected ? themeColor : `${themeColor}18`,
+                                            color: isSelected ? '#ffffff' : themeColor
+                                        }}
+                                    >
+                                        {getCategorySymbol(cat)}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs sm:text-sm font-bold truncate leading-tight">{cat}</p>
+                                        <p className="text-[10px] text-slate-500 font-medium pt-0.5">{productCount} {productCount === 1 ? 'item' : 'items'}</p>
+                                    </div>
                                 </button>
                             );
                         })}
@@ -863,7 +1046,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 2. Search & Category Bar */}
-                <section className="space-y-3">
+                <section className="w-full space-y-3">
                     {/* Search Input */}
                     <div className="relative">
                         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -886,7 +1069,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
 
                     {/* Category Scrollable Pills (Matching Screenshot) */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                         {categories.map((cat) => {
                             const isSelected = selectedCategory === cat;
                             return (
@@ -901,15 +1084,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     }`}
                                     style={isSelected ? { backgroundColor: themeColor } : {}}
                                 >
-                                    {cat === 'All' ? '🛍️ All Products' : cat}
+                                    {cat === 'All' ? 'All Products' : cat}
                                 </button>
                             );
                         })}
                     </div>
                 </section>
 
-                {/* 3. Product Catalog Grid (Matching Screenshot) */}
-                <section id="products" className="space-y-4 pt-2">
+                {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
+                <section 
+                    id="products" 
+                    className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
+                    style={{
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        borderColor: `${themeColor}28`,
+                    }}
+                >
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
@@ -930,7 +1120,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         )}
                     </div>
 
-                    {/* Products Grid */}
+                    {/* Products Grid - flush card boxes */}
                     {filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
                             <ShoppingBag size={36} className="mx-auto text-slate-300" />
@@ -948,19 +1138,23 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            {filteredProducts.map((product) => (
+                        <>
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                                {displayedProducts.map((product) => (
                                 <article
                                     key={product.id}
-                                    onClick={() => {
-                                        setSelectedProductForModal(product);
-                                        setModalQty(1);
-                                        setModalActiveImgIdx(0);
+                                    onClick={() => openProductModal(product)}
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
+                                    style={{
+                                        backgroundColor: `${themeColor}08`,
+                                        borderColor: `${themeColor}24`,
                                     }}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
                                 >
                                     {/* Image Container with Badges */}
-                                    <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
+                                    <div 
+                                        className="relative aspect-square w-full overflow-hidden"
+                                        style={{ backgroundColor: `${themeColor}0d` }}
+                                    >
                                         {product.image_url ? (
                                             <Image
                                                 src={product.image_url.split(',')[0].trim()}
@@ -1025,7 +1219,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 </span>
                                             </div>
 
-                                            {/* Circular Floating Cart Button (Matching Screenshot) */}
+                                            {/* Circular Floating Cart Button (Matching Screenshot with Trolley Icon) */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -1036,13 +1230,34 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 className="grid size-9 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95 sm:size-10"
                                                 style={{ backgroundColor: themeColor }}
                                             >
-                                                <Plus size={16} />
+                                                <ShoppingCart size={16} />
                                             </button>
                                         </div>
                                     </div>
                                 </article>
                             ))}
                         </div>
+
+                        {filteredProducts.length > INITIAL_PRODUCT_LIMIT && selectedCategory === 'All' && !searchQuery.trim() && (
+                            <div className="mt-8 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllProducts((prev) => !prev)}
+                                    className="flex items-center gap-2 rounded-2xl px-8 py-3.5 text-xs font-bold text-white shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    {showAllProducts ? (
+                                        <>Show Fewer Products</>
+                                    ) : (
+                                        <>
+                                            View All {filteredProducts.length} Products
+                                            <ArrowRight size={15} />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                        </>
                     )}
                 </section>
 
@@ -1200,55 +1415,63 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <div className="space-y-3">
                                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Order Items ({cart.length})</p>
                                     <div className="divide-y divide-slate-100 rounded-2xl border border-slate-100 bg-slate-50/50 p-2">
-                                        {cart.map((item) => (
-                                            <div key={item.id} className="flex items-center gap-3 p-2">
-                                                {item.image_url ? (
-                                                    <Image
-                                                        src={item.image_url.split(',')[0].trim()}
-                                                        alt={item.name}
-                                                        width={52}
-                                                        height={52}
-                                                        unoptimized
-                                                        className="size-13 rounded-xl object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="size-13 grid place-items-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
-                                                        {item.name.charAt(0)}
-                                                    </div>
-                                                )}
+                                        {cart.map((item, idx) => {
+                                            const itemKey = item.cartKey || `${item.id}_${item.selectedSize || 'Standard'}_${item.selectedColor || 'Default'}_${idx}`;
+                                            return (
+                                                <div key={itemKey} className="flex items-center gap-3 p-2">
+                                                    {item.image_url ? (
+                                                        <Image
+                                                            src={item.image_url.split(',')[0].trim()}
+                                                            alt={item.name}
+                                                            width={52}
+                                                            height={52}
+                                                            unoptimized
+                                                            className="size-13 rounded-xl object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="size-13 grid place-items-center rounded-xl bg-slate-200 text-sm font-bold text-slate-500">
+                                                            {item.name.charAt(0)}
+                                                        </div>
+                                                    )}
 
-                                                <div className="min-w-0 flex-1">
-                                                    <h5 className="truncate text-xs font-bold text-slate-900">{item.name}</h5>
-                                                    <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{money(item.price)}</p>
+                                                    <div className="min-w-0 flex-1">
+                                                        <h5 className="truncate text-xs font-bold text-slate-900">{item.name}</h5>
+                                                        {(item.selectedSize || (item.selectedColor && item.selectedColor !== 'Default')) && (
+                                                            <div className="flex flex-wrap gap-1.5 mt-0.5 text-[10px] text-slate-500 font-medium">
+                                                                {item.selectedSize && <span className="bg-slate-100 rounded px-1.5 py-0.5">{item.selectedSize}</span>}
+                                                                {item.selectedColor && item.selectedColor !== 'Default' && <span className="bg-slate-100 rounded px-1.5 py-0.5">• {item.selectedColor}</span>}
+                                                            </div>
+                                                        )}
+                                                        <p className="mt-0.5 text-[11px] font-semibold text-slate-500">{money(item.price)}</p>
 
-                                                    <div className="mt-2 flex items-center gap-2">
-                                                        <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                                                        <div className="mt-2 flex items-center gap-2">
+                                                            <div className="flex items-center rounded-lg border border-slate-200 bg-white">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => changeQuantity(item.cartKey || item.id, -1)}
+                                                                    className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                >
+                                                                    −
+                                                                </button>
+                                                                <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => changeQuantity(item.cartKey || item.id, 1)}
+                                                                    className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+
                                                             <button
                                                                 type="button"
-                                                                onClick={() => changeQuantity(item.id, -1)}
-                                                                className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
+                                                                onClick={() => removeFromCart(item.cartKey || item.id)}
+                                                                className="p-1 text-rose-500 hover:text-rose-700"
                                                             >
-                                                                −
-                                                            </button>
-                                                            <span className="w-5 text-center text-xs font-bold text-slate-800">{item.quantity}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => changeQuantity(item.id, 1)}
-                                                                className="px-2 py-1 text-slate-500 hover:text-slate-900 text-xs font-bold"
-                                                            >
-                                                                +
+                                                                <Trash2 size={13} />
                                                             </button>
                                                         </div>
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeFromCart(item.id)}
-                                                            className="p-1 text-rose-500 hover:text-rose-700"
-                                                        >
-                                                            <Trash2 size={13} />
-                                                        </button>
                                                     </div>
-                                                </div>
 
                                                 <div className="text-right">
                                                     <span className="text-xs font-bold text-slate-900">
@@ -1256,7 +1479,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                     </span>
                                                 </div>
                                             </div>
-                                        ))}
+                                        );
+                                    })}
                                     </div>
                                 </div>
                             )}
@@ -1460,32 +1684,24 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* FLOATING BOTTOM BAR (MATCHING SCREENSHOT) */}
-            <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-40">
-                <button
-                    type="button"
-                    onClick={() => setIsCartOpen(true)}
-                    className="w-full sm:w-auto flex items-center justify-between gap-4 rounded-full bg-slate-950/95 text-white px-5 py-3.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 hover:scale-[1.02] active:scale-95"
-                >
-                    <div className="flex items-center gap-2.5">
-                        <span className="grid size-8 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
-                            <MessageCircle size={16} />
+            {/* COMPACT CART FLOATING BAR (NO ARROW, APPEARS ONLY WHEN ITEMS IN CART) */}
+            {totalCartCount > 0 && (
+                <div className="fixed bottom-4 right-4 sm:right-6 z-40 animate-in fade-in slide-in-from-bottom-2">
+                    <button
+                        type="button"
+                        onClick={() => setIsCartOpen(true)}
+                        className="flex items-center gap-2.5 rounded-full bg-slate-950/95 text-white px-4 py-2.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 active:scale-95"
+                    >
+                        <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+                            <MessageCircle size={13} />
                         </span>
-                        <div className="text-left">
-                            <p className="text-xs font-bold leading-none">Order via WhatsApp</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Quick • Easy • Secure</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {totalCartCount > 0 && (
-                            <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-slate-950">
-                                {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
-                            </span>
-                        )}
-                        <ArrowRight size={16} className="text-emerald-400" />
-                    </div>
-                </button>
-            </div>
+                        <span className="text-xs font-bold">Checkout on WhatsApp</span>
+                        <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-slate-950">
+                            {totalCartCount}
+                        </span>
+                    </button>
+                </div>
+            )}
 
             {/* FLOATING BEXI AI ASSISTANT WIDGET */}
             <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
@@ -1551,11 +1767,32 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             )}
                         </div>
 
+                        {/* Quick Suggestion Questions */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50">
+                            {[
+                                "Delivery timeline?",
+                                "Payment methods?",
+                                "Bestseller items?",
+                                "Order on WhatsApp?"
+                            ].map((q) => (
+                                <button
+                                    key={q}
+                                    type="button"
+                                    onClick={() => {
+                                        setAiInput(q);
+                                    }}
+                                    className="shrink-0 rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[10px] text-slate-300 hover:border-emerald-500 hover:text-white transition"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Chat Input */}
                         <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
                             <input
                                 type="text"
-                                placeholder="Roman Urdu ya English mein poochain (e.g. delivery kab hogi?)..."
+                                placeholder="Ask a question..."
                                 value={aiInput}
                                 maxLength={500}
                                 onChange={(e) => setAiInput(e.target.value)}
@@ -1598,7 +1835,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                                     return (
                                         <>
-                                            <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-200/80">
+                                            <div 
+                                                className={`relative aspect-square w-full overflow-hidden rounded-2xl bg-slate-100 border border-slate-200/80 ${isImageZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+                                                onClick={() => setIsImageZoomed((z) => !z)}
+                                            >
                                                 {activeImg ? (
                                                     <Image
                                                         src={activeImg}
@@ -1606,7 +1846,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                         width={600}
                                                         height={600}
                                                         unoptimized
-                                                        className="size-full object-cover"
+                                                        className={`size-full object-cover transition-transform duration-300 ${isImageZoomed ? 'scale-150' : 'scale-100'}`}
                                                     />
                                                 ) : (
                                                     <div className="grid size-full place-items-center bg-slate-100 text-4xl font-black text-slate-300">
@@ -1617,11 +1857,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                     ✓ Verified Stock
                                                 </span>
 
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setIsImageZoomed((z) => !z);
+                                                    }}
+                                                    aria-label="Toggle zoom"
+                                                    className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition z-10"
+                                                    title={isImageZoomed ? 'Zoom out' : 'Zoom in'}
+                                                >
+                                                    {isImageZoomed ? <ZoomOut size={15} /> : <ZoomIn size={15} />}
+                                                </button>
+
                                                 {images.length > 1 && (
                                                     <>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setModalActiveImgIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setModalActiveImgIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                                                            }}
                                                             aria-label="Previous image"
                                                             className="absolute left-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
                                                         >
@@ -1629,7 +1885,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setModalActiveImgIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setModalActiveImgIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                                                            }}
                                                             aria-label="Next image"
                                                             className="absolute right-2 top-1/2 -translate-y-1/2 grid size-8 place-items-center rounded-full bg-white/90 text-slate-800 shadow-md hover:bg-white transition"
                                                         >
@@ -1699,8 +1958,102 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </div>
 
                                 <div className="space-y-3 pt-2 border-t border-slate-100">
+                                    {isFoodOrEdible(liveStore.name, (selectedProductForModal as any).category, selectedProductForModal.name) ? (
+                                        /* For Food, Coffee, Edibles, Bakery: Show Pack / Weight Selection */
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                <span>Select Pack / Weight</span>
+                                                <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {['Standard Pack', '250g', '500g', '1 kg', 'Pack of 2', 'Family Pack'].map((pack) => (
+                                                    <button
+                                                        key={pack}
+                                                        type="button"
+                                                        onClick={() => setModalSelectedSize(pack)}
+                                                        className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                            modalSelectedSize === pack
+                                                                ? 'text-white border-transparent shadow-xs'
+                                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                        }`}
+                                                        style={modalSelectedSize === pack ? { backgroundColor: themeColor } : {}}
+                                                    >
+                                                        {pack}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        /* For Apparel, Shoes, Handbags, Accessories: Show Size & Color */
+                                        <>
+                                            {/* Size Selector */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                    <span>Select Size</span>
+                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
+                                                </div>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {(() => {
+                                                        const isFootwear = /\b(shoe|shoes|sneaker|sneakers|kicks|boot|boots|jogger|joggers|footwear)\b/i.test(
+                                                            `${liveStore.name} ${(selectedProductForModal as any).category || ''} ${selectedProductForModal.name}`
+                                                        );
+                                                        const sizes = isFootwear
+                                                            ? ['EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44']
+                                                            : ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'];
+                                                        return sizes.map((size) => (
+                                                            <button
+                                                                key={size}
+                                                                type="button"
+                                                                onClick={() => setModalSelectedSize(size)}
+                                                                className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                                    modalSelectedSize === size
+                                                                        ? 'text-white border-transparent shadow-xs'
+                                                                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                                }`}
+                                                                style={modalSelectedSize === size ? { backgroundColor: themeColor } : {}}
+                                                            >
+                                                                {size}
+                                                            </button>
+                                                        ));
+                                                    })()}
+                                                </div>
+                                            </div>
+
+                                            {/* Color Selector */}
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                    <span>Select Color</span>
+                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor}</span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    {[
+                                                        { name: 'Default', hex: '#0f172a' },
+                                                        { name: 'Emerald', hex: '#059669' },
+                                                        { name: 'Navy', hex: '#1d4ed8' },
+                                                        { name: 'Maroon', hex: '#9f1239' },
+                                                        { name: 'Gold', hex: '#d97706' },
+                                                    ].map((c) => (
+                                                        <button
+                                                            key={c.name}
+                                                            type="button"
+                                                            onClick={() => setModalSelectedColor(c.name)}
+                                                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                                                modalSelectedColor === c.name
+                                                                    ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
+                                                                    : 'border-slate-200 bg-white hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
+                                                            <span>{c.name}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
                                     {/* Quantity Selector */}
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between pt-1">
                                         <span className="text-xs font-bold text-slate-700">Quantity</span>
                                         <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
                                             <button
@@ -1729,7 +2082,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             type="button"
                                             onClick={() => {
                                                 for (let i = 0; i < modalQty; i++) {
-                                                    addToCart(selectedProductForModal, false);
+                                                    addToCart(selectedProductForModal, false, modalSelectedSize, modalSelectedColor);
                                                 }
                                                 setIsCartOpen(true);
                                                 setSelectedProductForModal(null);
@@ -1737,7 +2090,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             className="flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95"
                                             style={{ backgroundColor: themeColor }}
                                         >
-                                            <ShoppingBag size={15} /> Add to Cart ({modalQty})
+                                            <ShoppingCart size={15} /> Add to Cart ({modalQty})
                                         </button>
 
                                         <button
@@ -1745,11 +2098,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             onClick={() => {
                                                 const phone = whatsappPhone(liveStore.whatsapp_number || '923001234567');
                                                 const totalPrice = Number(selectedProductForModal.price) * modalQty;
+                                                const variantNotes = [
+                                                    modalSelectedSize && modalSelectedSize !== 'Standard' ? `Size: ${modalSelectedSize}` : null,
+                                                    modalSelectedColor && modalSelectedColor !== 'Default' ? `Color: ${modalSelectedColor}` : null,
+                                                ].filter(Boolean).join(', ');
                                                 const text =
                                                     `🛍️ *INSTANT ORDER — ${liveStore.name.toUpperCase()}*\n` +
                                                     `----------------------------------------\n` +
                                                     `Hello! I want to order:\n` +
-                                                    `• *Product:* ${selectedProductForModal.name}\n` +
+                                                    `• *Product:* ${selectedProductForModal.name}${variantNotes ? ` (${variantNotes})` : ''}\n` +
                                                     `• *Quantity:* ${modalQty}\n` +
                                                     `• *Total Price:* ${money(totalPrice)}\n` +
                                                     `• *Store URL:* https://${liveStore.slug}.buildexom.store\n\n` +
@@ -1760,12 +2117,6 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         >
                                             <MessageCircle size={15} className="text-emerald-600" /> Order on WhatsApp
                                         </button>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-3 pt-1 text-[10px] text-slate-500">
-                                        <span>🚚 Fast Nationwide Courier</span>
-                                        <span>•</span>
-                                        <span>📦 Cash on Delivery</span>
                                     </div>
                                 </div>
                             </div>

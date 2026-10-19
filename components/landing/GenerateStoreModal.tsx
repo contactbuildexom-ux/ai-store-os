@@ -2,24 +2,19 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { Search, Store, Sparkles, Palette, ArrowRight } from "lucide-react";
+import { STORE_IDEA_PRESETS } from "./MerchantStoreSetupModal";
+import { THEME_OPTIONS, type ThemeOption } from "@/lib/store-theme";
 
 /* User login page */
 const USER_LOGIN_HREF = "/user/login";
 
-const SUGGESTIONS = [
-  "Clothing store for women",
-  "Electronics and mobile accessories",
-  "Beauty and skincare products",
-  "Home-made food delivery",
-];
-
-const PERKS = ["No coding needed", "Free to start", "Ready in minutes"];
+const PERKS = ["E-Commerce Ready", "WhatsApp Checkout", "Live in 2 Minutes"];
 
 const CSS = `
 @keyframes gsPop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .gs-pop { animation: gsPop .28s cubic-bezier(.2,.8,.2,1) both; }
 .gs-cta { font-size: 15px; font-weight: 700; }
-.gs-chip { font-size: 13px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .gs-pop { animation: none; } }
 `;
 
@@ -30,10 +25,15 @@ export default function GenerateStoreModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onGenerate: (prompt: string) => void;
+  onGenerate: (prompt: string, storeName?: string, theme?: string) => void;
 }) {
+  const [storeName, setStoreName] = useState("");
+  const [selectedIdeaId, setSelectedIdeaId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTheme, setSelectedTheme] = useState("ocean-blue");
   const [prompt, setPrompt] = useState("");
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -43,22 +43,58 @@ export default function GenerateStoreModal({
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const t = window.setTimeout(() => inputRef.current?.focus(), 60);
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
-      window.clearTimeout(t);
     };
   }, [open, onClose]);
 
+  // Click outside to close custom searchable dropdown
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   if (!open) return null;
 
-  const ready = prompt.trim().length >= 3;
+  // Flattened and searchable list of presets
+  const allIdeas = STORE_IDEA_PRESETS.flatMap((grp) => grp.options);
+  const filteredIdeas = allIdeas.filter((opt) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      opt.name.toLowerCase().includes(q) ||
+      opt.sampleName.toLowerCase().includes(q) ||
+      opt.prompt.toLowerCase().includes(q)
+    );
+  });
+
+  const selectedIdea = allIdeas.find((o) => o.id === selectedIdeaId);
+
+  const handleSelectIdea = (opt: (typeof allIdeas)[0]) => {
+    setSelectedIdeaId(opt.id);
+    if (!storeName || allIdeas.some((i) => i.sampleName === storeName)) {
+      setStoreName(opt.sampleName);
+    }
+    if (opt.theme) {
+      setSelectedTheme(opt.theme);
+    }
+    setPrompt(opt.prompt);
+    setIsDropdownOpen(false);
+  };
+
+  const ready = (storeName.trim().length >= 2 || selectedIdeaId.length > 0);
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!ready) return;
-    onGenerate(prompt.trim());
+    const finalPrompt = prompt.trim() || (selectedIdea ? selectedIdea.prompt : `An online store called ${storeName.trim()} with nationwide delivery.`);
+    onGenerate(finalPrompt, storeName.trim() || selectedIdea?.sampleName || "My Store", selectedTheme);
   }
 
   return (
@@ -74,10 +110,10 @@ export default function GenerateStoreModal({
         aria-modal="true"
         aria-labelledby="gs-title"
         onClick={(e) => e.stopPropagation()}
-        className="gs-pop relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl"
+        className="gs-pop relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white shadow-2xl border border-[#cfe2fa]"
       >
         {/* Header */}
-        <div className="relative bg-gradient-to-br from-[#0b2545] to-[#1976d2] px-6 pb-8 pt-7 text-white sm:px-8">
+        <div className="relative bg-gradient-to-br from-[#0b2545] to-[#1976d2] px-6 pb-6 pt-6 text-white sm:px-8">
           <button
             type="button"
             onClick={onClose}
@@ -86,104 +122,160 @@ export default function GenerateStoreModal({
           >
             ✕
           </button>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">
-            Free to start
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-sky-200">
+              <Store size={13} /> Only E-Commerce Store
+            </span>
+          </div>
           <h2 id="gs-title" className="mt-2 pr-8 text-2xl font-extrabold sm:text-3xl">
-            Generate your free store
+            Generate Your Store
           </h2>
-          <p className="mt-1.5 text-sm text-blue-100/90">
-            Tell us about your business and we will set up your online store in minutes.
+          <p className="mt-1 text-xs sm:text-sm text-blue-100/90">
+            Enter your store name and pick a theme. Everything else is auto-configured for you.
           </p>
         </div>
 
-        {/* Body */}
-        <form onSubmit={submit} className="space-y-5 px-6 pb-7 pt-6 sm:px-8">
+        {/* Form Body */}
+        <form onSubmit={submit} className="space-y-4 px-6 pb-7 pt-5 sm:px-8">
+          
+          {/* 1. Store Name */}
           <div>
-            <label htmlFor="gs-prompt" className="mb-1.5 block text-sm font-bold text-[#0b2545]">
-              What will you sell?
+            <label htmlFor="gs-name" className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+              <span>Store Name</span>
+              <span className="text-[11px] font-normal text-slate-500">e.g. Nexus Gaming Store</span>
             </label>
-            <textarea
-              id="gs-prompt"
-              ref={inputRef}
-              rows={3}
-              maxLength={300}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. A clothing store for women with a summer collection and cash on delivery"
-              className="w-full resize-none rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-3 text-[15px] text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-4 focus:ring-[#1976d2]/15"
+            <input
+              id="gs-name"
+              type="text"
+              autoFocus
+              value={storeName}
+              onChange={(e) => setStoreName(e.target.value)}
+              placeholder="Enter your store name..."
+              className="w-full rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-3 text-sm font-semibold text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-3 focus:ring-[#1976d2]/15"
             />
-            <div className="mt-1 text-right text-[11px] font-medium text-[#5b7aa3]">
-              {prompt.length}/300
-            </div>
           </div>
 
+          {/* 2. Searchable E-Commerce Niches / Global Store Ideas */}
+          <div ref={dropdownRef} className="relative">
+            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+              Select Store Niche / Idea
+            </label>
+
+            {/* Selector Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsDropdownOpen((v) => !v)}
+              className="flex w-full items-center justify-between rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-2.5 text-left text-xs font-semibold text-[#0b2545] transition hover:bg-white focus:border-[#1976d2] focus:ring-2 focus:ring-[#1976d2]/20"
+            >
+              <span className="truncate">
+                {selectedIdea ? (
+                  <span className="font-bold text-[#1976d2]">{selectedIdea.name}</span>
+                ) : (
+                  <span className="text-[#8aa3c4]">Choose a niche (e.g. Gaming, Shoes, Plants)...</span>
+                )}
+              </span>
+              <span className="ml-2 text-slate-400">▼</span>
+            </button>
+
+            {/* Custom Searchable Dropdown Popup */}
+            {isDropdownOpen && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-hidden rounded-2xl border border-[#cfe2fa] bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                {/* Search input inside dropdown */}
+                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search store ideas..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs outline-none focus:border-[#1976d2] focus:bg-white"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Ideas list with short names */}
+                <div className="max-h-48 overflow-y-auto divide-y divide-slate-50 p-1">
+                  {filteredIdeas.length === 0 ? (
+                    <div className="p-3 text-center text-xs text-slate-400">
+                      No matching niche found. You can write your custom store name above.
+                    </div>
+                  ) : (
+                    filteredIdeas.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleSelectIdea(opt)}
+                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition ${
+                          selectedIdeaId === opt.id
+                            ? "bg-blue-50 font-bold text-[#1976d2]"
+                            : "text-[#0b2545] hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="font-semibold">{opt.name}</span>
+                        <span className="text-[10px] text-slate-400">{opt.sampleName}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 3. Theme Selection Only */}
           <div>
-            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#5b7aa3]">
-              Or pick an idea
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setPrompt(s);
-                    inputRef.current?.focus();
-                  }}
-                  className="gs-chip cursor-pointer rounded-full border border-[#cfe2fa] bg-white px-3.5 py-1.5 text-[#0b2545] transition hover:border-[#1976d2] hover:bg-[#1976d2] hover:text-white"
-                >
-                  {s}
-                </button>
-              ))}
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+              <Palette size={13} className="text-[#1976d2]" /> Choose Store Theme
+            </label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {THEME_OPTIONS.slice(0, 6).map((t: ThemeOption) => {
+                const isSelected = selectedTheme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSelectedTheme(t.id)}
+                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
+                      isSelected
+                        ? "border-[#1976d2] bg-blue-50/70 font-bold text-[#0b2545] ring-2 ring-[#1976d2]/20"
+                        : "border-[#cfe2fa] bg-white text-slate-600 hover:border-blue-300"
+                    }`}
+                  >
+                    <span
+                      className="size-3.5 rounded-full shrink-0 shadow-xs"
+                      style={{ backgroundColor: t.color }}
+                    />
+                    <span className="truncate text-xs">{t.name.split(" ")[0]}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 rounded-2xl bg-[#f1f8ff] px-4 py-3">
+          {/* Perks list */}
+          <ul className="flex flex-wrap gap-x-4 gap-y-1.5 rounded-xl bg-[#f1f8ff] px-3.5 py-2.5">
             {PERKS.map((p) => (
-              <li key={p} className="flex items-center gap-2 text-sm font-semibold text-[#2c4a73]">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1976d2] text-white">
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12l5 5L20 7" />
-                  </svg>
+              <li key={p} className="flex items-center gap-1.5 text-xs font-semibold text-[#2c4a73]">
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#1976d2] text-white text-[9px] font-bold">
+                  ✓
                 </span>
                 {p}
               </li>
             ))}
           </ul>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={!ready}
-            className="gs-cta flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976d2] to-[#1565c0] text-white shadow-[0_14px_28px_-12px_rgba(25,118,210,0.8)] transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:hover:translate-y-0"
+            className="gs-cta flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976d2] to-[#1565c0] text-white shadow-[0_12px_24px_-10px_rgba(25,118,210,0.8)] transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:hover:translate-y-0"
           >
-            Generate my store
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
+            <span>Generate My Store</span>
+            <ArrowRight size={17} />
           </button>
 
-          <p className="text-center text-sm text-[#2c4a73]">
+          <p className="text-center text-xs text-[#2c4a73]">
             Already have an account?{" "}
             <Link
               href={USER_LOGIN_HREF}

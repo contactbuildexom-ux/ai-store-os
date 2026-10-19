@@ -1,8 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/components/landing/logo";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
+
+/* ---------- Pixel2Page (Powered by) ---------- */
+const P2P_URL = "https://yahan-pixel2page-ki-website.com";
+const P2P_LOGO = "/logo-p2p.jpg";
 
 const columns = [
   {
@@ -83,17 +88,6 @@ const socials = [
       </>
     ),
   },
-  {
-    name: "Website",
-    href: "#",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M2 12h20" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10a15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10a15.3 15.3 0 0 1 4-10z" />
-      </>
-    ),
-  },
 ];
 
 export default function Footer() {
@@ -103,7 +97,6 @@ export default function Footer() {
     Facebook: settings.facebook || "#",
     WhatsApp: settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}` : "#",
     Email: settings.email ? `mailto:${settings.email}` : "mailto:support@yourdomain.com",
-    Website: settings.website || "#",
   };
 
   return (
@@ -134,14 +127,14 @@ export default function Footer() {
               {settings.description}
             </p>
 
-            {/* Social icons: 3 upar, 2 neeche */}
-            <div id="contact-socials" className="mt-6 grid w-fit grid-cols-3 gap-3">
+            {/* Social icons: 2 upar, 2 neeche */}
+            <div id="contact-socials" className="mt-6 grid w-fit grid-cols-2 gap-3">
               {socials.map((s) => (
                 <a
                   key={s.name}
                   href={socialHrefs[s.name] ?? s.href}
-                  target={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "_blank" : undefined}
-                  rel={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "noreferrer" : undefined}
+                  target={["Instagram", "Facebook", "WhatsApp"].includes(s.name) ? "_blank" : undefined}
+                  rel={["Instagram", "Facebook", "WhatsApp"].includes(s.name) ? "noreferrer" : undefined}
                   aria-label={s.name}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
                 >
@@ -180,6 +173,30 @@ export default function Footer() {
                   </li>
                 ))}
               </ul>
+
+              {/* Powered by Pixel2Page: Legal column ke neeche (size Buildexom logo box jitna) */}
+              {col.title === "Legal" && (
+                <div className="mt-8">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-200">
+                    Powered by
+                  </span>
+                  <a
+                    href={P2P_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Pixel2Page"
+                    className="mt-2 flex h-20 w-[211px] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-3 py-2 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
+                  >
+                    <Image
+                      src={P2P_LOGO}
+                      alt="Pixel2Page - Build. Grow. Succeed."
+                      width={1776}
+                      height={554}
+                      className="h-full w-full object-contain"
+                    />
+                  </a>
+                </div>
+              )}
             </div>
           ))}
         </div>

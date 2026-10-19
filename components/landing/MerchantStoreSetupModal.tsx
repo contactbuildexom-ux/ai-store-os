@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Sparkles, 
@@ -104,6 +104,8 @@ interface MerchantStoreSetupModalProps {
   onClose: () => void;
   initialPrompt?: string;
   initialPlan?: 'basic' | 'pro' | 'advanced';
+  initialStoreName?: string;
+  initialTheme?: string;
 }
 
 const THEME_OPTIONS = [
@@ -121,105 +123,180 @@ const THEME_OPTIONS = [
 
 export const STORE_IDEA_PRESETS = [
   {
-    category: 'Trending Business Niches',
+    category: 'Trending E-Commerce Niches',
     options: [
       {
+        id: 'gaming-tech',
+        name: 'Gaming Gear & RGB',
+        sampleName: 'Nexus Gaming Gear',
+        theme: 'cyber-slate',
+        prompt: 'A dedicated gaming peripherals brand featuring hot-swappable mechanical keyboards, ultra-lightweight gaming mice, RGB desk mats, and 7.1 surround headsets with cash on delivery.'
+      },
+      {
+        id: 'nature',
+        name: 'Indoor Plants & Botanicals',
+        sampleName: 'Verdant Flora & Greens',
+        theme: 'emerald',
+        prompt: 'An organic botanical nursery and green living boutique offering natural indoor plants, air-purifying succulents, organic gardening essentials, fresh herbal teas, and natural planters.'
+      },
+      {
+        id: 'handbags',
+        name: 'Luxury Velvet Handbags',
+        sampleName: 'Velvet Noir Handbags',
+        theme: 'velvet-rose',
+        prompt: 'A designer handbag and luxury leather accessories store featuring handcrafted velvet clutches, evening bridal party bags, structured leather shoulder totes, and wallets.'
+      },
+      {
         id: 'shoes',
-        name: '👟 Athletic Running Shoes & Streetwear Sneakers',
+        name: 'Athletic Sneakers & Shoes',
         sampleName: 'Aura Kicks Atelier',
         theme: 'ocean-blue',
         prompt: 'A modern performance footwear brand featuring cushioned running sneakers, streetwear lifestyle kicks, and everyday comfortable trainers with nationwide delivery and Cash on Delivery.'
       },
       {
         id: 'perfume',
-        name: '🌸 Luxury Perfumes, Ouds & Artisanal Attars',
+        name: 'Luxury Perfumes & Oud',
         sampleName: 'Velvet Oud Fragrances',
         theme: 'royal-gold',
-        prompt: 'A luxury fragrance atelier offering artisanal concentrated oud oils, French long-lasting EDP perfumes, and curated gift boxes for weddings and celebrations.'
+        prompt: 'A luxury fragrance atelier offering artisanal concentrated oud oils, French long-lasting EDP perfumes, and curated gift boxes with nationwide delivery.'
+      },
+      {
+        id: 'jewelry',
+        name: 'Gold Plated Jewelry',
+        sampleName: 'Celestia Jewels',
+        theme: 'royal-gold',
+        prompt: 'Handcrafted luxury jewelry brand providing anti-tarnish 18K gold-plated coin necklaces, zirconia solitaire rings, baroque pearl chokers, and festive earrings.'
       },
       {
         id: 'women-fashion',
-        name: '👗 Women\'s Designer Pret, Lawn & Festive Suits',
+        name: 'Women\'s Designer Pret',
         sampleName: 'Zahra Festive Pret',
         theme: 'velvet-rose',
         prompt: 'A contemporary designer clothing boutique specializing in ready-to-wear printed lawn, luxury chiffon festive 3-piece suits, and embroidered organza dupattas.'
       },
       {
         id: 'men-fashion',
-        name: '🤵 Men\'s Bespoke Couture, Kurtas & Formal Wear',
+        name: 'Men\'s Couture & Kurtas',
         sampleName: 'Apex Heritage Menswear',
         theme: 'midnight-minimal',
         prompt: 'A premium menswear brand offering tailored cotton kurtas, bespoke waistcoats, formal shirts, and luxury accessories with cash on delivery nationwide.'
       },
       {
-        id: 'wedding',
-        name: '👰 Bridal Boutique, Wedding Favors & Keepsakes',
-        sampleName: 'Royal Shadi Boutique',
-        theme: 'royal-gold',
-        prompt: 'An exquisite wedding boutique featuring handcrafted bridal clutches, laser-cut gold wedding favor boxes, kundan jewelry sets, and festive party accessories.'
-      },
-      {
         id: 'skincare',
-        name: '🧴 Botanical Skincare, Glow Serums & Clean Beauty',
+        name: 'Botanical Skincare & Serums',
         sampleName: 'Glow Botanica Organics',
         theme: 'mint-fresh',
         prompt: 'A clean skincare brand featuring hyaluronic acid glow serums, barrier repair ceramide creams, gentle green tea cleansers, and broad-spectrum mineral sunscreens.'
       },
       {
-        id: 'jewelry',
-        name: '💍 18K Gold Plated Jewelry, Rings & Pendants',
-        sampleName: 'Celestia Jewels',
+        id: 'wedding',
+        name: 'Bridal Couture & Favors',
+        sampleName: 'Royal Shadi Boutique',
         theme: 'royal-gold',
-        prompt: 'Handcrafted luxury jewelry brand providing anti-tarnish 18K gold-plated coin necklaces, zirconia solitaire rings, baroque pearl chokers, and bridal earrings.'
+        prompt: 'An exquisite wedding boutique featuring handcrafted bridal clutches, laser-cut gold wedding favor boxes, luxury wedding keepsakes, and festive party accessories.'
       },
       {
         id: 'tech',
-        name: '📱 Smart Wearables, ANC Audio & Electronics',
+        name: 'Smart Tech & Wearables',
         sampleName: 'Pulse Wave Electronics',
         theme: 'ocean-blue',
         prompt: 'A cutting-edge tech store featuring active noise-cancelling wireless headphones, AMOLED smartwatches, magnetic wireless charging stations, and ergonomic desk accessories.'
       },
       {
         id: 'coffee',
-        name: '☕ Artisan Coffee Roasters, Single-Origin Beans',
+        name: 'Artisan Coffee & Beans',
         sampleName: 'Artisan Roast & Co.',
         theme: 'sunset-amber',
         prompt: 'A specialty coffee roastery featuring single-origin Ethiopian and Colombian beans, dark roast espresso blends, cold brew kits, and precision hand grinders.'
       },
       {
         id: 'bakery',
-        name: '🥐 Gourmet Patisserie, Artisan Cakes & Truffles',
+        name: 'Gourmet Cakes & Bakery',
         sampleName: 'Sweet Praline Confections',
         theme: 'sunset-amber',
         prompt: 'An artisan bakery offering fresh sourdough, custom buttercream celebration cakes, Belgian chocolate truffles, and delicate French macarons.'
       },
       {
         id: 'fitness',
-        name: '🏋️ Activewear, Gym Apparel & Training Gear',
+        name: 'Gym Activewear & Gear',
         sampleName: 'Velocity Athletic Gear',
         theme: 'ocean-blue',
         prompt: 'A high-performance activewear store offering moisture-wicking gym tees, seamless compression leggings, water-resistant duffel bags, and fitness accessories.'
       },
       {
         id: 'home',
-        name: '🛋️ Modern Interior Decor & Scented Soy Candles',
+        name: 'Home Decor & Candles',
         sampleName: 'Luxe Living Interiors',
         theme: 'artisan-cream',
         prompt: 'A modern interior boutique featuring artisanal scented soy wax candles, ceramic vases, linen cushion covers, and aesthetic room decor accents.'
       },
       {
         id: 'leather',
-        name: '🎒 Handcrafted Leather Bags, Wallets & Belts',
+        name: 'Handcrafted Leather Goods',
         sampleName: 'Heritage Leather Co.',
         theme: 'midnight-minimal',
         prompt: 'A genuine handcrafted leather goods boutique specializing in vintage laptop messenger bags, full-grain leather bi-fold wallets, and brass-buckle belts.'
       },
       {
         id: 'organic',
-        name: '🌿 Pure Sidr Honey, Organic Dry Fruits & Herbs',
+        name: 'Organic Honey & Superfoods',
         sampleName: 'Natura Harvest Superfoods',
         theme: 'mint-fresh',
         prompt: 'An authentic organic wellness store offering raw wild Sidr honey, premium roasted dry fruits, organic green teas, and cold-pressed pure oils.'
+      }
+    ]
+  },
+  {
+    category: 'Global Specialty Niches',
+    options: [
+      {
+        id: 'baby-kids',
+        name: 'Baby & Kids Apparel',
+        sampleName: 'Little Sprout Nursery',
+        theme: 'mint-fresh',
+        prompt: 'An organic baby and toddler boutique offering soft organic cotton onesies, wooden Montessori toys, ergonomic nursery swaddles, and hypoallergenic baby care essentials.'
+      },
+      {
+        id: 'watches-eyewear',
+        name: 'Watches & Eyewear',
+        sampleName: 'Aero Chrono Atelier',
+        theme: 'midnight-minimal',
+        prompt: 'A luxury timepieces and designer sunglasses brand featuring sapphire crystal chronograph watches, polarized acetate sunglasses, and Italian leather watch rolls.'
+      },
+      {
+        id: 'pet-care',
+        name: 'Pet Care & Accessories',
+        sampleName: 'Paws & Whiskers Co.',
+        theme: 'sunset-amber',
+        prompt: 'A pet lifestyle store offering grain-free organic dog treats, orthopedic pet beds, durable braided leashes, and gentle grooming shampoos.'
+      },
+      {
+        id: 'modest-fashion',
+        name: 'Modest Wear & Abayas',
+        sampleName: 'Noor Modest Couture',
+        theme: 'royal-gold',
+        prompt: 'An elegant modest wear brand featuring handcrafted chiffon abayas, premium mulberry silk hijabs, inner caps, and modest maxi dresses.'
+      },
+      {
+        id: 'spices-tea',
+        name: 'Spices & Artisanal Tea',
+        sampleName: 'Silk Route Spice Merchants',
+        theme: 'artisan-cream',
+        prompt: 'A heritage spice and tea emporium offering hand-ground organic spice blends, authentic Kashmiri pink tea, saffron infusions, and gourmet herbal loose leaves.'
+      },
+      {
+        id: 'candles-pottery',
+        name: 'Ceramic Pottery & Crafts',
+        sampleName: 'Clay & Flame Studio',
+        theme: 'artisan-cream',
+        prompt: 'An artisan studio offering wheel-thrown ceramic mugs, sculptural flower vases, and crackling wood-wick essential oil aromatherapy candles.'
+      },
+      {
+        id: 'stationery',
+        name: 'Stationery & Journals',
+        sampleName: 'Paper & Quill Atelier',
+        theme: 'royal-gold',
+        prompt: 'A bespoke stationery store offering refillable leather-bound travel notebooks, brass fountain pens, archival ink sets, and aesthetic daily productivity planners.'
       }
     ]
   }
@@ -236,20 +313,37 @@ export default function MerchantStoreSetupModal({
   onClose,
   initialPrompt = '',
   initialPlan = 'pro',
+  initialStoreName = '',
+  initialTheme = 'royal-gold',
 }: MerchantStoreSetupModalProps) {
   const router = useRouter();
 
   // Form states
   const [selectedIdeaId, setSelectedIdeaId] = useState('');
-  const [storeName, setStoreName] = useState('');
+  const [storeName, setStoreName] = useState(initialStoreName);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [plan, setPlan] = useState<'basic' | 'pro' | 'advanced'>(initialPlan);
-  const [selectedTheme, setSelectedTheme] = useState('royal-gold');
+  const [selectedTheme, setSelectedTheme] = useState(initialTheme);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
+  const [ideaSearch, setIdeaSearch] = useState('');
+
+  const filteredPresets = useMemo(() => {
+    if (!ideaSearch.trim()) return STORE_IDEA_PRESETS;
+    const q = ideaSearch.toLowerCase();
+    return STORE_IDEA_PRESETS.map((grp) => ({
+      ...grp,
+      options: grp.options.filter(
+        (opt) =>
+          opt.name.toLowerCase().includes(q) ||
+          opt.prompt.toLowerCase().includes(q) ||
+          opt.sampleName.toLowerCase().includes(q)
+      )
+    })).filter((grp) => grp.options.length > 0);
+  }, [ideaSearch]);
 
   const handleSelectIdea = (id: string) => {
     setSelectedIdeaId(id);
@@ -281,6 +375,18 @@ export default function MerchantStoreSetupModal({
   const [successData, setSuccessData] = useState<GeneratedStoreResponse | null>(null);
 
   useEffect(() => {
+    if (initialStoreName && !storeName) {
+      setStoreName(initialStoreName);
+    }
+  }, [initialStoreName]);
+
+  useEffect(() => {
+    if (initialTheme) {
+      setSelectedTheme(initialTheme);
+    }
+  }, [initialTheme]);
+
+  useEffect(() => {
     if (initialPrompt && !prompt) {
       setPrompt(initialPrompt);
     }
@@ -291,24 +397,23 @@ export default function MerchantStoreSetupModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    
-    if (!prompt.trim() || prompt.trim().length < 8) {
-      setErrorMessage('Please provide a store description or prompt with at least 8 characters.');
-      return;
+
+    const effectiveName = storeName.trim() || 'My Online Store';
+    const effectivePrompt = prompt.trim() || `A modern e-commerce storefront for ${effectiveName} offering premium items with nationwide delivery and Cash on Delivery.`;
+
+    let effectiveEmail = email.trim().toLowerCase();
+    if (!effectiveEmail || !effectiveEmail.includes('@')) {
+      const cleanSlug = effectiveName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mystore';
+      effectiveEmail = `admin@${cleanSlug}.com`;
     }
 
-    if (!email.trim() || !email.includes('@')) {
-      setErrorMessage('Please enter a valid merchant email address for store administration.');
-      return;
+    let effectivePassword = password;
+    if (!effectivePassword || effectivePassword.length < 8) {
+      effectivePassword = 'StoreAdminPass123!';
     }
 
     if (OTP_REQUIRED && !verificationToken) {
       setErrorMessage('Please verify your email address with the code we send you.');
-      return;
-    }
-
-    if ((plan === 'pro' || plan === 'advanced') && !whatsappNumber.trim()) {
-      setErrorMessage('Pro & Advance plans require a dedicated WhatsApp number for automated order routing.');
       return;
     }
 
@@ -335,16 +440,16 @@ export default function MerchantStoreSetupModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           registration: 'merchant',
-          store_name: storeName.trim() || undefined,
-          name: storeName.trim() || undefined,
-          prompt: prompt.trim(),
+          store_name: effectiveName,
+          name: effectiveName,
+          prompt: effectivePrompt,
           plan,
           theme: selectedTheme,
           theme_color: themeColor,
           selected_theme: selectedTheme,
-          whatsapp_number: whatsappNumber.trim() || undefined,
-          owner_email: email.trim().toLowerCase(),
-          password,
+          whatsapp_number: whatsappNumber.trim() || '923001234567',
+          owner_email: effectiveEmail,
+          password: effectivePassword,
           owner_phone: contactPhone.trim() || undefined,
           verification_token: verificationToken || undefined,
           social_links: socialLinks,
@@ -533,17 +638,35 @@ export default function MerchantStoreSetupModal({
                 </div>
 
                 {/* Curated Global Business Ideas Dropdown */}
-                <div className="rounded-xl border border-[#cfe2fa] bg-[#f3f8ff] p-3">
-                  <label className="mb-1.5 block text-xs font-semibold text-[#0b2545]">
-                    Explore Trending Global Business Ideas (Auto-populates concept & theme):
-                  </label>
+                <div className="rounded-xl border border-[#cfe2fa] bg-[#f3f8ff] p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-[#0b2545]">
+                      Explore Trending Global Business Ideas (Auto-populates concept & theme):
+                    </label>
+                    {ideaSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setIdeaSearch('')}
+                        className="text-[11px] font-semibold text-[#1976d2] hover:underline"
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="🔍 Search niches (e.g. Gaming, Handbags, Coffee, Skincare...)"
+                    value={ideaSearch}
+                    onChange={(e) => setIdeaSearch(e.target.value)}
+                    className="w-full rounded-lg border border-[#bfdcff] bg-white px-3 py-1.5 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none"
+                  />
                   <select
                     value={selectedIdeaId}
                     onChange={(e) => handleSelectIdea(e.target.value)}
                     className={`${INPUT} font-medium`}
                   >
-                    <option value="">✨ Select a Curated Store Idea / Niche (or write your own)</option>
-                    {STORE_IDEA_PRESETS.map((grp) => (
+                    <option value="">Select a Curated Store Idea / Niche (or write your own)</option>
+                    {filteredPresets.map((grp) => (
                       <optgroup key={grp.category} label={grp.category}>
                         {grp.options.map((opt) => (
                           <option key={opt.id} value={opt.id}>

@@ -165,11 +165,11 @@ export function StoreQRCode({
 
       {/* Storefront Actions: Copy Link & Download (Only 'Download') */}
       {storeUrl && (
-        <div className="mt-4 flex items-center justify-center gap-2.5">
+        <div className="mt-4 grid grid-cols-2 gap-2.5 w-full">
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:border-slate-300"
+            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:border-slate-300"
           >
             {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} className="text-slate-500" />}
             <span>{copied ? 'Copied!' : 'Copy Link'}</span>
@@ -179,7 +179,7 @@ export function StoreQRCode({
             type="button"
             onClick={downloadQrCode}
             disabled={!storeUrl}
-            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50"
+            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50"
           >
             <Download size={14} />
             <span>Download</span>

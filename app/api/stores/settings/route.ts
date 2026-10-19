@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
+import { getStoreNicheColor, THEME_PALETTES } from "@/lib/store-theme";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -71,7 +72,8 @@ function parseSocialLinks(value: unknown): Record<string, string> | null {
 
 function getSupabase() {
   const supabase = createAdminClient();
-  if (!supabase) throw new Error("Store database is not configured.");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return null;
   return supabase;
 }
 
@@ -109,7 +111,7 @@ function isMissingStoreColumn(error: unknown) {
   );
 }
 
-async function savePaymentAccount(supabase: ReturnType<typeof getSupabase>, storeId: string, provider: string, value: unknown) {
+async function savePaymentAccount(supabase: NonNullable<ReturnType<typeof getSupabase>>, storeId: string, provider: string, value: unknown) {
   const accountNumber = optionalText(value) ?? "";
   const { data: existing, error: lookupError } = await supabase
     .from("store_payments")
@@ -139,7 +141,6 @@ async function savePaymentAccount(supabase: ReturnType<typeof getSupabase>, stor
 
 export async function GET(req: Request) {
   try {
-    const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const storeId = textValue(searchParams.get("store_id"));
 
@@ -148,9 +149,48 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
+    const supabase = getSupabase();
+    if (!supabase) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(storeId);
+      const nicheColor = getStoreNicheColor(repoStore?.name, repoStore?.slug);
+      const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || (repoStore?.selected_theme && THEME_PALETTES[repoStore.selected_theme]) || nicheColor;
+      return NextResponse.json({
+        success: true,
+        settings: {
+          store_id: storeId,
+          theme_color: themeColor,
+          selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
+          banner_text: repoStore?.header_title || repoStore?.tagline || "",
+          footer_text: repoStore?.description || "",
+          logo_url: repoStore?.logo_url || "",
+          whatsapp_number: repoStore?.whatsapp_number || "",
+          accepts_cod: true,
+          accepts_advance: false,
+          advance_percentage: 50,
+          payment_details: {},
+          jazzcash_number: "",
+          easypaisa_number: "",
+        },
+        store: repoStore ? {
+          id: repoStore.id,
+          name: repoStore.name,
+          slug: repoStore.slug,
+          plan: repoStore.plan || "basic",
+          primary_color: themeColor,
+          selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
+          whatsapp_number: repoStore.whatsapp_number,
+          accepts_cod: true,
+          accepts_advance: false,
+          advance_percentage: 50,
+          payment_details: {},
+        } : null,
+      });
+    }
+
     const [settingsResult, storeResult, paymentResult] = await Promise.all([
       supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
-      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
+      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
       supabase.from("store_payments").select("provider_name, account_number, is_active").eq("store_id", storeId).eq("is_active", true),
     ]);
 
@@ -166,7 +206,7 @@ export async function GET(req: Request) {
     if (settingsError && settingsError.code !== "PGRST116") throw settingsError;
     if (isMissingStoreColumn(storeError)) {
       const fallback = await supabase.from("stores").select("id, name, slug").eq("id", storeId).maybeSingle();
-      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
+      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, primary_color: null, selected_theme: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
       storeError = fallback.error;
     }
     if (storeError) throw storeError;
@@ -174,10 +214,19 @@ export async function GET(req: Request) {
 
     const accountNumber = (provider: string) => paymentMethods?.find((method) => method.provider_name.toLowerCase().includes(provider) && method.account_number)?.account_number ?? "";
 
+    const nicheColor = getStoreNicheColor(store?.name, store?.slug);
+    const resolvedThemeColor = settings?.theme_color 
+      || (store as any)?.primary_color 
+      || ((store as any)?.selected_theme && THEME_PALETTES[(store as any).selected_theme])
+      || (settings?.selected_theme && THEME_PALETTES[settings.selected_theme])
+      || nicheColor;
+
     return NextResponse.json({
       success: true,
       settings: settings ? {
         ...settings,
+        theme_color: resolvedThemeColor,
+        selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
         accepts_cod: store?.accepts_cod ?? true,
         accepts_advance: store?.accepts_advance ?? false,
@@ -186,6 +235,8 @@ export async function GET(req: Request) {
         jazzcash_number: accountNumber("jazz") || settings.jazzcash_number || "",
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
+        theme_color: resolvedThemeColor,
+        selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
         accepts_cod: store?.accepts_cod ?? true,
         accepts_advance: store?.accepts_advance ?? false,
@@ -194,9 +245,54 @@ export async function GET(req: Request) {
         jazzcash_number: accountNumber("jazz"),
         easypaisa_number: accountNumber("easy"),
       },
-      store,
+      store: store ? {
+        ...store,
+        primary_color: resolvedThemeColor,
+      } : null,
     });
   } catch (error) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const storeId = textValue(searchParams.get("store_id"));
+      if (storeId) {
+        const { storeRepo } = await import("@/lib/store-repository");
+        const repoStore = await storeRepo.getStore(storeId);
+        if (repoStore) {
+          const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || "#1d7555";
+          return NextResponse.json({
+            success: true,
+            settings: {
+              store_id: storeId,
+              theme_color: themeColor,
+              selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
+              banner_text: repoStore?.header_title || repoStore?.tagline || "",
+              footer_text: repoStore?.description || "",
+              logo_url: repoStore?.logo_url || "",
+              whatsapp_number: repoStore?.whatsapp_number || "",
+              accepts_cod: true,
+              accepts_advance: false,
+              advance_percentage: 50,
+              payment_details: {},
+              jazzcash_number: "",
+              easypaisa_number: "",
+            },
+            store: {
+              id: repoStore.id,
+              name: repoStore.name,
+              slug: repoStore.slug,
+              plan: repoStore.plan || "basic",
+              whatsapp_number: repoStore.whatsapp_number,
+              accepts_cod: true,
+              accepts_advance: false,
+              advance_percentage: 50,
+              payment_details: {},
+            },
+          });
+        }
+      }
+    } catch {
+      // Ignore
+    }
     const message = error instanceof Error ? error.message : "Unable to load store settings.";
     console.error("GET /api/stores/settings failed:", error);
     return NextResponse.json({ error: message }, { status: 500 });
@@ -213,6 +309,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+
+    if (!supabase) {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(storeId);
+      if (repoStore) {
+        if (body.banner_text) repoStore.header_title = String(body.banner_text);
+        if (body.theme_color) {
+          repoStore.primary_color = String(body.theme_color);
+          if (repoStore.theme) repoStore.theme.primaryColor = String(body.theme_color);
+        }
+        if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
+        if (body.logo_url) repoStore.logo_url = String(body.logo_url);
+        if (typeof body.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
+          repoStore.plan = body.plan.toLowerCase() as any;
+          repoStore.payment_status = "active";
+        }
+      }
+      return NextResponse.json({
+        success: true,
+        settings: {
+          store_id: storeId,
+          theme_color: body?.theme_color || repoStore?.primary_color || "#1d7555",
+          banner_text: body?.banner_text || repoStore?.header_title || "",
+          logo_url: body?.logo_url || repoStore?.logo_url || "",
+          whatsapp_number: body?.whatsapp_number || repoStore?.whatsapp_number || "",
+          accepts_cod: body?.accepts_cod ?? true,
+          accepts_advance: body?.accepts_advance ?? false,
+          advance_percentage: body?.advance_percentage ?? 50,
+          payment_details: body?.payment_details ?? {},
+          jazzcash_number: body?.jazzcash_number || "",
+          easypaisa_number: body?.easypaisa_number || "",
+        },
+        message: "Store settings updated successfully.",
+      });
+    }
 
     let savedPaymentDetails: Record<string, string> | undefined;
     if (["accepts_cod", "accepts_advance", "advance_percentage", "payment_details"].some((key) => key in body)) {
@@ -249,6 +380,15 @@ export async function POST(req: Request) {
         .update({ whatsapp_number: optionalText(body.whatsapp_number) })
         .eq("id", storeId);
       if (storeError && !isMissingStoreColumn(storeError)) throw storeError;
+    }
+
+    if (typeof body?.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
+      const updatedPlan = body.plan.toLowerCase();
+      const { error: planError } = await supabase
+        .from("stores")
+        .update({ plan: updatedPlan, payment_status: "active" })
+        .eq("id", storeId);
+      if (planError && !isMissingStoreColumn(planError)) console.warn("Plan update error:", planError);
     }
 
     const selectedTheme = textValue(body?.selected_theme).toLowerCase().replace(/\s+/g, "-");

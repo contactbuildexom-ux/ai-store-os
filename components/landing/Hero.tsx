@@ -150,14 +150,25 @@ function SmartWatch({ size = 56 }: { size?: number }) {
 }
 
 /* ---------- data ---------- */
-const sidebar = [
-  { label: "Dashboard", icon: Icons.grid, active: true },
+type Tab = "Dashboard" | "Products" | "Orders" | "Customers" | "Analytics" | "Settings";
+
+const sidebar: { label: Tab; icon: ReactNode }[] = [
+  { label: "Dashboard", icon: Icons.grid },
   { label: "Products", icon: Icons.box },
   { label: "Orders", icon: Icons.cart },
   { label: "Customers", icon: Icons.users },
   { label: "Analytics", icon: Icons.chart },
   { label: "Settings", icon: Icons.gear },
 ];
+
+const tabSubtitle: Record<Tab, string> = {
+  Dashboard: "Welcome back!",
+  Products: "Manage your catalog",
+  Orders: "Latest customer orders",
+  Customers: "People who buy from you",
+  Analytics: "Last 7 days",
+  Settings: "Store preferences",
+};
 
 const stats = [
   { label: "Total Sales", value: "$12,430", delta: "12.5%", icon: Icons.bag, bg: "#e7f8ee", fg: "#16a34a" },
@@ -167,10 +178,41 @@ const stats = [
 ];
 
 const products = [
-  { name: "Wireless Headphones", price: "$49.99", art: <Headphones /> },
-  { name: "Running Shoes", price: "$79.99", art: <Sneaker /> },
-  { name: "Smart Watch", price: "$129.99", art: <SmartWatch /> },
+  { name: "Wireless Headphones", price: "$49.99", stock: "In stock: 24", art: <Headphones />, small: <Headphones size={34} /> },
+  { name: "Running Shoes", price: "$79.99", stock: "In stock: 12", art: <Sneaker />, small: <Sneaker size={34} /> },
+  { name: "Smart Watch", price: "$129.99", stock: "Low stock: 3", art: <SmartWatch />, small: <SmartWatch size={34} /> },
 ];
+
+const orders = [
+  { id: "#1042", name: "Ayesha K.", amount: "$129.99", status: "Delivered", bg: "#e7f8ee", fg: "#16a34a" },
+  { id: "#1041", name: "Hamza R.", amount: "$49.99", status: "Shipped", bg: "#e8f1ff", fg: "#1976d2" },
+  { id: "#1040", name: "Sana M.", amount: "$79.99", status: "Pending", bg: "#fff1e0", fg: "#f59e0b" },
+  { id: "#1039", name: "Bilal A.", amount: "$209.98", status: "Delivered", bg: "#e7f8ee", fg: "#16a34a" },
+];
+
+const customers = [
+  { name: "Ayesha Khan", orders: "8 orders", spent: "$640" },
+  { name: "Hamza Raza", orders: "5 orders", spent: "$410" },
+  { name: "Sana Malik", orders: "3 orders", spent: "$235" },
+  { name: "Bilal Ahmed", orders: "2 orders", spent: "$180" },
+];
+
+const weekBars = [
+  { day: "Mon", value: 40 },
+  { day: "Tue", value: 65 },
+  { day: "Wed", value: 50 },
+  { day: "Thu", value: 80 },
+  { day: "Fri", value: 60 },
+  { day: "Sat", value: 95 },
+  { day: "Sun", value: 75 },
+];
+
+const settingItems = [
+  { key: "whatsapp", label: "WhatsApp ordering", hint: "Get orders on WhatsApp" },
+  { key: "notify", label: "Smart notifications", hint: "Alerts for new orders" },
+  { key: "qr", label: "QR code", hint: "Share your store by QR" },
+  { key: "live", label: "Store is live", hint: "Visible to customers" },
+] as const;
 
 const features = [
   { label: "No Coding", icon: Icons.bolt },
@@ -185,6 +227,13 @@ export default function Hero() {
   const [demoOpen, setDemoOpen] = useState(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [builderPrompt, setBuilderPrompt] = useState("");
+  const [tab, setTab] = useState<Tab>("Dashboard");
+  const [toggles, setToggles] = useState<Record<string, boolean>>({
+    whatsapp: true,
+    notify: true,
+    qr: false,
+    live: true,
+  });
   const startRef = useRef<HTMLButtonElement>(null);
 
   /* teammate logic: open the AI store builder modal (unchanged) */
@@ -302,8 +351,8 @@ export default function Hero() {
             className="animate-float absolute left-0 top-1 z-30 flex -rotate-3 cursor-pointer items-center gap-2.5 rounded-2xl bg-white px-3.5 py-2.5 text-left shadow-[0_18px_34px_-16px_rgba(25,118,210,0.65)] sm:left-2"
             style={{ animationDelay: "0s" }}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#ece9ff] text-[#6d4aff]">
-              <Ico size={16}>{Icons.sparkle}</Ico>
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#e8f1ff] text-[#1976d2]">
+              <Ico size={16}>{Icons.bolt}</Ico>
             </span>
             <span className="leading-tight">
               <span className="block text-xs font-extrabold text-[#0b2545]">Build with AI</span>
@@ -341,7 +390,7 @@ export default function Hero() {
           {/* ---- dashboard + phone (phone is attached to the dashboard corner) ---- */}
           <div className="relative z-10">
             <div className="flex overflow-hidden rounded-[1.6rem] border border-white bg-white shadow-[0_40px_80px_-30px_rgba(25,118,210,0.55)]">
-              {/* sidebar */}
+              {/* sidebar (clickable menu) */}
               <aside className="flex w-[15%] min-w-[46px] flex-col items-center gap-1 bg-gradient-to-b from-[#0b2545] to-[#123a73] px-1.5 py-4 sm:w-[24%] sm:items-stretch sm:px-3">
                 <div className="mb-3 flex items-center gap-2 sm:px-1">
                   <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1976d2] text-white">
@@ -349,25 +398,32 @@ export default function Hero() {
                   </span>
                   <span className="hidden text-xs font-extrabold text-white sm:inline">Buildexom</span>
                 </div>
-                {sidebar.map((s) => (
-                  <div
-                    key={s.label}
-                    className={`flex items-center justify-center gap-2 rounded-lg px-2 py-2 text-[10px] font-semibold sm:justify-start ${
-                      s.active ? "bg-[#1976d2] text-white" : "text-[#bcd3f2]"
-                    }`}
-                  >
-                    <Ico size={14}>{s.icon}</Ico>
-                    <span className="hidden sm:inline">{s.label}</span>
-                  </div>
-                ))}
+                {sidebar.map((s) => {
+                  const active = tab === s.label;
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      onClick={() => setTab(s.label)}
+                      aria-label={s.label}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg px-2 py-2 text-left text-[10px] font-semibold transition-colors sm:justify-start ${
+                        active ? "bg-[#1976d2] text-white" : "text-[#bcd3f2] hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <Ico size={14}>{s.icon}</Ico>
+                      <span className="hidden sm:inline">{s.label}</span>
+                    </button>
+                  );
+                })}
               </aside>
 
               {/* main */}
-              <div className="min-w-0 flex-1 p-3 sm:p-4">
+              <div className="min-w-0 flex-1 p-3 sm:min-h-[22rem] sm:p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-extrabold text-[#0b2545] sm:text-base">Dashboard</p>
-                    <p className="text-[10px] font-medium text-[#2c4a73]">Welcome back!</p>
+                    <p className="text-sm font-extrabold text-[#0b2545] sm:text-base">{tab}</p>
+                    <p className="text-[10px] font-medium text-[#2c4a73]">{tabSubtitle[tab]}</p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e7f8ee] px-2.5 py-1 text-[9px] font-bold text-[#16a34a]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a]" />
@@ -375,39 +431,168 @@ export default function Hero() {
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {stats.map((s) => (
-                    <div key={s.label} className="rounded-xl p-2.5" style={{ backgroundColor: s.bg }}>
-                      <span
-                        className="flex h-6 w-6 items-center justify-center rounded-lg bg-white"
-                        style={{ color: s.fg }}
-                      >
-                        <Ico size={13}>{s.icon}</Ico>
-                      </span>
-                      <p className="mt-1.5 text-[9px] font-semibold text-[#2c4a73]">{s.label}</p>
-                      <p className="text-sm font-extrabold leading-tight text-[#0b2545]">{s.value}</p>
-                      <p className="text-[9px] font-bold text-[#16a34a]">↑ {s.delta}</p>
+                {/* ---------- Dashboard ---------- */}
+                {tab === "Dashboard" && (
+                  <>
+                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {stats.map((s) => (
+                        <div key={s.label} className="rounded-xl p-2.5" style={{ backgroundColor: s.bg }}>
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded-lg bg-white"
+                            style={{ color: s.fg }}
+                          >
+                            <Ico size={13}>{s.icon}</Ico>
+                          </span>
+                          <p className="mt-1.5 text-[9px] font-semibold text-[#2c4a73]">{s.label}</p>
+                          <p className="text-sm font-extrabold leading-tight text-[#0b2545]">{s.value}</p>
+                          <p className="text-[9px] font-bold text-[#16a34a]">↑ {s.delta}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <p className="mt-3 text-xs font-extrabold text-[#0b2545]">Your Store</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {products.map((p) => (
-                    <div key={p.name} className="rounded-xl border border-[#e3eefc] p-2">
-                      <div className="flex h-14 items-center justify-center rounded-lg bg-[#f3f8ff] sm:h-[4.5rem]">
-                        {p.art}
+                    <p className="mt-3 text-xs font-extrabold text-[#0b2545]">Your Store</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {products.map((p) => (
+                        <div key={p.name} className="rounded-xl border border-[#e3eefc] p-2">
+                          <div className="flex h-14 items-center justify-center rounded-lg bg-[#f3f8ff] sm:h-[4.5rem]">
+                            {p.art}
+                          </div>
+                          <p className="mt-1.5 truncate text-[9px] font-bold text-[#0b2545]">{p.name}</p>
+                          <div className="mt-0.5 flex items-center justify-between">
+                            <span className="text-[10px] font-extrabold text-[#0b2545]">{p.price}</span>
+                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1976d2] text-white">
+                              <Ico size={10}>{Icons.cart}</Ico>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* ---------- Products ---------- */}
+                {tab === "Products" && (
+                  <div className="mt-3 space-y-2">
+                    {products.map((p) => (
+                      <div key={p.name} className="flex items-center gap-3 rounded-xl border border-[#e3eefc] p-2">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[#f3f8ff]">
+                          {p.small}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-bold text-[#0b2545]">{p.name}</p>
+                          <p className="text-[9px] font-semibold text-[#2c4a73]">{p.stock}</p>
+                        </div>
+                        <span className="text-[11px] font-extrabold text-[#0b2545]">{p.price}</span>
                       </div>
-                      <p className="mt-1.5 truncate text-[9px] font-bold text-[#0b2545]">{p.name}</p>
-                      <div className="mt-0.5 flex items-center justify-between">
-                        <span className="text-[10px] font-extrabold text-[#0b2545]">{p.price}</span>
-                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1976d2] text-white">
-                          <Ico size={10}>{Icons.cart}</Ico>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBuilder()}
+                      className="w-full cursor-pointer rounded-xl border border-dashed border-[#1976d2]/40 py-2 text-[10px] font-bold text-[#1976d2] transition hover:bg-[#e8f1ff]"
+                    >
+                      + Add product with AI
+                    </button>
+                  </div>
+                )}
+
+                {/* ---------- Orders ---------- */}
+                {tab === "Orders" && (
+                  <div className="mt-3 space-y-2">
+                    {orders.map((o) => (
+                      <div key={o.id} className="flex items-center gap-3 rounded-xl border border-[#e3eefc] p-2.5">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-extrabold text-[#0b2545]">{o.id}</p>
+                          <p className="truncate text-[9px] font-semibold text-[#2c4a73]">{o.name}</p>
+                        </div>
+                        <span className="text-[11px] font-extrabold text-[#0b2545]">{o.amount}</span>
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[9px] font-bold"
+                          style={{ backgroundColor: o.bg, color: o.fg }}
+                        >
+                          {o.status}
                         </span>
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ---------- Customers ---------- */}
+                {tab === "Customers" && (
+                  <div className="mt-3 space-y-2">
+                    {customers.map((c) => (
+                      <div key={c.name} className="flex items-center gap-3 rounded-xl border border-[#e3eefc] p-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e8f1ff] text-[11px] font-extrabold text-[#1976d2]">
+                          {c.name.charAt(0)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-bold text-[#0b2545]">{c.name}</p>
+                          <p className="text-[9px] font-semibold text-[#2c4a73]">{c.orders}</p>
+                        </div>
+                        <span className="text-[11px] font-extrabold text-[#0b2545]">{c.spent}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ---------- Analytics ---------- */}
+                {tab === "Analytics" && (
+                  <div className="mt-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl bg-[#e8f1ff] p-2.5">
+                        <p className="text-[9px] font-semibold text-[#2c4a73]">Conversion</p>
+                        <p className="text-sm font-extrabold text-[#0b2545]">4.8%</p>
+                      </div>
+                      <div className="rounded-xl bg-[#e7f8ee] p-2.5">
+                        <p className="text-[9px] font-semibold text-[#2c4a73]">Avg. order</p>
+                        <p className="text-sm font-extrabold text-[#0b2545]">$50.7</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="mt-3 flex h-28 items-end gap-2 rounded-xl border border-[#e3eefc] p-3">
+                      {weekBars.map((b) => (
+                        <div key={b.day} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
+                          <div
+                            className="w-full rounded-t-md bg-gradient-to-t from-[#1976d2] to-[#4a9bf0]"
+                            style={{ height: `${b.value}%` }}
+                          />
+                          <span className="text-[8px] font-semibold text-[#2c4a73]">{b.day}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ---------- Settings ---------- */}
+                {tab === "Settings" && (
+                  <div className="mt-3 space-y-2">
+                    {settingItems.map((item) => {
+                      const on = !!toggles[item.key];
+                      return (
+                        <div key={item.key} className="flex items-center gap-3 rounded-xl border border-[#e3eefc] p-2.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-[#0b2545]">{item.label}</p>
+                            <p className="text-[9px] font-semibold text-[#2c4a73]">{item.hint}</p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={on}
+                            aria-label={item.label}
+                            onClick={() => setToggles((t) => ({ ...t, [item.key]: !t[item.key] }))}
+                            className={`relative h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
+                              on ? "bg-[#1976d2]" : "bg-[#cfe2fa]"
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+                                on ? "left-[18px]" : "left-0.5"
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
