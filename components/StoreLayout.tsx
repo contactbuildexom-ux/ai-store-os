@@ -29,10 +29,7 @@ import {
   ArrowRight,
   Menu,
   ChevronRight,
-  LogIn,
-  PackagePlus,
-  RefreshCw,
-  CheckCircle2
+  PackagePlus
 } from 'lucide-react';
 
 export interface ProductItem {
@@ -107,42 +104,7 @@ export default function StoreLayout({
   const [showAllProducts, setShowAllProducts] = useState(false);
   const INITIAL_PRODUCT_LIMIT = 12;
 
-  // Store Owner Login Modal States
-  const [isOwnerLoginOpen, setIsOwnerLoginOpen] = useState(false);
-  const [ownerEmail, setOwnerEmail] = useState('');
-  const [ownerPassword, setOwnerPassword] = useState('');
-  const [ownerLoginLoading, setOwnerLoginLoading] = useState(false);
-  const [ownerLoginError, setOwnerLoginError] = useState('');
-  const [ownerLoginSuccess, setOwnerLoginSuccess] = useState('');
 
-  const handleOwnerLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setOwnerLoginError('');
-    setOwnerLoginLoading(true);
-    try {
-      const res = await fetch('/api/stores/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: ownerEmail.trim(),
-          password: ownerPassword,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Invalid owner email or password.');
-      }
-      setOwnerLoginSuccess('✓ Logged in! Redirecting to merchant dashboard...');
-      setTimeout(() => {
-        const targetSlug = data.store?.slug || storeSlug;
-        window.location.href = `/merchant/${targetSlug}/dashboard?tab=products`;
-      }, 600);
-    } catch (err) {
-      setOwnerLoginError(err instanceof Error ? err.message : 'Login failed. Please check your email and password.');
-    } finally {
-      setOwnerLoginLoading(false);
-    }
-  };
 
   const themeColor = theme?.primaryColor || '#10b981';
 
@@ -453,7 +415,7 @@ export default function StoreLayout({
       )}
       {/* 1. Subdomain & Platform Header Bar */}
       <div className="border-b border-slate-800 bg-slate-950 px-4 py-2 text-xs text-slate-300">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-full bg-slate-800 px-2.5 py-0.5 font-mono text-[11px] text-emerald-400">
               <Globe size={11} /> {storeSlug}.buildexom.store
@@ -480,7 +442,7 @@ export default function StoreLayout({
 
       {/* 2. Main Store Navigation */}
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -525,29 +487,10 @@ export default function StoreLayout({
               About
             </a>
 
-            {/* Store Owner Button alongside Home, Shop, About etc. */}
-            <button
-              type="button"
-              onClick={() => setIsOwnerLoginOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 hover:shadow-sm active:scale-95 shrink-0"
-              style={{ backgroundColor: themeColor }}
-            >
-              <LogIn size={13} />
-              <span>Login to your Dashboard and add a product</span>
-            </button>
           </nav>
 
           {/* Search bar & Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setIsOwnerLoginOpen(true)}
-              title="Login to Dashboard and add product"
-              className="inline-flex lg:hidden items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-800 shadow-2xs hover:bg-slate-50 active:scale-95"
-            >
-              <LogIn size={13} style={{ color: themeColor }} />
-              <span>Owner</span>
-            </button>
 
             <div className="relative hidden max-w-xs md:block">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -705,23 +648,23 @@ export default function StoreLayout({
           style={{ backgroundColor: themeColor }}
         />
 
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-9 lg:py-11 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
           {/* Left Column: Polished, Balanced Text & CTAs */}
-          <div className="w-full lg:max-w-lg text-left space-y-3.5 sm:space-y-4">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-[1.16]">
-              {heroInfo.headlineMain}<br />
+          <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
+              {heroInfo.headlineMain}{' '}
               {heroInfo.headlineHighlight && (
                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
               )}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-700 max-w-md leading-relaxed font-semibold">
+            <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
               {tagline || heroInfo.subtext}
             </p>
 
-            <div className="pt-1.5 flex flex-wrap items-center gap-3">
+            <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
               <a
                 href="#catalog"
-                className="rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
+                className="rounded-full px-6 py-3 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
                 style={{ backgroundColor: themeColor }}
               >
                 Shop Now →
@@ -730,7 +673,7 @@ export default function StoreLayout({
                 href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '') || '923001234567'}?text=Hello%20${encodeURIComponent(storeName)}!%20I%20want%20to%20place%20an%20order.`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
               >
                 <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
               </a>
@@ -738,7 +681,7 @@ export default function StoreLayout({
           </div>
 
           {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
-          <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-4 pb-2">
+          <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-2 pb-2">
             {/* Background Theme Ambient Glow */}
             <div
               className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
@@ -746,10 +689,10 @@ export default function StoreLayout({
             />
 
             {/* 3-Image Merging Container */}
-            <div className="relative flex items-center">
+            <div className="relative flex items-center justify-center">
               {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
               <div
-                className="relative w-44 sm:w-52 md:w-56 lg:w-60 h-56 sm:h-64 md:h-72 lg:h-80 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
+                className="relative w-36 sm:w-44 md:w-52 lg:w-56 h-48 sm:h-58 md:h-66 lg:h-74 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
                 style={{ borderColor: `${themeColor}35` }}
               >
                 <img
@@ -762,12 +705,12 @@ export default function StoreLayout({
 
               {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
               <div
-                className="relative -ml-14 sm:-ml-18 md:-ml-20 mt-10 sm:mt-14 w-32 sm:w-36 md:w-40 lg:w-44 h-40 sm:h-46 md:h-50 lg:h-54 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
+                className="relative -ml-12 sm:-ml-16 md:-ml-18 mt-8 sm:mt-12 w-28 sm:w-34 md:w-38 lg:w-42 h-36 sm:h-44 md:h-48 lg:h-52 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
                 style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
               >
                 <img
                   src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
-                  alt={`${heroInfo.altText} - Highlight`}
+                  alt={heroInfo.altText}
                   className="size-full object-cover transition duration-500 hover:scale-105"
                   loading="eager"
                 />
@@ -775,12 +718,12 @@ export default function StoreLayout({
 
               {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
               <div
-                className="relative -ml-8 sm:-ml-10 md:-ml-12 -mt-10 sm:-mt-14 w-28 sm:w-32 md:w-36 lg:w-40 h-36 sm:h-42 md:h-46 lg:h-50 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
+                className="relative -ml-7 sm:-ml-9 md:-ml-11 -mt-8 sm:-mt-12 w-24 sm:w-30 md:w-34 lg:w-38 h-32 sm:h-40 md:h-44 lg:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
                 style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
               >
                 <img
                   src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
-                  alt={`${heroInfo.altText} - Accent`}
+                  alt={heroInfo.altText}
                   className="size-full object-cover transition duration-500 hover:scale-105"
                   loading="eager"
                 />
@@ -790,7 +733,7 @@ export default function StoreLayout({
         </div>
       </section>
 
-      <div className="w-full px-2 sm:px-4 lg:px-6 pt-6 space-y-6">
+      <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 
         {/* 4. Featured Products Section (Only rendered when real products exist) */}
         {featuredItems.length > 0 && (
@@ -945,7 +888,7 @@ export default function StoreLayout({
       {/* 5. Main Catalog & Category Filtering */}
       <main 
         id="catalog" 
-        className="w-full px-2 sm:px-4 lg:px-6 py-8 sm:py-10 space-y-6"
+        className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6"
         style={{
           background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
         }}
@@ -994,11 +937,6 @@ export default function StoreLayout({
                   loading="lazy"
                   decoding="async"
                 />
-                {product.badge && (
-                  <span className="absolute left-3 top-3 rounded-full bg-slate-900/80 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
-                    {product.badge}
-                  </span>
-                )}
                 {product.category && (
                   <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 shadow-xs backdrop-blur-md">
                     {product.category}
@@ -1013,7 +951,7 @@ export default function StoreLayout({
                     {product.name}
                   </h4>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
-                    {product.description || 'Premium quality product manufactured to exacting standards.'}
+                    {product.description || 'Quality product manufactured to exacting standards.'}
                   </p>
                 </div>
 
@@ -1048,19 +986,10 @@ export default function StoreLayout({
               <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-500 mb-4 shadow-xs">
                 <PackagePlus size={32} />
               </div>
-              <h4 className="text-base sm:text-lg font-black text-slate-900">No products added yet</h4>
+              <h4 className="text-base sm:text-lg font-black text-slate-900">New collection launching soon</h4>
               <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                This store is live and ready! If you are the store owner, log in to your dashboard to add your products. They will appear right here in this grid.
+                Our catalog is currently being updated with exciting new products. Please check back shortly!
               </p>
-              <button
-                type="button"
-                onClick={() => setIsOwnerLoginOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                style={{ backgroundColor: themeColor }}
-              >
-                <LogIn size={15} />
-                <span>Login to your Dashboard and add a product</span>
-              </button>
             </div>
           ) : filteredProducts.length === 0 ? (
             <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
@@ -1401,138 +1330,26 @@ export default function StoreLayout({
         )}
       </div>
 
-      {/* 9. Floating Bottom WhatsApp Pill (Matching Screenshot) */}
-      <div className="fixed bottom-4 inset-x-4 sm:inset-x-auto sm:right-6 sm:left-auto z-40">
-        <button
-          type="button"
-          onClick={() => setIsCartOpen(true)}
-          className="w-full sm:w-auto flex items-center justify-between gap-4 rounded-full bg-slate-950/95 text-white px-5 py-3.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 hover:scale-[1.02] active:scale-95"
-        >
-          <div className="flex items-center gap-2.5">
-            <span className="grid size-8 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
-              <MessageCircle size={16} />
+      {/* 9. Compact Cart Floating Bar (No arrow, appears only when items in cart) */}
+      {totalCartCount > 0 && (
+        <div className="fixed bottom-4 right-4 sm:right-6 z-40 animate-in fade-in slide-in-from-bottom-2">
+          <button
+            type="button"
+            onClick={() => setIsCartOpen(true)}
+            className="flex items-center gap-2.5 rounded-full bg-slate-950/95 text-white px-4 py-2.5 shadow-2xl backdrop-blur-md border border-slate-800 transition hover:bg-slate-900 active:scale-95"
+          >
+            <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
+              <MessageCircle size={13} />
             </span>
-            <div className="text-left">
-              <p className="text-xs font-bold leading-none">Order via WhatsApp</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Quick • Easy • Secure</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {totalCartCount > 0 && (
-              <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[11px] font-bold text-slate-950">
-                {totalCartCount} {totalCartCount === 1 ? 'item' : 'items'}
-              </span>
-            )}
-            <ArrowRight size={16} className="text-emerald-400" />
-          </div>
-        </button>
-      </div>
-
-      {/* Store Owner Login & Dashboard Modal */}
-      {isOwnerLoginOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-              <div>
-                <span 
-                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  <Sparkles size={11} /> Merchant Access
-                </span>
-                <h3 className="mt-1 text-lg font-black text-slate-900">
-                  Store Owner Dashboard
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Enter your credentials to add products and manage {storeName}.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOwnerLoginOpen(false);
-                  setOwnerLoginError('');
-                  setOwnerLoginSuccess('');
-                }}
-                className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {ownerLoginSuccess ? (
-              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-2">
-                <CheckCircle2 size={28} className="mx-auto text-emerald-600 animate-bounce" />
-                <p className="text-xs font-bold text-emerald-900">{ownerLoginSuccess}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleOwnerLogin} className="space-y-3.5">
-                {ownerLoginError && (
-                  <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700">
-                    {ownerLoginError}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Owner Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={ownerEmail}
-                    onChange={(e) => setOwnerEmail(e.target.value)}
-                    placeholder="merchant@example.com"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <p className="mt-1 text-[10px] text-slate-400">
-                    The email address you used when generating this store.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Account Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={ownerPassword}
-                    onChange={(e) => setOwnerPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={ownerLoginLoading}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
-                    style={{ backgroundColor: themeColor }}
-                  >
-                    {ownerLoginLoading ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin" />
-                        Logging in...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn size={14} />
-                        Login to Dashboard & Add Products
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <p className="text-[10px] text-center text-slate-400">
-                  Once logged in, you will be taken directly to your products catalog.
-                </p>
-              </form>
-            )}
-          </div>
+            <span className="text-xs font-bold">Checkout on WhatsApp</span>
+            <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-slate-950">
+              {totalCartCount}
+            </span>
+          </button>
         </div>
       )}
+
+
     </div>
   );
 }

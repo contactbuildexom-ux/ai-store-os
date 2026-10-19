@@ -150,7 +150,7 @@ export function StoreFooter({
       </div>
 
       {/* 2. Main Footer Body (Desktop Multi-Column & Mobile Responsive) */}
-      <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8">
+      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:gap-12">
           {/* Brand Info */}
           <div className="space-y-3">
@@ -165,7 +165,7 @@ export function StoreFooter({
               <h3 className="text-base font-extrabold tracking-tight text-white">{storeName}</h3>
             </div>
             <p className="text-xs leading-relaxed text-slate-300">
-              Welcome to our official online store. Explore our handpicked catalog of premium quality products with verified nationwide shipping and Cash on Delivery.
+              Welcome to our online store. Explore our catalog of quality products with verified nationwide shipping and Cash on Delivery.
             </p>
             {storeSlug && (
               <p className="font-mono text-[11px] font-semibold text-emerald-300">
@@ -203,7 +203,7 @@ export function StoreFooter({
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Connect With Us</h4>
             <p className="text-xs text-slate-300">
-              Follow our official social profiles for special discounts and new product drops.
+              Follow our social profiles for special discounts and new arrivals.
             </p>
             <div className="pt-1">
               <StoreSocialLinks links={socialLinks} />

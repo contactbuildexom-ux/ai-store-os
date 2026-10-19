@@ -28,6 +28,7 @@ type GenerateResponse = {
   error?: string;
   slug?: string;
   dashboard_url?: string;
+  storefront_url?: string;
 };
 
 export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
