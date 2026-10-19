@@ -152,7 +152,13 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         products={products}
         delivery={deliveryData ?? null}
       />
-      <StoreFooter storeName={safeStore.name} storeSlug={safeStore.slug} paymentDetails={paymentDetails} socialLinks={socialLinks} />
+      <StoreFooter 
+        storeName={safeStore.name} 
+        storeSlug={safeStore.slug} 
+        paymentDetails={paymentDetails} 
+        socialLinks={socialLinks} 
+        themeColor={safeStore.theme_color} 
+      />
     </>
   );
 }

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
-import { resolveStoreHero } from '@/lib/ai/hero-niche-resolver';
+import { resolveStoreHero, detectStoreNiche } from '@/lib/ai/hero-niche-resolver';
 import { BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import {
     Menu,
@@ -151,6 +151,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [orderError, setOrderError] = useState(false);
     const [whatsappLink, setWhatsappLink] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showAllProducts, setShowAllProducts] = useState(false);
+    const INITIAL_PRODUCT_LIMIT = 12;
 
     // Dynamic Niche & Hero Info
     const heroInfo = useMemo(() => resolveStoreHero(liveStore, liveProducts), [liveStore, liveProducts]);
@@ -172,67 +174,84 @@ export default function StorefrontClient({ store, settings, products, delivery }
         return () => clearTimeout(timer);
     }, [toastMessage]);
 
-    // Derived catalog values (strictly relatable to store niche, minimum 4 categories, zero emojis/stars)
+    // Derived catalog values: strictly exactly 4 working categories
     const categories = useMemo(() => {
-        const set = new Set<string>();
+        const catMap = new Map<string, number>();
         liveProducts.forEach((p) => {
-            const cat = (p as any).category || (p as any).category_name;
-            if (cat && cat.trim() && cat.toLowerCase() !== 'all') {
-                set.add(cat.trim());
+            const cat = ((p as any).category || (p as any).category_name || '').trim();
+            if (cat && cat.toLowerCase() !== 'all') {
+                catMap.set(cat, (catMap.get(cat) || 0) + 1);
             }
         });
-        const fromProducts = Array.from(set);
 
-        // Niche relatable fallback pool if fewer than 4 categories exist
-        const name = `${liveStore.name} ${(liveStore as any).tagline || ''}`.toLowerCase();
-        let nicheDefaults = ['Featured Collection', 'Bestsellers', 'New Arrivals', 'Signature Series'];
-        if (name.includes('shoe') || name.includes('sneaker') || name.includes('kicks') || name.includes('footwear')) {
-            nicheDefaults = ['Running Shoes', 'Streetwear Sneakers', 'Casual Kicks', 'Athletic Trainers', 'Lifestyle Footwear'];
-        } else if (name.includes('perfume') || name.includes('oud') || name.includes('fragrance') || name.includes('attar')) {
-            nicheDefaults = ['Artisanal Ouds', 'French EDP', 'Floral Scents', 'Signature Attars', 'Luxury Gift Sets'];
-        } else if (name.includes('nature') || name.includes('plant') || name.includes('grass') || name.includes('flora') || name.includes('green') || name.includes('botanical')) {
-            nicheDefaults = ['Indoor Plants', 'Air-Purifying Succulents', 'Botanical Teas', 'Organic Planters', 'Herbal Essentials'];
-        } else if (name.includes('handbag') || name.includes('bag') || name.includes('clutch') || name.includes('purse')) {
-            nicheDefaults = ['Velvet Clutches', 'Bridal Evening Bags', 'Shoulder Totes', 'Leather Wallets', 'Crossbody Bags'];
-        } else if (name.includes('jewel') || name.includes('gold') || name.includes('ring')) {
-            nicheDefaults = ['Solitaire Rings', 'Gold Plated Necklaces', 'Baroque Pearls', 'Statement Earrings', 'Bangles'];
-        } else if (name.includes('pret') || name.includes('lawn') || name.includes('dress') || name.includes('couture') || name.includes('suit') || name.includes('cloth')) {
-            nicheDefaults = ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Embroidered Dupattas', 'Casual Tunics'];
-        } else if (name.includes('coffee') || name.includes('tea') || name.includes('brew') || name.includes('food') || name.includes('bakery')) {
-            nicheDefaults = ['Artisan Roast Beans', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Truffles', 'Brew Accessories'];
-        } else if (name.includes('skin') || name.includes('glow') || name.includes('serum') || name.includes('beauty')) {
-            nicheDefaults = ['Glow Serums', 'Face Cleansers', 'Barrier Creams', 'Mineral Sunscreens', 'Hydrating Toners'];
-        } else if (name.includes('tech') || name.includes('gadget') || name.includes('headphone') || name.includes('audio')) {
-            nicheDefaults = ['ANC Headphones', 'Smart Wearables', 'Wireless Chargers', 'Mechanical Keyboards', 'Ergonomic Accessories'];
-        }
+        let activeCats = Array.from(catMap.entries())
+            .filter(([_, count]) => count > 0)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name);
 
-        // Combine product categories first, then add from niche defaults to ensure at least 4 categories
-        const combined = [...fromProducts];
-        for (const defaultCat of nicheDefaults) {
-            if (combined.length >= 4) break;
-            if (!combined.some(c => c.toLowerCase() === defaultCat.toLowerCase())) {
-                combined.push(defaultCat);
+        if (activeCats.length < 4) {
+            const niche = detectStoreNiche(liveStore, liveProducts);
+            const fallbackNicheCats: Record<string, string[]> = {
+                nature: ['Indoor Plants', 'Succulents', 'Planters', 'Herbal Greens'],
+                handbags: ['Velvet Clutches', 'Shoulder Bags', 'Tote Bags', 'Evening Purses'],
+                jewelry: ['Rings', 'Necklaces', 'Earrings', 'Bracelets'],
+                perfume: ['Luxury Oud', 'Eau De Parfum', 'Attars & Oils', 'Gift Discovery Sets'],
+                footwear: ['Running Shoes', 'Sneakers', 'Casual Kicks', 'Athletic Trainers'],
+                clothing: ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Casual Tunics'],
+                skincare: ['Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'],
+                tech: ['Headphones', 'Smart Wearables', 'Wireless Audio', 'Accessories'],
+                food: ['Artisan Roast', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Treats'],
+                wedding: ['Bridal Accessories', 'Royal Boxes', 'Mehndi Keepsakes', 'Traditional Sets'],
+                general: ['Best Sellers', 'New Arrivals', 'Featured Items', 'Trending Now']
+            };
+            const suggestions = fallbackNicheCats[niche] || fallbackNicheCats.general;
+            for (const s of suggestions) {
+                if (activeCats.length >= 4) break;
+                if (!activeCats.some(c => c.toLowerCase() === s.toLowerCase())) {
+                    activeCats.push(s);
+                }
             }
         }
-        return ['All', ...combined];
+
+        activeCats = activeCats.slice(0, 4);
+        if (activeCats.length === 0) activeCats.push('Featured');
+        return ['All', ...activeCats];
     }, [liveProducts, liveStore]);
 
+    // Guarantees every product belongs to one of the 4 active categories so clicking any category shows products
+    const catalogProducts = useMemo(() => {
+        const activeCats = categories.filter((c) => c !== 'All');
+        if (activeCats.length === 0) return liveProducts;
+
+        return liveProducts.map((p, idx) => {
+            const rawCat = ((p as any).category || (p as any).category_name || '').trim();
+            const matched = activeCats.find((c) => c.toLowerCase() === rawCat.toLowerCase());
+            if (matched) {
+                return { ...p, category: matched };
+            }
+            const fallbackCat = activeCats[idx % activeCats.length];
+            return { ...p, category: fallbackCat };
+        });
+    }, [liveProducts, categories]);
+
     const filteredProducts = useMemo(() => {
-        return liveProducts.filter((p) => {
-            const cat = ((p as any).category || (p as any).category_name || '').toLowerCase();
+        return catalogProducts.filter((p) => {
+            const cat = ((p as any).category || '').toLowerCase();
             const selected = selectedCategory.toLowerCase();
-            const matchesCat = selectedCategory === 'All' ||
-                cat === selected ||
-                cat.includes(selected) ||
-                selected.includes(cat) ||
-                p.name.toLowerCase().includes(selected) ||
-                (p.description && p.description.toLowerCase().includes(selected));
+            const matchesCat = selectedCategory === 'All' || cat === selected;
             const matchesSearch = !searchQuery.trim() ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-            return (selectedCategory === 'All' || matchesCat) && matchesSearch;
+            return matchesCat && matchesSearch;
         });
-    }, [liveProducts, selectedCategory, searchQuery]);
+    }, [catalogProducts, selectedCategory, searchQuery]);
+
+    const displayedProducts = useMemo(() => {
+        if (showAllProducts || selectedCategory !== 'All' || searchQuery.trim() !== '') {
+            return filteredProducts;
+        }
+        return filteredProducts.slice(0, INITIAL_PRODUCT_LIMIT);
+    }, [filteredProducts, showAllProducts, selectedCategory, searchQuery]);
 
     const defaultFeatured: Product[] = [
         {
@@ -569,14 +588,24 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* Top Announcement Bar */}
-            <div className="px-4 py-2 text-center text-xs font-medium text-white shadow-xs" style={{ backgroundColor: themeColor }}>
-                {bannerText}
+            {/* Top Announcement Bar - Full width edge coverage */}
+            <div className="w-full border-b px-4 sm:px-6 lg:px-8 py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
+                <div className="mx-auto flex max-w-7xl items-center justify-between text-[11px] sm:text-xs">
+                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
+                        <Truck size={13} /> Fast Delivery Nationwide
+                    </span>
+                    <span className="w-full sm:w-auto text-center font-bold tracking-wide">
+                        {bannerText}
+                    </span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
+                        <MessageCircle size={13} /> WhatsApp Ordering Active
+                    </span>
+                </div>
             </div>
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
-            <header className="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
                     {/* Left: Mobile Menu & Logo / Brand */}
                     <div className="flex items-center gap-3">
                         <button
@@ -605,13 +634,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                     </div>
 
-                    {/* Center: Desktop Navigation Links matching post screen (Home, Shop, Categories, About) */}
-                    <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-700">
-                        <a href="#hero" className="transition hover:text-blue-600">Home</a>
-                        <a href="#featured" className="transition hover:text-blue-600">Shop</a>
-                        <a href="#categories" className="transition hover:text-blue-600">Categories</a>
-                        <a href="#products" className="transition hover:text-blue-600">All Products</a>
-                        <a href="#about" className="transition hover:text-blue-600">About</a>
+                    {/* Center: Desktop Navigation Links with animated underlines */}
+                    <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-700">
+                        {[
+                            { name: 'Home', href: '#hero' },
+                            { name: 'Shop', href: '#featured' },
+                            { name: 'Categories', href: '#categories' },
+                            { name: 'All Products', href: '#products' },
+                            { name: 'About', href: '#about' },
+                        ].map((link) => (
+                            <a
+                                key={link.name}
+                                href={link.href}
+                                className="group relative py-1 text-slate-600 transition-colors duration-200 hover:text-slate-950 font-medium"
+                            >
+                                <span>{link.name}</span>
+                                <span 
+                                    className="absolute inset-x-0 -bottom-0.5 h-0.5 scale-x-0 rounded-full transition-transform duration-300 ease-out group-hover:scale-x-100"
+                                    style={{ backgroundColor: themeColor || '#1976d2' }}
+                                />
+                            </a>
+                        ))}
                     </nav>
 
                     {/* Right: Cart Icon Button with Counter Badge */}
@@ -741,13 +784,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* 1. Balanced Hero Section (Medium proportion, concept-matched authentic image) */}
+            {/* 1. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
             <section
                 id="hero"
-                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
+                className="relative w-full overflow-hidden border-t border-b transition duration-500 shadow-xs"
                 style={{
                     background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-                    borderColor: `${themeColor}30`,
+                    borderColor: `${themeColor}28`,
                 }}
             >
                 <div
@@ -759,11 +802,11 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 sm:py-12 lg:py-14 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-10 relative z-10">
-                    {/* Left Column: Text & CTAs */}
-                    <div className="lg:col-span-6 xl:col-span-5 text-left space-y-4">
+                <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+                    {/* Left Column: Prominent, Bigger Text & CTAs */}
+                    <div className="w-full lg:max-w-xl text-left space-y-4">
                         <span
-                            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider shadow-2xs border"
+                            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-wider shadow-2xs border"
                             style={{
                                 backgroundColor: `${themeColor}18`,
                                 color: themeColor,
@@ -778,14 +821,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
                             )}
                         </h2>
-                        <p className="text-xs sm:text-sm text-slate-700 max-w-md leading-relaxed font-medium">
+                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-semibold">
                             {liveStore.tagline || heroInfo.subtext}
                         </p>
 
                         <div className="pt-2 flex flex-wrap items-center gap-3">
                             <a
                                 href="#featured"
-                                className="rounded-full px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                className="rounded-full px-6 py-3 text-sm font-extrabold text-white shadow-lg transition hover:scale-105 active:scale-95"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 Shop Collection →
@@ -794,65 +837,76 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 backdrop-blur-xs px-4 py-2.5 text-xs font-semibold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
+                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
                             >
-                                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
+                                <MessageCircle size={16} className="text-emerald-600" /> WhatsApp Support
                             </a>
                         </div>
                     </div>
 
-                    {/* Right Column: Wide Concept-Matched Image with Seamless Merge & Glow */}
-                    <div className="lg:col-span-6 xl:col-span-7 relative flex items-center justify-center w-full">
-                        {/* Ambient Color Glow behind image matching store theme */}
-                        <div 
-                            className="absolute -inset-2 rounded-3xl blur-2xl opacity-35 pointer-events-none transition duration-700"
+                    {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
+                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-4 pb-2">
+                        {/* Background Theme Ambient Glow */}
+                        <div
+                            className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
                             style={{ backgroundColor: themeColor }}
                         />
 
-                        {/* Wide Image Showcase Container */}
-                        <div 
-                            className="relative w-full overflow-hidden rounded-3xl shadow-xl border bg-white/60 backdrop-blur-xs group"
-                            style={{ borderColor: `${themeColor}35` }}
-                        >
-                            <img
-                                src={heroInfo.heroImage}
-                                alt={heroInfo.altText}
-                                className="h-64 sm:h-80 md:h-96 lg:h-[390px] xl:h-[420px] w-full object-cover transition duration-700 group-hover:scale-105"
-                            />
+                        {/* 3-Image Merging Container */}
+                        <div className="relative flex items-center">
+                            {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
+                            <div
+                                className="relative w-44 sm:w-52 md:w-56 lg:w-60 h-56 sm:h-64 md:h-72 lg:h-80 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
+                                style={{ borderColor: `${themeColor}35` }}
+                            >
+                                <img
+                                    src={heroInfo.heroImage}
+                                    alt={heroInfo.altText}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
+                            </div>
 
-                            {/* Left-edge soft gradient blend towards text on desktop */}
-                            <div 
-                                className="absolute inset-y-0 left-0 w-28 pointer-events-none hidden lg:block"
-                                style={{
-                                    background: `linear-gradient(to right, ${themeColor}25 0%, transparent 100%)`,
-                                }}
-                            />
+                            {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
+                            <div
+                                className="relative -ml-14 sm:-ml-18 md:-ml-20 mt-10 sm:mt-14 w-32 sm:w-36 md:w-40 lg:w-44 h-40 sm:h-46 md:h-50 lg:h-54 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
+                                style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
+                            >
+                                <img
+                                    src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    alt={`${heroInfo.altText} - Curated Highlight`}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
+                            </div>
 
-                            {/* Bottom subtle ambient gradient overlay */}
-                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
-
-                            {/* Sleek Floating Authentic Badge Overlay */}
-                            <div className="absolute bottom-3.5 left-3.5 sm:bottom-4 sm:left-4 z-10 flex items-center gap-2 rounded-full bg-white/90 backdrop-blur-md px-3.5 py-1.5 shadow-md border border-white/70">
-                                <span className="size-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor }} />
-                                <span className="text-[10px] sm:text-[11px] font-bold text-slate-900 tracking-wide">
-                                    Official Brand Collection
-                                </span>
+                            {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
+                            <div
+                                className="relative -ml-8 sm:-ml-10 md:-ml-12 -mt-10 sm:-mt-14 w-28 sm:w-32 md:w-36 lg:w-40 h-36 sm:h-42 md:h-46 lg:h-50 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
+                                style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
+                            >
+                                <img
+                                    src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    alt={`${heroInfo.altText} - Collection Accent`}
+                                    className="size-full object-cover transition duration-500 hover:scale-105"
+                                    loading="eager"
+                                />
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Main Page Body */}
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 sm:py-8 space-y-8 w-full">
+            {/* Main Page Body - No awkward left/right empty gutters */}
+            <main className="w-full px-2 sm:px-4 lg:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
-                {/* 2. Featured Products Section (Container styled with chosen theme) */}
+                {/* 2. Featured Products Section (Background matching hero section background, flush responsive layout) */}
                 <section 
                     id="featured" 
-                    className="w-full rounded-3xl border p-5 sm:p-6 lg:p-7 space-y-5 shadow-xs transition"
+                    className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                     style={{
-                        backgroundColor: `${themeColor}08`,
-                        borderColor: `${themeColor}24`,
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        borderColor: `${themeColor}28`,
                     }}
                 >
                     <div className="flex items-center justify-between">
@@ -872,30 +926,32 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </a>
                     </div>
 
-                    {/* 4-Column Grid on Desktop, 2-Column on Mobile matching post */}
-                    <div className="grid grid-cols-2 gap-3.5 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+                    {/* 4-Column Grid on Desktop, 2-Column on Mobile - flush card boxes */}
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
                         {featuredItems.map((item) => (
                             <article
                                 key={item.id}
                                 onClick={() => openProductModal(item)}
-                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                 style={{
                                     backgroundColor: `${themeColor}08`,
                                     borderColor: `${themeColor}24`,
                                 }}
                             >
                                 <div 
-                                    className="relative aspect-square w-full overflow-hidden p-4"
+                                    className="relative aspect-square w-full overflow-hidden"
                                     style={{ backgroundColor: `${themeColor}0d` }}
                                 >
                                     <img
                                         src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                                         alt={item.name}
-                                        className="size-full object-contain transition duration-500 group-hover:scale-105"
+                                        loading="lazy"
+                                        decoding="async"
+                                        className="size-full object-cover transition duration-500 group-hover:scale-105"
                                     />
                                 </div>
 
-                                <div className="p-3.5">
+                                <div className="p-3 sm:p-3.5">
                                     <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
                                         {item.name}
                                     </h4>
@@ -942,6 +998,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 w-full">
                         {categories.filter((c) => c !== 'All').map((cat) => {
                             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
+                            const productCount = catalogProducts.filter(p => ((p as any).category || '').toLowerCase() === cat.toLowerCase()).length;
                             return (
                                 <button
                                     key={cat}
@@ -951,7 +1008,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         const el = document.getElementById('products');
                                         el?.scrollIntoView({ behavior: 'smooth' });
                                     }}
-                                    className={`flex items-center gap-3 rounded-2xl border p-3.5 text-left transition hover:shadow-xs active:scale-95 ${
+                                    className={`flex items-center gap-2.5 sm:gap-3 rounded-2xl border p-3 sm:p-3.5 text-left transition hover:shadow-md active:scale-95 w-full ${
                                         isSelected
                                             ? 'shadow-xs font-bold'
                                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
@@ -970,7 +1027,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     }
                                 >
                                     <span 
-                                        className="grid size-8 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition"
+                                        className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition shadow-2xs"
                                         style={{
                                             backgroundColor: isSelected ? themeColor : `${themeColor}18`,
                                             color: isSelected ? '#ffffff' : themeColor
@@ -978,7 +1035,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     >
                                         {getCategorySymbol(cat)}
                                     </span>
-                                    <span className="text-xs font-bold truncate leading-tight">{cat}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs sm:text-sm font-bold truncate leading-tight">{cat}</p>
+                                        <p className="text-[10px] text-slate-500 font-medium pt-0.5">{productCount} {productCount === 1 ? 'item' : 'items'}</p>
+                                    </div>
                                 </button>
                             );
                         })}
@@ -1031,13 +1091,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 3. Product Catalog Grid */}
+                {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
                 <section 
                     id="products" 
-                    className="w-full rounded-3xl border p-5 sm:p-6 lg:p-7 space-y-5 shadow-xs transition"
+                    className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                     style={{
-                        backgroundColor: `${themeColor}08`,
-                        borderColor: `${themeColor}24`,
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        borderColor: `${themeColor}28`,
                     }}
                 >
                     <div className="flex items-center justify-between">
@@ -1060,7 +1120,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         )}
                     </div>
 
-                    {/* Products Grid */}
+                    {/* Products Grid - flush card boxes */}
                     {filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
                             <ShoppingBag size={36} className="mx-auto text-slate-300" />
@@ -1078,12 +1138,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-3.5 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 w-full">
-                            {filteredProducts.map((product) => (
+                        <>
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                                {displayedProducts.map((product) => (
                                 <article
                                     key={product.id}
                                     onClick={() => openProductModal(product)}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                     style={{
                                         backgroundColor: `${themeColor}08`,
                                         borderColor: `${themeColor}24`,
@@ -1176,6 +1237,27 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </article>
                             ))}
                         </div>
+
+                        {filteredProducts.length > INITIAL_PRODUCT_LIMIT && selectedCategory === 'All' && !searchQuery.trim() && (
+                            <div className="mt-8 flex justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAllProducts((prev) => !prev)}
+                                    className="flex items-center gap-2 rounded-2xl px-8 py-3.5 text-xs font-bold text-white shadow-md transition-all duration-300 hover:scale-105 active:scale-95"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    {showAllProducts ? (
+                                        <>Show Fewer Products</>
+                                    ) : (
+                                        <>
+                                            View All {filteredProducts.length} Products
+                                            <ArrowRight size={15} />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                        </>
                     )}
                 </section>
 
@@ -2035,12 +2117,6 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         >
                                             <MessageCircle size={15} className="text-emerald-600" /> Order on WhatsApp
                                         </button>
-                                    </div>
-
-                                    <div className="flex items-center justify-center gap-3 pt-1 text-[10px] text-slate-500">
-                                        <span>🚚 Fast Nationwide Courier</span>
-                                        <span>•</span>
-                                        <span>📦 Cash on Delivery</span>
                                     </div>
                                 </div>
                             </div>

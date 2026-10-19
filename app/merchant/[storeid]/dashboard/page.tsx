@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
@@ -172,6 +172,69 @@ export default function MerchantDashboardMaster() {
     const [isUpgrading, setIsUpgrading] = useState(false);
     const [upgradeSuccess, setUpgradeSuccess] = useState('');
 
+    // Trial duration & lock enforcement
+    const [isTrialExpired, setIsTrialExpired] = useState(false);
+    const [trialDaysLeft, setTrialDaysLeft] = useState(3);
+    const [isTrialActive, setIsTrialActive] = useState(false);
+
+    // Bexi AI Command Center states
+    const [bexiChatHistory, setBexiChatHistory] = useState<Array<{ sender: 'ai' | 'merchant'; text: string; time: string }>>([
+        {
+            sender: 'ai',
+            text: `Assalam-o-Alaikum! 👋 Main hoon **Bexi AI**, aapka dedicated AI Store Growth Manager.\n\nAap mujh se Urdu ya English mein store growth, WhatsApp campaigns, catalog pricing, ya sales strategy ke baray mein kuch bhi pooch saktay hain! 🛍️`,
+            time: 'Just now'
+        }
+    ]);
+    const [bexiInputText, setBexiInputText] = useState('');
+    const [isBexiThinking, setIsBexiThinking] = useState(false);
+
+    const handleSendBexiPrompt = async (promptText: string) => {
+        if (!promptText.trim()) return;
+        const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setBexiChatHistory((prev) => [
+            ...prev,
+            { sender: 'merchant', text: promptText, time: nowTime }
+        ]);
+        setBexiInputText('');
+        setIsBexiThinking(true);
+
+        try {
+            const sid = resolvedStoreId || paramId;
+            const res = await fetch('/api/merchant/voice-assistant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: promptText,
+                    storeId: sid,
+                    storeSlug: storeSlug || paramId,
+                    language: 'en',
+                }),
+            });
+            const data = await res.json();
+            const reply = data.reply || data.message || `Here are actionable recommendations for ${storeName}:\n\n1. Run a 48-hour WhatsApp exclusive discount with Free Nationwide Cash on Delivery.\n2. Bundle your top 2 items at a 10% combo discount.\n3. Send automated order dispatch alerts to reduce customer cancellations.\n\nWould you like me to draft promotional messages for your products?`;
+            setBexiChatHistory((prev) => [
+                ...prev,
+                { sender: 'ai', text: reply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+            ]);
+        } catch {
+            setBexiChatHistory((prev) => [
+                ...prev,
+                {
+                    sender: 'ai',
+                    text: `Great strategy question for **${storeName}**! To maximize revenue right now:\n\n• **Direct WhatsApp Orders**: Share direct product links in your customer groups.\n• **Cash on Delivery**: Ensure fast dispatch within 24 hours to reduce RTO.\n• **High-Impact Visuals**: Make sure each product has at least 3 crisp gallery photos.\n\nLet me know if you would like me to generate specific copy or revise any catalog pricing!`,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                }
+            ]);
+        } finally {
+            setIsBexiThinking(false);
+        }
+    };
+
+    const handleBexiSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        handleSendBexiPrompt(bexiInputText);
+    };
+
     async function handleActivatePlan(targetPlan: Plan) {
         if (!resolvedStoreId && !paramId) return;
         setIsUpgrading(true);
@@ -191,6 +254,8 @@ export default function MerchantDashboardMaster() {
             if (!res.ok) throw new Error(data.error || 'Failed to activate plan.');
 
             setStorePlan(targetPlan);
+            setIsTrialExpired(false);
+            setIsTrialActive(false);
             setUpgradeSuccess(`🎉 Success! Your store is now active on the ${PLAN_DETAILS[targetPlan].title} plan! WhatsApp ordering and higher catalog limits are now unlocked.`);
             setUpgradeModalPlan(null);
             setTimeout(() => setUpgradeSuccess(''), 7000);
@@ -326,8 +391,29 @@ export default function MerchantDashboardMaster() {
 
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name || 'Your store');
-            setStoreSlug(storeData.slug || '');
-            setStorePlan(normalizePlan(storeData.plan));
+            const normPlan = normalizePlan(storeData.plan);
+            setStorePlan(normPlan);
+
+            // 3-day Free Trial Check & Lock Enforcement
+            const isPaid = (storeData as any).payment_status === 'active';
+            const isFreeOrBasic = normPlan === 'basic' || (normPlan as any) === 'free';
+            const createdAtStr = (storeData as any).created_at || (storeData as any).createdAt;
+            const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
+            const elapsedDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (isFreeOrBasic && !isPaid) {
+                setIsTrialActive(true);
+                const remaining = Math.max(0, Math.ceil(3 - elapsedDays));
+                setTrialDaysLeft(remaining);
+                if (elapsedDays > 3) {
+                    setIsTrialExpired(true);
+                } else {
+                    setIsTrialExpired(false);
+                }
+            } else {
+                setIsTrialActive(false);
+                setIsTrialExpired(false);
+            }
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
             const [settingsData] = await Promise.all([
@@ -545,41 +631,56 @@ export default function MerchantDashboardMaster() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
             {/* Sidebar */}
-            <aside className="w-full md:w-64 md:min-h-screen bg-slate-950 text-white flex flex-col shadow-xl md:sticky md:top-0 md:h-screen">
-                <div className="p-5 border-b border-white/10 flex items-center gap-3">
-                    <div className="grid size-10 shrink-0 place-items-center rounded-xl text-white" style={{ backgroundColor: themeColor }}><Boxes size={19} /></div>
+            <aside 
+                className="w-full md:w-64 md:min-h-screen text-white flex flex-col shadow-xl md:sticky md:top-0 md:h-screen transition-colors"
+                style={{ backgroundColor: darkenColor(themeColor, 75) }}
+            >
+                <div 
+                    className="p-5 border-b flex items-center gap-3 transition-colors"
+                    style={{ backgroundColor: darkenColor(themeColor, 65), borderColor: `${themeColor}35` }}
+                >
+                    <div className="grid size-10 shrink-0 place-items-center rounded-xl text-white shadow-xs" style={{ backgroundColor: themeColor }}>
+                        <Boxes size={19} />
+                    </div>
                     <div>
-                        <h2 className="text-sm font-semibold tracking-wide">{storeName}</h2>
-                        <span className="mt-1 inline-flex rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-200">{planDetails.title} plan</span>
+                        <h2 className="text-sm font-semibold tracking-wide text-white">{storeName}</h2>
+                        <span className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                            {planDetails.title} plan
+                        </span>
                     </div>
                 </div>
 
-                <nav className="grid grid-cols-3 gap-1.5 p-3 text-xs md:flex md:flex-1 md:flex-col md:space-y-1.5 md:p-4" aria-label="Merchant dashboard">
+                <nav className="grid grid-cols-2 gap-1.5 p-3 text-xs sm:grid-cols-4 md:flex md:flex-1 md:flex-col md:space-y-1.5 md:p-4" aria-label="Merchant dashboard">
                     {[
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
                         { id: 'products', label: `Products · ${products.length}`, icon: Package },
                         { id: 'orders', label: `Orders · ${orders.length}`, icon: ShoppingBag },
                         { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
-                        { id: 'payments', label: 'Payments', icon: CreditCard }
+                        { id: 'payments', label: 'Payments', icon: CreditCard },
+                        { id: 'bexi-ai', label: 'Ask Bexi AI', icon: Sparkles },
                     ].map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-left font-medium transition md:w-full md:px-3 ${
-                                activeTab === tab.id ? 'text-white shadow-sm' : 'text-slate-300 hover:bg-white/10'
+                            className={`flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-left font-semibold transition md:w-full md:px-3 ${
+                                activeTab === tab.id ? 'text-white shadow-md' : 'text-slate-100 hover:text-white hover:bg-white/10'
                             }`}
                             style={activeTab === tab.id ? { backgroundColor: themeColor } : {}}
                         >
                             <tab.icon size={15} className="shrink-0" />
-                            {tab.label}
+                            <span>{tab.label}</span>
                         </button>
                     ))}
                     <div className="hidden flex-1 md:block" />
-                    <div className="hidden rounded-xl border border-white/10 bg-white/[0.04] p-3 md:block">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Store status</p>
-                        <p className="mt-2 flex items-center gap-2 text-xs font-medium"><span className="size-2 rounded-full bg-emerald-400" /> Your store is live</p>
-                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-300 hover:text-white" href={`/store/${paramId}`} target="_blank" rel="noreferrer">Open storefront <ExternalLink size={12} /></a>
+                    <div className="hidden rounded-xl border border-white/15 bg-white/5 p-3 md:block">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Store status</p>
+                        <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-white">
+                            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Your store is live
+                        </p>
+                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-200 hover:text-white" href={`/store/${paramId}`} target="_blank" rel="noreferrer">
+                            Open storefront <ExternalLink size={12} />
+                        </a>
                     </div>
                 </nav>
             </aside>
@@ -590,7 +691,9 @@ export default function MerchantDashboardMaster() {
                 <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
                     <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Merchant workspace</p>
-                        <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">{activeTab === 'overview' ? 'Store overview' : activeTab}</h1>
+                        <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">
+                            {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
+                        </h1>
                     </div>
                     <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
                         <Eye size={14} /> <span className="hidden sm:inline">View storefront</span><ExternalLink size={12} />
@@ -601,6 +704,33 @@ export default function MerchantDashboardMaster() {
                     {message && (
                         <div role={messageError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-xs font-medium ${messageError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
                             {message}
+                        </div>
+                    )}
+
+                    {/* 3-Day Free Trial Active Countdown Banner */}
+                    {isTrialActive && !isTrialExpired && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm text-slate-800">
+                            <div className="flex items-center gap-3">
+                                <span className="grid size-9 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
+                                    <Sparkles size={18} />
+                                </span>
+                                <div>
+                                    <p className="text-xs font-bold text-amber-950">
+                                        ⏳ 3-Day Free Trial Active: {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} remaining
+                                    </p>
+                                    <p className="text-[11px] text-amber-800">
+                                        Your store and dashboard are live! Upgrade to Pro or Business to keep your store active permanently and unlock WhatsApp ordering.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('pro')}
+                                className="shrink-0 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                Upgrade Now →
+                            </button>
                         </div>
                     )}
 
@@ -1326,8 +1456,226 @@ export default function MerchantDashboardMaster() {
                             </div>
                         </div>
                     )}
+
+                    {/* BEXI AI COMMAND CENTER (LAST TAB) */}
+                    {activeTab === 'bexi-ai' && (
+                        <div className="space-y-6">
+                            {/* Header Banner */}
+                            <div 
+                                className="rounded-2xl p-6 text-white shadow-md relative overflow-hidden"
+                                style={{
+                                    background: `linear-gradient(135deg, ${themeColor} 0%, ${darkenColor(themeColor, 40)} 100%)`
+                                }}
+                            >
+                                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                    <div>
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider backdrop-blur-md">
+                                            <Sparkles size={13} /> Bexi AI Command Center
+                                        </span>
+                                        <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                                            AI Store Manager & Growth Strategist
+                                        </h2>
+                                        <p className="mt-1 text-xs text-white/90 max-w-xl leading-relaxed">
+                                            Ask Bexi AI anything in Urdu or English — get marketing copy, analyze orders, optimize your catalog, or launch sales campaigns with 1 click.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold backdrop-blur-md border border-white/20 text-white">
+                                            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                                            Urdu & English Active
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Strategy Prompts */}
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                {[
+                                    {
+                                        title: '📈 Analyze Store & Sales',
+                                        desc: 'Review catalog performance and top opportunities',
+                                        prompt: `Analyze ${storeName}'s current catalog with ${products.length} products and suggest the best pricing strategy to maximize sales with Cash on Delivery.`
+                                    },
+                                    {
+                                        title: '💬 WhatsApp Marketing Copy',
+                                        desc: 'Ready-to-send promotional message for customers',
+                                        prompt: `Generate 3 high-converting WhatsApp promotional messages with emojis in Urdu/Roman Urdu for ${storeName} to announce a limited-time free delivery deal.`
+                                    },
+                                    {
+                                        title: '🔥 High-Converting Instagram Ad',
+                                        desc: 'Captivating caption with hashtags and call to action',
+                                        prompt: `Write an engaging Instagram reel caption and ad copy for ${storeName} that creates urgency for our bestselling products.`
+                                    },
+                                    {
+                                        title: '⚡ Boost Order Conversions',
+                                        desc: 'Proven e-commerce tips for Pakistani buyers',
+                                        prompt: `Give me 4 actionable recommendations to reduce return-to-origin (RTO) and increase customer trust for cash on delivery orders at ${storeName}.`
+                                    }
+                                ].map((card) => (
+                                    <button
+                                        key={card.title}
+                                        type="button"
+                                        onClick={() => handleSendBexiPrompt(card.prompt)}
+                                        className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-xs transition hover:border-slate-300 hover:shadow-md hover:-translate-y-0.5"
+                                    >
+                                        <div>
+                                            <h4 className="text-xs font-bold text-slate-900">{card.title}</h4>
+                                            <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">{card.desc}</p>
+                                        </div>
+                                        <span className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold" style={{ color: themeColor }}>
+                                            Ask Bexi AI →
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Interactive Chat Console */}
+                            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col h-[520px]">
+                                {/* Console Header */}
+                                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 bg-slate-50/70">
+                                    <div className="flex items-center gap-2.5">
+                                        <span 
+                                            className="grid size-8 place-items-center rounded-lg text-white font-bold"
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            <Sparkles size={15} />
+                                        </span>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-900">Bexi AI Copilot Session</h3>
+                                            <p className="text-[10px] text-slate-400">Context: {storeName} · {products.length} products · {orders.length} orders</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBexiChatHistory([{
+                                            sender: 'ai',
+                                            text: `Assalam-o-Alaikum! 👋 Main hoon **Bexi AI**, **${storeName}** ka dedicated AI store manager.\n\nAap mujh se Urdu ya English mein marketing campaigns, pricing, store growth, ya catalog optimization ke baray mein kuch bhi pooch saktay hain!`,
+                                            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        }])}
+                                        className="text-[11px] font-semibold text-slate-500 hover:text-slate-800"
+                                    >
+                                        Clear chat
+                                    </button>
+                                </div>
+
+                                {/* Chat Messages Log */}
+                                <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-slate-50/30">
+                                    {bexiChatHistory.map((msg, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex gap-3 ${msg.sender === 'merchant' ? 'justify-end' : 'justify-start'}`}
+                                        >
+                                            {msg.sender === 'ai' && (
+                                                <span 
+                                                    className="grid size-8 shrink-0 place-items-center rounded-xl text-white font-bold shadow-xs mt-0.5"
+                                                    style={{ backgroundColor: themeColor }}
+                                                >
+                                                    <Sparkles size={14} />
+                                                </span>
+                                            )}
+                                            <div
+                                                className={`max-w-xl rounded-2xl p-4 text-xs shadow-xs leading-relaxed ${
+                                                    msg.sender === 'merchant'
+                                                        ? 'bg-slate-900 text-white rounded-tr-none'
+                                                        : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
+                                                }`}
+                                            >
+                                                <div className="whitespace-pre-wrap">{msg.text}</div>
+                                                <span className={`block mt-2 text-[9px] ${msg.sender === 'merchant' ? 'text-slate-400' : 'text-slate-400'} text-right`}>
+                                                    {msg.time}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {isBexiThinking && (
+                                        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                            <span 
+                                                className="grid size-7 place-items-center rounded-lg text-white animate-spin"
+                                                style={{ backgroundColor: themeColor }}
+                                            >
+                                                <Sparkles size={12} />
+                                            </span>
+                                            <span>Bexi AI is analyzing and generating response...</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Input Form */}
+                                <form 
+                                    onSubmit={handleBexiSubmit}
+                                    className="border-t border-slate-200 bg-white p-3 flex items-center gap-2"
+                                >
+                                    <input
+                                        type="text"
+                                        value={bexiInputText}
+                                        onChange={(e) => setBexiInputText(e.target.value)}
+                                        placeholder="Ask Bexi AI in Urdu or English (e.g. 'Hamari store ki sales kaise barhayein?')..."
+                                        className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!bexiInputText.trim() || isBexiThinking}
+                                        className="grid size-10 place-items-center rounded-xl text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40"
+                                        style={{ backgroundColor: themeColor }}
+                                    >
+                                        <Send size={15} />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
+
+            {/* Trial Expired Lock Screen Overlay Barrier */}
+            {isTrialExpired && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+                    <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 text-center shadow-2xl border border-slate-100 space-y-4">
+                        <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-600 shadow-md">
+                            <Lock size={32} />
+                        </span>
+                        <div className="space-y-1.5">
+                            <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                                3-Day Free Trial Ended
+                            </span>
+                            <h3 className="text-xl font-extrabold text-slate-900">
+                                Upgrade to Keep {storeName} Active
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
+                                Your free trial period has concluded. Activate a Pro or Business subscription to unlock all features, keep your live storefront accessible, and process orders.
+                            </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 text-left space-y-2 text-xs">
+                            <p className="font-bold text-slate-800">What unlocks immediately after payment:</p>
+                            <ul className="space-y-1.5 text-[11px] text-slate-600">
+                                <li className="flex items-center gap-2">✓ Instant reactivation of dashboard & live storefront</li>
+                                <li className="flex items-center gap-2">✓ Direct 1-Click WhatsApp customer ordering unlocked</li>
+                                <li className="flex items-center gap-2">✓ Full catalog access with higher product & category caps</li>
+                                <li className="flex items-center gap-2">✓ Bexi AI Store Assistant & marketing automation</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('pro')}
+                                className="flex-1 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                Activate Pro (PKR 3,500/mo)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setUpgradeModalPlan('business')}
+                                className="flex-1 rounded-xl bg-slate-900 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
+                            >
+                                Activate Business (PKR 7,500/mo)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Plan Upgrade & Payment Modal */}
             {upgradeModalPlan && (

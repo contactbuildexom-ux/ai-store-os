@@ -41,19 +41,19 @@ export async function POST(request: Request) {
     const isNewCategory = !uniqueCategories.has(category);
 
     // 3. Plan ke mutabiq limits ki validation
-    if (store.plan_type === 'free') {
-      if (totalProducts >= 10) {
-        return NextResponse.json({ error: 'Free plan limit reached! Aap maximum 10 products add kar sakte hain. Pro plan upgrade karein.' }, { status: 403 });
+    if (store.plan_type === 'free' || store.plan_type === 'basic') {
+      if (totalProducts >= 40) {
+        return NextResponse.json({ error: 'Plan limit reached! Aap maximum 40 products add kar sakte hain. Pro plan upgrade karein.' }, { status: 403 });
       }
-      if (isNewCategory && uniqueCategories.size >= 4) {
-        return NextResponse.json({ error: 'Free plan limit reached! Aap maximum 4 categories add kar sakte hain.' }, { status: 403 });
+      if (isNewCategory && uniqueCategories.size >= 8) {
+        return NextResponse.json({ error: 'Plan limit reached! Aap maximum 8 categories add kar sakte hain.' }, { status: 403 });
       }
     } else if (store.plan_type === 'pro') {
-      if (totalProducts >= 20) {
-        return NextResponse.json({ error: 'Pro plan limit reached! Aap maximum 20 products add kar sakte hain.' }, { status: 403 });
+      if (totalProducts >= 80) {
+        return NextResponse.json({ error: 'Pro plan limit reached! Aap maximum 80 products add kar sakte hain.' }, { status: 403 });
       }
-      if (isNewCategory && uniqueCategories.size >= 6) {
-        return NextResponse.json({ error: 'Pro plan limit reached! Aap maximum 6 categories add kar sakte hain.' }, { status: 403 });
+      if (isNewCategory && uniqueCategories.size >= 12) {
+        return NextResponse.json({ error: 'Pro plan limit reached! Aap maximum 12 categories add kar sakte hain.' }, { status: 403 });
       }
     }
 

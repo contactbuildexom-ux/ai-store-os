@@ -322,23 +322,42 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
       { name: 'Cold Brew Infusion Bottle & Filter Set', price: 2900, desc: 'Leakproof silicone-sealed travel brewer engineered for smooth 18-hour cold extractions.' }
     ]
   },
-  footwear: {
-    categories: ['Athletic Running', 'Streetwear Hoodies', 'Headwear & Caps', 'Smart Wearables'],
+  gaming: {
+    categories: ['Mechanical Keyboards', 'Gaming Mice & Pads', 'Wireless Headsets', 'RGB Desk Accessories'],
     images: [
-      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1599669454699-248893623440?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600080972464-8e5f35f63d08?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=800&q=80'
     ],
     items: [
-      { name: 'Running Shoes', price: 12000, desc: 'Ultra-lightweight responsive performance running shoes with breathable mesh and all-day comfort.' },
-      { name: 'Hoodie', price: 8200, desc: 'Premium heavyweight cotton fleece hoodie with minimalist tailored fit.' },
-      { name: 'Cap', price: 2499, desc: 'Structured classic baseball cap with breathable eyelets and adjustable strap.' },
-      { name: 'Smart Watch', price: 14000, desc: 'Next-gen AMOLED health & fitness tracker with high accuracy heart rate and workout sensors.' },
-      { name: 'Leather Casual Sneakers', price: 9500, desc: 'Handcrafted genuine leather low-top sneakers with cushioned OrthoLite insoles.' },
-      { name: 'Athletic Gym Duffel Bag', price: 4500, desc: 'Water-resistant gym duffel with separate shoe compartment and ergonomic strap.' }
+      { name: 'RGB Hot-Swappable Mechanical Gaming Keyboard', price: 9500, desc: 'Tactile switches, dynamic per-key RGB backlighting, aircraft aluminum frame, and detachable USB-C braided cable.' },
+      { name: 'Ultra-Lightweight 16,000 DPI Optical Gaming Mouse', price: 4800, desc: 'Honeycomb ergonomic shell weighing only 62g, PTFE zero-friction skates, and ultra-flexible paracord wire.' },
+      { name: 'Pro 7.1 Surround Wireless Gaming Headset', price: 8200, desc: '50mm neodymium audio drivers, 2.4GHz ultra-low latency wireless, and broadcast-quality noise-canceling mic.' },
+      { name: 'Extended Anti-Fray RGB Edge Gaming Desk Mat', price: 2900, desc: 'Micro-textured smooth cloth surface with 14 customizable RGB lighting modes and non-slip rubber base (900x400mm).' },
+      { name: 'Dual-Vibration Wireless Pro Gaming Controller', price: 6200, desc: 'Precision hall-effect triggers, responsive D-pad, multi-platform Bluetooth connectivity for PC and console.' },
+      { name: 'Cardioid Condenser Boom USB Streaming Mic', price: 5900, desc: 'Studio cardioid polar pattern, quick tap-to-mute sensor, built-in pop filter, and adjustable boom arm.' }
+    ]
+  },
+  footwear: {
+    categories: ['Running Shoes', 'Streetwear Sneakers', 'Casual Leather Trainers', 'Athletic Performance'],
+    images: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1515955656352-a1fa3ffcd111?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Air Cushion Performance Running Shoes', price: 12000, desc: 'Ultra-lightweight responsive performance running shoes with breathable mesh and all-day comfort.' },
+      { name: 'Retro Streetwear Chunky Sneakers', price: 8900, desc: 'Iconic 90s aesthetic lifestyle sneakers with shock-absorbing multi-layer sole.' },
+      { name: 'Classic Low-Top Leather Casual Trainers', price: 7500, desc: 'Handcrafted genuine leather low-top sneakers with cushioned OrthoLite insoles.' },
+      { name: 'Slip-On Breathable Knit Walking Shoes', price: 5400, desc: 'Seamless engineered stretch knit slip-on with flexible traction outsole.' },
+      { name: 'High-Top Ankle Support Court Sneakers', price: 11500, desc: 'Padded ankle collar with premium leather panelling and reinforced court grip.' },
+      { name: 'Ultra-Comfort Recovery Foam Slides', price: 3200, desc: 'High-density EVA foam contoured footbed slides for post-workout recovery and relaxation.' }
     ]
   },
   wedding: {
@@ -367,13 +386,14 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
  */
 function detectNiche(prompt: string): string {
   const p = prompt.toLowerCase();
+  if (/\b(gaming|gamer|games|game|rgb|battlestation|console|streamer|gpu|pc build|setup|joystick|gamepad|keyboard|mouse|headset)\b/i.test(p) && !/\b(nature|plant|dress|kurta|lawn)\b/i.test(p)) return 'gaming';
   if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|botanical|lawn)\b/i.test(p)) return 'nature';
   if (/\b(handbag|handbags|hanbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets)\b/i.test(p)) return 'handbags';
   if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bangles|jhumka|jhumkay|chain|choker)\b/i.test(p)) return 'jewelry';
   if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|boot|boots|jootay|joota|chappal|heels|sandals)\b/i.test(p)) return 'footwear';
   if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne)\b/i.test(p)) return 'perfume';
   if (/\b(skin|skincare|cosmetic|cosmetics|beauty|serum|serums|cream|lotion|makeup|glow|face wash|sunscreen)\b/i.test(p)) return 'skincare';
-  if (/\b(tech|phone|phones|mobile|gadget|gadgets|headphone|headphones|watch|watches|electronic|electronics|laptop|earbuds|charger)\b/i.test(p)) return 'tech';
+  if (/\b(tech|phone|phones|mobile|gadget|gadgets|smartwatch|watch|watches|electronic|electronics|laptop|earbuds|charger)\b/i.test(p)) return 'tech';
   if (/\b(coffee|tea|chai|food|cake|cakes|sweet|sweets|mithai|chocolate|chocolates|bakery|beans|cafe|roast)\b/i.test(p)) return 'food';
   if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|favor|shagun)\b/i.test(p)) return 'wedding';
   if (/\b(cloth|clothes|clothing|dress|dresses|fashion|wear|hoodie|hoodies|kurta|kurtas|suit|suits|apparel|kapray|shirt|shirts|pret|lawn|chiffon)\b/i.test(p)) return 'clothing';
@@ -404,6 +424,7 @@ function extractStoreName(prompt: string, niche: string): string {
   }
 
   const nicheNames: Record<string, string[]> = {
+    gaming: ['Nexus Battlestation Gear', 'Apex Gaming Atelier', 'Cyber Pulse Gaming', 'Vanguard Esports Gear'],
     nature: ['Verdant Flora & Botanica', 'Pure Earth Botanicals', 'Emerald Greens & Co.', 'Bloom Haven Organics'],
     handbags: ['Velvet Noir Handbags', 'Aura Leather Atelier', 'Luxe Clutch & Co.', 'Heritage Handbags Studio'],
     footwear: ['Stride & Pace Footwear', 'Aura Kicks Atelier', 'Apex Footwear Co.', 'Urban Velocity Shoes'],
@@ -489,6 +510,7 @@ export async function generateStoreFromPrompt(options: {
 
   // Generate tagline and hero based on niche & prompt
   const taglines: Record<string, string> = {
+    gaming: 'High-performance RGB battlestation gear, hot-swappable mechanical keyboards, and precision esports peripherals with cash on delivery.',
     nature: 'Nurture your home and workplace with fresh organic indoor plants, natural herbs, and sustainable botanical living.',
     handbags: 'Curated artisanal velvet clutches, structured leather shoulder bags, and luxury evening purses handcrafted for elegance.',
     footwear: 'Step into style and comfort with our latest collection. Handcrafted for endurance and everyday lifestyle.',
@@ -505,16 +527,19 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Generate ~28 products spread across categories (matching user request for ~30 products)
+  // Generate minimum 30 products spread across categories (matching user request for minimum 30 products)
   const categories = nicheData.categories;
-  const targetProductCount = 28;
+  const targetProductCount = 32;
   const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
 
   const products: GeneratedProduct[] = [];
   for (let i = 0; i < targetProductCount; i++) {
     const baseItem = nicheData.items[i % nicheData.items.length];
     const cat = categories[i % categories.length];
-    const imgUrl = nicheData.images[i % nicheData.images.length];
+    const img1 = nicheData.images[i % nicheData.images.length];
+    const img2 = nicheData.images[(i + 1) % nicheData.images.length];
+    const img3 = nicheData.images[(i + 2) % nicheData.images.length];
+    const multiImages = `${img1},${img2},${img3}`;
     const cycle = Math.floor(i / nicheData.items.length);
     const editionSuffix = cycle === 1 ? ' · Signature Edition' : cycle === 2 ? ' · Luxe Edition' : cycle === 3 ? ' · Elite Series' : cycle === 4 ? ' · Reserve' : '';
     const priceAdjustment = cycle * 350;
@@ -526,7 +551,7 @@ export async function generateStoreFromPrompt(options: {
       description: baseItem.desc,
       price: finalPrice,
       category: cat,
-      image_url: imgUrl,
+      image_url: multiImages,
       wholesale_cost: Math.round(finalPrice * 0.55),
       min_accept_price: Math.round(finalPrice * 0.85),
       stock_status: i % 5 === 2 ? 'low_stock' : 'in_stock',
