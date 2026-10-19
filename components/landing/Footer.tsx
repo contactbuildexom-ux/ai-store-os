@@ -6,8 +6,8 @@ import Logo from "@/components/landing/logo";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 
 /* ---------- Pixel2Page (Powered by) ---------- */
-const P2P_URL = "https://pixel2page.com"; // <-- yahan asli P2P link daalein
-const P2P_LOGO = "/P2P.png"; // public folder wali file (jpg/svg ho to extension badal dein)
+const P2P_URL = "https://yahan-pixel2page-ki-website.com";
+const P2P_LOGO = "/logo-p2p.jpg";
 
 const columns = [
   {
@@ -185,15 +185,14 @@ export default function Footer() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label="Pixel2Page"
-                    className="relative mt-2 block h-20 w-[211px] max-w-full overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
+                    className="mt-2 flex h-20 w-[211px] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-3 py-2 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
                   >
-                    {/* clip-path image ke side wali vertical lines hata deta hai */}
                     <Image
                       src={P2P_LOGO}
                       alt="Pixel2Page - Build. Grow. Succeed."
-                      width={1024}
-                      height={1024}
-                      className="absolute left-1/2 top-1/2 h-full w-auto max-w-none -translate-x-1/2 -translate-y-1/2 scale-[1.6] [clip-path:inset(0_4%)]"
+                      width={1776}
+                      height={554}
+                      className="h-full w-full object-contain"
                     />
                   </a>
                 </div>
