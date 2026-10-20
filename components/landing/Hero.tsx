@@ -273,7 +273,7 @@ export default function Hero() {
   }, [demoOpen]);
 
   return (
-    <section className="relative overflow-x-clip bg-[#e6f4ff]">
+    <section aria-labelledby="hero-heading" className="relative overflow-x-clip bg-[#e6f4ff]">
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:py-10">
         {/* ================= LEFT ================= */}
         <div className="text-center lg:text-left">
@@ -286,17 +286,22 @@ export default function Hero() {
             AI-Powered Store Builder
           </span>
 
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-[#0b2545] sm:text-5xl lg:text-[3.3rem]">
-            Build Your Online
+          {/* Ek hi H1 poore page par, primary keyword ke saath */}
+          <h1
+            id="hero-heading"
+            className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-[#0b2545] sm:text-5xl lg:text-[3.3rem]"
+          >
+            AI-Powered Online
             <br />
-            Store
+            Store Builder
             <br />
-            in Minutes <span className="text-[#1976d2]">with AI</span>
+            <span className="text-[#1976d2]">Launch in Minutes</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-[#2c4a73] sm:text-lg lg:mx-0">
-            Turn your ideas into a fully functional online store. No coding, no
-            hassle. Just describe your business and let our AI handle the rest.
+            Create an online store with AI on a no-code eCommerce platform made
+            for small businesses. Just describe your business and Buildexom
+            builds your store in minutes.
           </p>
 
           <div
@@ -678,7 +683,7 @@ export default function Hero() {
               >
                 <Ico size={18} sw={2.4}>{Icons.close}</Ico>
               </button>
-              <video src={DEMO_VIDEO} controls autoPlay className="aspect-video w-full" />
+              <video src={DEMO_VIDEO} controls autoPlay preload="metadata" className="aspect-video w-full" />
             </div>
           </div>
         </BodyPortal>

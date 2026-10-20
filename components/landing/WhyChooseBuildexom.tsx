@@ -2,8 +2,8 @@
 
 const features = [
   {
-    title: "Store in minutes",
-    text: "Describe your business and AI builds your store. No coding.",
+    title: "Online store in minutes",
+    text: "Describe your business and our AI store builder creates your online store. No coding needed.",
     tag: "AI powered",
     // Storefront
     icon: (
@@ -42,7 +42,7 @@ const features = [
   },
   {
     title: "Start free",
-    text: "Launch on the free plan and upgrade when you grow.",
+    text: "Launch your online store on the free plan and upgrade when you grow.",
     tag: "No card needed",
     // Gift
     icon: (
@@ -94,11 +94,11 @@ export default function WhyChooseBuildexom() {
         <div className="mx-auto max-w-2xl text-center">
           <span>Why Buildexom</span>
           <h2 className="text-brand-navy">
-            Everything you need to{" "}
-            <span className="text-gradient">sell online</span>
+            Everything you need from an{" "}
+            <span className="text-gradient">AI-powered online store builder</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Built for small businesses that want to start fast.
+            A no-code eCommerce platform built for small businesses that want to start fast.
           </p>
         </div>
 
@@ -165,7 +165,7 @@ export default function WhyChooseBuildexom() {
         {/* Bottom CTA */}
         <div className="mt-12 text-center">
           <Link
-           href="/user/signup"
+            href="/user/signup"
             className="inline-flex items-center gap-2 rounded-xl bg-[#1976d2] px-7 py-3.5 text-sm font-semibold text-white shadow-md shadow-blue-500/30 transition hover:-translate-y-0.5 hover:bg-[#1565c0]"
           >
             Start building free <span aria-hidden>→</span>

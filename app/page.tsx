@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import FeatureStrip from "@/components/landing/FeatureStrip";
@@ -12,6 +13,10 @@ import Faq from "@/components/landing/Faq";
 import FinalCta from "@/components/landing/FinalCta";
 import Footer from "@/components/landing/Footer";
 import FloatingChat from "@/components/landing/FloatingChat";
+import { buildMetadata, PAGE_SEO } from "@/lib/seo";
+
+// Homepage ka SEO title, meta description aur canonical (primary keyword ke saath)
+export const metadata: Metadata = buildMetadata(PAGE_SEO.home);
 
 export default function HomePage() {
   return (

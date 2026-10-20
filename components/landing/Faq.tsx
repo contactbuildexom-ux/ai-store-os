@@ -3,19 +3,28 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { MouseEvent } from "react";
+import JsonLd from "@/components/seo/JsonLd"
 
 const faqs = [
+  {
+    q: "How do I create an online store with AI?",
+    a: "Describe your business and Buildexom's AI store builder creates your online store for you. You can customize it afterwards and start selling.",
+  },
   {
     q: "Is the free plan really free?",
     a: "Yes. You can list up to 20 products and take orders on WhatsApp at no cost. Buildexom branding stays on the free plan.",
   },
   {
-    q: "How do customers place orders?",
-    a: "They pick products in your store and send the order to your WhatsApp in one tap, with items and total filled in.",
+    q: "Is Buildexom a no-code eCommerce platform?",
+    a: "Yes. You do not need coding or design skills. Describe your business, let the AI build your store, then customize it your way.",
   },
   {
-    q: "Do I need coding or design skills?",
-    a: "No. Describe your business and the AI builds your store. You can customize it afterwards.",
+    q: "Can I build an online store in minutes?",
+    a: "Yes. Buildexom is an instant online store builder, so you can go from idea to a live store in minutes.",
+  },
+  {
+    q: "How do customers place orders?",
+    a: "They pick products in your store and send the order to your WhatsApp in one tap, with items and total filled in.",
   },
   {
     q: "How do WhatsApp product alerts work?",
@@ -26,14 +35,24 @@ const faqs = [
     a: "Every store gets a QR code that opens your store when scanned. You can print it or share it on social media, and customers can order on WhatsApp right away.",
   },
   {
-    q: "Can I upgrade my plan later?",
-    a: "Yes. Start free and move to Pro or Business whenever your store grows.",
+    q: "Is Buildexom an affordable online store builder for small businesses?",
+    a: "Yes. You can start free and upgrade to Pro or Business whenever your store grows.",
   },
   {
     q: "How do I get help?",
     a: "Visit the Help Center and Tutorials, or message our team. Business plans get priority support.",
   },
 ];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
 
 const VISIBLE = 4;
 
@@ -73,16 +92,18 @@ export default function Faq() {
       className="relative scroll-mt-20 overflow-hidden px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
     >
       <style>{CSS}</style>
+      <JsonLd data={faqSchema} />
 
       <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
         {/* Left: heading + help card (centered) */}
         <div className="text-center lg:sticky lg:top-28 lg:self-start">
           <span>FAQ</span>
           <h2 className="text-brand-navy">
-            Questions? <span className="text-gradient">We have answers</span>
+                        Online store builder questions,{" "}
+            <span className="text-gradient">answered</span>
           </h2>
           <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-slate-600">
-            Everything you need to know before you launch your store.
+            Everything you need to know before you build your online store with our AI store builder.
           </p>
 
           <div className="mx-auto mt-8 flex max-w-md flex-wrap items-center justify-center gap-4 rounded-2xl border border-blue-100 bg-white p-5 text-left shadow-[0_12px_32px_-22px_rgba(11,37,69,0.4)]">

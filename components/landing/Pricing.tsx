@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import JsonLd from "@/components/seo/JsonLd";
 
 type Feature = {
   label: string;
@@ -13,6 +14,7 @@ type Plan = {
   id: string;
   name: string;
   price: string;
+  amount?: number;
   description: string;
   features: Feature[];
   cta: string;
@@ -21,80 +23,6 @@ type Plan = {
 };
 
 const VISIBLE_COUNT = 6;
-
-const defaultPlans: Plan[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: "Free",
-    description: "Perfect for starting your online store.",
-    features: [
-      { label: "Up to 20 Products" },
-      { label: "WhatsApp Ordering" },
-      { label: "Basic Store Customization" },
-      { label: "Product Management" },
-      { label: "Product Images & Descriptions" },
-      { label: "Basic Dashboard" },
-      { label: "Basic Order Management" },
-      { label: "Store Categories" },
-      { label: "Buildexom Branding" },
-    ],
-    cta: "Get Started Free",
-    href: "/user/signup",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "PKR 3,500 / month",
-    description: "For growing stores that need more flexibility.",
-    popular: true,
-    features: [
-      { label: "Up to 75 Products" },
-      { label: "Up to 5 Categories" },
-      { label: "Up to 15 Products per Category" },
-      { label: "Advanced Store Customization" },
-      { label: "WhatsApp Ordering" },
-      { label: "WhatsApp New Product Alerts", isNew: true },
-      { label: "Order Tracking" },
-      { label: "Payment Integration" },
-      { label: "Coupons & Discounts" },
-      { label: "Basic Analytics" },
-      { label: "Remove Buildexom Branding" },
-      { label: "Custom Domain", locked: true },
-      { label: "Abandoned Cart Reminders", locked: true },
-    ],
-    cta: "Upgrade to Pro",
-    href: "/user/signup?plan=pro",
-  },
-  {
-    id: "business",
-    name: "Business",
-    price: "PKR 7,500 / month",
-    description: "For businesses ready to scale their online store.",
-    features: [
-      { label: "Unlimited Products" },
-      { label: "Unlimited Categories" },
-      { label: "Advanced Store Customization" },
-      { label: "WhatsApp Ordering" },
-      { label: "Smart WhatsApp Product Alerts", isNew: true },
-      { label: "Category-based customer targeting", isNew: true },
-      { label: "Scheduled notifications", isNew: true },
-      { label: "Notification delivery and click stats", isNew: true },
-      { label: "Customer subscription management", isNew: true },
-      { label: "Order Tracking" },
-      { label: "Payment Integration" },
-      { label: "AI Customer Chatbot" },
-      { label: "Advanced Analytics" },
-      { label: "Remove Buildexom Branding" },
-      { label: "Priority Support" },
-      { label: "Custom Domain", locked: true },
-      { label: "Multi-staff Accounts", locked: true },
-      { label: "Auto Invoice PDF", locked: true },
-    ],
-    cta: "Go Business",
-    href: "/user/signup?plan=business",
-  },
-];
 
 type ApiPlan = {
   id: string;
@@ -152,6 +80,7 @@ function toPlan(record: ApiPlan): Plan {
   return {
     id: record.id,
     name: planName,
+    amount,
     price: amount === 0
       ? "Free"
       : `PKR ${amount.toLocaleString("en-PK", { maximumFractionDigits: 2 })} / ${record.billing_cycle}`,
@@ -457,6 +386,27 @@ export default function Pricing() {
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-blue-50 to-transparent" />
 
+      {plans.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            name: "Buildexom",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            description:
+              "Buildexom is an AI-powered online store builder for small businesses.",
+            offers: plans.map((p) => ({
+              "@type": "Offer",
+              name: p.name,
+              price: p.amount ?? 0,
+              priceCurrency: "PKR",
+              description: p.description,
+            })),
+          }}
+        />
+      )}
+
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         {/* Heading */}
         <div className="mx-auto max-w-2xl text-center">
@@ -464,10 +414,10 @@ export default function Pricing() {
             Pricing
           </span>
           <h2 className="mt-3 text-4xl font-extrabold tracking-tight text-[#0b2545] sm:text-5xl lg:text-6xl">
-            Choose the Plan That Fits Your Store
+            Affordable Online Store Builder Plans
           </h2>
           <p className="mt-4 text-base text-slate-500">
-            Start for free and upgrade as your business grows.
+            Create your online store with AI for free, and upgrade as your business grows.
           </p>
         </div>
 
