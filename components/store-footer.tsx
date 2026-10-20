@@ -102,7 +102,7 @@ export function StoreFooter({
     >
       {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid) */}
       <div 
-        className="border-b px-4 py-6 sm:px-8"
+        className="border-b px-4 py-3.5 sm:px-8"
         style={{
           backgroundColor: `${resolvedThemeColor}10`,
           borderColor: `${resolvedThemeColor}25`,

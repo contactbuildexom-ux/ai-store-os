@@ -618,7 +618,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
     return (
         <div
-            className="min-h-screen font-sans text-slate-900 pb-28 relative"
+            className="min-h-screen font-sans text-slate-900 pb-1.5 relative"
             style={{
                 background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                 backgroundColor: `${themeColor}10`,
@@ -1400,7 +1400,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
-                <div className="flex items-center justify-center sm:justify-end pt-1 pb-1">
+                <div className="!mt-2 flex items-center justify-center sm:justify-end pb-0">
                     <button
                         type="button"
                         onClick={() => setIsAiOpen(true)}
