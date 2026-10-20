@@ -236,10 +236,15 @@ export async function DELETE(req: Request) {
     const supabase = getSupabase();
     const { searchParams } = new URL(req.url);
     const id = textValue(searchParams.get("id"));
+    const idsParam = textValue(searchParams.get("ids"));
     const storeId = textValue(searchParams.get("store_id"));
 
-    if (!id || !storeId) {
-      return NextResponse.json({ error: "Product ID and Store ID are required." }, { status: 400 });
+    const idList = idsParam 
+      ? idsParam.split(",").map((i) => i.trim()).filter(Boolean) 
+      : (id ? [id] : []);
+
+    if (idList.length === 0 || !storeId) {
+      return NextResponse.json({ error: "Product ID (or IDs) and Store ID are required." }, { status: 400 });
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
@@ -247,15 +252,27 @@ export async function DELETE(req: Request) {
       const { error } = await supabase
         .from("store_products")
         .delete()
-        .eq("id", id)
+        .in("id", idList)
         .eq("store_id", storeId);
 
       if (error) throw error;
-      return NextResponse.json({ success: true, message: "Product deleted successfully." });
+      return NextResponse.json({ 
+        success: true, 
+        message: idList.length > 1 
+          ? `${idList.length} products deleted successfully.` 
+          : "Product deleted successfully." 
+      });
     }
 
-    await storeRepo.deleteProduct(storeId, id);
-    return NextResponse.json({ success: true, message: "Product deleted successfully." });
+    for (const prodId of idList) {
+      await storeRepo.deleteProduct(storeId, prodId);
+    }
+    return NextResponse.json({ 
+      success: true, 
+      message: idList.length > 1 
+        ? `${idList.length} products deleted successfully.` 
+        : "Product deleted successfully." 
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to delete product.";
     return NextResponse.json({ error: message }, { status: 500 });

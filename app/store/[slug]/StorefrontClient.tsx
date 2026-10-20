@@ -1404,23 +1404,56 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 5. About Store Section (Linked directly from header navigation) */}
+                {/* 5. About Store Section with Integrated Bexi AI Catalog Guide */}
                 <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
-                    <div className="w-full space-y-3">
-                        <span
-                            className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
-                            style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
-                        >
-                            About {liveStore.name}
-                        </span>
-                        <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                            Crafted for Quality & Seamless Shopping
-                        </h3>
+                    <div className="w-full space-y-4">
+                        {/* Header & Bexi AI Catalog Guide Card */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4" style={{ borderColor: `${themeColor}25` }}>
+                            <div>
+                                <span
+                                    className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+                                    style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+                                >
+                                    About {liveStore.name}
+                                </span>
+                                <h3 className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900">
+                                    Crafted for Quality & Seamless Shopping
+                                </h3>
+                            </div>
+
+                            {/* Catalog Guide Box with Ask Bexi AI Button */}
+                            <div 
+                                className="flex items-center justify-between sm:justify-start gap-3 rounded-2xl p-2.5 sm:p-3 bg-white/95 border shadow-xs shrink-0 backdrop-blur-md"
+                                style={{ borderColor: `${themeColor}35` }}
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <span 
+                                        className="grid size-9 place-items-center rounded-xl font-bold shadow-2xs text-slate-950"
+                                        style={{ backgroundColor: "#10b981" }}
+                                    >
+                                        <Sparkles size={17} />
+                                    </span>
+                                    <div className="text-left pr-1">
+                                        <p className="text-xs font-black text-slate-900 leading-tight">Catalog AI Assistant</p>
+                                        <p className="text-[10px] text-slate-500 font-medium">Bilingual Urdu & English</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAiOpen(true)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition hover:scale-105 active:scale-95 shrink-0"
+                                >
+                                    <Sparkles size={13} className="text-emerald-400" />
+                                    <span>Ask Bexi AI</span>
+                                </button>
+                            </div>
+                        </div>
+
                         <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
-                            {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ''}
+                            {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ""}
                             Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
                         </p>
-                        <div className="pt-2 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
+                        <div className="pt-1 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
                             <span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-emerald-600" /> 100% Genuine Items</span>
                             <span className="flex items-center gap-1.5"><Truck size={16} className="text-blue-600" /> Cash on Delivery Nationwide</span>
                             <span className="flex items-center gap-1.5"><MessageCircle size={16} className="text-emerald-600" /> Direct WhatsApp Assistance</span>
@@ -1769,23 +1802,16 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* FLOATING BEXI AI ASSISTANT WIDGET */}
-            <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
-                {!isAiOpen ? (
-                    <button
-                        type="button"
-                        onClick={() => setIsAiOpen(true)}
-                        className="flex items-center gap-2 rounded-full bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-2xl transition hover:bg-slate-800 hover:scale-105 border border-slate-700"
-                    >
-                        <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
-                            <Sparkles size={13} />
-                        </span>
-                        <span>Ask Bexi AI</span>
-                    </button>
-                ) : (
-                    <div className="relative flex h-[480px] w-80 sm:w-96 flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs">
+            {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
+            {isAiOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div 
+                        className="fixed inset-0"
+                        onClick={() => setIsAiOpen(false)}
+                    />
+                    <div className="relative z-10 flex h-[520px] w-full max-w-md flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs animate-in zoom-in-95 duration-200">
                         {/* Chat Header */}
-                        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white">
+                        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="grid size-7 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold">
                                     <Sparkles size={14} />
@@ -1809,13 +1835,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             {aiMessages.map((msg, i) => (
                                 <div
                                     key={i}
-                                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                                 >
                                     <div
                                         className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
-                                            msg.sender === 'user'
-                                                ? 'bg-emerald-600 text-white font-medium'
-                                                : 'bg-slate-900 border border-slate-800 text-slate-200'
+                                            msg.sender === "user"
+                                                ? "bg-emerald-600 text-white font-medium"
+                                                : "bg-slate-900 border border-slate-800 text-slate-200"
                                         }`}
                                     >
                                         {msg.text}
@@ -1834,7 +1860,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* Quick Suggestion Questions */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50">
+                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50 shrink-0">
                             {[
                                 "Delivery timeline?",
                                 "Payment methods?",
@@ -1855,26 +1881,25 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* Chat Input */}
-                        <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
+                        <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2 shrink-0">
                             <input
                                 type="text"
-                                placeholder="Ask a question..."
                                 value={aiInput}
-                                maxLength={500}
                                 onChange={(e) => setAiInput(e.target.value)}
-                                className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                                placeholder="Poochiye (e.g. deliver kitne din me hogi?)..."
+                                className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-emerald-500"
                             />
                             <button
                                 type="submit"
-                                disabled={aiSending || !aiInput.trim()}
-                                className="rounded-xl bg-emerald-600 px-3.5 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                                disabled={!aiInput.trim() || aiSending}
+                                className="grid size-8 place-items-center rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-500 transition disabled:opacity-50"
                             >
                                 <Send size={13} />
                             </button>
                         </form>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Interactive Product Details Modal (Supports multiple images gallery, quantity, Add to Cart & WhatsApp Order) */}
             {selectedProductForModal && (

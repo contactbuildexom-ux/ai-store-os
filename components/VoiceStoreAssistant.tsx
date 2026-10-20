@@ -23,14 +23,33 @@ interface VoiceStoreAssistantProps {
   storeId?: string;
   storeSlug?: string;
   onActionExecuted?: (actionType: string, actionData: any) => void;
+  isOpenControlled?: boolean;
+  onCloseControlled?: () => void;
+  hideFloatingTrigger?: boolean;
 }
 
 export function VoiceStoreAssistant({ 
   storeId, 
   storeSlug, 
-  onActionExecuted 
+  onActionExecuted,
+  isOpenControlled,
+  onCloseControlled,
+  hideFloatingTrigger
 }: VoiceStoreAssistantProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isModalOpen = isOpenControlled !== undefined ? isOpenControlled : isOpen;
+
+  const handleCloseModal = () => {
+    try {
+      synthRef.current?.cancel();
+      window.speechSynthesis?.cancel();
+    } catch {}
+    if (onCloseControlled) {
+      onCloseControlled();
+    } else {
+      setIsOpen(false);
+    }
+  };
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [assistantReply, setAssistantReply] = useState<string>('Welcome to Buildexom Voice AI! Click the microphone and tell me what you want to manage in English or Urdu.');
@@ -237,7 +256,8 @@ export function VoiceStoreAssistant({
   return (
     <>
       {/* FLOATING ACTION LAUNCHER BUTTON */}
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+      {!hideFloatingTrigger && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
         <button
           type="button"
           onClick={() => setIsOpen(prev => !prev)}
@@ -260,14 +280,15 @@ export function VoiceStoreAssistant({
           </div>
         </button>
       </div>
+      )}
 
       {/* EXPANDED VOICE ASSISTANT CONSOLE MODAL */}
-      {isOpen && (
+      {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
           {/* Backdrop click to dismiss */}
           <div 
             className="fixed inset-0"
-            onClick={() => setIsOpen(false)}
+            onClick={handleCloseModal}
           />
 
           <div className="relative z-10 w-full max-w-md max-h-[85vh] flex flex-col rounded-3xl border border-slate-700/80 bg-slate-900 text-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
@@ -320,13 +341,7 @@ export function VoiceStoreAssistant({
                 {/* Close Button */}
                 <button
                   type="button"
-                  onClick={() => {
-                    try {
-                      synthRef.current?.cancel();
-                      window.speechSynthesis?.cancel();
-                    } catch {}
-                    setIsOpen(false);
-                  }}
+                  onClick={handleCloseModal}
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 >
                   <X size={16} />

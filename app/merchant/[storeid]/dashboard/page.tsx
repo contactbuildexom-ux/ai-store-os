@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Smartphone, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus } from 'lucide-react';
+import { Boxes, Smartphone, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus, Mic } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
@@ -125,6 +125,8 @@ export default function MerchantDashboardMaster() {
     const [storeSlug, setStoreSlug] = useState<string>('');
     const [storePlan, setStorePlan] = useState<Plan>('basic');
     const [activeTab, setActiveTab] = useState('overview');
+    const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
+    const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
     const [productSearch, setProductSearch] = useState('');
     
     // Branding & Settings
@@ -711,6 +713,7 @@ export default function MerchantDashboardMaster() {
     const handleDeleteAllAiProducts = async () => {
         if (!confirm(`Are you sure you want to delete all ${products.length} products to clear the starter catalog?`)) return;
         setProducts([]);
+        setSelectedProductIds([]);
         try {
             await Promise.all(
                 products.map((p) =>
@@ -721,6 +724,30 @@ export default function MerchantDashboardMaster() {
             setMessageError(false);
         } catch {
             setMessage('Error deleting some products.');
+            setMessageError(true);
+        } finally {
+            await fetchMeshData(resolvedStoreId);
+        }
+    };
+
+    const handleDeleteSelectedProducts = async () => {
+        if (selectedProductIds.length === 0) return;
+        if (!confirm(`Are you sure you want to delete ${selectedProductIds.length} selected product(s)?`)) return;
+        const idsToDelete = [...selectedProductIds];
+        setProducts(prev => prev.filter(p => !idsToDelete.includes(p.id)));
+        setSelectedProductIds([]);
+        try {
+            const res = await fetch(`/api/stores/products?ids=${encodeURIComponent(idsToDelete.join(','))}&store_id=${encodeURIComponent(resolvedStoreId)}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (data.success) {
+                setMessage(data.message || 'Selected products deleted successfully.');
+                setMessageError(false);
+            } else {
+                setMessage(data.error || 'Failed to delete some products.');
+                setMessageError(true);
+            }
+        } catch (err) {
+            setMessage(err instanceof Error ? err.message : 'Error deleting selected products.');
             setMessageError(true);
         } finally {
             await fetchMeshData(resolvedStoreId);
@@ -844,9 +871,25 @@ export default function MerchantDashboardMaster() {
                             style={activeTab === tab.id ? { backgroundColor: themeColor } : {}}
                         >
                             <tab.icon size={15} className="shrink-0" />
-                            <span>{tab.label}</span>
+                            <span className="truncate">{tab.label}</span>
                         </button>
                     ))}
+
+                    {/* Dedicated Voice AI Button - Placed right under [StoreName] Bexi AI, only available on paid plans */}
+                    {(storePlan === 'pro' || storePlan === 'business') && (
+                        <button
+                            type="button"
+                            onClick={() => setIsVoiceAssistantOpen(true)}
+                            className="group relative flex min-h-10 items-center justify-between gap-2 rounded-xl px-2.5 text-left font-semibold transition col-span-2 sm:col-span-4 md:col-span-1 md:w-full md:px-3 bg-linear-to-r from-emerald-600/95 to-teal-600/95 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md active:scale-95 border border-emerald-400/30"
+                            title="Speak and manage your store via Voice AI in Urdu and English"
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                <Mic size={15} className="text-emerald-200 animate-pulse shrink-0" />
+                                <span className="text-xs truncate font-bold">Voice AI Assistant</span>
+                            </div>
+                            <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-tight shrink-0">ENG • UR</span>
+                        </button>
+                    )}
                     <div className="hidden flex-1 md:block" />
                     <div className="hidden rounded-xl border border-white/15 bg-white/5 p-3 md:block">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Store status</p>
@@ -1403,11 +1446,38 @@ export default function MerchantDashboardMaster() {
                             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col justify-between">
                                 <div>
                                     <div className="border-b border-slate-100 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                                        <div>
-                                            <h3 className="text-sm font-semibold text-slate-900">Product inventory</h3>
-                                            <p className="mt-1 text-[11px] text-slate-500">All {products.length} products in this store</p>
+                                        <div className="flex items-center gap-3">
+                                            {products.length > 0 && (
+                                                <input
+                                                    type="checkbox"
+                                                    checked={products.length > 0 && selectedProductIds.length === products.length}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedProductIds(products.map(p => p.id));
+                                                        } else {
+                                                            setSelectedProductIds([]);
+                                                        }
+                                                    }}
+                                                    title="Select all products"
+                                                    aria-label="Select all products"
+                                                    className="size-4 rounded accent-emerald-600 cursor-pointer"
+                                                />
+                                            )}
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-slate-900">Product inventory</h3>
+                                                <p className="mt-0.5 text-[11px] text-slate-500">All {products.length} products in this store</p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2">
+                                            {selectedProductIds.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleDeleteSelectedProducts}
+                                                    className="inline-flex items-center gap-1 rounded-lg border border-red-300 bg-red-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-red-700 transition shadow-xs animate-in fade-in"
+                                                >
+                                                    <Trash2 size={13} /> Delete Selected ({selectedProductIds.length})
+                                                </button>
+                                            )}
                                             <button
                                                 type="button"
                                                 onClick={() => setIsBulkAddOpen(true)}
@@ -1439,7 +1509,20 @@ export default function MerchantDashboardMaster() {
                                     ) : (
                                         <div className="divide-y divide-slate-100">
                                             {products.map((product) => (
-                                                <div key={product.id} className="flex items-center gap-3 px-4 py-3">
+                                                <div key={product.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/80 transition">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedProductIds.includes(product.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedProductIds(prev => [...prev, product.id]);
+                                                            } else {
+                                                                setSelectedProductIds(prev => prev.filter(id => id !== product.id));
+                                                            }
+                                                        }}
+                                                        aria-label={`Select ${product.name}`}
+                                                        className="size-4 rounded accent-emerald-600 cursor-pointer shrink-0"
+                                                    />
                                                     <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 text-slate-400">
                                                         {product.image_url ? (
                                                             <Image src={product.image_url.split(',')[0].trim()} alt="" width={40} height={40} unoptimized className="size-full object-cover" />
@@ -1814,6 +1897,14 @@ export default function MerchantDashboardMaster() {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsVoiceAssistantOpen(true)}
+                                            className="inline-flex items-center gap-2 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md border border-white/25 transition shadow-sm active:scale-95"
+                                        >
+                                            <Mic size={14} className="text-emerald-300 animate-pulse" />
+                                            <span>Launch Voice AI</span>
+                                        </button>
                                         <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold backdrop-blur-md border border-white/20 text-white">
                                             <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
                                             Urdu & English Active
@@ -2213,6 +2304,9 @@ export default function MerchantDashboardMaster() {
                 <VoiceStoreAssistant 
                     storeId={resolvedStoreId}
                     storeSlug={storeSlug}
+                    isOpenControlled={isVoiceAssistantOpen}
+                    onCloseControlled={() => setIsVoiceAssistantOpen(false)}
+                    hideFloatingTrigger={true}
                     onActionExecuted={() => {
                         if (resolvedStoreId) {
                             fetchMeshData(resolvedStoreId);
