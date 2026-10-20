@@ -1404,59 +1404,65 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 5. About Store Section with Integrated Bexi AI Catalog Guide */}
+                {/* 5. About Store Section with Clean Relevant Tags & Animated Ask Bexi AI Button */}
                 <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
-                    <div className="w-full space-y-4">
-                        {/* Header & Bexi AI Catalog Guide Card */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4" style={{ borderColor: `${themeColor}25` }}>
-                            <div>
-                                <span
-                                    className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
-                                    style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
-                                >
-                                    About {liveStore.name}
-                                </span>
-                                <h3 className="mt-1.5 text-xl sm:text-2xl font-black text-slate-900">
-                                    Crafted for Quality & Seamless Shopping
-                                </h3>
-                            </div>
-
-                            {/* Catalog Guide Box with Ask Bexi AI Button */}
-                            <div 
-                                className="flex items-center justify-between sm:justify-start gap-3 rounded-2xl p-2.5 sm:p-3 bg-white/95 border shadow-xs shrink-0 backdrop-blur-md"
-                                style={{ borderColor: `${themeColor}35` }}
+                    <div className="w-full space-y-3.5">
+                        <div>
+                            <span
+                                className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+                                style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
                             >
-                                <div className="flex items-center gap-2.5">
-                                    <span 
-                                        className="grid size-9 place-items-center rounded-xl font-bold shadow-2xs text-slate-950"
-                                        style={{ backgroundColor: "#10b981" }}
-                                    >
-                                        <Sparkles size={17} />
-                                    </span>
-                                    <div className="text-left pr-1">
-                                        <p className="text-xs font-black text-slate-900 leading-tight">Catalog AI Assistant</p>
-                                        <p className="text-[10px] text-slate-500 font-medium">Bilingual Urdu & English</p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAiOpen(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 text-xs font-bold shadow-xs transition hover:scale-105 active:scale-95 shrink-0"
-                                >
-                                    <Sparkles size={13} className="text-emerald-400" />
-                                    <span>Ask Bexi AI</span>
-                                </button>
-                            </div>
+                                About {liveStore.name}
+                            </span>
+                            <h3 className="mt-1 text-xl sm:text-2xl font-black text-slate-900">
+                                Crafted for Quality & Seamless Shopping
+                            </h3>
                         </div>
 
                         <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
                             {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ""}
                             Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
                         </p>
-                        <div className="pt-1 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
-                            <span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-emerald-600" /> 100% Genuine Items</span>
-                            <span className="flex items-center gap-1.5"><Truck size={16} className="text-blue-600" /> Cash on Delivery Nationwide</span>
-                            <span className="flex items-center gap-1.5"><MessageCircle size={16} className="text-emerald-600" /> Direct WhatsApp Assistance</span>
+
+                        {/* Clean Relevant Tags: Nationwide Delivery, WhatsApp Support, Genuine Quality */}
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs font-semibold">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/80 px-3 py-1 text-emerald-800 shadow-2xs">
+                                <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                                <span>100% Genuine Items</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/90 bg-blue-50/80 px-3 py-1 text-blue-800 shadow-2xs">
+                                <Truck size={14} className="text-blue-600 shrink-0" />
+                                <span>Cash on Delivery Nationwide</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/90 bg-emerald-50/80 px-3 py-1 text-emerald-800 shadow-2xs">
+                                <MessageCircle size={14} className="text-emerald-600 shrink-0" />
+                                <span>Direct WhatsApp Assistance</span>
+                            </span>
+                        </div>
+
+                        {/* Attractive Animated Ask Bexi AI Button directly under support line with zero extra space */}
+                        <div className="pt-1.5">
+                            <button
+                                type="button"
+                                onClick={() => setIsAiOpen(true)}
+                                className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-2xl bg-slate-900 px-5 py-3 text-xs font-extrabold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-slate-800 active:scale-95 border border-slate-700/80"
+                                aria-label="Open Bexi AI Store Assistant"
+                            >
+                                {/* Animated Glowing Pulse Halo */}
+                                <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500 opacity-60 blur-xs transition group-hover:opacity-100 animate-pulse duration-1000" />
+
+                                <span className="relative flex size-6 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold shadow-2xs">
+                                    <Sparkles size={13} className="text-slate-950 animate-bounce duration-1000" />
+                                </span>
+
+                                <span className="relative font-bold text-xs tracking-wide">
+                                    Ask Bexi AI
+                                </span>
+
+                                <span className="relative rounded-full bg-white/20 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-300">
+                                    Shopping Assistant
+                                </span>
+                            </button>
                         </div>
                     </div>
                 </section>
