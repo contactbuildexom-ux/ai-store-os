@@ -1158,28 +1158,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                     {/* Products Grid - flush card boxes */}
                     {liveProducts.length === 0 ? (
-                        <div className="space-y-4 w-full">
-                            <div 
-                                className="flex items-center justify-start gap-3 rounded-2xl px-4 py-3.5 border shadow-2xs backdrop-blur-sm"
-                                style={{
-                                    backgroundColor: `${themeColor}12`,
-                                    borderColor: `${themeColor}32`,
-                                }}
-                            >
-                                <span 
-                                    className="grid size-9 place-items-center rounded-xl text-white shrink-0 shadow-xs"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    <PackagePlus size={18} />
-                                </span>
-                                <div>
-                                    <h4 className="text-xs sm:text-sm font-black text-slate-900">Product Catalog Slots Ready</h4>
-                                    <p className="text-[11px] text-slate-600">
-                                        Store is live with zero dead space. Upload products from your Merchant Dashboard to fill these containers instantly.
-                                    </p>
-                                </div>
-                            </div>
-
+                        <div className="w-full">
                             {/* Full-width flush product container boxes with zero side waste */}
                             <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
                                 {[1, 2, 3, 4, 5, 6].map((slot) => (
