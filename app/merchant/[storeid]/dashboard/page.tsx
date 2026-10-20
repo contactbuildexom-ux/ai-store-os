@@ -8,7 +8,14 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Smartphone, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus, Mic } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Landmark, Send, Lock, Plus, Mic } from 'lucide-react';
+
+const SmartphoneIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+        <path d="M12 18h.01" />
+    </svg>
+);
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
@@ -2159,7 +2166,7 @@ export default function MerchantDashboardMaster() {
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {[
-                                            { id: 'sadapay', label: 'SadaPay', icon: Smartphone },
+                                            { id: 'sadapay', label: 'SadaPay', icon: SmartphoneIcon },
                                             { id: 'jazzcash', label: 'JazzCash', icon: Wallet },
                                             { id: 'easypaisa', label: 'EasyPaisa', icon: Wallet },
                                             { id: 'bank', label: 'Bank Transfer', icon: Landmark },
