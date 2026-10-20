@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus } from 'lucide-react';
+import { Boxes, Smartphone, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
@@ -32,7 +32,7 @@ type Order = {
     created_at?: string;
     items?: OrderItem[] | unknown[];
 };
-type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string };
+type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string; sadapay_number?: string; sadapay_title?: string; jazzcash_title?: string; easypaisa_title?: string; };
 type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
 const PLAN_DETAILS: Record<Plan, { 
@@ -136,7 +136,7 @@ export default function MerchantDashboardMaster() {
     const [acceptsCod, setAcceptsCod] = useState(true);
     const [acceptsAdvance, setAcceptsAdvance] = useState(false);
     const [advancePercentage, setAdvancePercentage] = useState('50');
-    const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({ bank_name: '', account_title: '', account_number: '', iban: '', jazzcash_number: '', easypaisa_number: '' });
+    const [paymentDetails, setPaymentDetails] = useState<PaymentDetails>({ bank_name: '', account_title: '', account_number: '', iban: '', sadapay_number: '', sadapay_title: '', jazzcash_number: '', jazzcash_title: '', easypaisa_number: '', easypaisa_title: '' });
     const [socialLinks, setSocialLinks] = useState<StoreSocialLinks>({ instagram: '', facebook: '', youtube: '', tiktok: '', x: '' });
 
     // Data states
@@ -181,10 +181,10 @@ export default function MerchantDashboardMaster() {
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<'bank' | 'jazzcash' | 'easypaisa' | 'sadapay'>('bank');
-    const [cardHolder, setCardHolder] = useState('');
-    const [cardNumber, setCardNumber] = useState('');
-    const [cardExp, setCardExp] = useState('');
-    const [cardCvc, setCardCvc] = useState('');
+    const [upgradeSenderName, setUpgradeSenderName] = useState('');
+    const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
+    const [upgradeTrxId, setUpgradeTrxId] = useState('');
+    const [upgradeReceiptFile, setUpgradeReceiptFile] = useState<File | null>(null);
     const [trxRef, setTrxRef] = useState('');
     const [isUpgrading, setIsUpgrading] = useState(false);
     const [upgradeSuccess, setUpgradeSuccess] = useState('');
@@ -257,25 +257,61 @@ export default function MerchantDashboardMaster() {
         setIsUpgrading(true);
         try {
             const sid = resolvedStoreId || paramId;
-            const res = await fetch('/api/stores/plan', {
+            if (targetPlan === 'basic') {
+                const res = await fetch('/api/stores/plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        store_id: sid,
+                        plan: 'basic',
+                    }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to switch to Basic plan.');
+                setStorePlan('basic');
+                setUpgradeSuccess('Switched to Basic plan.');
+                setUpgradeModalPlan(null);
+                setTimeout(() => setUpgradeSuccess(''), 7000);
+                return;
+            }
+
+            if (!upgradeTrxId.trim() && !upgradeReceiptFile) {
+                throw new Error('Please enter Transaction ID (TID) or upload your payment receipt screenshot.');
+            }
+
+            let screenshotUrl = '';
+            if (upgradeReceiptFile) {
+                try {
+                    screenshotUrl = await uploadStoreImage(upgradeReceiptFile, sid);
+                } catch (e) {
+                    console.warn('Screenshot upload warning:', e);
+                }
+            }
+
+            const res = await fetch('/api/merchant/upgrade-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     store_id: sid,
                     plan: targetPlan,
                     payment_method: paymentMethod,
-                    transaction_ref: trxRef || `TRX-${Date.now().toString().slice(-6)}`,
+                    sender_name: upgradeSenderName,
+                    sender_number: upgradeSenderNumber,
+                    transaction_id: upgradeTrxId,
+                    screenshot_url: screenshotUrl,
+                    amount: targetPlan === 'business' ? 7500 : 3500,
                 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to activate plan.');
+            if (!res.ok) throw new Error(data.error || 'Failed to submit upgrade proof.');
 
-            setStorePlan(targetPlan);
-            setIsTrialExpired(false);
-            setIsTrialActive(false);
-            setUpgradeSuccess(`🎉 Success! Your store is now active on the ${PLAN_DETAILS[targetPlan].title} plan! WhatsApp ordering and higher catalog limits are now unlocked.`);
+            setUpgradeSuccess(`🎉 Payment submitted! Superadmin will verify your transaction and activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
             setUpgradeModalPlan(null);
-            setTimeout(() => setUpgradeSuccess(''), 7000);
+            setUpgradeTrxId('');
+            setUpgradeSenderName('');
+            setUpgradeSenderNumber('');
+            setUpgradeReceiptFile(null);
+            setTimeout(() => setUpgradeSuccess(''), 10000);
         } catch (err: any) {
             alert(err.message || 'Payment activation failed. Please try again.');
         } finally {
@@ -796,8 +832,8 @@ export default function MerchantDashboardMaster() {
                         { id: 'orders', label: `Orders · ${orders.length}`, icon: ShoppingBag },
                         { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
-                        { id: 'payments', label: 'Payments', icon: CreditCard },
-                        { id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles },
+                        { id: 'payments', label: 'Payments', icon: Wallet },
+                        ...((storePlan === 'pro' || storePlan === 'business') ? [{ id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles }] : []),
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -1206,9 +1242,13 @@ export default function MerchantDashboardMaster() {
                                             ['account_title', 'Account title', 'Name on the account'],
                                             ['account_number', 'Account number', 'Bank account number'],
                                             ['iban', 'IBAN', 'PK00 XXXX 0000 0000'],
+                                            ['sadapay_number', 'SadaPay number', '03XX XXXXXXX'],
+                                            ['sadapay_title', 'SadaPay title', 'Title on SadaPay'],
                                             ['jazzcash_number', 'JazzCash number', '03XX XXXXXXX'],
+                                            ['jazzcash_title', 'JazzCash title', 'Title on JazzCash'],
                                             ['easypaisa_number', 'EasyPaisa number', '03XX XXXXXXX'],
-                                        ] as const).map(([key, label, placeholder]) => <label key={key} className="block text-[10px] font-semibold text-slate-600">{label}<input type="text" value={paymentDetails[key]} onChange={event => setPaymentDetails(current => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} maxLength={120} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
+                                            ['easypaisa_title', 'EasyPaisa title', 'Title on EasyPaisa'],
+                                        ] as const).map(([key, label, placeholder]) => <label key={key} className="block text-[10px] font-semibold text-slate-600">{label}<input type="text" value={(paymentDetails as any)[key] || ''} onChange={event => setPaymentDetails(current => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} maxLength={120} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
                                     </div>
                                 </section>
 
@@ -2028,7 +2068,7 @@ export default function MerchantDashboardMaster() {
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                         {[
-                                            { id: 'card', label: 'Credit Card', icon: CreditCard },
+                                            { id: 'sadapay', label: 'SadaPay', icon: Smartphone },
                                             { id: 'jazzcash', label: 'JazzCash', icon: Wallet },
                                             { id: 'easypaisa', label: 'EasyPaisa', icon: Wallet },
                                             { id: 'bank', label: 'Bank Transfer', icon: Landmark },
@@ -2054,20 +2094,69 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                 </div>
 
-                                {/* WhatsApp Instant Confirmation Link */}
-                                <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-xs text-emerald-900">
-                                    <div className="flex items-center gap-2">
-                                        <MessageCircle size={15} className="text-emerald-600 shrink-0" />
-                                        <span className="text-[11px]">Need billing help or manual invoice?</span>
+                                {/* Official Payment Instructions */}
+                                <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Transfer To Account</span>
+                                        <span className="font-mono font-bold text-blue-700 text-[11px]">
+                                            {paymentMethod === 'sadapay' ? 'SadaPay' : paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'Meezan Bank'}
+                                        </span>
                                     </div>
-                                    <a
-                                        href={`https://wa.me/923001234567?text=Hello%20Buildexom!%20I%20want%20to%20activate%20the%20${PLAN_DETAILS[upgradeModalPlan].title}%20plan%20for%20my%20store%20${encodeURIComponent(storeName)}%20(${storeSlug}).`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="font-bold text-emerald-700 hover:underline shrink-0 text-[11px]"
-                                    >
-                                        WhatsApp Concierge →
-                                    </a>
+                                    <p className="text-slate-800 font-semibold text-xs">
+                                        {paymentMethod === 'bank' ? 'Meezan Bank — Title: Buildexom Technologies' : 'Account Title: Buildexom Official'}
+                                    </p>
+                                    <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">
+                                        {paymentMethod === 'bank' ? 'PK12MEZN0001234567890123' : '0300-1234567'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 pt-0.5">Transfer {PLAN_DETAILS[upgradeModalPlan].priceLabel} and enter your transaction ID (TID) below.</p>
+                                </div>
+
+                                {/* Real-World Payment Verification Form */}
+                                <div className="space-y-3 pt-1">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Sender Account Title</label>
+                                            <input 
+                                                type="text" 
+                                                value={upgradeSenderName}
+                                                onChange={(e) => setUpgradeSenderName(e.target.value)}
+                                                placeholder="Your Name on Account"
+                                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Sender Mobile / Account #</label>
+                                            <input 
+                                                type="text" 
+                                                value={upgradeSenderNumber}
+                                                onChange={(e) => setUpgradeSenderNumber(e.target.value)}
+                                                placeholder="03XX XXXXXXX"
+                                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #) *</label>
+                                            <input 
+                                                type="text" 
+                                                value={upgradeTrxId}
+                                                onChange={(e) => setUpgradeTrxId(e.target.value)}
+                                                placeholder="e.g. 1092837465"
+                                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof</label>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*"
+                                                onChange={(e) => setUpgradeReceiptFile(e.target.files?.[0] || null)}
+                                                className="mt-1 w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -2120,15 +2209,17 @@ export default function MerchantDashboardMaster() {
             )}
 
             {/* AI Voice-Controlled Store Management Assistant (Bilingual: English & Urdu) */}
-            <VoiceStoreAssistant 
-                storeId={resolvedStoreId}
-                storeSlug={storeSlug}
-                onActionExecuted={() => {
-                    if (resolvedStoreId) {
-                        fetchMeshData(resolvedStoreId);
-                    }
-                }}
-            />
+            {(storePlan === 'pro' || storePlan === 'business') && (
+                <VoiceStoreAssistant 
+                    storeId={resolvedStoreId}
+                    storeSlug={storeSlug}
+                    onActionExecuted={() => {
+                        if (resolvedStoreId) {
+                            fetchMeshData(resolvedStoreId);
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }

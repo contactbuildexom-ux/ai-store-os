@@ -620,8 +620,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
         <div
             className="min-h-screen font-sans text-slate-900 pb-28 relative"
             style={{
-                background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
-                backgroundColor: `${themeColor}08`,
+                background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
+                backgroundColor: `${themeColor}10`,
             }}
         >
             {/* Live Catalog Status Messages */}
@@ -638,7 +638,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Top Announcement Bar - Full width edge coverage */}
             <div className="w-full border-b px-4 sm:px-6 lg:px-8 py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
-                <div className="mx-auto flex max-w-6xl items-center justify-between text-[11px] sm:text-xs">
+                <div className="w-full flex items-center justify-between text-[11px] sm:text-xs">
                     <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
                         <Truck size={13} /> Fast Delivery Nationwide
                     </span>
@@ -653,7 +653,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-6 lg:px-8">
                     {/* Left: Mobile Menu & Logo / Brand */}
                     <div className="flex items-center gap-3">
                         <button
@@ -846,7 +846,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
+                <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
                     {/* Left Column: Polished, Balanced Text & CTAs */}
                     <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
@@ -932,7 +932,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
             </section>
 
             {/* Main Page Body - Balanced max-w-6xl container */}
-            <main className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
+            <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 lg:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
@@ -940,7 +940,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         id="featured" 
                         className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                         style={{
-                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                             borderColor: `${themeColor}28`,
                         }}
                     >
@@ -969,7 +969,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     onClick={() => openProductModal(item)}
                                     className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                     style={{
-                                        backgroundColor: `${themeColor}08`,
+                                        backgroundColor: `${themeColor}10`,
                                         borderColor: `${themeColor}24`,
                                     }}
                                 >
@@ -1132,7 +1132,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     id="products" 
                     className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                     style={{
-                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                         borderColor: `${themeColor}28`,
                     }}
                 >
@@ -1192,7 +1192,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     onClick={() => openProductModal(product)}
                                     className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                     style={{
-                                        backgroundColor: `${themeColor}08`,
+                                        backgroundColor: `${themeColor}10`,
                                         borderColor: `${themeColor}24`,
                                     }}
                                 >
@@ -1292,7 +1292,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 4. Trust Badges Strip */}
-                <section className="rounded-3xl border p-6 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`, borderColor: `${themeColor}28` }}>
+                <section className="rounded-3xl border p-6 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 text-center sm:text-left">
                         <div className="flex items-center justify-center sm:justify-start gap-3">
                             <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -1325,7 +1325,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 5. About Store Section (Linked directly from header navigation) */}
-                <section id="about" className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
+                <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
                     <div className="max-w-3xl space-y-3">
                         <span
                             className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
@@ -1349,35 +1349,35 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 6. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
-                <section className="overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
+                <section className="overflow-hidden rounded-3xl border p-6 text-slate-900 shadow-xs sm:p-8" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
                     <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
                             <div className="flex items-center gap-2.5">
                                 <span className="text-xl">🌐</span>
                                 <div>
-                                    <h4 className="text-xs font-bold text-white">Your Own Online Store</h4>
-                                    <p className="text-[10px] text-blue-200/80">Custom branded domain</p>
+                                    <h4 className="text-xs font-bold text-slate-900">Your Own Online Store</h4>
+                                    <p className="text-[10px] text-slate-600">Custom branded domain</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5">
                                 <span className="text-xl">💬</span>
                                 <div>
-                                    <h4 className="text-xs font-bold text-white">WhatsApp Ordering</h4>
-                                    <p className="text-[10px] text-blue-200/80">Direct customer chat</p>
+                                    <h4 className="text-xs font-bold text-slate-900">WhatsApp Ordering</h4>
+                                    <p className="text-[10px] text-slate-600">Direct customer chat</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5">
                                 <span className="text-xl">🛡️</span>
                                 <div>
-                                    <h4 className="text-xs font-bold text-white">Secure & Reliable</h4>
-                                    <p className="text-[10px] text-blue-200/80">24/7 verified uptime</p>
+                                    <h4 className="text-xs font-bold text-slate-900">Secure & Reliable</h4>
+                                    <p className="text-[10px] text-slate-600">24/7 verified uptime</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2.5">
                                 <span className="text-xl">📈</span>
                                 <div>
-                                    <h4 className="text-xs font-bold text-white">Grow Your Business</h4>
-                                    <p className="text-[10px] text-blue-200/80">Scale sales effortlessly</p>
+                                    <h4 className="text-xs font-bold text-slate-900">Grow Your Business</h4>
+                                    <p className="text-[10px] text-slate-600">Scale sales effortlessly</p>
                                 </div>
                             </div>
                         </div>
@@ -1385,7 +1385,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         <div className="shrink-0 w-full sm:w-auto text-center">
                             <Link
                                 href="/"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg transition hover:bg-blue-400 active:scale-95"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:opacity-90 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
                             >
                                 <span>Build Your Store</span>
                                 <ArrowRight size={14} />

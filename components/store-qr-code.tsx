@@ -12,6 +12,7 @@ type StoreQRCodeProps = {
   badge?: string;
   className?: string;
   showCardHeader?: boolean;
+  compact?: boolean;
 };
 
 // Official Buildexom Brand Logo Mark (Hexagon Store Awning Icon)
@@ -23,7 +24,8 @@ export function StoreQRCode({
   title = "Your store QR", 
   badge = "Sample",
   className = "",
-  showCardHeader = true
+  showCardHeader = true,
+  compact = false
 }: StoreQRCodeProps) {
   const reactId = useId();
   const downloadId = `store-qr-${reactId.replace(/:/g, '')}`;
@@ -92,6 +94,58 @@ export function StoreQRCode({
   }
 
   if (!safeSlug) return null;
+
+  if (compact) {
+    return (
+      <div className={`flex flex-col items-center justify-center p-3 rounded-2xl bg-white border border-slate-200/90 shadow-xs ${className}`}>
+        {storeUrl ? (
+          <div className="relative mx-auto w-fit rounded-xl bg-white p-1.5 shadow-2xs ring-1 ring-slate-100">
+            <QRCodeSVG
+              id={downloadId}
+              value={storeUrl}
+              size={104}
+              level="M"
+              marginSize={1}
+              title={`QR code for ${safeSlug}`}
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+              imageSettings={{
+                src: BUILDEXOM_ICON_DATA_URL,
+                height: 24,
+                width: 24,
+                excavate: true,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[10px] text-slate-400">Loading QR…</p>
+          </div>
+        )}
+        <div className="mt-2.5 flex items-center justify-center gap-1.5 w-full">
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Copy store link"
+            className="inline-flex h-7 px-2.5 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-700 hover:bg-white transition"
+          >
+            {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} className="text-slate-500" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={downloadQrCode}
+            disabled={!storeUrl}
+            title="Download QR code SVG"
+            className="inline-flex h-7 px-2.5 items-center justify-center gap-1 rounded-lg bg-slate-900 text-[10px] font-bold text-white hover:bg-slate-800 transition disabled:opacity-50"
+          >
+            <Download size={12} />
+            <span>SVG</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section 

@@ -117,6 +117,26 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
+  // 1.5 PASSWORD & ACCOUNT ACCESS (How to change password, login, credentials)
+  if (/\b(password|passward|pasword|login|credential|credentials|account|reset password|change password|forgot password|badalna|bhool)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `پاس ورڈ تبدیل کرنے یا اکاؤنٹ سیٹنگز کے لیے: لاگ ان اسکرین پر "Forgot Password" پر کلک کریں اور اپنا رجسٹرڈ ای میل درج کریں۔ آپ کو فوری پاس ورڈ ری سیٹ کا لنک مل جائے گا۔ یا مرچنٹ ڈیش بورڈ کی سیٹنگز سے نیا پاس ورڈ سیو کریں۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `Password tabdeel karne ke liye:\n1. Merchant Login screen par "Forgot Password" par click karein.\n2. Apna registered email darj karein taake reset link aap ko mil sake.\n3. Agar aap already logged in hain toh Dashboard Settings mein ja kar apna naya password update kar sakte hain.`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `To change or reset your password:\n1. Go to the Merchant Login page and click "Forgot Password".\n2. Enter your registered email address to receive a secure password reset link.\n3. If you are already logged in, you can update your credentials directly from your Dashboard Account Settings.`,
+      languageDetected: 'en',
+    };
+  }
+
   // 2. AUTHENTICITY / QUALITY (Original hai, copy hai, quality kaisi hai, authentic)
   if (/\b(original|authentic|genuine|asli|nakal|replica|copy|first copy|quality|kaisa hai|kaisi hai|meyar|mayar)\b/i.test(cleanMsg)) {
     if (style === 'ur-script') {
