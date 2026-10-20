@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { getStoreNicheColor, THEME_PALETTES } from "@/lib/store-theme";
+import { fetchStoreByIdOrSlug, isUuid } from "@/lib/store-id-slug";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -189,14 +190,20 @@ export async function GET(req: Request) {
       });
     }
 
-    const [settingsResult, storeResult, paymentResult] = await Promise.all([
-      supabase.from("store_settings").select("*").eq("store_id", storeId).maybeSingle(),
-      supabase.from("stores").select("id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details").eq("id", storeId).maybeSingle(),
-      supabase.from("store_payments").select("provider_name, account_number, is_active").eq("store_id", storeId).eq("is_active", true),
+    const storeResult = await fetchStoreByIdOrSlug(
+      supabase,
+      storeId,
+      "id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details"
+    );
+    let { data: store, error: storeError } = storeResult;
+    const resolvedStoreId = store?.id || storeId;
+
+    const [settingsResult, paymentResult] = await Promise.all([
+      supabase.from("store_settings").select("*").eq("store_id", resolvedStoreId).maybeSingle(),
+      supabase.from("store_payments").select("provider_name, account_number, is_active").eq("store_id", resolvedStoreId).eq("is_active", true),
     ]);
 
     const { data: settings, error: settingsError } = settingsResult;
-    let { data: store, error: storeError } = storeResult;
     const { data: paymentMethods, error: paymentError } = paymentResult;
 
     if (isMissingSettingsSchema(settingsError)) {
@@ -311,6 +318,14 @@ export async function POST(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
+    let targetStoreId = storeId;
+    if (supabase) {
+      if (!isUuid(storeId)) {
+        const { data: storeRow } = await supabase.from("stores").select("id").eq("slug", storeId).maybeSingle();
+        if (storeRow?.id) targetStoreId = storeRow.id;
+      }
+    }
+
     if (!supabase) {
       const { storeRepo } = await import("@/lib/store-repository");
       const repoStore = await storeRepo.getStore(storeId);
@@ -370,7 +385,7 @@ export async function POST(req: Request) {
         accepts_advance: body.accepts_advance,
         advance_percentage: advancePercentage,
         payment_details: paymentDetails,
-      }).eq("id", storeId);
+      }).eq("id", targetStoreId);
       if (paymentSettingsError) throw paymentSettingsError;
       savedPaymentDetails = paymentDetails;
     }
@@ -379,7 +394,7 @@ export async function POST(req: Request) {
       const { error: storeError } = await supabase
         .from("stores")
         .update({ whatsapp_number: optionalText(body.whatsapp_number) })
-        .eq("id", storeId);
+        .eq("id", targetStoreId);
       if (storeError && !isMissingStoreColumn(storeError)) throw storeError;
     }
 
@@ -388,7 +403,7 @@ export async function POST(req: Request) {
       const { error: planError } = await supabase
         .from("stores")
         .update({ plan: updatedPlan, payment_status: "active" })
-        .eq("id", storeId);
+        .eq("id", targetStoreId);
       if (planError && !isMissingStoreColumn(planError)) console.warn("Plan update error:", planError);
     }
 
@@ -399,7 +414,7 @@ export async function POST(req: Request) {
     }
 
     const basePayload = {
-      store_id: storeId,
+      store_id: targetStoreId,
       theme_color: themeColor,
       banner_text: optionalText(body?.banner_text) ?? "Welcome to our store!",
       font_style: optionalText(body?.font_style) ?? "inter",
@@ -452,7 +467,7 @@ export async function POST(req: Request) {
       if (selectedTheme) storeUpdates.selected_theme = selectedTheme;
       if (body.banner_text) storeUpdates.header_title = String(body.banner_text);
       if (Object.keys(storeUpdates).length > 0) {
-        await supabase.from("stores").update(storeUpdates).eq("id", storeId);
+        await supabase.from("stores").update(storeUpdates).eq("id", targetStoreId);
       }
     } catch (syncErr) {
       console.warn("Could not sync stores table branding columns:", syncErr);

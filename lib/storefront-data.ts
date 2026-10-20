@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeRepo } from "@/lib/store-repository";
 import { THEME_PALETTES } from "@/lib/store-theme";
+import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 import type {
   PublicStore,
   PublicStoreProduct,
@@ -27,11 +28,11 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
   const supabase = createAdminClient();
   if (supabase) {
     try {
-      const { data: store, error: storeError } = await supabase
-        .from("stores")
-        .select("*")
-        .or(`slug.eq.${normalizedSlug},id.eq.${normalizedSlug}`)
-        .maybeSingle();
+      const { data: store, error: storeError } = await fetchStoreByIdOrSlug(
+        supabase,
+        normalizedSlug,
+        "*"
+      );
 
       if (!storeError && store) {
         const [legacyResult, builderResult, categoryResult, settingsResult] = await Promise.all([

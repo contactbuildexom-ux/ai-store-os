@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessStore } from '@/lib/merchant-api-auth';
 import { storeRepo } from '@/lib/store-repository';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function POST(req: Request) {
   try {
@@ -45,11 +46,15 @@ export async function POST(req: Request) {
     if (supabase) {
       try {
         // Find store by id or slug
-        const { data: existingStore } = await supabase
-          .from('stores')
-          .select('id, slug, payment_details')
-          .or(`id.eq.${store_id},slug.eq.${store_id}`)
-          .maybeSingle();
+        const { data: existingStore } = await fetchStoreByIdOrSlug(
+          supabase,
+          store_id,
+          'id, slug, payment_details'
+        );
+
+
+
+
 
         if (existingStore) {
           const currentDetails = typeof existingStore.payment_details === 'object' && existingStore.payment_details !== null

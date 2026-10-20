@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { storeRepo } from '@/lib/store-repository';
 import { generateBexiReply, BexiProduct } from '@/lib/ai/bexi-chat-engine';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function POST(req: Request) {
   try {
@@ -45,11 +46,15 @@ export async function POST(req: Request) {
     const supabase = createAdminClient();
     if ((!store || bexiProducts.length === 0) && supabase) {
       try {
-        const { data: dbStore } = await supabase
-          .from('stores')
-          .select('id, name, slug, whatsapp_number, tagline, description')
-          .or(`id.eq.${store_id},slug.eq.${store_id}`)
-          .maybeSingle();
+        const { data: dbStore } = await fetchStoreByIdOrSlug(
+          supabase,
+          store_id,
+          'id, name, slug, whatsapp_number, tagline, description'
+        );
+
+
+
+
 
         if (dbStore) {
           store = {

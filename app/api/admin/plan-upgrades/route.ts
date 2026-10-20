@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function GET() {
   try {
@@ -65,11 +66,15 @@ export async function POST(req: Request) {
     const supabase = createAdminClient();
     if (supabase) {
       try {
-        const { data: existingStore } = await supabase
-          .from('stores')
-          .select('id, payment_details')
-          .or(`id.eq.${store_id},slug.eq.${store_id}`)
-          .maybeSingle();
+        const { data: existingStore } = await fetchStoreByIdOrSlug(
+          supabase,
+          store_id,
+          'id, payment_details'
+        );
+
+
+
+
 
         if (existingStore) {
           const currentDetails = typeof existingStore.payment_details === 'object' && existingStore.payment_details !== null

@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { GeneratedStore, GeneratedProduct, THEME_PRESETS } from './ai/ai-generator';
 import { readLocalStoreCache, writeLocalStoreCache } from './local-store-cache';
+import { fetchStoreByIdOrSlug } from './store-id-slug';
 
 export interface StoreRecord {
   id: string;
@@ -303,11 +304,11 @@ class StoreRepository {
     const supabase = this.getSupabase();
     if (supabase) {
       try {
-        const { data, error } = await supabase
-          .from('stores')
-          .select('*')
-          .or(`slug.eq.${idOrSlug},id.eq.${idOrSlug}`)
-          .single();
+        const { data, error } = await fetchStoreByIdOrSlug(supabase, idOrSlug, '*');
+
+
+
+
 
         if (data && !error) {
           const rec: StoreRecord = {
@@ -402,6 +403,7 @@ class StoreRepository {
         const { data } = await supabase
           .from('products')
           .select('*')
+
           .eq('store_id', targetId);
 
         if (data && Array.isArray(data) && data.length > 0) {

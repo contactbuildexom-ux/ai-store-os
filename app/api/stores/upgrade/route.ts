@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessStore } from '@/lib/merchant-api-auth';
 import { storeRepo } from '@/lib/store-repository';
+import { updateStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function POST(request: Request) {
   try {
@@ -22,10 +23,10 @@ export async function POST(request: Request) {
       const planVal = String(plan).toLowerCase();
       if (supabase) {
         try {
-          await supabase
-            .from('stores')
-            .update({ plan: planVal, plan_type: planVal })
-            .or(`id.eq.${store_id},slug.eq.${store_id}`);
+          await updateStoreByIdOrSlug(supabase, String(store_id), { plan: planVal, plan_type: planVal });
+
+
+
         } catch (e) {
           console.warn('Supabase plan update warning:', e);
         }

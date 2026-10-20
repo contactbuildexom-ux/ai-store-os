@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
+import { updateStoreByIdOrSlug } from "@/lib/store-id-slug";
 
 const VALID_PLANS = ["basic", "pro", "business"] as const;
 type PlanType = (typeof VALID_PLANS)[number];
@@ -46,13 +47,16 @@ export async function POST(req: Request) {
 
     if (isSupabaseValid && admin) {
       try {
-        const { error: storeError } = await admin
-          .from("stores")
-          .update({
-            plan,
-            payment_status: "active",
-          })
-          .or(`id.eq.${storeId},slug.eq.${storeId}`);
+        const { error: storeError } = await updateStoreByIdOrSlug(admin, storeId, {
+          plan,
+          payment_status: "active",
+        });
+
+
+
+
+
+
 
         if (!storeError) {
           updatedInDb = true;

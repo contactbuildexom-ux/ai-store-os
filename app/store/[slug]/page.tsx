@@ -4,6 +4,7 @@ import { StoreFooter } from '../../../components/store-footer';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
 import { THEME_PALETTES } from '@/lib/store-theme';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export default async function PublicStorePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
@@ -20,11 +21,11 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
 
   if (supabase) {
     try {
-      const { data: dbStore } = await supabase
-        .from('stores')
-        .select('id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details')
-        .or(`slug.eq.${slug},id.eq.${slug}`)
-        .maybeSingle();
+      const { data: dbStore } = await fetchStoreByIdOrSlug(
+        supabase,
+        slug,
+        'id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details'
+      );
       store = dbStore;
     } catch (e) {
       console.warn("Supabase fetch store warning:", e);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMerchantSessionStore } from "@/lib/merchant-api-auth";
+import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 
 type StoreRow = {
   id: string;
@@ -69,11 +70,15 @@ export async function GET(request: Request) {
     const isSupabaseValid = supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
 
     if (isSupabaseValid && supabase && requestedId) {
-      const { data: dbStore } = await supabase
-        .from("stores")
-        .select("id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at")
-        .or(`id.eq.${requestedId},slug.eq.${requestedId}`)
-        .maybeSingle();
+      const { data: dbStore } = await fetchStoreByIdOrSlug<StoreRow>(
+        supabase,
+        requestedId,
+        "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at"
+      );
+
+
+
+
 
       if (dbStore) {
         const { getStoreNicheColor, THEME_PALETTES } = await import("@/lib/store-theme");

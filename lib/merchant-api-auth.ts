@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ADMIN_SESSION_COOKIE, verifyAdminSession } from "@/lib/admin-session";
 import { MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
 import { storeRepo } from "@/lib/store-repository";
+import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 
 /** Checks that the current browser session owns the requested store. */
 export async function canAccessStore(storeId: string) {
@@ -35,11 +36,15 @@ export async function canAccessStore(storeId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user && user.app_metadata?.role === "super_admin") return true;
 
-    const { data: store, error: storeError } = await admin
-      .from("stores")
-      .select("id, owner_id, user_id, slug")
-      .or(`id.eq.${storeId},slug.eq.${storeId}`)
-      .maybeSingle();
+    const { data: store, error: storeError } = await fetchStoreByIdOrSlug(
+      admin,
+      storeId,
+      "id, owner_id, user_id, slug"
+    );
+
+
+
+
     if (storeError || !store) return Boolean(repoStore);
     if (!store.owner_id && !store.user_id) return true;
     if (user && (store.owner_id === user.id || store.user_id === user.id)) return true;
@@ -59,11 +64,15 @@ export async function getMerchantSessionStore(requestedId?: string) {
     const isSupabaseValid = admin && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
     if (isSupabaseValid && admin) {
       try {
-        const { data, error } = await admin
-          .from("stores")
-          .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number")
-          .or(`id.eq.${merchantSession.storeId},slug.eq.${merchantSession.slug}`)
-          .maybeSingle();
+        const { data, error } = await fetchStoreByIdOrSlug(
+          admin,
+          targetLookup || merchantSession.storeId || merchantSession.slug,
+          "id, name, slug, plan, payment_status, owner_email, whatsapp_number"
+        );
+    
+
+
+
         if (!error && data) return data;
       } catch {
         // Fallback to storeRepo
@@ -107,11 +116,12 @@ export async function getMerchantSessionStore(requestedId?: string) {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return null;
     if (user.app_metadata?.role === "super_admin") return null;
-    const { data, error: storeError } = await admin
-      .from("stores")
+    const { data, error: storeError } = await admin.from("stores")
+
       .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number")
       .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
       .maybeSingle();
+
     return storeError ? null : data;
   } catch {
     return null;
