@@ -846,7 +846,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="w-full px-4 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
+                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
                     {/* Left Column: Polished, Balanced Text & CTAs */}
                     <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
