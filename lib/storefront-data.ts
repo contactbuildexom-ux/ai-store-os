@@ -30,7 +30,7 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
       const { data: store, error: storeError } = await supabase
         .from("stores")
         .select("*")
-        .eq("slug", normalizedSlug)
+        .or(`slug.eq.${normalizedSlug},id.eq.${normalizedSlug}`)
         .maybeSingle();
 
       if (!storeError && store) {

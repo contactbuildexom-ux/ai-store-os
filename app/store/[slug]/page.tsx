@@ -23,7 +23,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
       const { data: dbStore } = await supabase
         .from('stores')
         .select('id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details')
-        .eq('slug', slug)
+        .or(`slug.eq.${slug},id.eq.${slug}`)
         .maybeSingle();
       store = dbStore;
     } catch (e) {

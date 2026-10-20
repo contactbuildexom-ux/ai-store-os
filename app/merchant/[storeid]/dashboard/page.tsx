@@ -453,6 +453,7 @@ export default function MerchantDashboardMaster() {
 
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name || 'Your store');
+            setStoreSlug(storeData.slug || '');
             const normPlan = normalizePlan(storeData.plan);
             setStorePlan(normPlan);
 
@@ -904,7 +905,7 @@ export default function MerchantDashboardMaster() {
                         <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-white">
                             <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Your store is live
                         </p>
-                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-200 hover:text-white" href={`/store/${paramId}`} target="_blank" rel="noreferrer">
+                        <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-200 hover:text-white" href={`/store/${storeSlug || paramId}`} target="_blank" rel="noreferrer">
                             Open storefront <ExternalLink size={12} />
                         </a>
                     </div>
@@ -920,7 +921,7 @@ export default function MerchantDashboardMaster() {
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
                     </div>
-                    <a href={`/store/${paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
+                    <a href={`/store/${storeSlug || paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
                         <Eye size={14} /> <span className="hidden sm:inline">View storefront</span><ExternalLink size={12} />
                     </a>
                 </header>

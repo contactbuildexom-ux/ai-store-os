@@ -36,6 +36,7 @@ function parsePaymentDetails(value: unknown) {
 
 const SOCIAL_KEYS = ["instagram", "facebook", "youtube", "tiktok", "x"] as const;
 const THEME_COLORS: Record<string, string> = {
+  ...THEME_PALETTES,
   emerald: "#1d7555",
   ocean: "#2563eb",
   rose: "#be185d",
@@ -392,14 +393,14 @@ export async function POST(req: Request) {
     }
 
     const selectedTheme = textValue(body?.selected_theme).toLowerCase().replace(/\s+/g, "-");
-    const themeColor = textValue(body?.theme_color);
-    const validTheme = !selectedTheme || /^#[0-9a-f]{6}$/i.test(selectedTheme) || selectedTheme in THEME_COLORS;
-    if (!validTheme) return NextResponse.json({ error: "Choose a supported theme or six-digit hex color." }, { status: 400 });
-    if (themeColor && !/^#[0-9a-f]{6}$/i.test(themeColor)) return NextResponse.json({ error: "Theme color must be a six-digit hex value." }, { status: 400 });
+    let themeColor = textValue(body?.theme_color);
+    if (!themeColor || !/^#[0-9a-f]{6}$/i.test(themeColor)) {
+      themeColor = (selectedTheme && THEME_COLORS[selectedTheme]) || "#1d7555";
+    }
 
     const basePayload = {
       store_id: storeId,
-      theme_color: themeColor || (selectedTheme ? THEME_COLORS[selectedTheme] ?? selectedTheme : "#1d7555"),
+      theme_color: themeColor,
       banner_text: optionalText(body?.banner_text) ?? "Welcome to our store!",
       font_style: optionalText(body?.font_style) ?? "inter",
       logo_url: optionalText(body?.logo_url) ?? "",
