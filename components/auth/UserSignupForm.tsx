@@ -8,11 +8,10 @@ import { Search, ChevronDown, Check, Sparkles, PenLine } from "lucide-react";
 import Logo from "@/components/landing/logo";
 import EmailVerifyField from "@/components/auth/EmailVerifyField";
 import { STORE_IDEA_PRESETS } from "@/components/landing/MerchantStoreSetupModal";
+import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
 
 /* ---------- Settings ---------- */
 const LOGIN_HREF = "/user/login";
-// Email verification is only enforced when NEXT_PUBLIC_REQUIRE_EMAIL_OTP=true
-const OTP_REQUIRED = process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -28,6 +27,7 @@ type GenerateResponse = {
   error?: string;
   slug?: string;
   dashboard_url?: string;
+  storefront_url?: string;
 };
 
 export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
@@ -103,7 +103,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
     if (!EMAIL_RE.test(cleanEmail)) return setError("Please enter a valid email address.");
     if (phoneDigits < 10 || phoneDigits > 15) return setError("Please enter a valid contact number with country code.");
     if (password.length < 8) return setError("Password must be at least 8 characters.");
-    if (OTP_REQUIRED && !verificationToken) return setError("Please verify your email with the code we send you.");
+    if (EMAIL_OTP_REQUIRED && !verificationToken) return setError("Please verify your email with the code we send you.");
 
     // Resolve final prompt
     let finalPrompt = "";
@@ -129,6 +129,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          registration: "merchant",
           store_name: storeName.trim() || undefined,
           prompt: finalPrompt,
           plan,
@@ -285,7 +286,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                 </div>
               </div>
 
-              {OTP_REQUIRED && <EmailVerifyField email={email} phone={phone} onVerified={handleVerified} />}
+              {EMAIL_OTP_REQUIRED && <EmailVerifyField email={email} phone={phone} onVerified={handleVerified} />}
 
               {/* Worldwide E-Commerce Store Niches Dropdown with Search & Custom Write Option */}
               <div ref={dropdownRef} className="relative space-y-1.5">
@@ -406,7 +407,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
 
               <button
                 type="submit"
-                disabled={loading || (OTP_REQUIRED && !verificationToken)}
+                disabled={loading || (EMAIL_OTP_REQUIRED && !verificationToken)}
                 style={{ fontSize: 15, fontWeight: 700 }}
                 className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976d2] to-[#1565c0] text-white shadow-[0_14px_28px_-12px_rgba(25,118,210,0.8)] transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
               >

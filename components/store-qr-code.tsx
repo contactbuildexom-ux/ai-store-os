@@ -12,6 +12,8 @@ type StoreQRCodeProps = {
   badge?: string;
   className?: string;
   showCardHeader?: boolean;
+  compact?: boolean;
+  themeColor?: string;
 };
 
 // Official Buildexom Brand Logo Mark (Hexagon Store Awning Icon)
@@ -23,7 +25,9 @@ export function StoreQRCode({
   title = "Your store QR", 
   badge = "Sample",
   className = "",
-  showCardHeader = true
+  showCardHeader = true,
+  compact = false,
+  themeColor
 }: StoreQRCodeProps) {
   const reactId = useId();
   const downloadId = `store-qr-${reactId.replace(/:/g, '')}`;
@@ -92,6 +96,64 @@ export function StoreQRCode({
   }
 
   if (!safeSlug) return null;
+
+  if (compact) {
+    return (
+      <div 
+        className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-200/80 shadow-xs ${className}`}
+        style={themeColor ? {
+          background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
+          borderColor: `${themeColor}30`,
+        } : { backgroundColor: 'transparent' }}
+      >
+        {storeUrl ? (
+          <div className="relative mx-auto w-fit rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-slate-200/80">
+            <QRCodeSVG
+              id={downloadId}
+              value={storeUrl}
+              size={104}
+              level="M"
+              marginSize={1}
+              title={`QR code for ${safeSlug}`}
+              bgColor="#ffffff"
+              fgColor="#0f172a"
+              imageSettings={{
+                src: BUILDEXOM_ICON_DATA_URL,
+                height: 24,
+                width: 24,
+                excavate: true,
+              }}
+            />
+          </div>
+        ) : (
+          <div className="py-4 text-center">
+            <p className="text-[10px] text-slate-400">Loading QR…</p>
+          </div>
+        )}
+        <div className="mt-3 flex flex-col gap-1.5 w-full">
+          <button
+            type="button"
+            onClick={downloadQrCode}
+            disabled={!storeUrl}
+            title="Download store QR code"
+            className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 disabled:opacity-50"
+          >
+            <Download size={14} className="shrink-0 text-white" />
+            <span>Download QR Code</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Copy store link"
+            className="inline-flex h-7.5 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-white hover:border-slate-300 active:scale-95"
+          >
+            {copied ? <Check size={13} className="text-emerald-600 shrink-0" /> : <Copy size={13} className="text-slate-400 shrink-0" />}
+            <span>{copied ? 'Link Copied!' : 'Copy Store Link'}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section 
@@ -179,10 +241,10 @@ export function StoreQRCode({
             type="button"
             onClick={downloadQrCode}
             disabled={!storeUrl}
-            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50"
+            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50 whitespace-nowrap"
           >
             <Download size={14} />
-            <span>Download</span>
+            <span>Download QR</span>
           </button>
         </div>
       )}

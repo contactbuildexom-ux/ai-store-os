@@ -12,7 +12,7 @@ type SectionRow = {
   id: string;
   cells: string[];
   values: Array<{ label: string; value: string }>;
-  resource?: "stores" | "products";
+  resource?: "stores" | "sellers" | "products";
   fields?: DashboardEditField[];
   viewHref?: string;
 };
@@ -90,32 +90,61 @@ export default async function SectionPage({
     }
   } else if (section === "sellers") {
     title = "Sellers";
-    description = "Manage seller accounts and store owners.";
+    description = "Manage seller profiles and their linked storefronts.";
     columns = ["Owner Name / Email", "Store Name", "Slug", "Plan", "Status", "Joined", "Actions"];
     if (supabase) {
-      let query = supabase.from("stores").select("id, owner_email, name, slug, plan, payment_status, created_at", { count: "exact" }).order("created_at", { ascending: false });
-      if (q) query = query.ilike("owner_email", `%${q}%`);
+      let query = supabase.from("merchants")
+        .select("id, store_id, name, email, address, whatsapp_number, contact_phone, created_at", { count: "exact" })
+        .order("created_at", { ascending: false });
+      if (q) query = query.ilike("email", `%${q}%`);
       const result = await query;
-      if (result.error) dataError = `Unable to load sellers: ${result.error.message}`;
-      totalCount = result.count ?? 0;
-      rows = (result.data ?? []).map((store) => {
-        const ownerEmail = String(store.owner_email ?? "");
-        const name = String(store.name ?? "");
-        const slug = String(store.slug ?? "");
-        const plan = String(store.plan ?? "free");
-        const paymentStatus = String(store.payment_status ?? "active");
-        return {
-          id: String(store.id),
-          cells: [ownerEmail || "Owner", name || "N/A", slug || "N/A", plan, paymentStatus, store.created_at ? new Date(store.created_at).toLocaleDateString() : "—"],
-          values: [{ label: "Owner email", value: ownerEmail }, { label: "Store name", value: name }, { label: "Slug", value: slug }, { label: "Plan", value: plan }, { label: "Payment status", value: paymentStatus }],
-          resource: "stores",
-          fields: [
-            { key: "owner_email", label: "Owner email", type: "email" },
-            { key: "name", label: "Store name" },
-          ],
-          viewHref: slug ? `/store/${encodeURIComponent(slug)}` : undefined,
-        };
-      });
+      if (result.error) {
+        dataError = `Unable to load sellers: ${result.error.message}`;
+      } else {
+        const storeIds = [...new Set((result.data ?? []).map((seller) => seller.store_id).filter((id): id is string => Boolean(id)))];
+        const storesResult = storeIds.length
+          ? await supabase.from("stores").select("id, name, slug, plan, payment_status").in("id", storeIds)
+          : { data: [], error: null };
+        if (storesResult.error) dataError = `Unable to load seller storefronts: ${storesResult.error.message}`;
+        const storesById = new Map((storesResult.data ?? []).map((store) => [String(store.id), store]));
+        totalCount = result.count ?? 0;
+        rows = (result.data ?? []).map((seller) => {
+          const email = String(seller.email ?? "");
+          const name = String(seller.name ?? "");
+          const address = String(seller.address ?? "");
+          const whatsappNumber = String(seller.whatsapp_number ?? "");
+          const contactPhone = String(seller.contact_phone ?? "");
+          const store = seller.store_id ? storesById.get(String(seller.store_id)) : undefined;
+          const storeName = String(store?.name ?? "");
+          const slug = String(store?.slug ?? "");
+          const plan = String(store?.plan ?? "basic");
+          const paymentStatus = String(store?.payment_status ?? "pending");
+          return {
+            id: String(seller.id),
+            cells: [name || email || "Seller", storeName || "N/A", slug || "N/A", plan, paymentStatus, seller.created_at ? new Date(seller.created_at).toLocaleDateString() : "—"],
+            values: [
+              { label: "Seller name", value: name },
+              { label: "Seller email", value: email },
+              { label: "Address", value: address },
+              { label: "WhatsApp number", value: whatsappNumber },
+              { label: "Contact phone", value: contactPhone },
+              { label: "Store name", value: storeName },
+              { label: "Slug", value: slug },
+              { label: "Plan", value: plan },
+              { label: "Payment status", value: paymentStatus },
+            ],
+            resource: "sellers",
+            fields: [
+              { key: "name", label: "Seller name" },
+              { key: "email", label: "Seller email", type: "email" },
+              { key: "address", label: "Address" },
+              { key: "whatsapp_number", label: "WhatsApp number" },
+              { key: "contact_phone", label: "Contact phone" },
+            ],
+            viewHref: slug ? `/store/${encodeURIComponent(slug)}` : undefined,
+          };
+        });
+      }
     }
   } else if (section === "products") {
     title = "Products";

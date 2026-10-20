@@ -30,7 +30,6 @@ import {
     ShoppingCart,
     ZoomIn,
     ZoomOut,
-    LogIn,
     PackagePlus,
     RefreshCw
 } from 'lucide-react';
@@ -99,6 +98,50 @@ function getCategorySymbol(name: string): string {
     const words = clean.split(/\s+/).filter(Boolean);
     if (words.length >= 2) return `${words[0][0]}${words[1][0]}`.toUpperCase();
     return clean.slice(0, 2).toUpperCase();
+}
+
+function parseProductVariants(product: any) {
+    let hasSizes = Boolean(product?.has_sizes);
+    let hasColors = Boolean(product?.has_colors);
+    let sizes: string[] = Array.isArray(product?.sizes) ? product.sizes : [];
+    let colors: Array<{ name: string; hex: string }> = Array.isArray(product?.colors) 
+        ? product.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c)
+        : [];
+
+    if (typeof product?.description === 'string' && product.description.includes('<!--variants:')) {
+        try {
+            const match = product.description.match(/<!--variants:(.*?)-->/);
+            if (match && match[1]) {
+                const meta = JSON.parse(match[1]);
+                if (meta.has_sizes !== undefined) hasSizes = Boolean(meta.has_sizes);
+                if (meta.has_colors !== undefined) hasColors = Boolean(meta.has_colors);
+                if (Array.isArray(meta.sizes) && meta.sizes.length > 0) sizes = meta.sizes;
+                if (Array.isArray(meta.colors) && meta.colors.length > 0) {
+                    colors = meta.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c);
+                }
+            }
+        } catch {}
+    }
+
+    if (hasSizes && sizes.length === 0) {
+        sizes = ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'];
+    }
+    if (hasColors && colors.length === 0) {
+        colors = [
+            { name: 'Default', hex: '#0f172a' },
+            { name: 'Emerald', hex: '#059669' },
+            { name: 'Navy', hex: '#1d4ed8' },
+            { name: 'Maroon', hex: '#9f1239' },
+            { name: 'Gold', hex: '#d97706' },
+        ];
+    }
+
+    return { hasSizes, hasColors, sizes, colors };
+}
+
+function cleanDescription(desc?: string | null): string {
+    if (!desc) return '';
+    return desc.replace(/<!--variants:.*?-->/g, '').trim();
 }
 
 function isFoodOrEdible(storeName: string, category?: string | null, productName?: string): boolean {
@@ -170,51 +213,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [aiInput, setAiInput] = useState('');
     const [aiSending, setAiSending] = useState(false);
 
-    // Store Owner Dashboard Access States
-    const [isOwnerLoginOpen, setIsOwnerLoginOpen] = useState(false);
-    const [ownerEmail, setOwnerEmail] = useState('');
-    const [ownerPassword, setOwnerPassword] = useState('');
-    const [ownerLoginLoading, setOwnerLoginLoading] = useState(false);
-    const [ownerLoginError, setOwnerLoginError] = useState('');
-    const [ownerLoginSuccess, setOwnerLoginSuccess] = useState('');
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('owner_setup') === 'true' || params.get('open_login') === 'true') {
-                setIsOwnerLoginOpen(true);
-            }
-        }
-    }, []);
-
-    const handleOwnerLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setOwnerLoginError('');
-        setOwnerLoginLoading(true);
-        try {
-            const res = await fetch('/api/stores/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: ownerEmail.trim(),
-                    password: ownerPassword,
-                }),
-            });
-            const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.error || 'Invalid owner email or password.');
-            }
-            setOwnerLoginSuccess('✓ Logged in! Redirecting to merchant dashboard...');
-            setTimeout(() => {
-                const targetSlug = data.store?.slug || liveStore.slug;
-                window.location.href = `/merchant/${targetSlug}/dashboard?tab=products`;
-            }, 600);
-        } catch (err) {
-            setOwnerLoginError(err instanceof Error ? err.message : 'Login failed. Please check your email and password.');
-        } finally {
-            setOwnerLoginLoading(false);
-        }
-    };
 
     // Toast auto-clear
     useEffect(() => {
@@ -619,10 +618,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
     return (
         <div
-            className="min-h-screen font-sans text-slate-900 pb-28 relative"
+            className="min-h-screen font-sans text-slate-900 pb-0 relative"
             style={{
-                background: `linear-gradient(180deg, ${themeColor}16 0%, ${themeColor}0a 20%, ${themeColor}05 60%, ${themeColor}10 100%)`,
-                backgroundColor: `${themeColor}08`,
+                background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
+                backgroundColor: `${themeColor}10`,
             }}
         >
             {/* Live Catalog Status Messages */}
@@ -639,7 +638,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Top Announcement Bar - Full width edge coverage */}
             <div className="w-full border-b px-4 sm:px-6 lg:px-8 py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
-                <div className="mx-auto flex max-w-7xl items-center justify-between text-[11px] sm:text-xs">
+                <div className="w-full flex items-center justify-between text-[11px] sm:text-xs">
                     <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
                         <Truck size={13} /> Fast Delivery Nationwide
                     </span>
@@ -654,9 +653,9 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
                     {/* Left: Mobile Menu & Logo / Brand */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(true)}
@@ -678,13 +677,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
                                     {liveStore.name}
                                 </h1>
-                                <p className="hidden text-[10px] text-slate-400 sm:block">Buildexom Verified Store</p>
+                                {liveStore.tagline ? (
+                                    <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
+                                ) : null}
                             </div>
                         </div>
                     </div>
 
                     {/* Center: Desktop Navigation Links with animated underlines */}
-                    <nav className="hidden md:flex items-center gap-5 lg:gap-6 text-xs font-semibold text-slate-700">
+                    <nav className="hidden md:flex shrink-0 items-center justify-center gap-6 lg:gap-8 text-xs font-semibold text-slate-700">
                         {[
                             { name: 'Home', href: '#hero' },
                             { name: 'Shop', href: '#featured' },
@@ -705,29 +706,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             </a>
                         ))}
 
-                        {/* Store Owner Button alongside Home, Shop, About etc. */}
-                        <button
-                            type="button"
-                            onClick={() => setIsOwnerLoginOpen(true)}
-                            className="inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 hover:shadow-sm active:scale-95 shrink-0"
-                            style={{ backgroundColor: themeColor || '#1976d2' }}
-                        >
-                            <LogIn size={13} />
-                            <span>Login to your Dashboard and add a product</span>
-                        </button>
                     </nav>
 
-                    {/* Right: Owner Login (Mobile) + Cart Icon Button */}
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setIsOwnerLoginOpen(true)}
-                            title="Login to Dashboard and add product"
-                            className="inline-flex md:hidden items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] font-bold text-slate-800 shadow-2xs hover:bg-slate-50 active:scale-95"
-                        >
-                            <LogIn size={13} style={{ color: themeColor || '#1976d2' }} />
-                            <span>Owner</span>
-                        </button>
+                    {/* Right: Cart Icon Button */}
+                    <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
 
                         <button
                             type="button"
@@ -840,21 +822,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 </a>
                             </div>
 
-                            {/* Store Owner Action */}
-                            <div className="pt-2 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setIsMenuOpen(false);
-                                        setIsOwnerLoginOpen(true);
-                                    }}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    <LogIn size={14} />
-                                    <span>Login to your Dashboard and add a product</span>
-                                </button>
-                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -878,23 +846,23 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 sm:py-9 lg:py-11 flex flex-col-reverse lg:flex-row items-center justify-between gap-6 lg:gap-8 relative z-10">
+                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
                     {/* Left Column: Polished, Balanced Text & CTAs */}
-                    <div className="w-full lg:max-w-lg text-left space-y-3.5 sm:space-y-4">
-                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-[1.16]">
+                    <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
+                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
                             {heroInfo.headlineMain}{' '}
                             {heroInfo.headlineHighlight && (
                                 <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
                             )}
                         </h2>
-                        <p className="text-xs sm:text-sm text-slate-700 max-w-md leading-relaxed font-semibold">
+                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
                             {liveStore.tagline || heroInfo.subtext}
                         </p>
 
-                        <div className="pt-1.5 flex flex-wrap items-center gap-3">
+                        <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
                             <a
-                                href="#featured"
-                                className="rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
+                                href="#products"
+                                className="rounded-full px-6 py-3 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 Shop Collection →
@@ -903,7 +871,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
+                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
                             >
                                 <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
                             </a>
@@ -911,7 +879,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
 
                     {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
-                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-4 pb-2">
+                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-2 pb-2">
                         {/* Background Theme Ambient Glow */}
                         <div
                             className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
@@ -919,10 +887,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         />
 
                         {/* 3-Image Merging Container */}
-                        <div className="relative flex items-center">
+                        <div className="relative flex items-center justify-center">
                             {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
                             <div
-                                className="relative w-44 sm:w-52 md:w-56 lg:w-60 h-56 sm:h-64 md:h-72 lg:h-80 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
+                                className="relative w-36 sm:w-44 md:w-52 lg:w-56 h-48 sm:h-58 md:h-66 lg:h-74 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
                                 style={{ borderColor: `${themeColor}35` }}
                             >
                                 <img
@@ -935,12 +903,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                             {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
                             <div
-                                className="relative -ml-14 sm:-ml-18 md:-ml-20 mt-10 sm:mt-14 w-32 sm:w-36 md:w-40 lg:w-44 h-40 sm:h-46 md:h-50 lg:h-54 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
+                                className="relative -ml-12 sm:-ml-16 md:-ml-18 mt-8 sm:mt-12 w-28 sm:w-34 md:w-38 lg:w-42 h-36 sm:h-44 md:h-48 lg:h-52 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
                                 style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
                             >
                                 <img
                                     src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
-                                    alt={`${heroInfo.altText} - Curated Highlight`}
+                                    alt={heroInfo.altText}
                                     className="size-full object-cover transition duration-500 hover:scale-105"
                                     loading="eager"
                                 />
@@ -948,12 +916,12 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                             {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
                             <div
-                                className="relative -ml-8 sm:-ml-10 md:-ml-12 -mt-10 sm:-mt-14 w-28 sm:w-32 md:w-36 lg:w-40 h-36 sm:h-42 md:h-46 lg:h-50 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
+                                className="relative -ml-7 sm:-ml-9 md:-ml-11 -mt-8 sm:-mt-12 w-24 sm:w-30 md:w-34 lg:w-38 h-32 sm:h-40 md:h-44 lg:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
                                 style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
                             >
                                 <img
                                     src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
-                                    alt={`${heroInfo.altText} - Collection Accent`}
+                                    alt={heroInfo.altText}
                                     className="size-full object-cover transition duration-500 hover:scale-105"
                                     loading="eager"
                                 />
@@ -963,8 +931,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             </section>
 
-            {/* Main Page Body - No awkward left/right empty gutters */}
-            <main className="w-full px-2 sm:px-4 lg:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+            {/* Main Page Body - Edge-to-edge with zero bottom gap before footer */}
+            <main className="w-full px-2 sm:px-4 lg:px-6 pt-5 pb-0 space-y-5 sm:space-y-6">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
@@ -972,7 +940,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         id="featured" 
                         className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                         style={{
-                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                             borderColor: `${themeColor}28`,
                         }}
                     >
@@ -981,7 +949,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                 <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
                                     Featured Products
                                 </h3>
-                                <p className="text-xs text-slate-500">Handpicked essentials curated for you</p>
+                                <p className="text-xs text-slate-500">Handpicked essentials for you</p>
                             </div>
                             <a
                                 href="#products"
@@ -994,14 +962,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* 4-Column Grid on Desktop, 2-Column on Mobile - flush card boxes */}
-                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
                             {featuredItems.map((item) => (
                                 <article
                                     key={item.id}
                                     onClick={() => openProductModal(item)}
                                     className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                     style={{
-                                        backgroundColor: `${themeColor}08`,
+                                        backgroundColor: `${themeColor}10`,
                                         borderColor: `${themeColor}24`,
                                     }}
                                 >
@@ -1164,7 +1132,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     id="products" 
                     className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
                     style={{
-                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`,
+                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                         borderColor: `${themeColor}28`,
                     }}
                 >
@@ -1190,23 +1158,63 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                     {/* Products Grid - flush card boxes */}
                     {liveProducts.length === 0 ? (
-                        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/90 backdrop-blur-sm p-8 sm:p-14 text-center">
-                            <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-500 mb-4 shadow-xs">
-                                <PackagePlus size={32} />
+                        <div className="w-full">
+                            {/* Full-width flush product container boxes with zero side waste */}
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
+                                {[1, 2, 3, 4, 5, 6].map((slot) => (
+                                    <div
+                                        key={`empty-slot-${slot}`}
+                                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:shadow-md w-full bg-white/80"
+                                        style={{
+                                            borderColor: `${themeColor}28`,
+                                        }}
+                                    >
+                                        <div 
+                                            className="relative aspect-square w-full overflow-hidden flex flex-col items-center justify-center p-4 text-center border-b"
+                                            style={{ 
+                                                backgroundColor: `${themeColor}0a`,
+                                                borderColor: `${themeColor}18` 
+                                            }}
+                                        >
+                                            <div 
+                                                className="grid size-12 place-items-center rounded-2xl mb-2.5 transition-transform duration-300 group-hover:scale-110 shadow-2xs"
+                                                style={{ backgroundColor: `${themeColor}16`, color: themeColor }}
+                                            >
+                                                <PackagePlus size={22} />
+                                            </div>
+                                            <span 
+                                                className="text-xs font-bold tracking-tight text-slate-800"
+                                            >
+                                                Product #{slot}
+                                            </span>
+                                            <span 
+                                                className="text-[10px] font-semibold mt-0.5"
+                                                style={{ color: themeColor }}
+                                            >
+                                                Slot Available
+                                            </span>
+                                        </div>
+
+                                        <div className="p-3 sm:p-3.5 bg-white">
+                                            <p className="line-clamp-1 text-xs font-bold text-slate-800">
+                                                Awaiting Product
+                                            </p>
+                                            <div className="mt-2.5 flex items-center justify-between">
+                                                <span className="text-xs font-extrabold text-slate-500">
+                                                    --
+                                                </span>
+                                                <div 
+                                                    className="grid size-8 place-items-center rounded-full text-white/70 shadow-xs"
+                                                    style={{ backgroundColor: themeColor }}
+                                                    title="Product slot ready"
+                                                >
+                                                    <ShoppingCart size={14} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <h4 className="text-base sm:text-lg font-black text-slate-900">No products added yet</h4>
-                            <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                                This store is live and ready! If you are the store owner, log in to your dashboard to add your products. They will appear right here in this grid.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={() => setIsOwnerLoginOpen(true)}
-                                className="mt-5 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                <LogIn size={15} />
-                                <span>Login to your Dashboard and add a product</span>
-                            </button>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
@@ -1226,14 +1234,14 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
                                 {displayedProducts.map((product) => (
                                 <article
                                     key={product.id}
                                     onClick={() => openProductModal(product)}
                                     className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
                                     style={{
-                                        backgroundColor: `${themeColor}08`,
+                                        backgroundColor: `${themeColor}10`,
                                         borderColor: `${themeColor}24`,
                                     }}
                                 >
@@ -1263,18 +1271,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                             </span>
                                         )}
 
-                                        {/* Quick WhatsApp Single Order Button */}
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDirectWhatsApp(product);
-                                            }}
-                                            title="Order this product directly on WhatsApp"
-                                            className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-full bg-emerald-500 text-white shadow-sm transition hover:bg-emerald-600 hover:scale-110 active:scale-95"
-                                        >
-                                            <MessageCircle size={13} />
-                                        </button>
+
                                     </div>
 
                                     {/* Product Details & Price */}
@@ -1289,7 +1286,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                                 {product.name}
                                             </h4>
                                             <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
-                                                {product.description || 'Premium quality verified item.'}
+                                                {product.description || 'Quality verified store item.'}
                                             </p>
                                         </div>
 
@@ -1343,108 +1340,78 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     )}
                 </section>
 
-                {/* 4. Trust Badges Strip */}
-                <section className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 text-center sm:text-left">
-                        <div className="flex items-center justify-center sm:justify-start gap-3">
-                            <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
-                                <ShieldCheck size={22} />
+                {/* 4. About Store Section (Clean & Focused) */}
+                <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
+                    <div className="w-full space-y-3">
+                        <div>
+                            <span
+                                className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+                                style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+                            >
+                                About {liveStore.name}
                             </span>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-900">100% Genuine Quality</h4>
-                                <p className="text-[11px] text-slate-500">Hand-checked and verified items</p>
-                            </div>
+                            <h3 className="mt-1 text-xl sm:text-2xl font-black text-slate-900">
+                                Crafted for Quality & Seamless Shopping
+                            </h3>
                         </div>
-                        <div className="flex items-center justify-center sm:justify-start gap-3">
-                            <span className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-700">
-                                <Truck size={22} />
-                            </span>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-900">Fast Nationwide Delivery</h4>
-                                <p className="text-[11px] text-slate-500">{delivery?.estimated_days || '2-4 business days COD'}</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-center sm:justify-start gap-3">
-                            <span className="grid size-11 place-items-center rounded-2xl bg-purple-50 text-purple-700">
-                                <Headphones size={22} />
-                            </span>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-900">Dedicated Support</h4>
-                                <p className="text-[11px] text-slate-500">Real-time WhatsApp tracking</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
-                {/* 5. About Store Section (Linked directly from header navigation) */}
-                <section id="about" className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-8 shadow-xs">
-                    <div className="max-w-3xl space-y-3">
-                        <span
-                            className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
-                            style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
-                        >
-                            About {liveStore.name}
-                        </span>
-                        <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                            Crafted for Quality & Seamless Shopping
-                        </h3>
                         <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
-                            {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ''}
+                            {(() => {
+                                const raw = (liveStore.tagline || '').trim();
+                                if (!raw || raw.toLowerCase().includes('aura kicks') || raw.toLowerCase().startsWith('welcome to')) {
+                                    return '';
+                                }
+                                return `${liveStore.name} — ${raw}. `;
+                            })()}
                             Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
                         </p>
-                        <div className="pt-2 flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
-                            <span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-emerald-600" /> 100% Genuine Items</span>
-                            <span className="flex items-center gap-1.5"><Truck size={16} className="text-blue-600" /> Cash on Delivery Nationwide</span>
-                            <span className="flex items-center gap-1.5"><MessageCircle size={16} className="text-emerald-600" /> Direct WhatsApp Assistance</span>
-                        </div>
                     </div>
                 </section>
 
-                {/* 6. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
-                <section className="overflow-hidden rounded-3xl bg-linear-to-r from-slate-900 via-[#0d2a4a] to-blue-950 p-6 text-white shadow-xl sm:p-8">
-                    <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">🌐</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-white">Your Own Online Store</h4>
-                                    <p className="text-[10px] text-blue-200/80">Custom branded domain</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">💬</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-white">WhatsApp Ordering</h4>
-                                    <p className="text-[10px] text-blue-200/80">Direct customer chat</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">🛡️</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-white">Secure & Reliable</h4>
-                                    <p className="text-[10px] text-blue-200/80">24/7 verified uptime</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">📈</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-white">Grow Your Business</h4>
-                                    <p className="text-[10px] text-blue-200/80">Scale sales effortlessly</p>
-                                </div>
-                            </div>
-                        </div>
+                {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
+                <div className="!mt-3 !mb-3 flex items-center justify-center sm:justify-end">
+                    <button
+                        type="button"
+                        onClick={() => setIsAiOpen(true)}
+                        className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-2xl px-5 py-2.5 text-xs font-black text-slate-900 shadow-md backdrop-blur-xs transition-all duration-300 hover:scale-105 active:scale-95 border"
+                        style={{
+                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}12 100%)`,
+                            borderColor: `${themeColor}45`,
+                        }}
+                        aria-label="Open Bexi AI Store Assistant"
+                    >
+                        {/* Animated Glowing Pulse Halo */}
+                        <span 
+                            className="absolute -inset-1 rounded-2xl opacity-60 blur-xs transition group-hover:opacity-100 animate-pulse duration-1000" 
+                            style={{
+                                background: `linear-gradient(90deg, ${themeColor}40, #10b98150, ${themeColor}50)`,
+                            }}
+                        />
 
-                        <div className="shrink-0 w-full sm:w-auto text-center">
-                            <Link
-                                href="/"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg transition hover:bg-blue-400 active:scale-95"
-                            >
-                                <span>Build Your Store</span>
-                                <ArrowRight size={14} />
-                            </Link>
-                        </div>
-                    </div>
-                </section>
+                        <span 
+                            className="relative grid size-6 place-items-center rounded-xl text-white shadow-2xs"
+                            style={{ backgroundColor: themeColor }}
+                        >
+                            <Sparkles size={13} className="animate-spin duration-1000 text-white" />
+                        </span>
+
+                        <span className="relative font-black text-xs tracking-wide text-slate-900">
+                            Ask Bexi AI
+                        </span>
+
+                        <span 
+                            className="relative rounded-full px-2.5 py-0.5 text-[9.5px] font-black uppercase tracking-wider"
+                            style={{
+                                backgroundColor: `${themeColor}22`,
+                                color: themeColor,
+                            }}
+                        >
+                            Shopping Assistant
+                        </span>
+                    </button>
+                </div>
+
+
             </main>
 
             {/* SEPARATE SLIDE-OVER CART DRAWER */}
@@ -1785,29 +1752,22 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* FLOATING BEXI AI ASSISTANT WIDGET */}
-            <div className="fixed bottom-20 right-4 sm:bottom-20 sm:right-6 z-40">
-                {!isAiOpen ? (
-                    <button
-                        type="button"
-                        onClick={() => setIsAiOpen(true)}
-                        className="flex items-center gap-2 rounded-full bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white shadow-2xl transition hover:bg-slate-800 hover:scale-105 border border-slate-700"
-                    >
-                        <span className="grid size-6 place-items-center rounded-full bg-emerald-500 text-slate-950 font-bold">
-                            <Sparkles size={13} />
-                        </span>
-                        <span>Ask Bexi AI</span>
-                    </button>
-                ) : (
-                    <div className="relative flex h-[480px] w-80 sm:w-96 flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs">
+            {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
+            {isAiOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div 
+                        className="fixed inset-0"
+                        onClick={() => setIsAiOpen(false)}
+                    />
+                    <div className="relative z-10 flex h-[520px] w-full max-w-md flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs animate-in zoom-in-95 duration-200">
                         {/* Chat Header */}
-                        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white">
+                        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white shrink-0">
                             <div className="flex items-center gap-2">
                                 <span className="grid size-7 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold">
                                     <Sparkles size={14} />
                                 </span>
                                 <div>
-                                    <p className="font-bold text-xs">Bexi AI Assistant</p>
+                                    <p className="font-bold text-xs">{liveStore.name} Bexi AI</p>
                                     <p className="text-[10px] text-emerald-400 font-mono">Roman Urdu & English Active</p>
                                 </div>
                             </div>
@@ -1825,13 +1785,13 @@ export default function StorefrontClient({ store, settings, products, delivery }
                             {aiMessages.map((msg, i) => (
                                 <div
                                     key={i}
-                                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                                 >
                                     <div
                                         className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
-                                            msg.sender === 'user'
-                                                ? 'bg-emerald-600 text-white font-medium'
-                                                : 'bg-slate-900 border border-slate-800 text-slate-200'
+                                            msg.sender === "user"
+                                                ? "bg-emerald-600 text-white font-medium"
+                                                : "bg-slate-900 border border-slate-800 text-slate-200"
                                         }`}
                                     >
                                         {msg.text}
@@ -1850,7 +1810,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* Quick Suggestion Questions */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50">
+                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50 shrink-0">
                             {[
                                 "Delivery timeline?",
                                 "Payment methods?",
@@ -1871,26 +1831,25 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* Chat Input */}
-                        <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2">
+                        <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2 shrink-0">
                             <input
                                 type="text"
-                                placeholder="Ask a question..."
                                 value={aiInput}
-                                maxLength={500}
                                 onChange={(e) => setAiInput(e.target.value)}
-                                className="flex-1 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+                                placeholder="Poochiye (e.g. deliver kitne din me hogi?)..."
+                                className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-emerald-500"
                             />
                             <button
                                 type="submit"
-                                disabled={aiSending || !aiInput.trim()}
-                                className="rounded-xl bg-emerald-600 px-3.5 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                                disabled={!aiInput.trim() || aiSending}
+                                className="grid size-8 place-items-center rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-500 transition disabled:opacity-50"
                             >
                                 <Send size={13} />
                             </button>
                         </form>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Interactive Product Details Modal (Supports multiple images gallery, quantity, Add to Cart & WhatsApp Order) */}
             {selectedProductForModal && (
@@ -2032,7 +1991,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         )}
                                     </div>
                                     <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-1">
-                                        {selectedProductForModal.description || 'Premium hand-selected store item with verified durability and comfort.'}
+                                        {cleanDescription(selectedProductForModal.description) || 'Quality store item with verified durability and comfort.'}
                                     </p>
                                 </div>
 
@@ -2204,111 +2163,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             )}
 
-            {/* Store Owner Login & Dashboard Modal */}
-            {isOwnerLoginOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-md rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4">
-                        <div className="flex items-start justify-between border-b border-slate-100 pb-3">
-                            <div>
-                                <span 
-                                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
-                                    style={{ backgroundColor: themeColor || '#1976d2' }}
-                                >
-                                    <Sparkles size={11} /> Merchant Access
-                                </span>
-                                <h3 className="mt-1 text-lg font-black text-slate-900">
-                                    Store Owner Dashboard
-                                </h3>
-                                <p className="text-xs text-slate-500">
-                                    Enter your credentials to add products and manage {liveStore.name}.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsOwnerLoginOpen(false);
-                                    setOwnerLoginError('');
-                                    setOwnerLoginSuccess('');
-                                }}
-                                className="grid size-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
 
-                        {ownerLoginSuccess ? (
-                            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-center space-y-2">
-                                <CheckCircle2 size={28} className="mx-auto text-emerald-600 animate-bounce" />
-                                <p className="text-xs font-bold text-emerald-900">{ownerLoginSuccess}</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleOwnerLogin} className="space-y-3.5">
-                                {ownerLoginError && (
-                                    <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-xs text-red-700">
-                                        {ownerLoginError}
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                                        Owner Email Address
-                                    </label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={ownerEmail}
-                                        onChange={(e) => setOwnerEmail(e.target.value)}
-                                        placeholder="merchant@example.com"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                    />
-                                    <p className="mt-1 text-[10px] text-slate-400">
-                                        The email address you used when generating this store.
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                                        Account Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={ownerPassword}
-                                        onChange={(e) => setOwnerPassword(e.target.value)}
-                                        placeholder="••••••••"
-                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-900 outline-none transition focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                                    />
-                                </div>
-
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={ownerLoginLoading}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
-                                        style={{ backgroundColor: themeColor || '#1976d2' }}
-                                    >
-                                        {ownerLoginLoading ? (
-                                            <>
-                                                <RefreshCw size={14} className="animate-spin" />
-                                                Logging in...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <LogIn size={14} />
-                                                Login to Dashboard & Add Products
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-
-                                <p className="text-[10px] text-center text-slate-400">
-                                    Once logged in, you will be taken directly to your products catalog.
-                                </p>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            )}
 
             {/* Quick Toast Notification */}
             {toastMessage && (

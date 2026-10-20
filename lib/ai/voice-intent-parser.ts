@@ -481,6 +481,100 @@ export function parseVoiceCommand(command: string, context: VoiceStoreContext = 
   }
 
   // =========================================================================
+  // 8.5 KNOWLEDGE BASE & ACCURATE FAQ RESOLVER (Passwords, Login, Payments, Setup)
+  // =========================================================================
+
+  // Password & Account Access
+  if (/(password|passward|pasword|login|log in|logout|log out|credential|account|sign in|signup)/i.test(lower)) {
+    const pwReply = lang === 'ur'
+      ? `Store ka password tabdeel karne ke liye:\n1. Merchant Login page par ja kar "Forgot Password" par click karein.\n2. Apna registered email darj karein, aap ko password reset link mil jaye ga.\n3. Agar aap already login hain, toh dashboard settings se apna naya password update kar sakte hain.`
+      : `To change or reset your password:\n1. On the Merchant Login screen, click "Forgot Password".\n2. Enter your registered email address to receive an instant secure reset link.\n3. If already logged in, you can update your credentials directly from your account settings.`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: pwReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // Payment Setup & Real-World Accounts (SadaPay, JazzCash, EasyPaisa, Bank)
+  if (/(payment|paisa|pesa|sadapay|easypaisa|jazzcash|bank|transfer|cod|cash on delivery|advance)/i.test(lower)) {
+    const payReply = lang === 'ur'
+      ? `Payments setup karne ke liye:\n1. Dashboard ke "Payments" tab mein jayein.\n2. "Cash on Delivery (COD)" ya "Advance Payment" ko toggle karein.\n3. Apna SadaPay, JazzCash, EasyPaisa ya Bank account number aur title darj karein taake customer direct payment bhej sakein.`
+      : `To configure payment methods for your store:\n1. Navigate to the "Payments" tab in your merchant dashboard.\n2. Enable "Cash on Delivery (COD)" and/or "Advance Payment".\n3. Fill in your SadaPay, JazzCash, EasyPaisa, or Bank transfer details so customers can send payments easily.`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: payReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // Plan Upgrade & Subscriptions
+  if (/(upgrade|plan|subscription|pricing|pro|business|free|basic|package)/i.test(lower)) {
+    const planReply = lang === 'ur'
+      ? `Store plan upgrade karne ka tareeqa:\n1. Dashboard ke Overview tab par "Upgrade Plan" par click karein.\n2. Pro ya Business plan select karein.\n3. SadaPay, JazzCash, EasyPaisa ya Bank Transfer se payment bhej kar Transaction ID (TID) aur screenshot upload karein.\n4. Superadmin approval ke baad Bexi AI aur WhatsApp features foran active ho jayenge.`
+      : `To upgrade your store plan:\n1. Click "Upgrade Plan" in your dashboard Overview tab.\n2. Choose either the Pro or Business plan.\n3. Send payment via SadaPay, JazzCash, EasyPaisa, or Bank Transfer, then submit your TID and receipt screenshot.\n4. Once verified by Superadmin, your upgraded features (Bexi AI, WhatsApp ordering, higher catalog caps) will unlock immediately!`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: planReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // Product & Variant Management (Sizes, Colors, Inventory)
+  if (/(add product|naya product|size|color|variant|price badal|keemat|stock)/i.test(lower)) {
+    const prodReply = lang === 'ur'
+      ? `Products manage karne ka tareeqa:\n1. "Products" tab mein jayein aur "+ Add Product" dabayein.\n2. Product ka name, price, images aur category darj karein.\n3. Sizes aur Colors offer karne ke liye "Enable Sizes" ya "Enable Colors" check karein aur options enter karein.`
+      : `To manage products and variants:\n1. Go to the "Products" tab in your dashboard and click "+ Add Product".\n2. Provide title, price, description, and upload photos.\n3. To offer variants, check "Enable Sizes" or "Enable Colors" so customers can select their preferred size or color before checkout!`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: prodReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // QR Code & Store Link Sharing
+  if (/(qr code|barcode|share|store link|link kahan|customer ko kaise bhejo)/i.test(lower)) {
+    const qrReply = lang === 'ur'
+      ? `Aap ki dukan ka official link "${context.storeName ? context.storeName : 'Store'}" ke dashboard ke Overview tab mein aur store footer mein mojood hai. Wahan se aap direct link copy kar sakte hain ya packaging ke liye high-resolution vector QR code download kar sakte hain.`
+      : `Your store link is ready in your dashboard Overview tab and in your store footer. You can copy your direct URL or download the official printable vector QR code for flyers and customer packages.`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: qrReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // Order Fulfillment & WhatsApp Tracking
+  if (/(track|tracking|order status|ship|dispatch|delivery time|customer order)/i.test(lower)) {
+    const orderReply = lang === 'ur'
+      ? `Orders dekhne aur manage karne ke liye:\n1. Dashboard ke "Orders" tab par jayein.\n2. Customer ka name, address, aur ordered items check karein.\n3. Status ko "Processing", "Shipped", ya "Delivered" mein update karein aur WhatsApp par one-click dispatch alert bhejein.`
+      : `To track and fulfill customer orders:\n1. Open the "Orders" tab in your dashboard.\n2. View customer details, delivery address, and ordered items.\n3. Update the fulfillment status to Processing, Shipped, or Delivered, and notify the customer directly via WhatsApp.`;
+
+    return {
+      intent: 'GENERAL_QUERY',
+      requiresConfirmation: false,
+      reply: orderReply,
+      rawCommand: raw,
+      languageDetected: lang
+    };
+  }
+
+  // =========================================================================
   // 9. GENERAL / HELP QUERY FALLBACK
   // =========================================================================
   const generalReply = lang === 'ur'

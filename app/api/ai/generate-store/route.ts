@@ -7,6 +7,7 @@ import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession }
 import { generateStoreFromPrompt } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
+import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
 import { getStoreUrl, isReservedSlug } from "@/lib/store-url";
 
 type GeneratedProduct = { name: string; price: number; description: string; category_name: string; image_url?: string | null };
@@ -309,11 +310,14 @@ export async function POST(request: Request) {
     const requestedStoreName = text(input.name ?? input.store_name, 100);
     const prompt = rawPrompt.length >= 8
       ? rawPrompt
-      : `A modern e-commerce storefront for ${requestedStoreName || "My Online Store"} featuring curated quality products and nationwide cash on delivery.`;
+      : `A modern e-commerce storefront for ${requestedStoreName || "My Online Store"} featuring quality products and nationwide cash on delivery.`;
     const requestedUserId = text(input.user_id, 100);
     const requestedStoreId = text(input.store_id, 100);
     const requestedTheme = text(input.theme ?? input.selected_theme ?? "", 40);
     const requestedPlan = text(input.plan, 20).toLowerCase();
+    const isMerchantRegistration =
+      input.registration === "merchant" ||
+      (typeof input.password === "string" && Boolean(input.owner_email ?? input.email));
     if (requestedPlan && !["basic", "free", "pro", "business", "advanced", "advance"].includes(requestedPlan)) {
       return NextResponse.json({ error: "Choose a supported store plan." }, { status: 400 });
     }
@@ -325,8 +329,7 @@ export async function POST(request: Request) {
     const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
     const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
-    const isNewSignup = typeof input.password === "string" && input.password.length >= 8;
-    const merchantSession = isNewSignup ? null : verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+    const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
     if (merchantSession && supabase) {
@@ -355,7 +358,7 @@ export async function POST(request: Request) {
         };
       }
     }
-    if (!merchantSession && supabase) {
+    if (!isMerchantRegistration && !merchantSession && supabase) {
       user = await getAuthenticatedUser(request, supabase);
     }
     if (!targetStore) {
@@ -397,7 +400,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "An account already exists for this email. Sign in before generating another store." }, { status: 409 });
         }
         // Email OTP check. It runs for every new signup (it must not sit inside the `existingStore` branch).
-        if (process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === "true") {
+        if (EMAIL_OTP_REQUIRED) {
           const verificationToken = text(input.verification_token, 600);
           if (!verifyEmailVerificationToken(verificationToken, candidateEmail)) {
             return NextResponse.json({ error: "Please verify your email with the code we sent before creating your store." }, { status: 403 });
@@ -527,15 +530,23 @@ export async function POST(request: Request) {
           owner_email: merchantEmail,
           password_hash,
           whatsapp_number: requestedWhatsapp || null,
-          ...(text(input.owner_phone, 30) ? { owner_phone: text(input.owner_phone, 30) } : {}),
           plan: planToStore,
           selected_plan: selectedPlan,
           payment_status: "pending",
         }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
         if (error) throw error;
-        store = data;
         createdStoreId = String(data.id);
         targetStoreId = String(data.id);
+        const { error: merchantError } = await supabase.from("merchants").upsert({
+          store_id: data.id,
+          name: data.name,
+          email: merchantEmail,
+          whatsapp_number: requestedWhatsapp || "",
+          address: "",
+          contact_phone: text(input.owner_phone, 30) || requestedWhatsapp || null,
+        }, { onConflict: "store_id" });
+        if (merchantError) throw merchantError;
+        store = data;
       } else {
         // Supabase is not configured (local development): use the local store repository.
         const fallbackStoreId = `store_${crypto.randomUUID().slice(0, 12)}`;

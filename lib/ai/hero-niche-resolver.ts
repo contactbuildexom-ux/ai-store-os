@@ -264,8 +264,8 @@ export function resolveStoreHero(
       headlineHighlight = '';
     }
   } else {
-    headlineMain = 'Official';
-    headlineHighlight = 'Store';
+    headlineMain = 'Featured';
+    headlineHighlight = 'Collection';
   }
 
   const subtext = (store.tagline || store.description || asset.defaultTagline).trim();
