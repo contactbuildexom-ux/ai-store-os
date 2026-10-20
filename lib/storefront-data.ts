@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeRepo } from "@/lib/store-repository";
+import { THEME_PALETTES } from "@/lib/store-theme";
 import type {
   PublicStore,
   PublicStoreProduct,
@@ -33,7 +34,7 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         .maybeSingle();
 
       if (!storeError && store) {
-        const [legacyResult, builderResult, categoryResult] = await Promise.all([
+        const [legacyResult, builderResult, categoryResult, settingsResult] = await Promise.all([
           supabase
             .from("products")
             .select("id, name, description, price, image_url, category, created_at")
@@ -48,6 +49,11 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
             .from("store_categories")
             .select("id, name")
             .eq("store_id", store.id),
+          supabase
+            .from("store_settings")
+            .select("theme_color, selected_theme")
+            .eq("store_id", store.id)
+            .maybeSingle(),
         ]);
 
         const categoryById = new Map(
@@ -80,6 +86,14 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         }
 
         const products = [...productsById.values()];
+
+        const resolvedThemeColor = settingsResult.data?.theme_color
+          || store.primary_color
+          || (store.selected_theme && THEME_PALETTES[store.selected_theme])
+          || (settingsResult.data?.selected_theme && THEME_PALETTES[settingsResult.data.selected_theme])
+          || "#1d7555";
+        const resolvedSelectedTheme = settingsResult.data?.selected_theme || store.selected_theme || "emerald";
+
         const publicStore: PublicStore = {
           id: String(store.id),
           name: String(store.name ?? store.store_name ?? ""),
@@ -88,8 +102,8 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
           tagline: String(store.tagline ?? store.header_title ?? "Welcome to our store."),
           description: String(store.description ?? ""),
           whatsapp_number: String(store.whatsapp_number ?? ""),
-          selected_theme: String(store.selected_theme ?? "emerald"),
-          primary_color: String(store.primary_color ?? "#1d7555"),
+          selected_theme: String(resolvedSelectedTheme),
+          primary_color: String(resolvedThemeColor),
           secondary_color: String(store.secondary_color ?? "#0f172a"),
         };
 
@@ -118,6 +132,12 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
       category: p.category || "General",
     }));
 
+    const repoThemeColor = repoStore.theme?.primaryColor
+      || repoStore.primary_color
+      || (repoStore.selected_theme && THEME_PALETTES[repoStore.selected_theme])
+      || "#1d7555";
+    const repoSelectedTheme = repoStore.theme?.id || repoStore.selected_theme || "emerald";
+
     return {
       success: true,
       store: {
@@ -128,8 +148,8 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         tagline: repoStore.tagline || "Welcome to our store.",
         description: repoStore.description || "",
         whatsapp_number: repoStore.whatsapp_number || "",
-        selected_theme: "emerald",
-        primary_color: "#1d7555",
+        selected_theme: repoSelectedTheme,
+        primary_color: repoThemeColor,
         secondary_color: "#0f172a",
       },
       categories: [...new Set(publicProducts.map((p) => p.category))],

@@ -3,6 +3,7 @@ import StorefrontClient from './StorefrontClient';
 import { StoreFooter } from '../../../components/store-footer';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
+import { THEME_PALETTES } from '@/lib/store-theme';
 
 export default async function PublicStorePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
@@ -21,7 +22,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     try {
       const { data: dbStore } = await supabase
         .from('stores')
-        .select('id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage, payment_details')
+        .select('id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details')
         .eq('slug', slug)
         .maybeSingle();
       store = dbStore;
@@ -72,6 +73,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         slug: repoStore.slug,
         plan: repoStore.plan || 'basic',
         whatsapp_number: repoStore.whatsapp_number || '',
+        primary_color: repoStore.theme?.primaryColor || repoStore.primary_color || '#1976d2',
+        selected_theme: repoStore.theme?.id || repoStore.selected_theme || 'emerald',
         accepts_cod: true,
         accepts_advance: false,
         advance_percentage: 50,
@@ -80,8 +83,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
       };
       if (!settingsData) {
         settingsData = {
-          theme_color: repoStore.primary_color,
-          selected_theme: repoStore.selected_theme,
+          theme_color: repoStore.theme?.primaryColor || repoStore.primary_color,
+          selected_theme: repoStore.theme?.id || repoStore.selected_theme,
           banner_text: repoStore.header_title || repoStore.tagline,
           footer_text: repoStore.description,
           social_links: repoStore.social_links || {}
@@ -105,6 +108,19 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
   }
 
   const repoStoreFallback = await storeRepo.getStore(slug);
+  const resolvedThemeColor = settingsData?.theme_color 
+    || (store as Record<string, unknown>).primary_color as string 
+    || ((store as Record<string, unknown>).selected_theme && THEME_PALETTES[(store as Record<string, unknown>).selected_theme as string])
+    || repoStoreFallback?.theme?.primaryColor 
+    || repoStoreFallback?.primary_color 
+    || '#1976d2';
+
+  const resolvedThemeId = settingsData?.selected_theme 
+    || (store as Record<string, unknown>).selected_theme as string 
+    || repoStoreFallback?.theme?.id 
+    || repoStoreFallback?.selected_theme 
+    || 'royal-gold';
+
   const safeStore = {
     id: store.id,
     name: store.name,
@@ -115,9 +131,19 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     accepts_advance: store.accepts_advance ?? false,
     advance_percentage: store.advance_percentage ?? 50,
     tagline: (store as Record<string, unknown>).tagline as string ?? repoStoreFallback?.tagline ?? null,
-    primary_color: (store as Record<string, unknown>).primary_color as string ?? repoStoreFallback?.primary_color ?? '#1976d2',
-    theme_color: settingsData?.theme_color ?? (store as Record<string, unknown>).primary_color as string ?? repoStoreFallback?.primary_color ?? '#1976d2',
-    selected_theme: settingsData?.selected_theme ?? (store as Record<string, unknown>).selected_theme as string ?? repoStoreFallback?.selected_theme ?? 'royal-gold',
+    primary_color: resolvedThemeColor,
+    theme_color: resolvedThemeColor,
+    selected_theme: resolvedThemeId,
+  };
+
+  const safeSettings = settingsData ? {
+    ...settingsData,
+    theme_color: resolvedThemeColor,
+    selected_theme: resolvedThemeId,
+  } : {
+    theme_color: resolvedThemeColor,
+    selected_theme: resolvedThemeId,
+    banner_text: safeStore.tagline || 'Free delivery nationwide on orders above Rs. 3,000!',
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)
@@ -148,7 +174,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     <>
       <StorefrontClient
         store={safeStore}
-        settings={settingsData ?? null}
+        settings={safeSettings}
         products={products}
         delivery={deliveryData ?? null}
       />

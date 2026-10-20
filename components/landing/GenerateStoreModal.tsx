@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Search, Store, Sparkles, Palette, ArrowRight } from "lucide-react";
-import { STORE_IDEA_PRESETS } from "./MerchantStoreSetupModal";
+import { Store, Sparkles, Palette, ArrowRight } from "lucide-react";
 import { THEME_OPTIONS, type ThemeOption } from "@/lib/store-theme";
 
 /* User login page */
@@ -28,12 +27,8 @@ export default function GenerateStoreModal({
   onGenerate: (prompt: string, storeName?: string, theme?: string) => void;
 }) {
   const [storeName, setStoreName] = useState("");
-  const [selectedIdeaId, setSelectedIdeaId] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [customIdea, setCustomIdea] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("ocean-blue");
-  const [prompt, setPrompt] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -49,52 +44,16 @@ export default function GenerateStoreModal({
     };
   }, [open, onClose]);
 
-  // Click outside to close custom searchable dropdown
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   if (!open) return null;
 
-  // Flattened and searchable list of presets
-  const allIdeas = STORE_IDEA_PRESETS.flatMap((grp) => grp.options);
-  const filteredIdeas = allIdeas.filter((opt) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      opt.name.toLowerCase().includes(q) ||
-      opt.sampleName.toLowerCase().includes(q) ||
-      opt.prompt.toLowerCase().includes(q)
-    );
-  });
-
-  const selectedIdea = allIdeas.find((o) => o.id === selectedIdeaId);
-
-  const handleSelectIdea = (opt: (typeof allIdeas)[0]) => {
-    setSelectedIdeaId(opt.id);
-    if (!storeName || allIdeas.some((i) => i.sampleName === storeName)) {
-      setStoreName(opt.sampleName);
-    }
-    if (opt.theme) {
-      setSelectedTheme(opt.theme);
-    }
-    setPrompt(opt.prompt);
-    setIsDropdownOpen(false);
-  };
-
-  const ready = (storeName.trim().length >= 2 || selectedIdeaId.length > 0);
+  const ready = storeName.trim().length >= 2 || customIdea.trim().length >= 3;
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!ready) return;
-    const finalPrompt = prompt.trim() || (selectedIdea ? selectedIdea.prompt : `An online store called ${storeName.trim()} with nationwide delivery.`);
-    onGenerate(finalPrompt, storeName.trim() || selectedIdea?.sampleName || "My Store", selectedTheme);
+    const name = storeName.trim() || "My Online Store";
+    const finalPrompt = customIdea.trim() || `An online store called ${name} offering premium items with nationwide delivery and Cash on Delivery.`;
+    onGenerate(finalPrompt, name, selectedTheme);
   }
 
   return (
@@ -131,7 +90,7 @@ export default function GenerateStoreModal({
             Generate Your Store
           </h2>
           <p className="mt-1 text-xs sm:text-sm text-blue-100/90">
-            Enter your store name and pick a theme. Everything else is auto-configured for you.
+            Write your store idea and name. Our AI will build your exact custom store instantly.
           </p>
         </div>
 
@@ -142,7 +101,7 @@ export default function GenerateStoreModal({
           <div>
             <label htmlFor="gs-name" className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0b2545]">
               <span>Store Name</span>
-              <span className="text-[11px] font-normal text-slate-500">e.g. Nexus Gaming Store</span>
+              <span className="text-[11px] font-normal text-slate-500">e.g. Apex Kicks, Velvet Aura</span>
             </label>
             <input
               id="gs-name"
@@ -155,75 +114,25 @@ export default function GenerateStoreModal({
             />
           </div>
 
-          {/* 2. Searchable E-Commerce Niches / Global Store Ideas */}
-          <div ref={dropdownRef} className="relative">
-            <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-[#0b2545]">
-              Select Store Niche / Idea
-            </label>
-
-            {/* Selector Trigger Button */}
-            <button
-              type="button"
-              onClick={() => setIsDropdownOpen((v) => !v)}
-              className="flex w-full items-center justify-between rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-2.5 text-left text-xs font-semibold text-[#0b2545] transition hover:bg-white focus:border-[#1976d2] focus:ring-2 focus:ring-[#1976d2]/20"
-            >
-              <span className="truncate">
-                {selectedIdea ? (
-                  <span className="font-bold text-[#1976d2]">{selectedIdea.name}</span>
-                ) : (
-                  <span className="text-[#8aa3c4]">Choose a niche (e.g. Gaming, Shoes, Plants)...</span>
-                )}
+          {/* 2. Custom Store Idea / Niche Input (Clean text area where user freely writes their idea) */}
+          <div>
+            <label htmlFor="gs-idea" className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+              <span className="flex items-center gap-1.5">
+                <Sparkles size={13} className="text-[#1976d2]" /> What do you want to sell?
               </span>
-              <span className="ml-2 text-slate-400">▼</span>
-            </button>
-
-            {/* Custom Searchable Dropdown Popup */}
-            {isDropdownOpen && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-hidden rounded-2xl border border-[#cfe2fa] bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150">
-                {/* Search input inside dropdown */}
-                <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search store ideas..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-xs outline-none focus:border-[#1976d2] focus:bg-white"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                {/* Ideas list with short names */}
-                <div className="max-h-48 overflow-y-auto divide-y divide-slate-50 p-1">
-                  {filteredIdeas.length === 0 ? (
-                    <div className="p-3 text-center text-xs text-slate-400">
-                      No matching niche found. You can write your custom store name above.
-                    </div>
-                  ) : (
-                    filteredIdeas.map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => handleSelectIdea(opt)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition ${
-                          selectedIdeaId === opt.id
-                            ? "bg-blue-50 font-bold text-[#1976d2]"
-                            : "text-[#0b2545] hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="font-semibold">{opt.name}</span>
-                        <span className="text-[10px] text-slate-400">{opt.sampleName}</span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+              <span className="text-[11px] font-normal text-slate-500">Write your custom idea</span>
+            </label>
+            <textarea
+              id="gs-idea"
+              rows={3}
+              value={customIdea}
+              onChange={(e) => setCustomIdea(e.target.value)}
+              placeholder="Describe your exact store idea (e.g. Luxury leather boots and sneakers, oversized graphic hoodies, organic herbal teas, handmade jewelry with Cash on Delivery)..."
+              className="w-full rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-2.5 text-xs font-medium text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-3 focus:ring-[#1976d2]/15 resize-none"
+            />
           </div>
 
-          {/* 3. Theme Selection Only */}
+          {/* 3. Theme Selection */}
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0b2545]">
               <Palette size={13} className="text-[#1976d2]" /> Choose Store Theme
@@ -271,7 +180,7 @@ export default function GenerateStoreModal({
             disabled={!ready}
             className="gs-cta flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976d2] to-[#1565c0] text-white shadow-[0_12px_24px_-10px_rgba(25,118,210,0.8)] transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:hover:translate-y-0"
           >
-            <span>Generate My Store</span>
+            <span>Continue to Store Setup</span>
             <ArrowRight size={17} />
           </button>
 

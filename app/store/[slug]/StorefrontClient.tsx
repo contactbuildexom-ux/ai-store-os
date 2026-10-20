@@ -155,7 +155,10 @@ export default function StorefrontClient({ store, settings, products, delivery }
     const [catalogLoading, setCatalogLoading] = useState(true);
     const [catalogError, setCatalogError] = useState('');
 
-    const themeColor = settings?.theme_color || (liveStore as any)?.theme_color || (liveStore as any)?.primary_color || (liveStore as any)?.theme?.primaryColor || '#1976d2';
+    const [liveThemeColor, setLiveThemeColor] = useState(
+        settings?.theme_color || (store as any)?.theme_color || (store as any)?.primary_color || (store as any)?.theme?.primaryColor || '#1976d2'
+    );
+    const themeColor = liveThemeColor;
     const bannerText = settings?.banner_text || 'Free delivery nationwide on orders above Rs. 3,000!';
     const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
 
@@ -373,6 +376,9 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 if (!isPublicStorefrontResponse(payload) || payload.store.slug !== store.slug) {
                     throw new Error('The store returned an invalid catalog response.');
                 }
+                if (payload.store.primary_color) {
+                    setLiveThemeColor(payload.store.primary_color);
+                }
                 setLiveStore((current) => ({
                     ...current,
                     id: payload.store.id,
@@ -380,6 +386,9 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     slug: payload.store.slug,
                     plan: payload.store.plan,
                     whatsapp_number: payload.store.whatsapp_number,
+                    primary_color: payload.store.primary_color,
+                    theme_color: payload.store.primary_color,
+                    selected_theme: payload.store.selected_theme,
                 }));
                 setLiveProducts(payload.products);
             } catch (error) {
@@ -600,6 +609,17 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     store_id: liveStore.slug || liveStore.id,
+                    store_name: liveStore.name,
+                    whatsapp_number: liveStore.whatsapp_number,
+                    tagline: liveStore.tagline,
+                    products: liveProducts.map((p) => ({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        description: p.description,
+                        category: (p as any).category || (p as any).category_name || 'General',
+                        image_url: p.image_url,
+                    })),
                     message: userMsg
                 })
             });
@@ -607,9 +627,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
             if (!res.ok) throw new Error(data.error || 'Failed to process AI chat query');
             setAiMessages((prev) => [...prev, { sender: 'ai', text: data.reply || 'Here are some items from our store catalog!' }]);
         } catch {
+            const isEnglish = !/[\u0600-\u06FF]/.test(userMsg) && !/\b(kya|kia|kitna|kitne|kitni|hai|hain|kese|kaise|batao|chahiye|mein|me|ko|se|bhai|bhejo|shukriya|acha|achha|theek)\b/i.test(userMsg);
             setAiMessages((prev) => [
                 ...prev,
-                { sender: 'ai', text: `Main **${liveStore.name}** par aap ki shopping mein madad ke liye hazir hoon! Aap hamaray catalog items dekh saktay hain ya kisi bhi card par click karke direct WhatsApp par order bhej saktay hain.` }
+                {
+                    sender: 'ai',
+                    text: isEnglish
+                        ? `Welcome to **${liveStore.name}**! I am here to help with our catalog, prices, and fast nationwide delivery. Tap any product or click WhatsApp to chat with our team directly!`
+                        : `Main **${liveStore.name}** par aap ki shopping mein madad ke liye hazir hoon! Aap hamaray catalog items dekh saktay hain ya kisi bhi card par click karke direct WhatsApp par order bhej saktay hain.`
+                }
             ]);
         } finally {
             setAiSending(false);

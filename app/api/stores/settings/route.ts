@@ -444,6 +444,40 @@ export async function POST(req: Request) {
     }
     if (result.error) throw result.error;
 
+    // Sync primary_color and selected_theme into the stores table so storefront always reflects live branding
+    try {
+      const storeUpdates: Record<string, unknown> = {};
+      if (basePayload.theme_color) storeUpdates.primary_color = basePayload.theme_color;
+      if (selectedTheme) storeUpdates.selected_theme = selectedTheme;
+      if (body.banner_text) storeUpdates.header_title = String(body.banner_text);
+      if (Object.keys(storeUpdates).length > 0) {
+        await supabase.from("stores").update(storeUpdates).eq("id", storeId);
+      }
+    } catch (syncErr) {
+      console.warn("Could not sync stores table branding columns:", syncErr);
+    }
+
+    // Always update storeRepo memory/cache for immediate consistency
+    try {
+      const { storeRepo } = await import("@/lib/store-repository");
+      const repoStore = await storeRepo.getStore(storeId);
+      if (repoStore) {
+        if (basePayload.theme_color) {
+          repoStore.primary_color = basePayload.theme_color;
+          if (repoStore.theme) repoStore.theme.primaryColor = basePayload.theme_color;
+        }
+        if (selectedTheme) {
+          repoStore.selected_theme = selectedTheme;
+          if (repoStore.theme) repoStore.theme.id = selectedTheme;
+        }
+        if (body.banner_text) repoStore.header_title = String(body.banner_text);
+        if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
+        if (body.logo_url) repoStore.logo_url = String(body.logo_url);
+      }
+    } catch (repoErr) {
+      console.warn("Could not sync storeRepo cache:", repoErr);
+    }
+
     if ("jazzcash_number" in body || "easypaisa_number" in body) {
       try {
         await Promise.all([

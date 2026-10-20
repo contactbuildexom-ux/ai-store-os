@@ -563,6 +563,7 @@ export default function MerchantDashboardMaster() {
             const settingsPayload: Record<string, unknown> = {
                     store_id: resolvedStoreId,
                     theme_color: themeColor,
+                    selected_theme: THEME_OPTIONS.find(t => t.color.toLowerCase() === themeColor.toLowerCase())?.id || 'emerald',
                     banner_text: bannerText,
                     logo_url: savedLogoUrl,
                     whatsapp_number: canUseWhatsapp ? whatsappNumber : null,
@@ -1226,7 +1227,20 @@ export default function MerchantDashboardMaster() {
                                                 <button
                                                     key={opt.id}
                                                     type="button"
-                                                    onClick={() => setThemeColor(opt.color)}
+                                                    onClick={() => {
+                                                        setThemeColor(opt.color);
+                                                        if (resolvedStoreId) {
+                                                            fetch('/api/stores/settings', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({
+                                                                    store_id: resolvedStoreId,
+                                                                    theme_color: opt.color,
+                                                                    selected_theme: opt.id,
+                                                                })
+                                                            }).catch(console.warn);
+                                                        }
+                                                    }}
                                                     className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
                                                         isSelected
                                                             ? 'border-slate-900 bg-white shadow-xs ring-2 ring-slate-900'
@@ -1246,7 +1260,20 @@ export default function MerchantDashboardMaster() {
                                             <input 
                                                 type="color" 
                                                 value={themeColor} 
-                                                onChange={e => setThemeColor(e.target.value)} 
+                                                onChange={e => {
+                                                    const newColor = e.target.value;
+                                                    setThemeColor(newColor);
+                                                    if (resolvedStoreId && /^#[0-9a-f]{6}$/i.test(newColor)) {
+                                                        fetch('/api/stores/settings', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                store_id: resolvedStoreId,
+                                                                theme_color: newColor,
+                                                            })
+                                                        }).catch(console.warn);
+                                                    }
+                                                }} 
                                                 className="size-8 rounded-lg border border-slate-300 cursor-pointer p-0.5" 
                                             />
                                             <span>Custom Color Picker</span>

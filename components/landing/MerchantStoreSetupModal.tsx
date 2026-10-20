@@ -373,22 +373,12 @@ export default function MerchantStoreSetupModal({
   const [successData, setSuccessData] = useState<GeneratedStoreResponse | null>(null);
 
   useEffect(() => {
-    if (initialStoreName && !storeName) {
-      setStoreName(initialStoreName);
+    if (isOpen) {
+      if (initialStoreName) setStoreName(initialStoreName);
+      if (initialPrompt) setPrompt(initialPrompt);
+      if (initialTheme) setSelectedTheme(initialTheme);
     }
-  }, [initialStoreName]);
-
-  useEffect(() => {
-    if (initialTheme) {
-      setSelectedTheme(initialTheme);
-    }
-  }, [initialTheme]);
-
-  useEffect(() => {
-    if (initialPrompt && !prompt) {
-      setPrompt(initialPrompt);
-    }
-  }, [initialPrompt]);
+  }, [isOpen, initialStoreName, initialPrompt, initialTheme]);
 
   if (!isOpen) return null;
 
