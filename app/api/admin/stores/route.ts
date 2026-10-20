@@ -47,9 +47,38 @@ export async function POST(request: Request) {
     }).select("id, name, slug, owner_email, plan, payment_status, created_at").single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error: merchantError } = await supabase.from("merchants").upsert({
+      store_id: data.id,
+      name: data.name,
+      email: data.owner_email,
+      whatsapp_number: whatsappNumber,
+      address: "",
+      contact_phone: whatsappNumber || null,
+    }, { onConflict: "store_id" });
+    if (merchantError) {
+      const { error: cleanupError } = await supabase.from("stores").delete().eq("id", data.id);
+      const message = cleanupError
+        ? `Unable to create seller profile (${merchantError.message}); store cleanup also failed (${cleanupError.message}).`
+        : `Unable to create seller profile: ${merchantError.message}`;
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
     return NextResponse.json({ store: data }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to create store.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  const supabase = createAdminClient();
+  if (!supabase) return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
+
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
+
+  const { data, error } = await supabase.from("stores").delete().eq("id", id).select("id").maybeSingle();
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Store not found." }, { status: 404 });
+  return NextResponse.json({ success: true });
 }

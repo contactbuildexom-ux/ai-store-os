@@ -21,9 +21,7 @@ import {
 } from 'lucide-react';
 import { StoreQRCode } from '@/components/store-qr-code';
 import EmailVerifyField from '@/components/auth/EmailVerifyField';
-
-// NEXT_PUBLIC_REQUIRE_EMAIL_OTP=true hone par hi email verification zaroori hogi
-const OTP_REQUIRED = process.env.NEXT_PUBLIC_REQUIRE_EMAIL_OTP === 'true';
+import { EMAIL_OTP_REQUIRED } from '@/lib/email-otp-config';
 
 type GeneratedPreview = {
   store_name: string;
@@ -411,8 +409,8 @@ export default function MerchantStoreSetupModal({
     if (!effectivePassword || effectivePassword.length < 8) {
       effectivePassword = 'StoreAdminPass123!';
     }
-    
-    if (OTP_REQUIRED && !verificationToken) {
+
+    if (EMAIL_OTP_REQUIRED && !verificationToken) {
       setErrorMessage('Please verify your email address with the code we send you.');
       return;
     }
@@ -439,6 +437,7 @@ export default function MerchantStoreSetupModal({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          registration: 'merchant',
           store_name: effectiveName,
           name: effectiveName,
           prompt: effectivePrompt,
@@ -842,7 +841,7 @@ export default function MerchantStoreSetupModal({
                     className={INPUT}
                   />
                 </div>
-                {OTP_REQUIRED && (
+                {EMAIL_OTP_REQUIRED && (
                   <>
                     <input
                       type="tel"
