@@ -1160,34 +1160,24 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     {liveProducts.length === 0 ? (
                         <div className="space-y-4 w-full">
                             <div 
-                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl px-4 py-3.5 border shadow-2xs backdrop-blur-sm"
+                                className="flex items-center justify-start gap-3 rounded-2xl px-4 py-3.5 border shadow-2xs backdrop-blur-sm"
                                 style={{
                                     backgroundColor: `${themeColor}12`,
                                     borderColor: `${themeColor}32`,
                                 }}
                             >
-                                <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
-                                    <span 
-                                        className="grid size-9 place-items-center rounded-xl text-white shrink-0 shadow-xs"
-                                        style={{ backgroundColor: themeColor }}
-                                    >
-                                        <PackagePlus size={18} />
-                                    </span>
-                                    <div>
-                                        <h4 className="text-xs sm:text-sm font-black text-slate-900">Product Catalog Slots Ready</h4>
-                                        <p className="text-[11px] text-slate-600">
-                                            Store is live with zero dead space. Upload products from your Merchant Dashboard to fill these containers instantly.
-                                        </p>
-                                    </div>
-                                </div>
-                                <Link
-                                    href="/merchant/login"
-                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white px-3.5 py-2 rounded-xl shadow-xs transition hover:opacity-90 active:scale-95 shrink-0"
+                                <span 
+                                    className="grid size-9 place-items-center rounded-xl text-white shrink-0 shadow-xs"
                                     style={{ backgroundColor: themeColor }}
                                 >
-                                    <span>Manage Products</span>
-                                    <ArrowRight size={13} />
-                                </Link>
+                                    <PackagePlus size={18} />
+                                </span>
+                                <div>
+                                    <h4 className="text-xs sm:text-sm font-black text-slate-900">Product Catalog Slots Ready</h4>
+                                    <p className="text-[11px] text-slate-600">
+                                        Store is live with zero dead space. Upload products from your Merchant Dashboard to fill these containers instantly.
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Full-width flush product container boxes with zero side waste */}
