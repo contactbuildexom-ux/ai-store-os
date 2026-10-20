@@ -233,7 +233,8 @@ export function StoreFooter({
                   storeSlug={storeSlug} 
                   storePath={`/store/${encodeURIComponent(storeSlug)}`} 
                   compact={true}
-                  className="w-full max-w-[260px] !p-3.5 !shadow-sm !border-slate-200"
+                  themeColor={resolvedThemeColor}
+                  className="w-full max-w-[260px] !p-3.5 !shadow-sm"
                 />
               </div>
             </div>
