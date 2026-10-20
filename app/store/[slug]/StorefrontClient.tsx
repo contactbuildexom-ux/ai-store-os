@@ -653,9 +653,9 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-6 lg:px-8">
+                <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
                     {/* Left: Mobile Menu & Logo / Brand */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
                         <button
                             type="button"
                             onClick={() => setIsMenuOpen(true)}
@@ -685,7 +685,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
 
                     {/* Center: Desktop Navigation Links with animated underlines */}
-                    <nav className="hidden md:flex items-center gap-5 lg:gap-6 text-xs font-semibold text-slate-700">
+                    <nav className="hidden md:flex shrink-0 items-center justify-center gap-6 lg:gap-8 text-xs font-semibold text-slate-700">
                         {[
                             { name: 'Home', href: '#hero' },
                             { name: 'Shop', href: '#featured' },
@@ -709,7 +709,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </nav>
 
                     {/* Right: Cart Icon Button */}
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
 
                         <button
                             type="button"
@@ -846,7 +846,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     style={{ backgroundColor: themeColor }}
                 />
 
-                <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
+                <div className="w-full px-4 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
                     {/* Left Column: Polished, Balanced Text & CTAs */}
                     <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
@@ -931,8 +931,8 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </div>
             </section>
 
-            {/* Main Page Body - Balanced max-w-6xl container */}
-            <main className="mx-auto max-w-7xl w-full px-2 sm:px-4 lg:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+            {/* Main Page Body - Edge-to-edge with zero bottom gap before footer */}
+            <main className="w-full px-2 sm:px-4 lg:px-6 pt-5 pb-0 space-y-5 sm:space-y-6">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
@@ -962,7 +962,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         {/* 4-Column Grid on Desktop, 2-Column on Mobile - flush card boxes */}
-                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
                             {featuredItems.map((item) => (
                                 <article
                                     key={item.id}
@@ -1158,14 +1158,94 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                     {/* Products Grid - flush card boxes */}
                     {liveProducts.length === 0 ? (
-                        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/90 backdrop-blur-sm p-8 sm:p-14 text-center">
-                            <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-slate-100 text-slate-500 mb-4 shadow-xs">
-                                <PackagePlus size={32} />
+                        <div className="space-y-4 w-full">
+                            <div 
+                                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl px-4 py-3.5 border shadow-2xs backdrop-blur-sm"
+                                style={{
+                                    backgroundColor: `${themeColor}12`,
+                                    borderColor: `${themeColor}32`,
+                                }}
+                            >
+                                <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
+                                    <span 
+                                        className="grid size-9 place-items-center rounded-xl text-white shrink-0 shadow-xs"
+                                        style={{ backgroundColor: themeColor }}
+                                    >
+                                        <PackagePlus size={18} />
+                                    </span>
+                                    <div>
+                                        <h4 className="text-xs sm:text-sm font-black text-slate-900">Product Catalog Slots Ready</h4>
+                                        <p className="text-[11px] text-slate-600">
+                                            Store is live with zero dead space. Upload products from your Merchant Dashboard to fill these containers instantly.
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link
+                                    href="/merchant/login"
+                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white px-3.5 py-2 rounded-xl shadow-xs transition hover:opacity-90 active:scale-95 shrink-0"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    <span>Manage Products</span>
+                                    <ArrowRight size={13} />
+                                </Link>
                             </div>
-                            <h4 className="text-base sm:text-lg font-black text-slate-900">New collection launching soon</h4>
-                            <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                                Our catalog is currently being updated with exciting new products. Please check back shortly!
-                            </p>
+
+                            {/* Full-width flush product container boxes with zero side waste */}
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
+                                {[1, 2, 3, 4, 5, 6].map((slot) => (
+                                    <div
+                                        key={`empty-slot-${slot}`}
+                                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:shadow-md w-full bg-white/80"
+                                        style={{
+                                            borderColor: `${themeColor}28`,
+                                        }}
+                                    >
+                                        <div 
+                                            className="relative aspect-square w-full overflow-hidden flex flex-col items-center justify-center p-4 text-center border-b"
+                                            style={{ 
+                                                backgroundColor: `${themeColor}0a`,
+                                                borderColor: `${themeColor}18` 
+                                            }}
+                                        >
+                                            <div 
+                                                className="grid size-12 place-items-center rounded-2xl mb-2.5 transition-transform duration-300 group-hover:scale-110 shadow-2xs"
+                                                style={{ backgroundColor: `${themeColor}16`, color: themeColor }}
+                                            >
+                                                <PackagePlus size={22} />
+                                            </div>
+                                            <span 
+                                                className="text-xs font-bold tracking-tight text-slate-800"
+                                            >
+                                                Product #{slot}
+                                            </span>
+                                            <span 
+                                                className="text-[10px] font-semibold mt-0.5"
+                                                style={{ color: themeColor }}
+                                            >
+                                                Slot Available
+                                            </span>
+                                        </div>
+
+                                        <div className="p-3 sm:p-3.5 bg-white">
+                                            <p className="line-clamp-1 text-xs font-bold text-slate-800">
+                                                Awaiting Product
+                                            </p>
+                                            <div className="mt-2.5 flex items-center justify-between">
+                                                <span className="text-xs font-extrabold text-slate-500">
+                                                    --
+                                                </span>
+                                                <div 
+                                                    className="grid size-8 place-items-center rounded-full text-white/70 shadow-xs"
+                                                    style={{ backgroundColor: themeColor }}
+                                                    title="Product slot ready"
+                                                >
+                                                    <ShoppingCart size={14} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
@@ -1185,7 +1265,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 w-full">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
                                 {displayedProducts.map((product) => (
                                 <article
                                     key={product.id}
@@ -1326,7 +1406,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
                 {/* 5. About Store Section (Linked directly from header navigation) */}
                 <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
-                    <div className="max-w-3xl space-y-3">
+                    <div className="w-full space-y-3">
                         <span
                             className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
                             style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
@@ -1348,52 +1428,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                     </div>
                 </section>
 
-                {/* 6. Official Buildexom Platform Feature Strip (Matching Instagram Post) */}
-                <section className="overflow-hidden rounded-3xl border p-6 text-slate-900 shadow-xs sm:p-8" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
-                    <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6 w-full lg:w-auto">
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">🌐</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-slate-900">Your Own Online Store</h4>
-                                    <p className="text-[10px] text-slate-600">Custom branded domain</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">💬</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-slate-900">WhatsApp Ordering</h4>
-                                    <p className="text-[10px] text-slate-600">Direct customer chat</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">🛡️</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-slate-900">Secure & Reliable</h4>
-                                    <p className="text-[10px] text-slate-600">24/7 verified uptime</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                                <span className="text-xl">📈</span>
-                                <div>
-                                    <h4 className="text-xs font-bold text-slate-900">Grow Your Business</h4>
-                                    <p className="text-[10px] text-slate-600">Scale sales effortlessly</p>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="shrink-0 w-full sm:w-auto text-center">
-                            <Link
-                                href="/"
-                                className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:opacity-90 active:scale-95"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                <span>Build Your Store</span>
-                                <ArrowRight size={14} />
-                            </Link>
-                        </div>
-                    </div>
-                </section>
             </main>
 
             {/* SEPARATE SLIDE-OVER CART DRAWER */}

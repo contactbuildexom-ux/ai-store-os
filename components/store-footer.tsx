@@ -94,7 +94,7 @@ export function StoreFooter({
 
   return (
     <footer 
-      className="mt-12 border-t text-slate-900 transition-colors"
+      className="mt-0 border-t text-slate-900 transition-colors"
       style={{
         background: `linear-gradient(135deg, ${resolvedThemeColor}18 0%, ${resolvedThemeColor}2e 50%, ${resolvedThemeColor}10 100%)`,
         borderColor: `${resolvedThemeColor}30`,
@@ -108,7 +108,7 @@ export function StoreFooter({
           borderColor: `${resolvedThemeColor}25`,
         }}
       >
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
+        <div className="w-full grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
           <div className="flex items-center gap-3">
             <span 
               className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
@@ -161,7 +161,7 @@ export function StoreFooter({
       </div>
 
       {/* 2. Main Footer Body (Desktop 4-Column Aligned & Mobile Responsive) */}
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full px-4 py-10 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 items-start">
           {/* Column 1: Brand Info */}
           <div className="space-y-3">
@@ -233,7 +233,7 @@ export function StoreFooter({
                   storeSlug={storeSlug} 
                   storePath={`/store/${encodeURIComponent(storeSlug)}`} 
                   compact={true}
-                  className="!max-w-[170px] !p-2 !shadow-sm !border-slate-200"
+                  className="w-full max-w-[260px] !p-3.5 !shadow-sm !border-slate-200"
                 />
               </div>
             </div>

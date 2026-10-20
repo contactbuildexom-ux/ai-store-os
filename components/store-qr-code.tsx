@@ -122,25 +122,25 @@ export function StoreQRCode({
             <p className="text-[10px] text-slate-400">Loading QR…</p>
           </div>
         )}
-        <div className="mt-2.5 flex items-center justify-center gap-1.5 w-full">
-          <button
-            type="button"
-            onClick={handleCopy}
-            title="Copy store link"
-            className="inline-flex h-7 px-2.5 items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-700 hover:bg-white transition"
-          >
-            {copied ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} className="text-slate-500" />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
-          </button>
+        <div className="mt-3 flex flex-col gap-1.5 w-full">
           <button
             type="button"
             onClick={downloadQrCode}
             disabled={!storeUrl}
-            title="Download QR code SVG"
-            className="inline-flex h-7 px-2.5 items-center justify-center gap-1 rounded-lg bg-slate-900 text-[10px] font-bold text-white hover:bg-slate-800 transition disabled:opacity-50"
+            title="Download store QR code"
+            className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 disabled:opacity-50"
           >
-            <Download size={12} />
-            <span>SVG</span>
+            <Download size={14} className="shrink-0 text-white" />
+            <span>Download QR Code</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            title="Copy store link"
+            className="inline-flex h-7.5 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-white hover:border-slate-300 active:scale-95"
+          >
+            {copied ? <Check size={13} className="text-emerald-600 shrink-0" /> : <Copy size={13} className="text-slate-400 shrink-0" />}
+            <span>{copied ? 'Link Copied!' : 'Copy Store Link'}</span>
           </button>
         </div>
       </div>
@@ -233,10 +233,10 @@ export function StoreQRCode({
             type="button"
             onClick={downloadQrCode}
             disabled={!storeUrl}
-            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-3 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50"
+            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-[#0b2545] px-2 text-xs font-bold text-white shadow-2xs transition hover:bg-[#1976d2] disabled:opacity-50 whitespace-nowrap"
           >
             <Download size={14} />
-            <span>Download</span>
+            <span>Download QR</span>
           </button>
         </div>
       )}
