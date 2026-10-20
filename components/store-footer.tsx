@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Landmark, Smartphone, ShieldCheck, Truck, Headphones, RotateCcw, MapPin, Phone, Mail } from 'lucide-react';
+import { Landmark, Smartphone, ShieldCheck, Truck, Headphones, RotateCcw, MessageCircle, MapPin, Phone, Mail } from 'lucide-react';
 import { StoreSocialLinks } from './store-social-links';
 import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from './store-qr-code';
 import { THEME_PALETTES, darkenColor } from '@/lib/store-theme';
@@ -100,61 +100,80 @@ export function StoreFooter({
         borderColor: `${resolvedThemeColor}30`,
       }}
     >
-      {/* 1. Value Proposition & Trust Badges Strip (Responsive Grid) */}
+      {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid) */}
       <div 
-        className="border-b px-4 py-8 sm:px-8"
+        className="border-b px-4 py-6 sm:px-8"
         style={{
           backgroundColor: `${resolvedThemeColor}10`,
           borderColor: `${resolvedThemeColor}25`,
         }}
       >
         <div className="w-full grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5 rounded-2xl p-2 transition hover:bg-white/40">
             <span 
-              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
-              style={{ backgroundColor: resolvedThemeColor }}
+              className="grid size-11 shrink-0 place-items-center rounded-2xl border shadow-2xs transition-transform duration-300 hover:scale-105"
+              style={{ 
+                backgroundColor: `${resolvedThemeColor}18`, 
+                borderColor: `${resolvedThemeColor}35`, 
+                color: resolvedThemeColor 
+              }}
             >
-              <Truck size={18} />
+              <Truck size={20} strokeWidth={2} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Nationwide Delivery</h4>
-              <p className="text-[11px] text-slate-600">Fast Cash on Delivery</p>
+              <h4 className="text-xs font-extrabold tracking-tight text-slate-900">Nationwide Delivery</h4>
+              <p className="text-[11px] font-medium text-slate-600">Fast Cash on Delivery</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3.5 rounded-2xl p-2 transition hover:bg-white/40">
             <span 
-              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
-              style={{ backgroundColor: resolvedThemeColor }}
+              className="grid size-11 shrink-0 place-items-center rounded-2xl border shadow-2xs transition-transform duration-300 hover:scale-105"
+              style={{ 
+                backgroundColor: `${resolvedThemeColor}18`, 
+                borderColor: `${resolvedThemeColor}35`, 
+                color: resolvedThemeColor 
+              }}
             >
-              <ShieldCheck size={18} />
+              <ShieldCheck size={20} strokeWidth={2} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">100% Genuine</h4>
-              <p className="text-[11px] text-slate-600">Verified Quality Items</p>
+              <h4 className="text-xs font-extrabold tracking-tight text-slate-900">100% Genuine Quality</h4>
+              <p className="text-[11px] font-medium text-slate-600">Verified Quality Items</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3.5 rounded-2xl p-2 transition hover:bg-white/40">
             <span 
-              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
-              style={{ backgroundColor: resolvedThemeColor }}
+              className="grid size-11 shrink-0 place-items-center rounded-2xl border shadow-2xs transition-transform duration-300 hover:scale-105"
+              style={{ 
+                backgroundColor: `${resolvedThemeColor}18`, 
+                borderColor: `${resolvedThemeColor}35`, 
+                color: resolvedThemeColor 
+              }}
             >
-              <Headphones size={18} />
+              <MessageCircle size={20} strokeWidth={2} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">WhatsApp Support</h4>
-              <p className="text-[11px] text-slate-600">Instant Order Updates</p>
+              <h4 className="text-xs font-extrabold tracking-tight text-slate-900">WhatsApp Support</h4>
+              <p className="text-[11px] font-medium text-slate-600">Instant Order Updates</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3.5 rounded-2xl p-2 transition hover:bg-white/40">
             <span 
-              className="grid size-10 shrink-0 place-items-center rounded-xl shadow-xs text-white"
-              style={{ backgroundColor: resolvedThemeColor }}
+              className="grid size-11 shrink-0 place-items-center rounded-2xl border shadow-2xs transition-transform duration-300 hover:scale-105"
+              style={{ 
+                backgroundColor: `${resolvedThemeColor}18`, 
+                borderColor: `${resolvedThemeColor}35`, 
+                color: resolvedThemeColor 
+              }}
             >
-              <RotateCcw size={18} />
+              <RotateCcw size={20} strokeWidth={2} />
             </span>
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Easy Exchanges</h4>
-              <p className="text-[11px] text-slate-600">Hassle-Free Policy</p>
+              <h4 className="text-xs font-extrabold tracking-tight text-slate-900">Easy Exchanges</h4>
+              <p className="text-[11px] font-medium text-slate-600">Hassle-Free Policy</p>
             </div>
           </div>
         </div>

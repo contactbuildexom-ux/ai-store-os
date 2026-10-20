@@ -1387,55 +1387,56 @@ export default function StorefrontClient({ store, settings, products, delivery }
                         </div>
 
                         <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
-                            {liveStore.tagline ? `${liveStore.name} — ${liveStore.tagline}. ` : ""}
+                            {(() => {
+                                const raw = (liveStore.tagline || '').trim();
+                                if (!raw || raw.toLowerCase().includes('aura kicks') || raw.toLowerCase().startsWith('welcome to')) {
+                                    return '';
+                                }
+                                return `${liveStore.name} — ${raw}. `;
+                            })()}
                             Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
                         </p>
                     </div>
                 </section>
 
-                {/* 5. Trust Tags Line with Professional Icons & Animated Ask Bexi AI Button (Directly Below About) */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-1 pb-2">
-                    {/* Professional Tags with Sleek Icons */}
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-xs font-semibold">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/80 bg-emerald-50/90 px-3.5 py-1.5 text-emerald-900 shadow-2xs">
-                            <span className="grid size-5 place-items-center rounded-full bg-emerald-600 text-white">
-                                <ShieldCheck size={12} strokeWidth={2.5} />
-                            </span>
-                            <span className="font-bold tracking-tight">100% Genuine Quality</span>
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/80 bg-blue-50/90 px-3.5 py-1.5 text-blue-900 shadow-2xs">
-                            <span className="grid size-5 place-items-center rounded-full bg-blue-600 text-white">
-                                <Truck size={12} strokeWidth={2.5} />
-                            </span>
-                            <span className="font-bold tracking-tight">Cash on Delivery Nationwide</span>
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-teal-300/80 bg-teal-50/90 px-3.5 py-1.5 text-teal-900 shadow-2xs">
-                            <span className="grid size-5 place-items-center rounded-full bg-teal-600 text-white">
-                                <MessageCircle size={12} strokeWidth={2.5} />
-                            </span>
-                            <span className="font-bold tracking-tight">Direct WhatsApp Support</span>
-                        </div>
-                    </div>
-
-                    {/* Attractive Animated Ask Bexi AI Button */}
+                {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
+                <div className="flex items-center justify-center sm:justify-end pt-1 pb-1">
                     <button
                         type="button"
                         onClick={() => setIsAiOpen(true)}
-                        className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-2xl bg-slate-900 px-5 py-2.5 text-xs font-extrabold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:bg-slate-800 active:scale-95 border border-slate-700/80 shrink-0"
+                        className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-2xl px-5 py-2.5 text-xs font-black text-slate-900 shadow-md backdrop-blur-xs transition-all duration-300 hover:scale-105 active:scale-95 border"
+                        style={{
+                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}12 100%)`,
+                            borderColor: `${themeColor}45`,
+                        }}
                         aria-label="Open Bexi AI Store Assistant"
                     >
                         {/* Animated Glowing Pulse Halo */}
-                        <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500 opacity-60 blur-xs transition group-hover:opacity-100 animate-pulse duration-1000" />
+                        <span 
+                            className="absolute -inset-1 rounded-2xl opacity-60 blur-xs transition group-hover:opacity-100 animate-pulse duration-1000" 
+                            style={{
+                                background: `linear-gradient(90deg, ${themeColor}40, #10b98150, ${themeColor}50)`,
+                            }}
+                        />
 
-                        <span className="relative flex size-6 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold shadow-2xs">
-                            <Sparkles size={13} className="text-slate-950 animate-bounce duration-1000" />
+                        <span 
+                            className="relative grid size-6 place-items-center rounded-xl text-white shadow-2xs"
+                            style={{ backgroundColor: themeColor }}
+                        >
+                            <Sparkles size={13} className="animate-spin duration-1000 text-white" />
                         </span>
 
-                        <span className="relative font-bold text-xs tracking-wide">
+                        <span className="relative font-black text-xs tracking-wide text-slate-900">
                             Ask Bexi AI
                         </span>
 
-                        <span className="relative rounded-full bg-white/20 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-emerald-300">
+                        <span 
+                            className="relative rounded-full px-2.5 py-0.5 text-[9.5px] font-black uppercase tracking-wider"
+                            style={{
+                                backgroundColor: `${themeColor}22`,
+                                color: themeColor,
+                            }}
+                        >
                             Shopping Assistant
                         </span>
                     </button>
