@@ -79,7 +79,7 @@ function parseGeneratedStoreResponse(value: unknown): GeneratedStoreResponse | n
       category_name: product.category_name,
     }];
   });
-  if (!products.length || products.length !== previewValue.products.length) return null;
+  if (products.length !== previewValue.products.length) return null;
   const storefrontUrl = typeof value.storefront_url === 'string' ? value.storefront_url : `/store/${encodeURIComponent(value.slug)}`;
   return {
     slug: value.slug,
@@ -566,25 +566,33 @@ export default function MerchantStoreSetupModal({
                       <span key={category} className="rounded-full border border-[#bfdcff] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#1976d2]">{category}</span>
                     ))}
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {successData.preview.products.slice(0, 6).map((product) => (
-                      <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-[#cfe2fa] bg-white p-3">
-                        <div className="flex items-start gap-2">
-                          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#e6f4ff] text-[#1976d2]"><Package size={15} /></span>
-                          <div className="min-w-0 flex-1">
-                            <h5 className="truncate text-xs font-semibold text-[#0b2545]">{product.name}</h5>
-                            <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#5b7aa3]">{product.description}</p>
+                  {successData.preview.products.length > 0 ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {successData.preview.products.slice(0, 6).map((product) => (
+                        <article key={`${product.category_name}-${product.name}`} className="rounded-xl border border-[#cfe2fa] bg-white p-3">
+                          <div className="flex items-start gap-2">
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#e6f4ff] text-[#1976d2]"><Package size={15} /></span>
+                            <div className="min-w-0 flex-1">
+                              <h5 className="truncate text-xs font-semibold text-[#0b2545]">{product.name}</h5>
+                              <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-[#5b7aa3]">{product.description}</p>
+                            </div>
                           </div>
-                        </div>
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <span className="truncate text-[10px] text-[#5b7aa3]">{product.category_name}</span>
-                          <span className="shrink-0 text-xs font-bold text-emerald-600">
-                            {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(product.price)}
-                          </span>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                          <div className="mt-3 flex items-center justify-between gap-2">
+                            <span className="truncate text-[10px] text-[#5b7aa3]">{product.category_name}</span>
+                            <span className="shrink-0 text-xs font-bold text-emerald-600">
+                              {new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(product.price)}
+                            </span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-[#cfe2fa] bg-white/80 p-4 text-center">
+                      <Package size={22} className="mx-auto text-[#1976d2] mb-1.5" />
+                      <p className="text-xs font-bold text-[#0b2545]">Ready for Products</p>
+                      <p className="mt-0.5 text-[11px] text-[#5b7aa3]">Categories and store branding configured. Add your real products directly from your dashboard.</p>
+                    </div>
+                  )}
                 </div>
               </section>
 

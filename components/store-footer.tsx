@@ -15,13 +15,15 @@ type StorePaymentDetails = {
   jazzcash_title: string;
   easypaisa_number: string;
   easypaisa_title: string;
+  sadapay_number?: string;
+  sadapay_title?: string;
 };
 
 export function StoreFooter({ 
   storeName, 
   storeSlug, 
   paymentDetails, 
-  socialLinks,
+  socialLinks, 
   themeColor,
 }: {
   storeName: string;
@@ -39,6 +41,8 @@ export function StoreFooter({
     jazzcash_title: paymentDetails?.jazzcash_title || '',
     easypaisa_number: paymentDetails?.easypaisa_number || '',
     easypaisa_title: paymentDetails?.easypaisa_title || '',
+    sadapay_number: paymentDetails?.sadapay_number || '',
+    sadapay_title: paymentDetails?.sadapay_title || '',
   };
 
   const accounts = [
@@ -69,6 +73,15 @@ export function StoreFooter({
       values: [
         ['Account Title', safePayments.easypaisa_title],
         ['Mobile Number', safePayments.easypaisa_number],
+      ] as const,
+    },
+    {
+      name: 'SadaPay',
+      icon: Smartphone,
+      accent: 'bg-teal-50 text-teal-700 border-teal-200',
+      values: [
+        ['Account Title', safePayments.sadapay_title],
+        ['Mobile Number', safePayments.sadapay_number],
       ] as const,
     },
   ].map((account) => ({ ...account, values: account.values.filter(([, value]) => value && value.trim()) }));
@@ -149,10 +162,10 @@ export function StoreFooter({
         </div>
       </div>
 
-      {/* 2. Main Footer Body (Desktop Multi-Column & Mobile Responsive) */}
-      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 lg:gap-12">
-          {/* Brand Info */}
+      {/* 2. Main Footer Body (Desktop 4-Column Aligned & Mobile Responsive) */}
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 items-start">
+          {/* Column 1: Brand Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2.5">
               <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-white/20 overflow-hidden">
@@ -165,7 +178,7 @@ export function StoreFooter({
               <h3 className="text-base font-extrabold tracking-tight text-white">{storeName}</h3>
             </div>
             <p className="text-xs leading-relaxed text-slate-300">
-              Welcome to our online store. Explore our catalog of quality products with verified nationwide shipping and Cash on Delivery.
+              Welcome to our official online store. Explore our catalog of quality products with verified nationwide shipping and Cash on Delivery.
             </p>
             {storeSlug && (
               <p className="font-mono text-[11px] font-semibold text-emerald-300">
@@ -174,7 +187,7 @@ export function StoreFooter({
             )}
           </div>
 
-          {/* Quick Links */}
+          {/* Column 2: Quick Navigation */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Quick Navigation</h4>
             <ul className="space-y-2 text-xs text-slate-300">
@@ -199,41 +212,37 @@ export function StoreFooter({
             </ul>
           </div>
 
-          {/* Customer Support & Socials */}
+          {/* Column 3: Connect With Us */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Connect With Us</h4>
             <p className="text-xs text-slate-300">
-              Follow our social profiles for special discounts and new arrivals.
+              Follow our official social profiles for special discounts and new product drops.
             </p>
             <div className="pt-1">
               <StoreSocialLinks links={socialLinks} />
             </div>
           </div>
-        </div>
 
-        {/* Centered Scan & Shop QR Code Section - ON CLEAN WHITE CARD FOR OPTIMAL CAMERA SCANNING */}
-        {storeSlug && (
-          <div 
-            className="mt-12 border-t pt-8 flex flex-col items-center text-center"
-            style={{ borderColor: `${resolvedThemeColor}35` }}
-          >
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Scan & Shop</h4>
-            <p className="mt-1 max-w-sm text-xs text-slate-300">
-              Scan this QR code with any smartphone camera to open and share this store.
-            </p>
-            <div className="mt-4 flex justify-center w-full">
-              {/* QR Code container explicitly kept on clean white background card */}
-              <div className="rounded-3xl bg-white p-5 shadow-2xl border border-slate-200 inline-block text-slate-900">
+          {/* Column 4: Scan & Shop QR Code (Aligned cleanly with columns) */}
+          {storeSlug && (
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Scan & Shop</h4>
+              <p className="text-xs text-slate-300">
+                Scan this QR code with any smartphone camera to open and share this store.
+              </p>
+              <div className="pt-1">
                 <StoreQRCode 
                   storeSlug={storeSlug} 
                   storePath={`/store/${encodeURIComponent(storeSlug)}`} 
                   title={`${storeName} QR Code`}
                   badge="Active"
+                  showCardHeader={false}
+                  className="!max-w-[220px] !p-3 !shadow-none !border-white/20 !rounded-2xl"
                 />
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Advance Payment Details Section (if configured) */}
         {availableAccounts.length > 0 && (
@@ -248,7 +257,7 @@ export function StoreFooter({
                 Direct Bank & Wallet Details for {storeName}
               </h4>
             </div>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {availableAccounts.map(({ name, icon: Icon, accent, values }) => (
                 <div key={name} className="rounded-xl border border-white/15 bg-white p-3.5 shadow-sm text-slate-900">
                   <div className="flex items-center gap-2 border-b border-slate-100 pb-2">

@@ -3,6 +3,7 @@ import { AlertCircle, ArrowRight, ArrowUpRight, Bot, CreditCard, Package, Shoppi
 import { DashboardGreeting } from "@/components/dashboard-greeting";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
+import { AdminPlanUpgradeApprovals } from "@/components/admin-plan-upgrades";
 
 type StoreSummary = {
   id: string;
@@ -78,6 +79,10 @@ export default async function DashboardPage() {
           </article>
         ))}
       </section>
+
+      {/* Plan Upgrade Approvals Banner / Section */}
+      <AdminPlanUpgradeApprovals />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(270px,0.8fr)]">
         <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">

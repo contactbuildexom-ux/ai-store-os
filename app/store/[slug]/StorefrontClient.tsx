@@ -100,6 +100,50 @@ function getCategorySymbol(name: string): string {
     return clean.slice(0, 2).toUpperCase();
 }
 
+function parseProductVariants(product: any) {
+    let hasSizes = Boolean(product?.has_sizes);
+    let hasColors = Boolean(product?.has_colors);
+    let sizes: string[] = Array.isArray(product?.sizes) ? product.sizes : [];
+    let colors: Array<{ name: string; hex: string }> = Array.isArray(product?.colors) 
+        ? product.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c)
+        : [];
+
+    if (typeof product?.description === 'string' && product.description.includes('<!--variants:')) {
+        try {
+            const match = product.description.match(/<!--variants:(.*?)-->/);
+            if (match && match[1]) {
+                const meta = JSON.parse(match[1]);
+                if (meta.has_sizes !== undefined) hasSizes = Boolean(meta.has_sizes);
+                if (meta.has_colors !== undefined) hasColors = Boolean(meta.has_colors);
+                if (Array.isArray(meta.sizes) && meta.sizes.length > 0) sizes = meta.sizes;
+                if (Array.isArray(meta.colors) && meta.colors.length > 0) {
+                    colors = meta.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c);
+                }
+            }
+        } catch {}
+    }
+
+    if (hasSizes && sizes.length === 0) {
+        sizes = ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'];
+    }
+    if (hasColors && colors.length === 0) {
+        colors = [
+            { name: 'Default', hex: '#0f172a' },
+            { name: 'Emerald', hex: '#059669' },
+            { name: 'Navy', hex: '#1d4ed8' },
+            { name: 'Maroon', hex: '#9f1239' },
+            { name: 'Gold', hex: '#d97706' },
+        ];
+    }
+
+    return { hasSizes, hasColors, sizes, colors };
+}
+
+function cleanDescription(desc?: string | null): string {
+    if (!desc) return '';
+    return desc.replace(/<!--variants:.*?-->/g, '').trim();
+}
+
 function isFoodOrEdible(storeName: string, category?: string | null, productName?: string): boolean {
     const text = `${storeName} ${category || ''} ${productName || ''}`.toLowerCase();
     return /\b(food|coffee|tea|brew|roast|bean|beans|bakery|cake|cakes|bread|snack|cookie|cookies|mithai|sweet|sweets|honey|oil|spice|spices|herb|herbs|dry fruit|organic food|cafe|dining|edible)\b/i.test(text);
@@ -1248,7 +1292,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                 </section>
 
                 {/* 4. Trust Badges Strip */}
-                <section className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
+                <section className="rounded-3xl border p-6 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}26 50%, ${themeColor}0e 100%)`, borderColor: `${themeColor}28` }}>
                     <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 text-center sm:text-left">
                         <div className="flex items-center justify-center sm:justify-start gap-3">
                             <span className="grid size-11 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
@@ -1711,7 +1755,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                     <Sparkles size={14} />
                                 </span>
                                 <div>
-                                    <p className="font-bold text-xs">Bexi AI Assistant</p>
+                                    <p className="font-bold text-xs">{liveStore.name} Bexi AI</p>
                                     <p className="text-[10px] text-emerald-400 font-mono">Roman Urdu & English Active</p>
                                 </div>
                             </div>
@@ -1936,7 +1980,7 @@ export default function StorefrontClient({ store, settings, products, delivery }
                                         )}
                                     </div>
                                     <p className="text-xs sm:text-sm text-slate-600 leading-relaxed pt-1">
-                                        {selectedProductForModal.description || 'Quality store item with verified durability and comfort.'}
+                                        {cleanDescription(selectedProductForModal.description) || 'Quality store item with verified durability and comfort.'}
                                     </p>
                                 </div>
 

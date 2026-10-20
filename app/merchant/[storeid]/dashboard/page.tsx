@@ -11,7 +11,7 @@ import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '
 import { Boxes, Check, ChevronRight, CirclePlus, CreditCard, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Phone, MapPin, Mail, ChevronDown, ChevronUp, Clock, AlertCircle, CheckCircle2, Truck, RefreshCw, X, Landmark, ShieldCheck, Send, Lock, Plus } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
-type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string };
+type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
 type Category = { id: string; name: string };
 type OrderItem = { id?: string; product_id?: string; name?: string; price?: number; quantity: number };
 type Order = {
@@ -162,12 +162,25 @@ export default function MerchantDashboardMaster() {
     const [bulkText, setBulkText] = useState('');
     const [bulkLoading, setBulkLoading] = useState(false);
 
+    // Product Variant States (Sizes & Colors)
+    const [prodHasSizes, setProdHasSizes] = useState(false);
+    const [prodSizes, setProdSizes] = useState('Standard, S, M, L, XL');
+    const [prodHasColors, setProdHasColors] = useState(false);
+    const [prodColors, setProdColors] = useState('Default, Black, Navy, Emerald, Maroon');
+
+    // Upgrade payment proof states
+    const [senderName, setSenderName] = useState('');
+    const [senderNumber, setSenderNumber] = useState('');
+    const [proofFile, setProofFile] = useState<File | null>(null);
+    const [proofUrl, setProofUrl] = useState('');
+    const [pendingUpgradeStatus, setPendingUpgradeStatus] = useState<string | null>(null);
+
     // Category Form
     const [catName, setCatName] = useState('');
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'jazzcash' | 'easypaisa' | 'bank' | 'whatsapp'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'bank' | 'jazzcash' | 'easypaisa' | 'sadapay'>('bank');
     const [cardHolder, setCardHolder] = useState('');
     const [cardNumber, setCardNumber] = useState('');
     const [cardExp, setCardExp] = useState('');
@@ -251,7 +264,7 @@ export default function MerchantDashboardMaster() {
                     store_id: sid,
                     plan: targetPlan,
                     payment_method: paymentMethod,
-                    transaction_ref: trxRef || (paymentMethod === 'card' ? `CARD-${Date.now().toString().slice(-6)}` : `TRX-${Date.now().toString().slice(-6)}`),
+                    transaction_ref: trxRef || `TRX-${Date.now().toString().slice(-6)}`,
                 }),
             });
             const data = await res.json();
@@ -544,6 +557,39 @@ export default function MerchantDashboardMaster() {
         }
     };
 
+    const populateProductEdit = (product: Product) => {
+        setEditingProdId(product.id);
+        setProdName(product.name);
+        setProdPrice(String(product.price));
+        
+        let hasSizes = Boolean(product.has_sizes);
+        let sizes = Array.isArray(product.sizes) ? product.sizes.join(', ') : 'Standard, S, M, L, XL';
+        let hasColors = Boolean(product.has_colors);
+        let colors = Array.isArray(product.colors) ? product.colors.join(', ') : 'Default, Black, Navy, Emerald, Maroon';
+
+        if (typeof product.description === 'string' && product.description.includes('<!--variants:')) {
+            try {
+                const match = product.description.match(/<!--variants:(.*?)-->/);
+                if (match && match[1]) {
+                    const meta = JSON.parse(match[1]);
+                    if (meta.has_sizes !== undefined) hasSizes = Boolean(meta.has_sizes);
+                    if (meta.has_colors !== undefined) hasColors = Boolean(meta.has_colors);
+                    if (Array.isArray(meta.sizes)) sizes = meta.sizes.join(', ');
+                    if (Array.isArray(meta.colors)) colors = meta.colors.map((c: any) => typeof c === 'string' ? c : c.name).join(', ');
+                }
+            } catch {}
+        }
+
+        setProdDesc(product.description ? product.description.replace(/<!--variants:.*?-->/g, '').trim() : '');
+        setProdHasSizes(hasSizes);
+        setProdSizes(sizes);
+        setProdHasColors(hasColors);
+        setProdColors(colors);
+        setProdCategory(product.category_id || '');
+        setProdImageFiles([]);
+        setActiveTab('products');
+    };
+
     const handleRemoveProductFile = (index: number) => {
         setProdImageFiles((prev) => prev.filter((_, i) => i !== index));
     };
@@ -751,7 +797,7 @@ export default function MerchantDashboardMaster() {
                         { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
                         { id: 'payments', label: 'Payments', icon: CreditCard },
-                        { id: 'bexi-ai', label: 'Ask Bexi AI', icon: Sparkles },
+                        { id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -783,7 +829,7 @@ export default function MerchantDashboardMaster() {
                 <div className="h-1 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}88, transparent)` }} />
                 <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>Merchant workspace</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>{storeName}</p>
                         <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
@@ -797,6 +843,28 @@ export default function MerchantDashboardMaster() {
                     {message && (
                         <div role={messageError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-xs font-medium ${messageError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
                             {message}
+                        </div>
+                    )}
+
+                    {/* Pending Plan Upgrade Approval Banner */}
+                    {pendingUpgradeStatus && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm text-slate-800">
+                            <div className="flex items-center gap-3">
+                                <span className="grid size-9 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
+                                    <Sparkles size={18} />
+                                </span>
+                                <div>
+                                    <p className="text-xs font-bold text-amber-950">
+                                        ⏳ Upgrade to {PLAN_DETAILS[pendingUpgradeStatus as Plan]?.title || 'Pro'} Pending Superadmin Approval
+                                    </p>
+                                    <p className="text-[11px] text-amber-800">
+                                        Your payment transaction proof has been submitted for verification. Once approved by Superadmin, your upgraded features (Bexi AI, Voice AI, higher product limits) will activate automatically!
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="rounded-full bg-amber-200/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-900 shrink-0">
+                                Under Review
+                            </span>
                         </div>
                     )}
 
@@ -857,7 +925,7 @@ export default function MerchantDashboardMaster() {
                                             className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white border border-white/25 shadow-xs"
                                             style={{ color: '#ffffff' }}
                                         >
-                                            <Sparkles size={12} className="text-white" /> Store workspace
+                                            <Sparkles size={12} className="text-white" /> {storeName} Admin
                                         </span>
                                         <h2 
                                             className="mt-3.5 text-2xl font-black tracking-tight drop-shadow-sm sm:text-3xl text-white"
@@ -916,7 +984,7 @@ export default function MerchantDashboardMaster() {
                                                     {product.image_url ? <Image src={product.image_url.split(',')[0].trim()} alt="" width={48} height={48} unoptimized className="size-12 shrink-0 rounded-lg border border-slate-200 bg-slate-50 object-cover" /> : <span className="grid size-12 shrink-0 place-items-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400"><Package size={18} /></span>}
                                                     <div className="min-w-0 flex-1"><h4 className="truncate text-xs font-semibold text-slate-800">{product.name}</h4><p className="mt-1 truncate text-[10px] text-slate-500">{product.description || 'No description added'}{product.created_at ? ` · Added ${formatDate(product.created_at)}` : ''}</p></div>
                                                     <p className="whitespace-nowrap text-xs font-semibold text-slate-900">{formatPKR(product.price)}</p>
-                                                    <button type="button" aria-label={`Edit ${product.name}`} title="Edit product" onClick={() => { setEditingProdId(product.id); setProdName(product.name); setProdPrice(String(product.price)); setProdDesc(product.description || ''); setProdCategory(product.category_id || ''); setProdImageFiles([]); setActiveTab('products'); }} className="grid size-8 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button>
+                                                    <button type="button" aria-label={`Edit ${product.name}`} title="Edit product" onClick={() => populateProductEdit(product)} className="grid size-8 shrink-0 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700"><Pencil size={14} /></button>
                                                 </article>
                                             ))}
                                         </div>
@@ -1993,139 +2061,6 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                 </div>
 
-                                {/* Method Detail Forms */}
-                                {paymentMethod === 'card' && (
-                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 border-b border-slate-200 pb-2">
-                                            <span>Visa / Mastercard Checkout</span>
-                                            <span className="text-[10px] text-emerald-600 flex items-center gap-1 font-bold">
-                                                <ShieldCheck size={13} /> 256-Bit SSL
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Cardholder Name</label>
-                                            <input
-                                                type="text"
-                                                value={cardHolder}
-                                                onChange={(e) => setCardHolder(e.target.value)}
-                                                placeholder="e.g. Abeera Munir"
-                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">Card Number</label>
-                                            <input
-                                                type="text"
-                                                maxLength={19}
-                                                value={cardNumber}
-                                                onChange={(e) => {
-                                                    const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                                                    setCardNumber(val);
-                                                }}
-                                                placeholder="4242 •••• •••• 4242"
-                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono tracking-wider outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">Expiry (MM/YY)</label>
-                                                <input
-                                                    type="text"
-                                                    maxLength={5}
-                                                    value={cardExp}
-                                                    onChange={(e) => setCardExp(e.target.value)}
-                                                    placeholder="12/28"
-                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-slate-600 mb-1">CVC / CVV</label>
-                                                <input
-                                                    type="password"
-                                                    maxLength={4}
-                                                    value={cardCvc}
-                                                    onChange={(e) => setCardCvc(e.target.value)}
-                                                    placeholder="•••"
-                                                    className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500 text-center"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {(paymentMethod === 'jazzcash' || paymentMethod === 'easypaisa') && (
-                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
-                                            <span>Send payment via {paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
-                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Account Number:</span>
-                                                <span className="font-mono font-bold text-slate-900 select-all">0300-1234567</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Account Title:</span>
-                                                <span className="font-bold text-slate-900">Buildexom Billing</span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                                                Enter Transaction ID (TID / TRX Number)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={trxRef}
-                                                onChange={(e) => setTrxRef(e.target.value)}
-                                                placeholder="e.g. TID-9842104"
-                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
-                                            />
-                                            <p className="mt-1 text-[10px] text-slate-400">
-                                                Copy the TID received from your JazzCash / EasyPaisa SMS receipt.
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {paymentMethod === 'bank' && (
-                                    <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-800 border-b border-slate-200 pb-2">
-                                            <span>Direct Bank Deposit</span>
-                                            <span className="text-[10px] font-bold text-emerald-700">{PLAN_DETAILS[upgradeModalPlan].priceLabel}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-white p-3 border border-slate-200 space-y-1 text-xs">
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Bank Name:</span>
-                                                <span className="font-bold text-slate-900">Meezan Bank Ltd</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Account Title:</span>
-                                                <span className="font-bold text-slate-900">Buildexom AI Store OS</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Account Number:</span>
-                                                <span className="font-mono font-bold text-slate-900 select-all">0101-0105678901</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">IBAN:</span>
-                                                <span className="font-mono text-[11px] font-bold text-slate-900 select-all">PK92MEZN0001010105678901</span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 mb-1">
-                                                Bank Reference / Deposit Slip No.
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={trxRef}
-                                                onChange={(e) => setTrxRef(e.target.value)}
-                                                placeholder="e.g. MEZN-874291"
-                                                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-mono outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* WhatsApp Instant Confirmation Link */}
                                 <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-xs text-emerald-900">
                                     <div className="flex items-center gap-2">
@@ -2181,7 +2116,7 @@ export default function MerchantDashboardMaster() {
                                     ) : (
                                         <>
                                             <Sparkles size={14} />
-                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : `Confirm Payment & Activate ${PLAN_DETAILS[upgradeModalPlan].title}`}
+                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : `Submit Payment Proof for Approval`}
                                         </>
                                     )}
                                 </button>

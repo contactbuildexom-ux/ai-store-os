@@ -108,24 +108,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: limitCheck.message }, { status: 403 });
       }
 
-      const { data, error } = await supabase
-        .from("store_products")
-        .insert([
-          {
-            store_id: storeId,
-            name,
-            price,
-            description: optionalText(body?.description),
-            image_url: optionalText(body?.image_url),
-            category_id: categoryId,
-          },
-        ])
-        .select()
-        .single();
+      const baseInsert: Record<string, any> = {
+        store_id: storeId,
+        name,
+        price,
+        description: optionalText(body?.description),
+        image_url: optionalText(body?.image_url),
+        category_id: categoryId,
+      };
 
-      if (error) throw error;
+      const advancedInsert: Record<string, any> = { ...baseInsert };
+      if (body?.has_sizes !== undefined) advancedInsert.has_sizes = Boolean(body.has_sizes);
+      if (body?.has_colors !== undefined) advancedInsert.has_colors = Boolean(body.has_colors);
+      if (body?.sizes) advancedInsert.sizes = body.sizes;
+      if (body?.colors) advancedInsert.colors = body.colors;
 
-      return NextResponse.json({ success: true, product: data, message: "Product added successfully." });
+      let res = await supabase.from("store_products").insert([advancedInsert]).select().single();
+      if (res.error) {
+        // Fallback without dynamic variant columns if database table has not added them yet
+        res = await supabase.from("store_products").insert([baseInsert]).select().single();
+        if (res.error) throw res.error;
+      }
+
+      return NextResponse.json({ success: true, product: res.data, message: "Product added successfully." });
     }
 
     // Fallback storeRepo
@@ -179,13 +184,17 @@ export async function PUT(req: Request) {
       }
       updates.category_id = categoryId;
     }
+    if ("has_sizes" in body) updates.has_sizes = Boolean(body.has_sizes);
+    if ("has_colors" in body) updates.has_colors = Boolean(body.has_colors);
+    if ("sizes" in body) updates.sizes = body.sizes;
+    if ("colors" in body) updates.colors = body.colors;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No product fields were provided to update." }, { status: 400 });
     }
 
     if (supabase) {
-      const { data, error } = await supabase
+      let res = await supabase
         .from("store_products")
         .update(updates)
         .eq("id", id)
@@ -193,9 +202,24 @@ export async function PUT(req: Request) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (res.error) {
+        // Fallback without dynamic columns
+        const safeUpdates = { ...updates };
+        delete safeUpdates.has_sizes;
+        delete safeUpdates.has_colors;
+        delete safeUpdates.sizes;
+        delete safeUpdates.colors;
+        res = await supabase
+          .from("store_products")
+          .update(safeUpdates)
+          .eq("id", id)
+          .eq("store_id", storeId)
+          .select()
+          .single();
+        if (res.error) throw res.error;
+      }
 
-      return NextResponse.json({ success: true, product: data, message: "Product updated successfully." });
+      return NextResponse.json({ success: true, product: res.data, message: "Product updated successfully." });
     }
 
     // Fallback storeRepo
@@ -227,11 +251,9 @@ export async function DELETE(req: Request) {
         .eq("store_id", storeId);
 
       if (error) throw error;
-
       return NextResponse.json({ success: true, message: "Product deleted successfully." });
     }
 
-    // Fallback storeRepo
     await storeRepo.deleteProduct(storeId, id);
     return NextResponse.json({ success: true, message: "Product deleted successfully." });
   } catch (error) {
