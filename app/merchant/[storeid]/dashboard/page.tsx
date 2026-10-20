@@ -829,7 +829,6 @@ export default function MerchantDashboardMaster() {
                 <div className="h-1 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}88, transparent)` }} />
                 <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
                     <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: themeColor }}>{storeName}</p>
                         <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
@@ -921,12 +920,6 @@ export default function MerchantDashboardMaster() {
                                 <div className="absolute -right-2 -top-14 size-52 rounded-full border border-white/10 pointer-events-none" />
                                 <div className="relative z-10 flex flex-wrap items-end justify-between gap-5">
                                     <div className="max-w-xl">
-                                        <span 
-                                            className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white border border-white/25 shadow-xs"
-                                            style={{ color: '#ffffff' }}
-                                        >
-                                            <Sparkles size={12} className="text-white" /> {storeName} Admin
-                                        </span>
                                         <h2 
                                             className="mt-3.5 text-2xl font-black tracking-tight drop-shadow-sm sm:text-3xl text-white"
                                             style={{ color: '#ffffff' }}
