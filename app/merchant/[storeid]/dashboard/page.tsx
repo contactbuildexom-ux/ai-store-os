@@ -164,9 +164,10 @@ export default function MerchantDashboardMaster() {
     const [prodPrice, setProdPrice] = useState('');
     const [prodDesc, setProdDesc] = useState('');
     const [prodCategory, setProdCategory] = useState('');
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+    const [newCategoryInput, setNewCategoryInput] = useState('');
     const [prodImageFiles, setProdImageFiles] = useState<File[]>([]);
     const [editingProdId, setEditingProdId] = useState<string | null>(null);
-    const [keepAddingMultiple, setKeepAddingMultiple] = useState(false);
     const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
     const [bulkText, setBulkText] = useState('');
     const [bulkLoading, setBulkLoading] = useState(false);
@@ -588,7 +589,13 @@ export default function MerchantDashboardMaster() {
             }
             setLogoUrl(savedLogoUrl);
             setLogoFile(null);
-            setMessage(data.warning || data.message || 'Settings saved successfully!');
+            if (data.warning) {
+                setMessage(data.warning);
+                setMessageError(false);
+            } else {
+                setMessage('');
+                setMessageError(false);
+            }
         } catch (error) {
             setMessage(error instanceof Error ? error.message : 'Failed to save settings.');
             setMessageError(true);
@@ -656,13 +663,37 @@ export default function MerchantDashboardMaster() {
                 imageUrl = uploadedUrls.filter(Boolean).join(',');
             }
 
+            let finalCategoryId = prodCategory || null;
+            if (isAddingNewCategory && newCategoryInput.trim()) {
+                const trimmedCat = newCategoryInput.trim();
+                const existing = categories.find((c) => c.name.toLowerCase() === trimmedCat.toLowerCase());
+                if (existing) {
+                    finalCategoryId = existing.id;
+                } else {
+                    try {
+                        const catRes = await fetch('/api/stores/categories', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ store_id: resolvedStoreId, name: trimmedCat }),
+                        });
+                        const catData = await catRes.json();
+                        if (catData.category?.id) {
+                            finalCategoryId = catData.category.id;
+                            setCategories((prev) => [...prev, catData.category]);
+                        }
+                    } catch (catErr) {
+                        console.warn('Failed to auto-create custom category:', catErr);
+                    }
+                }
+            }
+
             const method = editingProdId ? 'PUT' : 'POST';
             const bodyData: Record<string, unknown> = {
                 store_id: resolvedStoreId,
                 name: prodName,
                 price: Number(prodPrice),
                 description: prodDesc || '',
-                category_id: prodCategory || null,
+                category_id: finalCategoryId,
             };
             if (imageUrl) bodyData.image_url = imageUrl;
             if (editingProdId) bodyData.id = editingProdId;
@@ -680,11 +711,12 @@ export default function MerchantDashboardMaster() {
                 setProdName('');
                 setProdPrice('');
                 setProdDesc('');
+                setProdCategory('');
+                setNewCategoryInput('');
+                setIsAddingNewCategory(false);
                 setProdImageFiles([]);
                 setEditingProdId(null);
-                if (!keepAddingMultiple) {
-                    setActiveTab('products');
-                }
+                setActiveTab('products');
                 await fetchMeshData(resolvedStoreId);
             } else {
                 setMessage(data.error || 'Failed to save product');
@@ -927,7 +959,7 @@ export default function MerchantDashboardMaster() {
                 </header>
 
                 <div className="w-full max-w-7xl space-y-6 p-5 sm:p-8">
-                    {message && (
+                    {message && !message.toLowerCase().includes('store setting') && !message.toLowerCase().includes('settings updated') && !message.toLowerCase().includes('settings saved') && (
                         <div role={messageError ? 'alert' : 'status'} className={`rounded-lg border p-3 text-xs font-medium ${messageError ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800'}`}>
                             {message}
                         </div>
@@ -1379,11 +1411,51 @@ export default function MerchantDashboardMaster() {
                                         <input type="number" min="0" step="0.01" value={prodPrice} onChange={e => setProdPrice(e.target.value)} required className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </div>
                                     <div>
-                                        <label className="mb-1 block text-[11px] font-semibold text-slate-700">Category</label>
-                                        <select value={prodCategory} onChange={e => setProdCategory(e.target.value)} className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100">
-                                            <option value="">Uncategorized</option>
-                                            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className="block text-[11px] font-semibold text-slate-700">Category</label>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsAddingNewCategory(!isAddingNewCategory);
+                                                    if (!isAddingNewCategory) {
+                                                        setProdCategory('');
+                                                    }
+                                                }}
+                                                className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 underline"
+                                            >
+                                                {isAddingNewCategory ? '← Choose existing category' : '+ Type new category'}
+                                            </button>
+                                        </div>
+                                        {isAddingNewCategory ? (
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    value={newCategoryInput}
+                                                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                                                    placeholder="Type new category name (e.g. Footwear, Perfumes)..."
+                                                    className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <select
+                                                value={prodCategory}
+                                                onChange={(e) => {
+                                                    if (e.target.value === '__add_new__') {
+                                                        setIsAddingNewCategory(true);
+                                                        setProdCategory('');
+                                                    } else {
+                                                        setProdCategory(e.target.value);
+                                                    }
+                                                }}
+                                                className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                            >
+                                                <option value="">Select an existing category...</option>
+                                                {categories.map((c) => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                                <option value="__add_new__">➕ Type / Add New Category...</option>
+                                            </select>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">
@@ -1459,16 +1531,7 @@ export default function MerchantDashboardMaster() {
                                         <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </div>
 
-                                    {/* Keep Adding Multiple Checkbox */}
-                                    <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                                        <input
-                                            type="checkbox"
-                                            checked={keepAddingMultiple}
-                                            onChange={(e) => setKeepAddingMultiple(e.target.checked)}
-                                            className="size-4 rounded accent-emerald-600 cursor-pointer"
-                                        />
-                                        <span className="font-semibold text-[11px]">Keep adding products (stays here after saving)</span>
-                                    </label>
+
 
                                     <button type="submit" disabled={uploadingImage || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                                         {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}

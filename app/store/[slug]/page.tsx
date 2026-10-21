@@ -1,9 +1,8 @@
 import { notFound } from 'next/navigation';
 import StorefrontClient from './StorefrontClient';
-import { StoreFooter } from '../../../components/store-footer';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
-import { THEME_PALETTES } from '@/lib/store-theme';
+import { THEME_PALETTES, getStoreNicheColor } from '@/lib/store-theme';
 import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export default async function PublicStorePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -109,11 +108,14 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
   }
 
   const repoStoreFallback = await storeRepo.getStore(slug);
+  const nicheColor = getStoreNicheColor(store.name, store.slug);
   const resolvedThemeColor = settingsData?.theme_color 
     || (store as Record<string, unknown>).primary_color as string 
     || ((store as Record<string, unknown>).selected_theme && THEME_PALETTES[(store as Record<string, unknown>).selected_theme as string])
+    || (settingsData?.selected_theme && THEME_PALETTES[settingsData.selected_theme])
     || repoStoreFallback?.theme?.primaryColor 
     || repoStoreFallback?.primary_color 
+    || nicheColor
     || '#1976d2';
 
   const resolvedThemeId = settingsData?.selected_theme 
@@ -172,20 +174,13 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
   ) as Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 
   return (
-    <>
-      <StorefrontClient
-        store={safeStore}
-        settings={safeSettings}
-        products={products}
-        delivery={deliveryData ?? null}
-      />
-      <StoreFooter 
-        storeName={safeStore.name} 
-        storeSlug={safeStore.slug} 
-        paymentDetails={paymentDetails} 
-        socialLinks={socialLinks} 
-        themeColor={safeStore.theme_color} 
-      />
-    </>
+    <StorefrontClient
+      store={safeStore}
+      settings={safeSettings}
+      products={products}
+      delivery={deliveryData ?? null}
+      paymentDetails={paymentDetails}
+      socialLinks={socialLinks}
+    />
   );
 }

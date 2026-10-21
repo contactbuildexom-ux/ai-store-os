@@ -108,7 +108,7 @@ export function StoreFooter({
           borderColor: `${resolvedThemeColor}25`,
         }}
       >
-        <div className="w-full grid grid-cols-2 gap-4 sm:grid-cols-4 lg:gap-6">
+        <div className="w-full grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:gap-6">
           <div className="flex items-center gap-3.5 rounded-2xl p-2 transition hover:bg-white/40">
             <span 
               className="grid size-11 shrink-0 place-items-center rounded-2xl border shadow-2xs transition-transform duration-300 hover:scale-105"
@@ -253,7 +253,7 @@ export function StoreFooter({
                   storePath={`/store/${encodeURIComponent(storeSlug)}`} 
                   compact={true}
                   themeColor={resolvedThemeColor}
-                  className="w-full max-w-[260px] !p-3.5 !shadow-sm"
+                  className="w-full max-w-[260px] mx-auto sm:mx-0 !p-3.5 !shadow-sm"
                 />
               </div>
             </div>
@@ -300,7 +300,7 @@ export function StoreFooter({
           style={{ borderColor: `${resolvedThemeColor}25` }}
         >
           <p>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
-          <div className="flex items-center gap-2 text-[11px] text-slate-600">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-600">
             <span>Powered by</span>
             <span className="font-bold text-slate-900">Buildexom AI Store OS</span>
             <span>•</span>

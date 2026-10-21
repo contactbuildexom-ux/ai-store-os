@@ -54,7 +54,9 @@ export async function POST(request: Request) {
               whatsapp_number,
               plan: 'basic',
               selected_plan: selected_plan === 'free' ? 'basic' : selected_plan,
-              payment_status: 'pending'
+              payment_status: 'pending',
+              primary_color: themeColor,
+              selected_theme: selected_theme,
             }
           ])
           .select('id, name, slug, owner_email, plan, payment_status, created_at')

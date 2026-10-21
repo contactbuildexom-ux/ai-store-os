@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { isPublicStorefrontResponse } from '@/lib/storefront-types';
 import { resolveStoreHero, detectStoreNiche } from '@/lib/ai/hero-niche-resolver';
 import { BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
+import { StoreFooter } from '@/components/store-footer';
 import {
     Menu,
     X,
@@ -78,6 +79,8 @@ export type Props = {
     settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null } | null;
     products: Product[];
     delivery: DeliverySettings | null;
+    paymentDetails?: any;
+    socialLinks?: any;
 };
 
 function money(value: number | string) {
@@ -149,7 +152,7 @@ function isFoodOrEdible(storeName: string, category?: string | null, productName
     return /\b(food|coffee|tea|brew|roast|bean|beans|bakery|cake|cakes|bread|snack|cookie|cookies|mithai|sweet|sweets|honey|oil|spice|spices|herb|herbs|dry fruit|organic food|cafe|dining|edible)\b/i.test(text);
 }
 
-export default function StorefrontClient({ store, settings, products, delivery }: Props) {
+export default function StorefrontClient({ store, settings, products, delivery, paymentDetails, socialLinks }: Props) {
     const [liveStore, setLiveStore] = useState(store);
     const [liveProducts, setLiveProducts] = useState(products);
     const [catalogLoading, setCatalogLoading] = useState(true);
@@ -1439,6 +1442,15 @@ export default function StorefrontClient({ store, settings, products, delivery }
 
 
             </main>
+
+            {/* Store Footer Unified In Store Background */}
+            <StoreFooter 
+                storeName={liveStore.name} 
+                storeSlug={liveStore.slug} 
+                paymentDetails={paymentDetails} 
+                socialLinks={socialLinks} 
+                themeColor={themeColor} 
+            />
 
             {/* SEPARATE SLIDE-OVER CART DRAWER */}
             {isCartOpen && (

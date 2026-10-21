@@ -533,6 +533,8 @@ export async function POST(request: Request) {
           plan: planToStore,
           selected_plan: selectedPlan,
           payment_status: "pending",
+          primary_color: generated.theme_color,
+          selected_theme: generated.selected_theme,
         }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
         if (error) throw error;
         createdStoreId = String(data.id);
@@ -618,9 +620,14 @@ export async function POST(request: Request) {
           updated_at: new Date().toISOString(),
         }], { onConflict: "store_id" });
 
+        const storeSyncPayload: Record<string, any> = {
+          primary_color: generated.theme_color,
+          selected_theme: generated.selected_theme,
+        };
         if (targetStore && targetStore.name !== generated.store_name) {
-          await supabase.from("stores").update({ name: generated.store_name }).eq("id", resolvedStore.id);
+          storeSyncPayload.name = generated.store_name;
         }
+        await supabase.from("stores").update(storeSyncPayload).eq("id", resolvedStore.id);
       } catch (sbCatalogErr) {
         console.warn("Supabase catalog sync warning:", sbCatalogErr);
       }
