@@ -164,7 +164,12 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     );
     const themeColor = liveThemeColor;
     const bannerText = settings?.banner_text || 'Free delivery nationwide on orders above Rs. 3,000!';
-    const isPro = ['pro', 'business', 'advanced'].includes(liveStore.plan.toLowerCase());
+    const planNormalized = (liveStore.plan || 'basic').toLowerCase();
+    const isBasic = planNormalized === 'basic' || planNormalized === 'free';
+    const isPro = planNormalized === 'pro' || planNormalized === 'advanced';
+    const isBusiness = planNormalized === 'business' || planNormalized === 'unlimited';
+    const hasAiChatbot = isBusiness;
+    const productLimit = isBasic ? 20 : isPro ? 75 : null;
 
     // UI state
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -276,8 +281,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     // Guarantees every product belongs to one of the 4 active categories so clicking any category shows products
     const catalogProducts = useMemo(() => {
         let prods = liveProducts;
-        if (!isPro) {
-            prods = prods.slice(0, 20);
+        if (productLimit !== null) {
+            prods = prods.slice(0, productLimit);
         }
         const activeCats = categories.filter((c) => c !== 'All');
         if (activeCats.length === 0) return prods;
@@ -291,7 +296,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             const fallbackCat = activeCats[idx % activeCats.length];
             return { ...p, category: fallbackCat };
         });
-    }, [liveProducts, categories, isPro]);
+    }, [liveProducts, categories, productLimit]);
 
     const filteredProducts = useMemo(() => {
         return catalogProducts.filter((p) => {
@@ -682,26 +687,22 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             {/* Top Announcement Bar - Continuous smooth marquee ticker */}
             <div className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
                 <div className="overflow-hidden whitespace-nowrap">
-                    <div className="animate-storefront-marquee flex items-center gap-8 text-[11px] sm:text-xs font-bold tracking-wide">
-                        <span className="inline-flex items-center gap-1.5"><Truck size={13} /> Fast Nationwide Delivery on All Orders</span>
+                    <div className="animate-storefront-marquee flex items-center gap-10 text-[11px] sm:text-xs font-bold tracking-wide">
+                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1.5">⚡ Cash on Delivery (COD) Active Across Pakistan</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} /> WhatsApp Direct Ordering Available</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
                         <span>•</span>
-                        <span>✨ 100% Quality Guaranteed</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
                         <span>•</span>
-                        <span>{bannerText}</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1.5"><Truck size={13} /> Fast Nationwide Delivery on All Orders</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1.5">⚡ Cash on Delivery (COD) Active Across Pakistan</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
                         <span>•</span>
-                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} /> WhatsApp Direct Ordering Available</span>
-                        <span>•</span>
-                        <span>✨ 100% Quality Guaranteed</span>
-                        <span>•</span>
-                        <span>{bannerText}</span>
+                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
                     </div>
                 </div>
             </div>
@@ -744,7 +745,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         {[
                             { name: 'Home', href: '#hero' },
                             { name: 'Shop', href: '#featured' },
-                            ...(isPro ? [{ name: 'Categories', href: '#categories' }] : []),
+                            { name: 'Categories', href: '#categories' },
                             { name: 'All Products', href: '#products' },
                             { name: 'About', href: '#about' },
                         ].map((link) => (
@@ -836,7 +837,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </div>
 
                             {/* Categories Navigation */}
-                            {isPro && (
                             <div>
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categories</label>
                                 <div className="mt-2 space-y-1">
@@ -860,7 +860,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     ))}
                                 </div>
                             </div>
-                            )}
 
                             {/* WhatsApp Direct Help */}
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
@@ -1073,7 +1072,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 )}
 
                 {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
-                {isPro && (
                 <section id="categories" className="w-full pt-1 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -1138,7 +1136,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         })}
                     </div>
                 </section>
-                )}
 
                 {/* 2. Search & Category Bar */}
                 <section className="w-full space-y-3">
@@ -1164,7 +1161,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     </div>
 
                     {/* Category Scrollable Pills (Matching Screenshot) */}
-                    {isPro && categories.length > 1 && (
+                    {categories.length > 1 && (
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                         {categories.map((cat) => {
                             const isSelected = selectedCategory === cat;
@@ -1430,7 +1427,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
 
                 {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
-                {isPro && (
+                {hasAiChatbot && (
                 <div className="!mt-3 !mb-3 flex items-center justify-center sm:justify-end">
                     <button
                         type="button"
@@ -1823,7 +1820,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             )}
 
             {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
-            {isAiOpen && isPro && (
+            {isAiOpen && hasAiChatbot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
                     <div 
                         className="fixed inset-0"

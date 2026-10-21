@@ -320,7 +320,7 @@ export default function MerchantStoreSetupModal({
   const [selectedIdeaId, setSelectedIdeaId] = useState('');
   const [storeName, setStoreName] = useState(initialStoreName);
   const [prompt, setPrompt] = useState(initialPrompt);
-  const [plan, setPlan] = useState<'basic' | 'pro' | 'advanced'>(initialPlan);
+  const [plan, setPlan] = useState<'basic' | 'pro' | 'business' | 'advanced'>(initialPlan);
   const [selectedTheme, setSelectedTheme] = useState(initialTheme);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -788,9 +788,9 @@ export default function MerchantStoreSetupModal({
 
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                       {[
-                        { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products • Free Forever', icon: Store, locked: false },
-                        { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, locked: true },
-                        { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority Support', icon: Crown, locked: true },
+                        { id: 'basic', name: 'BASIC', badge: 'Free', desc: 'Up to 20 Products • WhatsApp Ordering • Store Categories • Basic Dashboard', icon: Store, locked: false },
+                        { id: 'pro', name: 'PRO', badge: 'Advanced', desc: 'Up to 75 Products • Up to 5 Categories • Payment Integration • Basic Analytics', icon: MessageCircle, locked: true },
+                        { id: 'business', name: 'BUSINESS', badge: 'Unlimited', desc: 'Unlimited Products & Categories • WhatsApp Ordering • AI Customer Chatbot • Advanced Analytics', icon: Crown, locked: true },
                       ].map((p) => {
                         const isSelected = plan === p.id;
                         const Icon = p.icon;
@@ -829,10 +829,8 @@ export default function MerchantStoreSetupModal({
                   <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
                     <MessageCircle size={15} className="text-emerald-600" /> Dedicated WhatsApp Number
                   </label>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    plan !== 'basic' ? 'border border-emerald-300 bg-white text-emerald-700' : 'text-[#5b7aa3]'
-                  }`}>
-                    {plan !== 'basic' ? 'Direct Order Routing' : 'Optional'}
+                  <span className="rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    WhatsApp Ordering Included
                   </span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-[#2c4a73]">

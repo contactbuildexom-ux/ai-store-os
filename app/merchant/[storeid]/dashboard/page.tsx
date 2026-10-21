@@ -54,55 +54,63 @@ const PLAN_DETAILS: Record<Plan, {
     features: string[];
 }> = {
     basic: { 
-        title: 'Basic', 
+        title: 'BASIC', 
         pricePKR: 0,
-        priceLabel: 'Free forever',
+        priceLabel: 'Free',
         productLimit: 20, 
-        categoryLimit: 2, 
-        checkout: 'Standard checkout',
+        categoryLimit: null, 
+        checkout: 'WhatsApp Ordering',
+        badge: 'Free',
         features: [
-            'Up to 20 products in catalog',
-            'Up to 2 organized categories',
-            'Standard COD checkout',
-            'Buildexom QR code sharing',
-            'Essential sales dashboard'
+            'Up to 20 Products',
+            'WhatsApp Ordering',
+            'Basic Store Customization',
+            'Product Management',
+            'Product Images & Descriptions',
+            'Basic Dashboard',
+            'Basic Order Management',
+            'Store Categories'
         ]
     },
     pro: { 
-        title: 'Pro', 
+        title: 'PRO', 
         pricePKR: 2499,
         priceLabel: 'PKR 2,499 / mo',
         productLimit: 75, 
         categoryLimit: 5, 
         perCategoryLimit: 15, 
-        checkout: 'Standard + WhatsApp ordering',
-        badge: 'Recommended',
+        checkout: 'WhatsApp Ordering',
+        badge: 'Advanced',
         features: [
-            'Up to 75 products in catalog',
-            'Up to 5 categories (15 per category)',
-            'Direct WhatsApp 1-Click Ordering',
-            'Bexi Voice & AI Shopping Assistant',
-            'Custom theme colors & branding',
-            'Multiple product images upload',
-            'Advance payment verification'
+            'Up to 75 Products',
+            'Up to 5 Categories',
+            'Up to 15 Products per Category',
+            'Advanced Store Customization',
+            'WhatsApp Ordering',
+            'Order Tracking',
+            'Payment Integration',
+            'Coupons & Discounts',
+            'Basic Analytics'
         ]
     },
     business: { 
-        title: 'Business', 
+        title: 'BUSINESS', 
         pricePKR: 4999,
         priceLabel: 'PKR 4,999 / mo',
         productLimit: null, 
         categoryLimit: null, 
-        checkout: 'Standard + WhatsApp ordering',
-        badge: 'Unlimited Growth',
+        checkout: 'WhatsApp Ordering',
+        badge: 'Unlimited',
         features: [
-            'Unlimited catalog products (no cap)',
-            'Unlimited categories (no cap)',
-            'Direct WhatsApp 1-Click Ordering',
-            'Priority AI Catalog Search',
-            'Custom domain integration ready',
-            'Advance payment gateways',
-            '24/7 dedicated merchant concierge'
+            'Unlimited Products',
+            'Unlimited Categories',
+            'Advanced Store Customization',
+            'WhatsApp Ordering',
+            'Order Tracking',
+            'Payment Integration',
+            'AI Customer Chatbot',
+            'Advanced Analytics',
+            'Priority Support'
         ]
     },
 };
@@ -332,7 +340,9 @@ export default function MerchantDashboardMaster() {
     }
 
     const planDetails = PLAN_DETAILS[storePlan];
-    const canUseWhatsapp = storePlan === 'pro' || storePlan === 'business';
+    const canUseWhatsapp = true;
+    const canUseBexiAi = storePlan === 'business';
+    const canUsePaymentIntegration = storePlan === 'pro' || storePlan === 'business';
     const filteredProducts = useMemo(() => {
         const query = productSearch.trim().toLowerCase();
         if (!query) return products;
@@ -564,6 +574,11 @@ export default function MerchantDashboardMaster() {
         e.preventDefault();
         setMessage('');
         setMessageError(false);
+        if (!isVerified) {
+            setMessage('Store verification is pending Super Admin approval. Store settings modifications are temporarily locked.');
+            setMessageError(true);
+            return;
+        }
         setSavingSettings(true);
         try {
             if (!resolvedStoreId) throw new Error('Store is still loading. Please try again in a moment.');
@@ -658,6 +673,16 @@ export default function MerchantDashboardMaster() {
     const handleSaveProduct = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage('');
+        if (!isVerified) {
+            setMessage('Store verification is pending Super Admin approval. Adding or editing products is temporarily locked.');
+            setMessageError(true);
+            return;
+        }
+        if (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit) {
+            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.productLimit} products has been reached. Please upgrade to add more products.`);
+            setMessageError(true);
+            return;
+        }
         setUploadingImage(true);
 
         try {
@@ -737,6 +762,11 @@ export default function MerchantDashboardMaster() {
     };
 
     const handleDeleteProduct = async (id: string) => {
+        if (!isVerified) {
+            setMessage('Store verification is pending Super Admin approval. Deleting products is temporarily locked.');
+            setMessageError(true);
+            return;
+        }
         if (!confirm('Are you sure you want to delete this product from your store?')) return;
         setProducts((prev) => prev.filter((p) => p.id !== id));
         try {
@@ -804,6 +834,16 @@ export default function MerchantDashboardMaster() {
     const handleBulkAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!bulkText.trim() || bulkLoading) return;
+        if (!isVerified) {
+            setMessage('Store verification is pending Super Admin approval. Bulk adding products is temporarily locked.');
+            setMessageError(true);
+            return;
+        }
+        if (planDetails.productLimit !== null && products.length >= planDetails.productLimit) {
+            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.productLimit} products has been reached. Please upgrade to add more products.`);
+            setMessageError(true);
+            return;
+        }
         setBulkLoading(true);
         setMessage('');
 
@@ -847,6 +887,16 @@ export default function MerchantDashboardMaster() {
 
     const handleAddCategory = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isVerified) {
+            setMessage('Store verification is pending Super Admin approval. Creating categories is temporarily locked.');
+            setMessageError(true);
+            return;
+        }
+        if (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit) {
+            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.categoryLimit} categories has been reached. Please upgrade to Business for unlimited categories.`);
+            setMessageError(true);
+            return;
+        }
         const res = await fetch('/api/stores/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -907,7 +957,7 @@ export default function MerchantDashboardMaster() {
                         { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
                         { id: 'payments', label: 'Payments', icon: Wallet },
-                        ...((storePlan === 'pro' || storePlan === 'business') ? [{ id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles }] : []),
+                        ...(canUseBexiAi ? [{ id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles }] : []),
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -922,8 +972,8 @@ export default function MerchantDashboardMaster() {
                         </button>
                     ))}
 
-                    {/* Dedicated Voice AI Button - Placed right under [StoreName] Bexi AI, only available on paid plans */}
-                    {(storePlan === 'pro' || storePlan === 'business') && (
+                    {/* Dedicated Voice AI Button - Placed right under [StoreName] Bexi AI, only available on Business plan */}
+                    {canUseBexiAi && (
                         <button
                             type="button"
                             onClick={() => setIsVoiceAssistantOpen(true)}
@@ -1352,7 +1402,7 @@ export default function MerchantDashboardMaster() {
                                         {(['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const).map(platform => <label key={platform} className="block text-[10px] font-semibold capitalize text-slate-600">{platform === 'x' ? 'X / Twitter' : platform}<input type="url" value={socialLinks[platform]} onChange={event => setSocialLinks(current => ({ ...current, [platform]: event.target.value }))} placeholder={`https://${platform === 'x' ? 'x.com' : `${platform}.com`}/yourprofile`} maxLength={2048} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
                                     </div>
                                 </section>
-                                <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
+                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 flex items-center gap-1.5" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={13} />}{savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>
                     )}
@@ -1410,7 +1460,7 @@ export default function MerchantDashboardMaster() {
                                     )}
                                 </div>
 
-                                <button type="submit" disabled={savingSettings} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save payment settings'}</button>
+                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 flex items-center gap-1.5" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={13} />}{savingSettings ? 'Saving…' : 'Save payment settings'}</button>
                             </form>
                         </div>
                     )}
@@ -1421,7 +1471,7 @@ export default function MerchantDashboardMaster() {
                             <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog organization</p><h3 className="mt-1 text-base font-semibold text-slate-900">Product categories</h3><p className="mt-1 text-xs text-slate-500">{planDetails.categoryLimit === null ? 'Your Business plan has no category cap configured.' : `${categories.length} of ${planDetails.categoryLimit} categories used on your ${planDetails.title} plan.`}</p></div>
                             <form onSubmit={handleAddCategory} className="flex gap-2">
                                 <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" required disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="min-w-0 flex-1 rounded-lg border border-slate-200 p-2.5 text-xs disabled:bg-slate-100" />
-                                <button type="submit" disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>Add category</button>
+                                <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={12} />}Add category</button>
                             </form>
                             {categories.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{categories.map((category) => <div key={category.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5"><span className="flex items-center gap-2 text-xs font-medium text-slate-700"><Tag size={14} className="text-slate-400" />{category.name}</span><span className="text-[10px] text-slate-400">{products.filter((product) => product.category_id === category.id).length} products</span></div>)}</div>}
                         </div>
@@ -1611,8 +1661,9 @@ export default function MerchantDashboardMaster() {
                                             )}
                                             <button
                                                 type="button"
-                                                onClick={() => setIsBulkAddOpen(true)}
-                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs"
+                                                disabled={!isVerified}
+                                                onClick={() => { if (!isVerified) { setMessage('Verification pending Super Admin approval.'); setMessageError(true); return; } setIsBulkAddOpen(true); }}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <Plus size={13} /> Bulk Add
                                             </button>

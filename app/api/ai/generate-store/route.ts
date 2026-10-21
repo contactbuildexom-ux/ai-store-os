@@ -234,9 +234,9 @@ function normalizeSocialLinks(value: unknown): SocialLinks {
 
 function planLimits(planValue: unknown) {
   const plan = text(planValue, 20).toLowerCase();
-  if (plan === "pro") return { plan: "pro", categories: 10, products: 80 };
-  if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 25, products: 150 };
-  return { plan: "basic", categories: 8, products: 40 };
+  if (plan === "pro") return { plan: "pro", categories: 5, products: 75 };
+  if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 20, products: 100 };
+  return { plan: "basic", categories: 4, products: 20 };
 }
 
 function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
@@ -518,7 +518,13 @@ export async function POST(request: Request) {
       if (!user && typeof input.password === "string") {
         password_hash = await bcrypt.hash(input.password, 12);
       }
-      const planToStore = "basic";
+      const requestedPlan = text(input.plan ?? input.selected_plan, 20).toLowerCase();
+      const normalizedPlan = (requestedPlan === "business" || requestedPlan === "advanced" || requestedPlan === "advance") 
+        ? "business" 
+        : requestedPlan === "pro" 
+          ? "pro" 
+          : "basic";
+      const planToStore = normalizedPlan;
 
       if (supabase) {
         // Supabase is configured: attempt robust insertion with automatic fallback
@@ -533,8 +539,10 @@ export async function POST(request: Request) {
             password_hash,
             whatsapp_number: requestedWhatsapp || null,
             plan: planToStore,
-            selected_plan: selectedPlan,
+            selected_plan: planToStore,
             payment_status: "pending",
+            is_verified: false,
+            verification_status: "pending",
             primary_color: generated.theme_color,
             selected_theme: generated.selected_theme,
           }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
