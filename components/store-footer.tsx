@@ -253,6 +253,7 @@ export function StoreFooter({
                   storePath={`/store/${encodeURIComponent(storeSlug)}`} 
                   compact={true}
                   themeColor={resolvedThemeColor}
+                  hideButtons={true}
                   className="w-full max-w-[260px] mx-auto sm:mx-0 !p-3.5 !shadow-sm"
                 />
               </div>

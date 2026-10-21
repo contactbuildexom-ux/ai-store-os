@@ -14,6 +14,7 @@ type StoreQRCodeProps = {
   showCardHeader?: boolean;
   compact?: boolean;
   themeColor?: string;
+  hideButtons?: boolean;
 };
 
 // Official Buildexom Brand Logo Mark (Hexagon Store Awning Icon)
@@ -27,7 +28,8 @@ export function StoreQRCode({
   className = "",
   showCardHeader = true,
   compact = false,
-  themeColor
+  themeColor,
+  hideButtons = false
 }: StoreQRCodeProps) {
   const reactId = useId();
   const downloadId = `store-qr-${reactId.replace(/:/g, '')}`;
@@ -130,27 +132,29 @@ export function StoreQRCode({
             <p className="text-[10px] text-slate-400">Loading QR…</p>
           </div>
         )}
-        <div className="mt-3 flex flex-col gap-1.5 w-full">
-          <button
-            type="button"
-            onClick={downloadQrCode}
-            disabled={!storeUrl}
-            title="Download store QR code"
-            className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 disabled:opacity-50"
-          >
-            <Download size={14} className="shrink-0 text-white" />
-            <span>Download QR Code</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleCopy}
-            title="Copy store link"
-            className="inline-flex h-7.5 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-white hover:border-slate-300 active:scale-95"
-          >
-            {copied ? <Check size={13} className="text-emerald-600 shrink-0" /> : <Copy size={13} className="text-slate-400 shrink-0" />}
-            <span>{copied ? 'Link Copied!' : 'Copy Store Link'}</span>
-          </button>
-        </div>
+        {!hideButtons && (
+          <div className="mt-3 flex flex-col gap-1.5 w-full">
+            <button
+              type="button"
+              onClick={downloadQrCode}
+              disabled={!storeUrl}
+              title="Download store QR code"
+              className="inline-flex h-8 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 active:scale-95 disabled:opacity-50"
+            >
+              <Download size={14} className="shrink-0 text-white" />
+              <span>Download QR Code</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleCopy}
+              title="Copy store link"
+              className="inline-flex h-7.5 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-white hover:border-slate-300 active:scale-95"
+            >
+              {copied ? <Check size={13} className="text-emerald-600 shrink-0" /> : <Copy size={13} className="text-slate-400 shrink-0" />}
+              <span>{copied ? 'Link Copied!' : 'Copy Store Link'}</span>
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -226,7 +230,7 @@ export function StoreQRCode({
       </div>
 
       {/* Storefront Actions: Copy Link & Download (Only 'Download') */}
-      {storeUrl && (
+      {!hideButtons && storeUrl && (
         <div className="mt-4 grid grid-cols-2 gap-2.5 w-full">
           <button
             type="button"
@@ -248,9 +252,11 @@ export function StoreQRCode({
           </button>
         </div>
       )}
-      <p className="mt-2 text-center text-[10px] leading-4 text-slate-400">
-        Scalable vector QR code ready to print on packaging and flyers.
-      </p>
+      {!hideButtons && (
+        <p className="mt-2 text-center text-[10px] leading-4 text-slate-400">
+          Scalable vector QR code ready to print on packaging and flyers.
+        </p>
+      )}
     </section>
   );
 }

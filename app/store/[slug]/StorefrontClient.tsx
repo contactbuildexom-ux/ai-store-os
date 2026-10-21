@@ -665,9 +665,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Full width edge coverage */}
-            <div className="w-full border-b px-4 sm:px-6 lg:px-8 py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
-                <div className="w-full flex items-center justify-between text-[11px] sm:text-xs">
+            {/* Top Announcement Bar - Full width edge coverage & professionally aligned */}
+            <div className="w-full border-b py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
+                <div className="mx-auto flex max-w-6xl w-full items-center justify-between text-[11px] sm:text-xs px-4 sm:px-6 lg:px-8">
                     <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
                         <Truck size={13} /> Fast Delivery Nationwide
                     </span>
@@ -682,7 +682,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
-                <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+                <div className="mx-auto flex max-w-6xl w-full items-center justify-between gap-4 px-4 py-2.5 sm:px-6 lg:px-8">
                     {/* Left: Mobile Menu & Logo / Brand */}
                     <div className="flex flex-1 items-center justify-start gap-3 min-w-0">
                         <button
@@ -860,7 +860,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             {/* 1. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
             <section
                 id="hero"
-                className="relative w-full overflow-hidden border-t border-b transition duration-500 shadow-xs"
+                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
                 style={{
                     background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                     borderColor: `${themeColor}28`,
