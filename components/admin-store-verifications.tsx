@@ -122,23 +122,23 @@ export function AdminStoreVerifications() {
         <>
           <div className="space-y-3 2xl:hidden">
             {stores.map((store) => (
-              <article key={store.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+              <article key={store.id} className="rounded-lg border border-blue-600 bg-blue-600 p-3 text-white shadow-sm">
                 <div className="flex items-start gap-2">
-                  <Store size={15} className="mt-0.5 shrink-0 text-blue-600 dark:text-blue-400" />
+                  <Store size={15} className="mt-0.5 shrink-0 text-blue-100" />
                   <div className="min-w-0">
-                    <h4 className="break-words text-sm font-semibold text-slate-900 dark:text-slate-100 [overflow-wrap:anywhere]">{store.name}</h4>
-                    <a href={`/store/${encodeURIComponent(store.slug)}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex max-w-full items-center gap-1 break-all text-[10px] text-blue-600 hover:underline dark:text-blue-400">
+                    <h4 className="break-words text-sm font-semibold text-white [overflow-wrap:anywhere]">{store.name}</h4>
+                    <a href={`/store/${encodeURIComponent(store.slug)}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex max-w-full items-center gap-1 break-all text-[10px] text-blue-100 hover:text-white hover:underline">
                       {store.slug}.buildexom.store <ExternalLink size={10} className="shrink-0" />
                     </a>
                   </div>
                 </div>
                 <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="min-w-0"><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Owner email</dt><dd className="mt-0.5 break-all text-xs text-slate-700 dark:text-slate-300">{store.owner_email || '—'}</dd></div>
-                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">WhatsApp</dt><dd className="mt-0.5 break-words text-xs text-slate-700 dark:text-slate-300 [overflow-wrap:anywhere]">{store.whatsapp_number || '—'}</dd></div>
-                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Plan</dt><dd className="mt-1"><span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-800 dark:text-slate-200">{store.plan || 'basic'}</span></dd></div>
-                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Submitted</dt><dd className="mt-0.5 text-xs text-slate-700 dark:text-slate-300">{new Date(store.created_at).toLocaleDateString()}</dd></div>
+                  <div className="min-w-0"><dt className="text-[10px] font-medium uppercase tracking-wide text-blue-100">Owner email</dt><dd className="mt-0.5 break-all text-xs text-white">{store.owner_email || '—'}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-blue-100">WhatsApp</dt><dd className="mt-0.5 break-words text-xs text-white [overflow-wrap:anywhere]">{store.whatsapp_number || '—'}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-blue-100">Plan</dt><dd className="mt-1"><span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-white">{store.plan || 'basic'}</span></dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-blue-100">Submitted</dt><dd className="mt-0.5 text-xs text-white">{new Date(store.created_at).toLocaleDateString()}</dd></div>
                 </dl>
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-white/20 pt-3">
                   <ActionButtons store={store} processing={processingId === store.id} onAction={handleAction} />
                 </div>
               </article>
@@ -157,27 +157,27 @@ export function AdminStoreVerifications() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {stores.map((s) => (
-                <tr key={s.id} className="transition hover:bg-slate-50/70 dark:hover:bg-slate-800/50">
+                <tr key={s.id} className="bg-blue-600 text-white transition hover:bg-blue-700">
                   <td className="break-words px-2 py-3 align-top [overflow-wrap:anywhere]">
-                    <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-slate-100">
-                      <Store size={14} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                    <div className="flex items-center gap-1.5 font-semibold text-white">
+                      <Store size={14} className="shrink-0 text-blue-100" />
                       <span>{s.name}</span>
                     </div>
-                    <div className="mt-1 break-all font-mono text-[10px] text-slate-400">
+                    <div className="mt-1 break-all font-mono text-[10px] text-blue-100">
                       <a
                         href={`/store/${encodeURIComponent(s.slug)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex max-w-full items-center gap-1 break-all text-blue-600 hover:underline dark:text-blue-400"
+                        className="inline-flex max-w-full items-center gap-1 break-all text-blue-100 hover:text-white hover:underline"
                       >
                         {s.slug}.buildexom.store <ExternalLink size={10} className="shrink-0" />
                       </a>
                     </div>
                   </td>
-                  <td className="break-all px-2 py-3 align-top font-medium text-slate-600 dark:text-slate-300">{s.owner_email || '—'}</td>
-                  <td className="break-words px-2 py-3 align-top font-medium text-slate-600 dark:text-slate-300 [overflow-wrap:anywhere]">{s.whatsapp_number || '—'}</td>
+                  <td className="break-all px-2 py-3 align-top font-medium text-white">{s.owner_email || '—'}</td>
+                  <td className="break-words px-2 py-3 align-top font-medium text-white [overflow-wrap:anywhere]">{s.whatsapp_number || '—'}</td>
                   <td className="break-words px-2 py-3 align-top">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       {s.plan || 'basic'}
                     </span>
                   </td>

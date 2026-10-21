@@ -8,14 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Landmark, Send, Lock, Plus, Mic } from 'lucide-react';
-
-const SmartphoneIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-        <path d="M12 18h.01" />
-    </svg>
-);
+import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Send, Lock, Plus, Mic } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
@@ -198,7 +191,7 @@ export default function MerchantDashboardMaster() {
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'bank' | 'jazzcash' | 'easypaisa' | 'sadapay'>('bank');
+    const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa'>('jazzcash');
     const [upgradeSenderName, setUpgradeSenderName] = useState('');
     const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
     const [upgradeTrxId, setUpgradeTrxId] = useState('');
@@ -295,18 +288,8 @@ export default function MerchantDashboardMaster() {
                 return;
             }
 
-            if (!upgradeTrxId.trim() && !upgradeReceiptFile) {
-                throw new Error('Please enter Transaction ID (TID) or upload your payment receipt screenshot.');
-            }
-
-            let screenshotUrl = '';
-            if (upgradeReceiptFile) {
-                try {
-                    screenshotUrl = await uploadStoreImage(upgradeReceiptFile, sid);
-                } catch (e) {
-                    console.warn('Screenshot upload warning:', e);
-                }
-            }
+            if (!upgradeReceiptFile) throw new Error('Upload a screenshot of your payment to submit the upgrade request.');
+            const screenshotUrl = await uploadStoreImage(upgradeReceiptFile, sid);
 
             const res = await fetch('/api/merchant/upgrade-request', {
                 method: 'POST',
@@ -319,7 +302,7 @@ export default function MerchantDashboardMaster() {
                     sender_number: upgradeSenderNumber,
                     transaction_id: upgradeTrxId,
                     screenshot_url: screenshotUrl,
-                    amount: targetPlan === 'business' ? 7500 : 3500,
+                    amount: PLAN_DETAILS[targetPlan].pricePKR,
                 }),
             });
             const data = await res.json();
@@ -2339,27 +2322,24 @@ export default function MerchantDashboardMaster() {
                                     <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                                         Select Payment Method
                                     </label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         {[
-                                            { id: 'sadapay', label: 'SadaPay', icon: SmartphoneIcon },
-                                            { id: 'jazzcash', label: 'JazzCash', icon: Wallet },
-                                            { id: 'easypaisa', label: 'EasyPaisa', icon: Wallet },
-                                            { id: 'bank', label: 'Bank Transfer', icon: Landmark },
+                                            { id: 'jazzcash' as const, label: 'JazzCash' },
+                                            { id: 'easypaisa' as const, label: 'EasyPaisa' },
                                         ].map((method) => {
                                             const isSelected = paymentMethod === method.id;
-                                            const Icon = method.icon;
                                             return (
                                                 <button
                                                     key={method.id}
                                                     type="button"
-                                                    onClick={() => setPaymentMethod(method.id as any)}
+                                                    onClick={() => setPaymentMethod(method.id)}
                                                     className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border p-2.5 text-center transition ${
                                                         isSelected
                                                             ? 'border-blue-600 bg-blue-50/70 font-bold text-blue-700 shadow-xs ring-1 ring-blue-600'
                                                             : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
                                                     }`}
                                                 >
-                                                    <Icon size={18} className={isSelected ? 'text-blue-600' : 'text-slate-500'} />
+                                                    <Wallet size={18} className={isSelected ? 'text-blue-600' : 'text-slate-500'} />
                                                     <span className="text-[10px] leading-tight">{method.label}</span>
                                                 </button>
                                             );
@@ -2367,21 +2347,15 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                 </div>
 
-                                {/* Official Payment Instructions */}
+                                {/* Placeholder payment details until merchant credentials are configured. */}
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Transfer To Account</span>
-                                        <span className="font-mono font-bold text-blue-700 text-[11px]">
-                                            {paymentMethod === 'sadapay' ? 'SadaPay' : paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'Meezan Bank'}
-                                        </span>
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Payment gateway</span>
+                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
                                     </div>
-                                    <p className="text-slate-800 font-semibold text-xs">
-                                        {paymentMethod === 'bank' ? 'Meezan Bank — Title: Buildexom Technologies' : 'Account Title: Buildexom Official'}
-                                    </p>
-                                    <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">
-                                        {paymentMethod === 'bank' ? 'PK12MEZN0001234567890123' : '0300-1234567'}
-                                    </p>
-                                    <p className="text-[10px] text-slate-500 pt-0.5">Transfer {PLAN_DETAILS[upgradeModalPlan].priceLabel} and enter your transaction ID (TID) below.</p>
+                                    <p className="text-slate-800 font-semibold text-xs">Merchant account: Not configured yet</p>
+                                    <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">Account details will be published here</p>
+                                    <p className="text-[10px] text-slate-500 pt-0.5">Gateway instructions are placeholders until payment credentials are configured. Submit a screenshot for manual verification; do not send funds to an unverified account.</p>
                                 </div>
 
                                 {/* Real-World Payment Verification Form */}
@@ -2411,7 +2385,7 @@ export default function MerchantDashboardMaster() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #) *</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #)</label>
                                             <input 
                                                 type="text" 
                                                 value={upgradeTrxId}
@@ -2421,11 +2395,27 @@ export default function MerchantDashboardMaster() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof *</label>
                                             <input 
                                                 type="file" 
-                                                accept="image/*"
-                                                onChange={(e) => setUpgradeReceiptFile(e.target.files?.[0] || null)}
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                required
+                                                onChange={(e) => {
+                                                    const nextFile = e.target.files?.[0] || null;
+                                                    if (nextFile && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(nextFile.type)) {
+                                                        setUpgradeReceiptFile(null);
+                                                        e.target.value = '';
+                                                        alert('Choose a JPEG, PNG, WebP, or GIF payment screenshot.');
+                                                        return;
+                                                    }
+                                                    if (nextFile && nextFile.size > 5 * 1024 * 1024) {
+                                                        setUpgradeReceiptFile(null);
+                                                        e.target.value = '';
+                                                        alert('Payment screenshot must be 5 MB or smaller.');
+                                                        return;
+                                                    }
+                                                    setUpgradeReceiptFile(nextFile);
+                                                }}
                                                 className="mt-1 w-full text-[11px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                                             />
                                         </div>

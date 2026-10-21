@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import UserLoginForm from "@/components/auth/UserLoginForm";
 
 export const metadata: Metadata = {
-  title: "Login | Buildexom",
+  title: "Login",
   description: "Log in to your Buildexom account to manage your store.",
 };
 

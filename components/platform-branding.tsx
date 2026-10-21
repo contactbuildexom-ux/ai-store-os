@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
 export type PlatformBrandingSettings = {
@@ -41,9 +40,7 @@ export function PlatformBrandingProvider({
   children: ReactNode;
   initialSettings?: PlatformBrandingSettings;
 }) {
-  const pathname = usePathname();
   const [settings, setSettings] = useState(initialSettings);
-  const previousDocumentBrand = useRef(initialSettings.seoTitle || initialSettings.title);
   const updateSettings = useCallback((next: PlatformBrandingSettings) => {
     setSettings(next);
   }, []);
@@ -51,20 +48,6 @@ export function PlatformBrandingProvider({
   useEffect(() => {
     setSettings(initialSettings);
   }, [initialSettings]);
-
-  useEffect(() => {
-    const brandTitle = settings.seoTitle || settings.title;
-    const currentTitle = document.title;
-    let nextTitle = currentTitle.replaceAll(DEFAULT_PLATFORM_BRANDING.title, brandTitle);
-    if (nextTitle === currentTitle && previousDocumentBrand.current !== brandTitle) {
-      nextTitle = currentTitle.replaceAll(previousDocumentBrand.current, brandTitle);
-    }
-    if (nextTitle === currentTitle && !currentTitle.includes(brandTitle)) {
-      nextTitle = `${currentTitle} | ${brandTitle}`;
-    }
-    document.title = nextTitle;
-    previousDocumentBrand.current = brandTitle;
-  }, [pathname, settings.seoTitle, settings.title]);
 
   useEffect(() => {
     const source = settings.faviconUrl || settings.logoUrl || DEFAULT_FAVICON;
@@ -110,7 +93,7 @@ export function PlatformBrandingProvider({
       active = false;
       image.onload = null;
     };
-  }, [pathname, settings.faviconUrl, settings.logoUrl]);
+  }, [settings.faviconUrl, settings.logoUrl]);
 
   const value = useMemo(() => ({ settings, updateSettings }), [settings, updateSettings]);
 

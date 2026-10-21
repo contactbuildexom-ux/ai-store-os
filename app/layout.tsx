@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     // Relative canonical/OG URLs ko absolute banane ke liye zaroori
     metadataBase: new URL(SITE_URL),
-    title: { default: title, template: `%s | ${SITE_NAME}` },
+    title: { default: title, template: "%s" },
     description,
     applicationName: SITE_NAME,
     ...(keywords.length > 0 ? { keywords } : {}),

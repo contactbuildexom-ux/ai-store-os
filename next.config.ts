@@ -3,6 +3,24 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   turbopack: { root: process.cwd() },
   devIndicators: false,
+  outputFileTracingIncludes: {
+    "/api/admin/db/full-export": [
+      "./app/**/*",
+      "./components/**/*",
+      "./lib/**/*",
+      "./public/**/*",
+      "./supabase/migrations/**/*",
+      "./package.json",
+      "./package-lock.json",
+      "./next.config.ts",
+      "./postcss.config.js",
+      "./tsconfig.json",
+      "./eslint.config.mjs",
+      "./next-env.d.ts",
+      "./proxy.ts",
+      "./vercel.json",
+    ],
+  },
 
   // Speed aur SEO
   compress: true,

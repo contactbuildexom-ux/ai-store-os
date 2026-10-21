@@ -1,11 +1,20 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { AlertCircle, CheckCircle2, Database, Download, LoaderCircle, ShieldAlert, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { AlertCircle, CheckCircle2, Clock3, Database, Download, HardDrive, LoaderCircle, ShieldAlert, Upload, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { MAX_DATABASE_BACKUP_SIZE } from "@/lib/database-backup";
 
 type Notice = { tone: "success" | "error"; message: string };
+type BackupHistoryRecord = {
+  id: string;
+  backup_type: "database" | "full_site";
+  actor_email: string;
+  created_at: string;
+  file_name: string;
+  file_size_bytes: number;
+};
+const MAX_FULL_SITE_BACKUP_SIZE = 100 * 1024 * 1024;
 
 function readResponse(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
@@ -25,9 +34,11 @@ export function DatabaseBackupManager() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState<"export" | "import" | null>(null);
+  const [busy, setBusy] = useState<"export" | "full-export" | "import" | null>(null);
   const [dragging, setDragging] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [history, setHistory] = useState<BackupHistoryRecord[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   function selectFile(next: File | undefined) {
     setNotice(null);
@@ -57,28 +68,54 @@ export function DatabaseBackupManager() {
     selectFile(event.dataTransfer.files[0]);
   }
 
-  async function exportDatabase() {
-    setBusy("export");
+  const refreshHistory = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/db/history", { cache: "no-store" });
+      const payload = readResponse(await response.json());
+      if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "Backup history could not be loaded.");
+      if (!Array.isArray(payload.history)) throw new Error("The backup history service returned an invalid response.");
+      setHistory(payload.history as BackupHistoryRecord[]);
+      setHistoryError(null);
+      return null;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Backup history could not be loaded.";
+      setHistoryError(message);
+      return message;
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshHistory();
+  }, [refreshHistory]);
+
+  async function exportBackup(kind: "database" | "full_site") {
+    const fullSite = kind === "full_site";
+    setBusy(fullSite ? "full-export" : "export");
     setNotice(null);
     try {
-      const response = await fetch("/api/admin/db/export", { cache: "no-store" });
+      const response = await fetch(fullSite ? "/api/admin/db/full-export" : "/api/admin/db/export", { cache: "no-store" });
       if (!response.ok) {
         const payload = readResponse(await response.json());
-        throw new Error(typeof payload.error === "string" ? payload.error : "Database export failed.");
+        throw new Error(typeof payload.error === "string" ? payload.error : `${fullSite ? "Full-site" : "Database"} export failed.`);
       }
       const blob = await response.blob();
-      if (blob.size > MAX_DATABASE_BACKUP_SIZE) throw new Error("The generated backup exceeds the 50 MB download limit.");
+      const sizeLimit = fullSite ? MAX_FULL_SITE_BACKUP_SIZE : MAX_DATABASE_BACKUP_SIZE;
+      if (blob.size > sizeLimit) throw new Error(`The generated backup exceeds the ${fullSite ? "100" : "50"} MB download limit.`);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `buildexom-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `buildexom-${fullSite ? "full-site" : "backup"}-${new Date().toISOString().slice(0, 10)}.${fullSite ? "tar.gz" : "json"}`;
       document.body.append(link);
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setNotice({ tone: "success", message: "Database backup downloaded. Store it somewhere secure." });
+      const historyRefreshError = await refreshHistory();
+      setNotice({
+        tone: "success",
+        message: `${fullSite ? "Full-site" : "Database"} backup downloaded. Store it somewhere secure.${historyRefreshError ? ` Recent activity could not be refreshed: ${historyRefreshError}` : ""}`,
+      });
     } catch (error) {
-      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Database export failed." });
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : `${fullSite ? "Full-site" : "Database"} export failed.` });
     } finally {
       setBusy(null);
     }
@@ -115,23 +152,38 @@ export function DatabaseBackupManager() {
       <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-5 sm:px-6">
         <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-700"><Database size={19} /></span>
         <div>
-          <h3 className="text-base font-semibold text-slate-900">Database backup &amp; restore</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-500">Export a secure copy of platform data or restore records from a previous backup.</p>
+          <h3 className="text-base font-semibold text-slate-900">Backups &amp; restore</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-500">Create a database-only backup or a full-site archive, and restore database records from a previous export.</p>
         </div>
       </div>
 
-      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-2">
+      <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-200 p-5">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><Download size={16} className="text-blue-700" /> Export database</div>
-          <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">Download stores and seller records, products, orders, payments, settings, blogs, and pricing plans as JSON.</p>
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><Database size={16} className="text-blue-700" /> Database backup</div>
+          <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">Download platform database records as JSON. This backup can be restored from this page.</p>
           <button
             type="button"
-            onClick={exportDatabase}
+            onClick={() => exportBackup("database")}
             disabled={busy !== null}
             className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-medium text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {busy === "export" ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
-            {busy === "export" ? "Preparing backup..." : "Export database"}
+            {busy === "export" ? "Preparing backup..." : "Download DB backup"}
+          </button>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><HardDrive size={16} className="text-blue-700" /> Full-site backup</div>
+          <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">Create a compressed archive of application source, public assets, Supabase Storage files, and a database export.</p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">Environment secrets, dependencies, build caches, and Git history are excluded. Restore site files and assets with your deployment tools.</p>
+          <button
+            type="button"
+            onClick={() => exportBackup("full_site")}
+            disabled={busy !== null}
+            className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-md bg-blue-700 px-4 text-sm font-medium text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy === "full-export" ? <LoaderCircle size={16} className="animate-spin" /> : <Download size={16} />}
+            {busy === "full-export" ? "Preparing full-site archive..." : "Download full-site backup"}
           </button>
         </div>
 
@@ -161,6 +213,32 @@ export function DatabaseBackupManager() {
           >
             <Upload size={16} /> Review restore
           </button>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 px-5 py-4 sm:px-6">
+        <div className="flex items-start gap-2.5">
+          <Clock3 size={16} className="mt-0.5 shrink-0 text-blue-700" />
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-semibold text-slate-900">Recent backup activity</h4>
+            {historyError ? (
+              <p role="alert" className="mt-1 text-xs leading-5 text-red-700">{historyError}</p>
+            ) : history.length === 0 ? (
+              <p className="mt-1 text-xs text-slate-500">No backups have been recorded yet.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {history.slice(0, 5).map((item) => (
+                  <li key={item.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs text-slate-600">
+                    <span className="min-w-0 break-all">
+                      <span className="font-semibold text-slate-800">{item.backup_type === "full_site" ? "Full-site" : "Database"}</span>
+                      {" "}backup by <span className="font-medium text-slate-800">{item.actor_email}</span>
+                    </span>
+                    <time dateTime={item.created_at} className="shrink-0 text-slate-500">{new Date(item.created_at).toLocaleString()}</time>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 
