@@ -786,9 +786,9 @@ export default function MerchantStoreSetupModal({
 
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                       {[
-                        { id: 'basic', name: 'BASIC', badge: 'Free', desc: 'Up to 20 Products • WhatsApp Ordering • Store Categories • Basic Dashboard', icon: Store, locked: false },
-                        { id: 'pro', name: 'PRO', badge: 'Advanced', desc: 'Up to 75 Products • Up to 5 Categories • Payment Integration • Basic Analytics', icon: MessageCircle, locked: true },
-                        { id: 'business', name: 'BUSINESS', badge: 'Unlimited', desc: 'Unlimited Products & Categories • WhatsApp Ordering • AI Customer Chatbot • Advanced Analytics', icon: Crown, locked: true },
+                        { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products • Free Forever', icon: Store, locked: false },
+                        { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, locked: true },
+                        { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority Support', icon: Crown, locked: true },
                       ].map((p) => {
                         const isSelected = plan === p.id;
                         const Icon = p.icon;

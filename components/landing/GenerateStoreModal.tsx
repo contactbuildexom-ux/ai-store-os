@@ -134,7 +134,7 @@ export default function GenerateStoreModal({
             disabled={!ready}
             className="gs-cta flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1976d2] to-[#1565c0] text-white shadow-[0_12px_24px_-10px_rgba(25,118,210,0.8)] transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:hover:translate-y-0"
           >
-            <span>Continue to Store Setup</span>
+            <span>Generate My Store</span>
             <ArrowRight size={17} />
           </button>
 

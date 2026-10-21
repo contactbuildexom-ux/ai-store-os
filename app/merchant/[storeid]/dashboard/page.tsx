@@ -1402,7 +1402,7 @@ export default function MerchantDashboardMaster() {
                                         {(['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const).map(platform => <label key={platform} className="block text-[10px] font-semibold capitalize text-slate-600">{platform === 'x' ? 'X / Twitter' : platform}<input type="url" value={socialLinks[platform]} onChange={event => setSocialLinks(current => ({ ...current, [platform]: event.target.value }))} placeholder={`https://${platform === 'x' ? 'x.com' : `${platform}.com`}/yourprofile`} maxLength={2048} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
                                     </div>
                                 </section>
-                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 flex items-center gap-1.5" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={13} />}{savingSettings ? 'Saving…' : 'Save branding'}</button>
+                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>
                     )}
@@ -1460,7 +1460,7 @@ export default function MerchantDashboardMaster() {
                                     )}
                                 </div>
 
-                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60 flex items-center gap-1.5" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={13} />}{savingSettings ? 'Saving…' : 'Save payment settings'}</button>
+                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save payment settings'}</button>
                             </form>
                         </div>
                     )}
@@ -1471,7 +1471,7 @@ export default function MerchantDashboardMaster() {
                             <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog organization</p><h3 className="mt-1 text-base font-semibold text-slate-900">Product categories</h3><p className="mt-1 text-xs text-slate-500">{planDetails.categoryLimit === null ? 'Your Business plan has no category cap configured.' : `${categories.length} of ${planDetails.categoryLimit} categories used on your ${planDetails.title} plan.`}</p></div>
                             <form onSubmit={handleAddCategory} className="flex gap-2">
                                 <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" required disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="min-w-0 flex-1 rounded-lg border border-slate-200 p-2.5 text-xs disabled:bg-slate-100" />
-                                <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1" style={{ backgroundColor: themeColor }}>{!isVerified && <Lock size={12} />}Add category</button>
+                                <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>Add category</button>
                             </form>
                             {categories.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{categories.map((category) => <div key={category.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5"><span className="flex items-center gap-2 text-xs font-medium text-slate-700"><Tag size={14} className="text-slate-400" />{category.name}</span><span className="text-[10px] text-slate-400">{products.filter((product) => product.category_id === category.id).length} products</span></div>)}</div>}
                         </div>
