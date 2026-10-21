@@ -44,7 +44,9 @@ export default function Navbar() {
   const openGenerate = () => {
     setMobileOpen(false);
     setSearchOpen(false);
-    setGenerateOpen(true);
+    setBuilderPrompt("");
+    setBuilderName("");
+    setBuilderOpen(true);
   };
 
   const handleGenerate = (prompt: string, name?: string, theme?: string) => {

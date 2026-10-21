@@ -114,53 +114,7 @@ export default function GenerateStoreModal({
             />
           </div>
 
-          {/* 2. Custom Store Idea / Niche Input (Clean text area where user freely writes their idea) */}
-          <div>
-            <label htmlFor="gs-idea" className="mb-1 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0b2545]">
-              <span className="flex items-center gap-1.5">
-                <Sparkles size={13} className="text-[#1976d2]" /> What do you want to sell?
-              </span>
-              <span className="text-[11px] font-normal text-slate-500">Write your custom idea</span>
-            </label>
-            <textarea
-              id="gs-idea"
-              rows={3}
-              value={customIdea}
-              onChange={(e) => setCustomIdea(e.target.value)}
-              placeholder="Describe your exact store idea (e.g. Luxury leather boots and sneakers, oversized graphic hoodies, organic herbal teas, handmade jewelry with Cash on Delivery)..."
-              className="w-full rounded-xl border border-[#cfe2fa] bg-[#f6faff] px-4 py-2.5 text-xs font-medium text-[#0b2545] outline-none transition placeholder:text-[#8aa3c4] focus:border-[#1976d2] focus:bg-white focus:ring-3 focus:ring-[#1976d2]/15 resize-none"
-            />
-          </div>
-
-          {/* 3. Theme Selection */}
-          <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#0b2545]">
-              <Palette size={13} className="text-[#1976d2]" /> Choose Store Theme
-            </label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {THEME_OPTIONS.slice(0, 6).map((t: ThemeOption) => {
-                const isSelected = selectedTheme === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setSelectedTheme(t.id)}
-                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
-                      isSelected
-                        ? "border-[#1976d2] bg-blue-50/70 font-bold text-[#0b2545] ring-2 ring-[#1976d2]/20"
-                        : "border-[#cfe2fa] bg-white text-slate-600 hover:border-blue-300"
-                    }`}
-                  >
-                    <span
-                      className="size-3.5 rounded-full shrink-0 shadow-xs"
-                      style={{ backgroundColor: t.color }}
-                    />
-                    <span className="truncate text-xs">{t.name.split(" ")[0]}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          
 
           {/* Perks list */}
           <ul className="flex flex-wrap gap-x-4 gap-y-1.5 rounded-xl bg-[#f1f8ff] px-3.5 py-2.5">

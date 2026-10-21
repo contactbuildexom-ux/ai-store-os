@@ -322,12 +322,17 @@ export default function MerchantStoreSetupModal({
   const [prompt, setPrompt] = useState(initialPrompt);
   const [plan, setPlan] = useState<'basic' | 'pro' | 'business' | 'advanced'>(initialPlan);
   const [selectedTheme, setSelectedTheme] = useState(initialTheme);
+  const [customHexColor, setCustomHexColor] = useState<string>('#1976d2');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [ideaSearch, setIdeaSearch] = useState('');
+  useEffect(() => {
+    const matched = THEME_OPTIONS.find(t => t.id === selectedTheme);
+    if (matched) setCustomHexColor(matched.color);
+  }, [selectedTheme]);
 
   const filteredPresets = useMemo(() => {
     if (!ideaSearch.trim()) return STORE_IDEA_PRESETS;
@@ -435,8 +440,8 @@ export default function MerchantStoreSetupModal({
           prompt: effectivePrompt,
           plan,
           theme: selectedTheme,
-          theme_color: themeColor,
           selected_theme: selectedTheme,
+          theme_color: customHexColor,
           whatsapp_number: whatsappNumber.trim() || '923001234567',
           owner_email: effectiveEmail,
           password: effectivePassword,
@@ -647,7 +652,7 @@ export default function MerchantStoreSetupModal({
                 </div>
               </div>
 
-              {/* STEP 1: STORE NAME, NICHE & INTERACTIVE COLOR PALETTE */}
+              {/* STEP 1: STORE NAME & INTERACTIVE CURSOR COLOR PALETTE */}
               {currentStep === 1 && (
                 <div className="space-y-4">
                   {/* Store Name Input */}
@@ -657,89 +662,82 @@ export default function MerchantStoreSetupModal({
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter your store name (e.g. Glamour Boutique, Apex Tech, Cafe Beans)"
+                      placeholder="Enter your store name (e.g. Apex Lifestyle, Velvet Aura, Cafe Beans)"
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
                       required
                       className={`${INPUT} mt-1 text-sm font-semibold`}
                     />
+                    <p className="mt-1 text-[11px] text-[#5b7aa3]">
+                      This will be the official name of your online storefront.
+                    </p>
                   </div>
 
-                  {/* Curated Global Business Ideas Dropdown */}
-                  <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-3.5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-[#0b2545]">
-                        Select Business Category / Niche:
-                      </label>
-                      {ideaSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setIdeaSearch('')}
-                          className="text-[11px] font-semibold text-[#1976d2] hover:underline"
-                        >
-                          Clear search
-                        </button>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="🔍 Search niches (e.g. Jewelry, Gaming, Handbags, Coffee, Skincare...)"
-                      value={ideaSearch}
-                      onChange={(e) => setIdeaSearch(e.target.value)}
-                      className="w-full rounded-xl border border-[#bfdcff] bg-white px-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none"
-                    />
-                    <select
-                      value={selectedIdeaId}
-                      onChange={(e) => handleSelectIdea(e.target.value)}
-                      className={`${INPUT} font-medium mt-1`}
-                    >
-                      <option value="">Select a Curated Store Idea / Niche (or type your own above)</option>
-                      {filteredPresets.map((grp) => (
-                        <optgroup key={grp.category} label={grp.category}>
-                          {grp.options.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Interactive Visual Color Palette Swatches */}
-                  <div className="rounded-2xl border border-[#cfe2fa] bg-white p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
+                  {/* Interactive Cursor Color Palette Picker */}
+                  <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <label className="flex items-center gap-1.5 text-xs font-bold text-[#0b2545]">
-                        <Palette size={14} className="text-[#1976d2]" /> Select Store Theme Color Palette:
+                        <Palette size={15} className="text-[#1976d2]" /> Choose Store Theme & Color Palette:
                       </label>
-                      <span className="text-[11px] font-bold text-[#1976d2]">
-                        {THEME_OPTIONS.find(t => t.id === selectedTheme)?.name || 'Ocean Blue'}
-                      </span>
+                      
+                      {/* Native OS/Browser Cursor Color Picker Badge */}
+                      <label
+                        htmlFor="cursor-color-input"
+                        className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[#bfdcff] bg-white px-3 py-1.5 text-xs font-bold text-[#0b2545] shadow-xs hover:border-[#1976d2] hover:bg-blue-50 transition active:scale-95"
+                        title="Click with your cursor to pick any custom shade from color palette"
+                      >
+                        <span
+                          className="size-4 rounded-full border border-white shadow-xs"
+                          style={{ backgroundColor: customHexColor }}
+                        />
+                        <span className="font-mono text-[11px] uppercase tracking-wide">{customHexColor}</span>
+                        <span className="text-[10px] text-[#1976d2] font-semibold">🎨 Cursor Picker</span>
+                        <input
+                          id="cursor-color-input"
+                          type="color"
+                          value={customHexColor}
+                          onChange={(e) => {
+                            const hex = e.target.value;
+                            setCustomHexColor(hex);
+                            const matched = THEME_OPTIONS.find(t => t.color.toLowerCase() === hex.toLowerCase());
+                            setSelectedTheme(matched ? matched.id : 'custom');
+                          }}
+                          className="sr-only cursor-pointer"
+                        />
+                      </label>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+                    <p className="text-[11px] text-[#5b7aa3]">
+                      Click any theme palette below, or click the <strong>Cursor Picker</strong> to select your exact custom brand color with your cursor.
+                    </p>
+
+                    {/* Quick Selection Swatches Grid */}
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                       {THEME_OPTIONS.map((theme) => {
-                        const isSelected = selectedTheme === theme.id;
+                        const isSelected = selectedTheme === theme.id || customHexColor.toLowerCase() === theme.color.toLowerCase();
                         return (
                           <button
                             key={theme.id}
                             type="button"
-                            onClick={() => setSelectedTheme(theme.id)}
-                            className={`flex items-center gap-2 rounded-xl border p-2 text-left transition-all active:scale-95 ${
+                            onClick={() => {
+                              setSelectedTheme(theme.id);
+                              setCustomHexColor(theme.color);
+                            }}
+                            className={`flex items-center gap-2 rounded-xl border p-2 text-left transition-all active:scale-95 cursor-pointer ${
                               isSelected
-                                ? 'border-[#1976d2] bg-[#f0f7ff] ring-2 ring-[#1976d2]/30 shadow-xs'
-                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                                ? 'border-[#1976d2] bg-white ring-2 ring-[#1976d2]/35 shadow-xs'
+                                : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'
                             }`}
                           >
                             <span
-                              className="relative grid size-6 shrink-0 place-items-center rounded-full shadow-2xs border border-white"
+                              className="relative grid size-6 shrink-0 place-items-center rounded-full shadow-xs border border-white"
                               style={{ backgroundColor: theme.color }}
                             >
-                              {isSelected && <span className="size-2 rounded-full bg-white" />}
+                              {isSelected && <span className="size-2 rounded-full bg-white shadow-xs" />}
                             </span>
                             <div className="min-w-0 flex-1 truncate">
                               <p className="truncate text-[11px] font-bold text-slate-800 leading-tight">
-                                {theme.name}
+                                {theme.name.split(' ')[0]}
                               </p>
                               <p className="text-[9px] text-slate-400 font-mono">
                                 {theme.color}
@@ -848,18 +846,16 @@ export default function MerchantStoreSetupModal({
                 </div>
               </div>
 
-              {/* 4. Social Media Links (All Plans Footer) */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className={LABEL}>
-                    <Share2 size={14} className="text-[#1976d2]" /> Footer Social Media Links
-                  </label>
-                  <span className="text-[11px] font-semibold text-emerald-600">Included in All Plans</span>
-                </div>
-                <p className="text-[11px] text-[#5b7aa3]">
-                  Every store footer will automatically render your official clickable social media icons.
-                </p>
-                <div className="grid gap-2.5 sm:grid-cols-2">
+              {/* 4. Social Media Links (Optional) */}
+              <details className="group rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5 transition">
+                <summary className="flex cursor-pointer items-center justify-between text-xs font-bold text-[#0b2545] select-none">
+                  <span className="flex items-center gap-2">
+                    <Share2 size={14} className="text-[#1976d2]" /> Social Media Profiles (Optional)
+                  </span>
+                  <span className="text-[11px] text-[#1976d2] group-open:hidden">+ Add links</span>
+                  <span className="text-[11px] text-slate-400 hidden group-open:inline">Hide</span>
+                </summary>
+                <div className="grid gap-2.5 pt-3 sm:grid-cols-2">
                   <input
                     type="url"
                     placeholder="Instagram URL (https://instagram.com/...)"
@@ -889,7 +885,7 @@ export default function MerchantStoreSetupModal({
                     className={INPUT}
                   />
                 </div>
-              </div>
+              </details>
 
               {/* 5. Merchant Login Details */}
               <div className="space-y-2.5 border-t border-[#cfe2fa] pt-4">
