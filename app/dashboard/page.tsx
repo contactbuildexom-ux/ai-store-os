@@ -4,6 +4,7 @@ import { DashboardGreeting } from "@/components/dashboard-greeting";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 import { AdminPlanUpgradeApprovals } from "@/components/admin-plan-upgrades";
+import { AdminStoreVerifications } from "@/components/admin-store-verifications";
 
 type StoreSummary = {
   id: string;
@@ -80,7 +81,8 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      {/* Plan Upgrade Approvals Banner / Section */}
+      {/* New Store Verifications & Plan Upgrade Approvals */}
+      <AdminStoreVerifications />
       <AdminPlanUpgradeApprovals />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(270px,0.8fr)]">

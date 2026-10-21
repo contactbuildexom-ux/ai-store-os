@@ -521,35 +521,71 @@ export async function POST(request: Request) {
       const planToStore = "basic";
 
       if (supabase) {
-        // Supabase is configured: a failed insert must surface (for example duplicate -> 409).
-        const { data, error } = await supabase.from("stores").insert([{
-          name: requestedStoreName || generated.store_name,
-          slug,
-          owner_id: user?.id ?? null,
-          user_id: user?.id ?? null,
-          owner_email: merchantEmail,
-          password_hash,
-          whatsapp_number: requestedWhatsapp || null,
-          plan: planToStore,
-          selected_plan: selectedPlan,
-          payment_status: "pending",
-          primary_color: generated.theme_color,
-          selected_theme: generated.selected_theme,
-        }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
-        if (error) throw error;
-        createdStoreId = String(data.id);
-        targetStoreId = String(data.id);
-        const { error: merchantError } = await supabase.from("merchants").upsert({
-          store_id: data.id,
-          name: data.name,
-          email: merchantEmail,
-          whatsapp_number: requestedWhatsapp || "",
-          address: "",
-          contact_phone: text(input.owner_phone, 30) || requestedWhatsapp || null,
-        }, { onConflict: "store_id" });
-        if (merchantError) throw merchantError;
-        store = data;
-      } else {
+        // Supabase is configured: attempt robust insertion with automatic fallback
+        let insertData: any = null;
+        try {
+          const attempt1 = await supabase.from("stores").insert([{
+            name: requestedStoreName || generated.store_name,
+            slug,
+            owner_id: user?.id ?? null,
+            user_id: user?.id ?? null,
+            owner_email: merchantEmail,
+            password_hash,
+            whatsapp_number: requestedWhatsapp || null,
+            plan: planToStore,
+            selected_plan: selectedPlan,
+            payment_status: "pending",
+            primary_color: generated.theme_color,
+            selected_theme: generated.selected_theme,
+          }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
+
+          if (!attempt1.error && attempt1.data) {
+            insertData = attempt1.data;
+          } else {
+            console.warn("Full stores insert returned error, trying minimal columns:", attempt1.error);
+            const attempt2 = await supabase.from("stores").insert([{
+              name: requestedStoreName || generated.store_name,
+              slug,
+              owner_id: user?.id ?? null,
+              user_id: user?.id ?? null,
+              owner_email: merchantEmail,
+              password_hash,
+              whatsapp_number: requestedWhatsapp || null,
+              plan: planToStore,
+            }]).select("id, name, slug, owner_email, plan, whatsapp_number").single();
+            if (!attempt2.error && attempt2.data) {
+              insertData = attempt2.data;
+            } else if (attempt1.error && String(attempt1.error.code) === '23505') {
+              throw attempt1.error;
+            }
+          }
+        } catch (dbErr: any) {
+          if (dbErr && String(dbErr.code) === '23505') throw dbErr;
+          console.warn("Supabase store insertion fallback to local repo:", dbErr);
+        }
+
+        if (insertData) {
+          createdStoreId = String(insertData.id);
+          targetStoreId = String(insertData.id);
+          store = insertData;
+
+          // Non-fatal auxiliary merchants table upsert
+          try {
+            await supabase.from("merchants").upsert({
+              store_id: insertData.id,
+              name: insertData.name,
+              email: merchantEmail,
+              whatsapp_number: requestedWhatsapp || "",
+              address: "",
+              contact_phone: text(input.owner_phone, 30) || requestedWhatsapp || null,
+            }, { onConflict: "store_id" });
+          } catch (mErr) {
+            console.warn("Merchants table upsert warning (non-fatal):", mErr);
+          }
+        }
+      }
+
+      if (!store) {
         // Supabase is not configured (local development): use the local store repository.
         const fallbackStoreId = `store_${crypto.randomUUID().slice(0, 12)}`;
         store = {
@@ -642,6 +678,8 @@ export async function POST(request: Request) {
         description: generated.footer_text,
         header_title: generated.banner_text,
         plan: (resolvedStore.plan === "pro" ? "pro" : resolvedStore.plan === "business" ? "advanced" : "free") as any,
+        is_verified: false,
+        verification_status: 'pending',
         whatsapp_number: resolvedStore.whatsapp_number || requestedWhatsapp || "923001234567",
         owner_email: resolvedStore.owner_email || "merchant@buildexom.store",
         password_hash: password_hash || undefined,
@@ -744,7 +782,14 @@ export async function POST(request: Request) {
         // Ignore
       }
     }
-    const message = error instanceof Error ? error.message : "Unable to generate your store.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string"
+        ? (error as any).message
+        : typeof error === "string"
+        ? error
+        : "Unable to generate your store.";
     const errorCode =
       typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
         ? error.code

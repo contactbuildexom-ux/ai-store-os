@@ -52,10 +52,6 @@ export async function POST(req: Request) {
           'id, name, slug, whatsapp_number, tagline, description'
         );
 
-
-
-
-
         if (dbStore) {
           store = {
             id: dbStore.id,
@@ -99,41 +95,79 @@ export async function POST(req: Request) {
       description: (store as any)?.description,
     };
 
-    // Try Gemini LLM if configured
-    const apiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
-    if (apiKey) {
-      try {
-        const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-        const catalogOverview = bexiProducts.slice(0, 30).map(p => `- ${p.name} (Rs. ${p.price}): ${p.description || ''}`).join('\n');
-        const systemPrompt = `You are Bexi AI, the expert shopping assistant for "${storeInfo.name}".
+    const catalogOverview = bexiProducts.slice(0, 30).map(p => `- ${p.name} (Rs. ${p.price}): ${p.description || ''}`).join('\n');
+    const systemPrompt = `You are Bexi AI, the intelligent shopping assistant for "${storeInfo.name}".
 Store details:
 - Name: ${storeInfo.name}
 - Tagline: ${storeInfo.tagline || 'Verified Online Brand'}
 - WhatsApp: ${storeInfo.whatsapp_number}
 - Products Catalog:
-${catalogOverview}
+${catalogOverview || 'A curated collection of quality products with Cash on Delivery nationwide.'}
 
-Instructions:
+Strict Instructions:
 1. Always respond in the EXACT same language and script as the customer:
    - If they write in native Urdu script, reply in natural Urdu script.
    - If they write in Roman Urdu (e.g. "ye kaisa hai?", "delivery kab hogi?", "price kya hai?"), reply in fluent, natural Roman Urdu.
    - If they write in English, reply in clear, professional English.
 2. Answer the specific question directly, concisely (2 to 3 sentences max), and helpfully.
 3. Be warm and encouraging, mentioning that they can order via WhatsApp or Add to Cart.
-4. Do not invent products not in the catalog.`;
+4. If asked about prices, delivery (Cash on Delivery), sizes, colors, return policy, answer accurately based on the store details.`;
 
+    // 1. Try OpenAI if configured
+    const openAiKey = process.env.OPENAI_API_KEY;
+    if (openAiKey) {
+      try {
+        const oRes = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          signal: AbortSignal.timeout(8000),
+          headers: {
+            Authorization: `Bearer ${openAiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+            temperature: 0.4,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: String(message) },
+            ],
+          }),
+        });
+
+        if (oRes.ok) {
+          const oData = await oRes.json();
+          const reply = oData?.choices?.[0]?.message?.content;
+          if (typeof reply === 'string' && reply.trim()) {
+            return NextResponse.json({
+              success: true,
+              reply: reply.trim(),
+              store_name: storeInfo.name,
+              engine: 'openai-gpt4o',
+            });
+          }
+        }
+      } catch (openAiErr) {
+        console.warn('OpenAI chat lookup warning:', openAiErr);
+      }
+    }
+
+    // 2. Try Gemini LLM if configured
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
+    if (geminiKey) {
+      try {
+        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
           method: 'POST',
-          signal: AbortSignal.timeout(6000),
+          signal: AbortSignal.timeout(8000),
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
+            'x-goog-api-key': geminiKey,
           },
           body: JSON.stringify({
             contents: [
               { role: 'user', parts: [{ text: `${systemPrompt}\n\nCustomer message: "${message}"` }] }
             ],
-            generationConfig: { temperature: 0.3, maxOutputTokens: 300 }
+            generationConfig: { temperature: 0.4, maxOutputTokens: 300 }
           })
         });
 
@@ -150,10 +184,11 @@ Instructions:
           }
         }
       } catch (gemErr) {
-        console.warn('Gemini chat lookup failed, falling back to rule engine:', gemErr);
+        console.warn('Gemini chat lookup warning:', gemErr);
       }
     }
 
+    // 3. Fallback to specialized linguistic engine
     const result = generateBexiReply({
       message: String(message),
       store: storeInfo,

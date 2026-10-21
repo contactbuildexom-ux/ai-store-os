@@ -13,6 +13,8 @@ type StoreRow = {
   selected_theme?: string | null;
   whatsapp_number?: string | null;
   created_at?: string | null;
+  is_verified?: boolean;
+  verification_status?: string | null;
 };
 
 async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAdminClient>>, userId: string) {
@@ -61,6 +63,8 @@ export async function GET(request: Request) {
             primary_color: resolvedColor,
             selected_theme: repoStore.theme?.id || repoStore.selected_theme || "emerald",
             created_at: repoStore.created_at || new Date().toISOString(),
+            is_verified: repoStore.is_verified ?? false,
+            verification_status: repoStore.verification_status || "pending",
           } as StoreRow,
         });
       }
@@ -95,6 +99,8 @@ export async function GET(request: Request) {
             primary_color: resolvedColor,
             selected_theme: dbStore.selected_theme || "ocean-blue",
             created_at: dbStore.created_at || new Date().toISOString(),
+            is_verified: (dbStore as any).is_verified ?? ((dbStore as any).verification_status === "verified" ? true : false),
+            verification_status: (dbStore as any).verification_status || "pending",
           } as StoreRow,
         });
       }

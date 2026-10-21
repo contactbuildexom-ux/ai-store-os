@@ -12,6 +12,8 @@ export interface StoreRecord {
   header_title?: string;
   description?: string;
   plan: 'free' | 'basic' | 'pro' | 'advanced';
+  is_verified?: boolean;
+  verification_status?: 'pending' | 'verified' | 'rejected';
   selected_theme: string;
   primary_color: string;
   secondary_color?: string;
@@ -283,6 +285,17 @@ class StoreRepository {
       }
     }
     return null;
+  }
+
+  async verifyStore(idOrSlug: string): Promise<boolean> {
+    const store = await this.getStore(idOrSlug);
+    if (!store) return false;
+    store.is_verified = true;
+    store.verification_status = 'verified';
+    memoryStores.set(store.id, store);
+    memoryStores.set(store.slug, store);
+    await writeLocalStoreCache(Array.from(new Set(memoryStores.values())));
+    return true;
   }
 
   async getStore(idOrSlug: string): Promise<StoreRecord | null> {

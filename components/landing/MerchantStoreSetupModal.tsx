@@ -367,6 +367,7 @@ export default function MerchantStoreSetupModal({
   const [twitter, setTwitter] = useState('');
 
   // UI / Submission state
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepText, setStepText] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -377,6 +378,7 @@ export default function MerchantStoreSetupModal({
       if (initialStoreName) setStoreName(initialStoreName);
       if (initialPrompt) setPrompt(initialPrompt);
       if (initialTheme) setSelectedTheme(initialTheme);
+      setCurrentStep(1);
     }
   }, [isOpen, initialStoreName, initialPrompt, initialTheme]);
 
@@ -392,7 +394,7 @@ export default function MerchantStoreSetupModal({
     let effectiveEmail = email.trim().toLowerCase();
     if (!effectiveEmail || !effectiveEmail.includes('@')) {
       const cleanSlug = effectiveName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mystore';
-      effectiveEmail = `admin@${cleanSlug}.com`;
+      effectiveEmail = `merchant_${cleanSlug}_${Date.now().toString(36)}@buildexom.store`;
     }
 
     let effectivePassword = password;
@@ -624,125 +626,202 @@ export default function MerchantStoreSetupModal({
                 </div>
               )}
 
-              {/* 1. Store Vision & Name */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className={LABEL}>
-                    <Store size={14} className="text-[#1976d2]" /> Store Concept & Prompt
-                  </label>
-                  <span className="text-[11px] font-semibold text-[#5b7aa3]">Required</span>
+              {/* Wizard Steps Tracker */}
+              <div className="flex items-center justify-between border-b border-[#cfe2fa] pb-3 text-xs font-bold">
+                <div className="flex items-center gap-2">
+                  <span className={`grid size-6 place-items-center rounded-full text-[11px] ${currentStep === 1 ? 'bg-[#1976d2] text-white shadow-xs' : 'bg-emerald-100 text-emerald-800'}`}>
+                    {currentStep > 1 ? '✓' : '1'}
+                  </span>
+                  <span className={currentStep === 1 ? 'text-[#0b2545] font-extrabold' : 'text-[#5b7aa3]'}>
+                    Store Name & Color Palette
+                  </span>
                 </div>
-
-                {/* Curated Global Business Ideas Dropdown */}
-                <div className="rounded-xl border border-[#cfe2fa] bg-[#f3f8ff] p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-semibold text-[#0b2545]">
-                      Explore Trending Global Business Ideas (Auto-populates concept & theme):
-                    </label>
-                    {ideaSearch && (
-                      <button
-                        type="button"
-                        onClick={() => setIdeaSearch('')}
-                        className="text-[11px] font-semibold text-[#1976d2] hover:underline"
-                      >
-                        Clear search
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="🔍 Search niches (e.g. Gaming, Handbags, Coffee, Skincare...)"
-                    value={ideaSearch}
-                    onChange={(e) => setIdeaSearch(e.target.value)}
-                    className="w-full rounded-lg border border-[#bfdcff] bg-white px-3 py-1.5 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none"
-                  />
-                  <select
-                    value={selectedIdeaId}
-                    onChange={(e) => handleSelectIdea(e.target.value)}
-                    className={`${INPUT} font-medium`}
-                  >
-                    <option value="">Select a Curated Store Idea / Niche (or write your own)</option>
-                    {filteredPresets.map((grp) => (
-                      <optgroup key={grp.category} label={grp.category}>
-                        {grp.options.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                <div className="h-0.5 w-12 bg-slate-200" />
+                <div className="flex items-center gap-2">
+                  <span className={`grid size-6 place-items-center rounded-full text-[11px] ${currentStep === 2 ? 'bg-[#1976d2] text-white shadow-xs' : 'bg-slate-100 text-slate-500'}`}>
+                    2
+                  </span>
+                  <span className={currentStep === 2 ? 'text-[#0b2545] font-extrabold' : 'text-[#5b7aa3]'}>
+                    Plan & WhatsApp Details
+                  </span>
                 </div>
+              </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
+              {/* STEP 1: STORE NAME, NICHE & INTERACTIVE COLOR PALETTE */}
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  {/* Store Name Input */}
                   <div>
+                    <label className={LABEL}>
+                      <Store size={14} className="text-[#1976d2]" /> Store Name
+                    </label>
                     <input
                       type="text"
-                      placeholder="Store Name (e.g. Noor Velvet Couture)"
+                      placeholder="Enter your store name (e.g. Glamour Boutique, Apex Tech, Cafe Beans)"
                       value={storeName}
                       onChange={(e) => setStoreName(e.target.value)}
-                      className={INPUT}
+                      required
+                      className={`${INPUT} mt-1 text-sm font-semibold`}
                     />
                   </div>
-                  <div>
+
+                  {/* Curated Global Business Ideas Dropdown */}
+                  <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-[#0b2545]">
+                        Select Business Category / Niche:
+                      </label>
+                      {ideaSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setIdeaSearch('')}
+                          className="text-[11px] font-semibold text-[#1976d2] hover:underline"
+                        >
+                          Clear search
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="🔍 Search niches (e.g. Jewelry, Gaming, Handbags, Coffee, Skincare...)"
+                      value={ideaSearch}
+                      onChange={(e) => setIdeaSearch(e.target.value)}
+                      className="w-full rounded-xl border border-[#bfdcff] bg-white px-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none"
+                    />
                     <select
-                      value={selectedTheme}
-                      onChange={(e) => setSelectedTheme(e.target.value)}
-                      className={INPUT}
+                      value={selectedIdeaId}
+                      onChange={(e) => handleSelectIdea(e.target.value)}
+                      className={`${INPUT} font-medium mt-1`}
                     >
-                      {THEME_OPTIONS.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          Theme: {t.name} ({t.desc})
-                        </option>
+                      <option value="">Select a Curated Store Idea / Niche (or type your own above)</option>
+                      {filteredPresets.map((grp) => (
+                        <optgroup key={grp.category} label={grp.category}>
+                          {grp.options.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.name}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </div>
-                </div>
-                <textarea
-                  rows={3}
-                  placeholder="Describe your brand's unique style, target audience, signature products, and pricing (e.g. 'A premium organic lifestyle brand offering cold-pressed herbal oils, wild honey, and natural detox teas with nationwide cash on delivery...')..."
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  required
-                  className={`${INPUT} resize-none`}
-                />
-              </div>
 
-              {/* 2. Plan Selection */}
-              <div className="space-y-2.5">
-                <label className={LABEL}>
-                  <Zap size={14} className="text-[#1976d2]" /> Choose Subscription Plan
-                </label>
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                  {[
-                    { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products', icon: Store },
-                    { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle },
-                    { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority', icon: Crown },
-                  ].map((p) => {
-                    const isSelected = plan === p.id;
-                    const Icon = p.icon;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setPlan(p.id as any)}
-                        className={`relative rounded-2xl border p-3 text-left transition-all ${
-                          isSelected
-                            ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25'
-                            : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff]'
-                        }`}
-                      >
-                        <div className="mb-1.5 flex items-center justify-between">
-                          <Icon size={16} className={isSelected ? 'text-[#1976d2]' : 'text-[#5b7aa3]'} />
-                          {isSelected && <CheckCircle2 size={14} className="text-[#1976d2]" />}
-                        </div>
-                        <p className="text-xs font-bold text-[#0b2545]">{p.name}</p>
-                        <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{p.desc}</p>
-                      </button>
-                    );
-                  })}
+                  {/* Interactive Visual Color Palette Swatches */}
+                  <div className="rounded-2xl border border-[#cfe2fa] bg-white p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-[#0b2545]">
+                        <Palette size={14} className="text-[#1976d2]" /> Select Store Theme Color Palette:
+                      </label>
+                      <span className="text-[11px] font-bold text-[#1976d2]">
+                        {THEME_OPTIONS.find(t => t.id === selectedTheme)?.name || 'Ocean Blue'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+                      {THEME_OPTIONS.map((theme) => {
+                        const isSelected = selectedTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            onClick={() => setSelectedTheme(theme.id)}
+                            className={`flex items-center gap-2 rounded-xl border p-2 text-left transition-all active:scale-95 ${
+                              isSelected
+                                ? 'border-[#1976d2] bg-[#f0f7ff] ring-2 ring-[#1976d2]/30 shadow-xs'
+                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            <span
+                              className="relative grid size-6 shrink-0 place-items-center rounded-full shadow-2xs border border-white"
+                              style={{ backgroundColor: theme.color }}
+                            >
+                              {isSelected && <span className="size-2 rounded-full bg-white" />}
+                            </span>
+                            <div className="min-w-0 flex-1 truncate">
+                              <p className="truncate text-[11px] font-bold text-slate-800 leading-tight">
+                                {theme.name}
+                              </p>
+                              <p className="text-[9px] text-slate-400 font-mono">
+                                {theme.color}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Continue to Step 2 Button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!storeName.trim()) {
+                          setErrorMessage('Please enter your store name to proceed.');
+                          return;
+                        }
+                        setErrorMessage('');
+                        setCurrentStep(2);
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 active:scale-95"
+                    >
+                      <span>Continue to Details & WhatsApp</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* STEP 2: PLANS, WHATSAPP & CREDENTIALS */}
+              {currentStep === 2 && (
+                <div className="space-y-5">
+                  {/* Plan Selection (Free Starter pre-selected, others locked with unlock option) */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className={LABEL}>
+                        <Zap size={14} className="text-[#1976d2]" /> Subscription Plan
+                      </label>
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                        Free Starter Selected
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                      {[
+                        { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products • Free Forever', icon: Store, locked: false },
+                        { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, locked: true },
+                        { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority Support', icon: Crown, locked: true },
+                      ].map((p) => {
+                        const isSelected = plan === p.id;
+                        const Icon = p.icon;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setPlan(p.id as any)}
+                            className={`relative rounded-2xl border p-3 text-left transition-all ${
+                              isSelected
+                                ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25'
+                                : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff]'
+                            }`}
+                          >
+                            <div className="mb-1.5 flex items-center justify-between">
+                              <Icon size={16} className={isSelected ? 'text-[#1976d2]' : 'text-[#5b7aa3]'} />
+                              {isSelected ? (
+                                <CheckCircle2 size={14} className="text-[#1976d2]" />
+                              ) : p.locked ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-600">
+                                  <Lock size={10} /> Locked
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-xs font-bold text-[#0b2545]">{p.name}</p>
+                            <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{p.desc}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
               {/* 3. WhatsApp Integration (Auto-Linked for Pro & Advance) */}
               <div className="space-y-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
@@ -858,29 +937,38 @@ export default function MerchantStoreSetupModal({
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      <span>{stepText || 'Building your store...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Store size={17} />
-                      <span>Create My Online Store</span>
-                    </>
-                  )}
-                </button>
-                <p className="mt-2 text-center text-[10px] text-[#5b7aa3]">
-                  Instant catalog generation · Dedicated WhatsApp order routing · Ready to accept customer orders
-                </p>
-              </div>
+                  {/* Submit and Back Buttons */}
+                  <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(1)}
+                      className="rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition active:scale-95"
+                    >
+                      ← Back to Concept
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 active:scale-95"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>{stepText || 'Building your store...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Store size={17} />
+                          <span>Create My Online Store</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-center text-[10px] text-[#5b7aa3]">
+                    Instant storefront generation · Dedicated WhatsApp order routing · 100% Free Starter included
+                  </p>
+                </div>
+              )}
             </form>
           )}
         </div>

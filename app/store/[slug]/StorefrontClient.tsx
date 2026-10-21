@@ -7,6 +7,7 @@ import { isPublicStorefrontResponse } from '@/lib/storefront-types';
 import { resolveStoreHero, detectStoreNiche } from '@/lib/ai/hero-niche-resolver';
 import { BUILDEXOM_ICON_DATA_URL } from '@/components/store-qr-code';
 import { StoreFooter } from '@/components/store-footer';
+import { generateBexiReply } from '@/lib/ai/bexi-chat-engine';
 import {
     Menu,
     X,
@@ -274,10 +275,14 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
     // Guarantees every product belongs to one of the 4 active categories so clicking any category shows products
     const catalogProducts = useMemo(() => {
+        let prods = liveProducts;
+        if (!isPro) {
+            prods = prods.slice(0, 20);
+        }
         const activeCats = categories.filter((c) => c !== 'All');
-        if (activeCats.length === 0) return liveProducts;
+        if (activeCats.length === 0) return prods;
 
-        return liveProducts.map((p, idx) => {
+        return prods.map((p, idx) => {
             const rawCat = ((p as any).category || (p as any).category_name || '').trim();
             const matched = activeCats.find((c) => c.toLowerCase() === rawCat.toLowerCase());
             if (matched) {
@@ -286,7 +291,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             const fallbackCat = activeCats[idx % activeCats.length];
             return { ...p, category: fallbackCat };
         });
-    }, [liveProducts, categories]);
+    }, [liveProducts, categories, isPro]);
 
     const filteredProducts = useMemo(() => {
         return catalogProducts.filter((p) => {
@@ -630,16 +635,25 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             if (!res.ok) throw new Error(data.error || 'Failed to process AI chat query');
             setAiMessages((prev) => [...prev, { sender: 'ai', text: data.reply || 'Here are some items from our store catalog!' }]);
         } catch {
-            const isEnglish = !/[\u0600-\u06FF]/.test(userMsg) && !/\b(kya|kia|kitna|kitne|kitni|hai|hain|kese|kaise|batao|chahiye|mein|me|ko|se|bhai|bhejo|shukriya|acha|achha|theek)\b/i.test(userMsg);
-            setAiMessages((prev) => [
-                ...prev,
-                {
-                    sender: 'ai',
-                    text: isEnglish
-                        ? `Welcome to **${liveStore.name}**! I am here to help with our catalog, prices, and fast nationwide delivery. Tap any product or click WhatsApp to chat with our team directly!`
-                        : `Main **${liveStore.name}** par aap ki shopping mein madad ke liye hazir hoon! Aap hamaray catalog items dekh saktay hain ya kisi bhi card par click karke direct WhatsApp par order bhej saktay hain.`
-                }
-            ]);
+            const localResult = generateBexiReply({
+                message: userMsg,
+                store: {
+                    id: liveStore.id,
+                    name: liveStore.name,
+                    slug: liveStore.slug,
+                    whatsapp_number: liveStore.whatsapp_number,
+                    tagline: liveStore.tagline || undefined,
+                },
+                products: liveProducts.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    price: Number(p.price || 0),
+                    description: p.description || '',
+                    category: (p as any).category || 'General',
+                    image_url: p.image_url || '',
+                })),
+            });
+            setAiMessages((prev) => [...prev, { sender: 'ai', text: localResult.reply }]);
         } finally {
             setAiSending(false);
         }
@@ -665,18 +679,30 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Full width edge coverage & professionally aligned */}
-            <div className="w-full border-b py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
-                <div className="mx-auto flex max-w-6xl w-full items-center justify-between text-[11px] sm:text-xs px-4 sm:px-6 lg:px-8">
-                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
-                        <Truck size={13} /> Fast Delivery Nationwide
-                    </span>
-                    <span className="w-full sm:w-auto text-center font-bold tracking-wide">
-                        {bannerText}
-                    </span>
-                    <span className="hidden sm:inline-flex items-center gap-1.5 opacity-95">
-                        <MessageCircle size={13} /> WhatsApp Ordering Active
-                    </span>
+            {/* Top Announcement Bar - Continuous smooth marquee ticker */}
+            <div className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
+                <div className="overflow-hidden whitespace-nowrap">
+                    <div className="animate-storefront-marquee flex items-center gap-8 text-[11px] sm:text-xs font-bold tracking-wide">
+                        <span className="inline-flex items-center gap-1.5"><Truck size={13} /> Fast Nationwide Delivery on All Orders</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5">⚡ Cash on Delivery (COD) Active Across Pakistan</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} /> WhatsApp Direct Ordering Available</span>
+                        <span>•</span>
+                        <span>✨ 100% Quality Guaranteed</span>
+                        <span>•</span>
+                        <span>{bannerText}</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5"><Truck size={13} /> Fast Nationwide Delivery on All Orders</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5">⚡ Cash on Delivery (COD) Active Across Pakistan</span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5"><MessageCircle size={13} /> WhatsApp Direct Ordering Available</span>
+                        <span>•</span>
+                        <span>✨ 100% Quality Guaranteed</span>
+                        <span>•</span>
+                        <span>{bannerText}</span>
+                    </div>
                 </div>
             </div>
 
@@ -718,7 +744,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         {[
                             { name: 'Home', href: '#hero' },
                             { name: 'Shop', href: '#featured' },
-                            { name: 'Categories', href: '#categories' },
+                            ...(isPro ? [{ name: 'Categories', href: '#categories' }] : []),
                             { name: 'All Products', href: '#products' },
                             { name: 'About', href: '#about' },
                         ].map((link) => (
@@ -810,6 +836,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </div>
 
                             {/* Categories Navigation */}
+                            {isPro && (
                             <div>
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categories</label>
                                 <div className="mt-2 space-y-1">
@@ -833,6 +860,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     ))}
                                 </div>
                             </div>
+                            )}
 
                             {/* WhatsApp Direct Help */}
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
@@ -1045,6 +1073,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 )}
 
                 {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
+                {isPro && (
                 <section id="categories" className="w-full pt-1 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -1109,6 +1138,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         })}
                     </div>
                 </section>
+                )}
 
                 {/* 2. Search & Category Bar */}
                 <section className="w-full space-y-3">
@@ -1134,6 +1164,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     </div>
 
                     {/* Category Scrollable Pills (Matching Screenshot) */}
+                    {isPro && categories.length > 1 && (
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                         {categories.map((cat) => {
                             const isSelected = selectedCategory === cat;
@@ -1154,6 +1185,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             );
                         })}
                     </div>
+                    )}
                 </section>
 
                 {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
@@ -1398,6 +1430,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
 
                 {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
+                {isPro && (
                 <div className="!mt-3 !mb-3 flex items-center justify-center sm:justify-end">
                     <button
                         type="button"
@@ -1439,8 +1472,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </span>
                     </button>
                 </div>
-
-
+                )}
             </main>
 
             {/* Store Footer Unified In Store Background */}
@@ -1791,7 +1823,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             )}
 
             {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
-            {isAiOpen && (
+            {isAiOpen && isPro && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
                     <div 
                         className="fixed inset-0"

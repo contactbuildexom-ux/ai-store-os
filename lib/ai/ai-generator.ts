@@ -32,6 +32,8 @@ export interface GeneratedStore {
   description: string;
   header_title: string;
   plan: 'free' | 'pro' | 'advanced';
+  is_verified?: boolean;
+  verification_status?: 'pending' | 'verified' | 'rejected';
   whatsapp_number: string;
   owner_email: string;
   theme: StoreThemeConfig;

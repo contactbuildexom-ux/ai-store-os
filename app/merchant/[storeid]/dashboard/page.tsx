@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Landmark, Send, Lock, Plus, Mic } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Landmark, Send, Lock, Plus, Mic } from 'lucide-react';
 
 const SmartphoneIcon = ({ size = 18, className = "" }: { size?: number; className?: string }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -203,6 +203,8 @@ export default function MerchantDashboardMaster() {
     const [isTrialExpired, setIsTrialExpired] = useState(false);
     const [trialDaysLeft, setTrialDaysLeft] = useState(3);
     const [isTrialActive, setIsTrialActive] = useState(false);
+    const [isVerified, setIsVerified] = useState(true);
+    const [verificationStatus, setVerificationStatus] = useState('verified');
 
     // Bexi AI Command Center states
     const [bexiChatHistory, setBexiChatHistory] = useState<Array<{ sender: 'ai' | 'merchant'; text: string; time: string }>>([
@@ -457,6 +459,10 @@ export default function MerchantDashboardMaster() {
             setStoreSlug(storeData.slug || '');
             const normPlan = normalizePlan(storeData.plan);
             setStorePlan(normPlan);
+
+            const isVer = (storeData as any).is_verified !== false;
+            setIsVerified(isVer);
+            setVerificationStatus((storeData as any).verification_status || (isVer ? 'verified' : 'pending'));
 
             // 3-day Free Trial Check & Lock Enforcement
             const isPaid = (storeData as any).payment_status === 'active';
@@ -984,6 +990,33 @@ export default function MerchantDashboardMaster() {
                             <span className="rounded-full bg-amber-200/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-900 shrink-0">
                                 Under Review
                             </span>
+                        </div>
+                    )}
+
+                    {/* Super Admin Store Verification Banner */}
+                    {!isVerified && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-4 shadow-md text-slate-800 animate-in fade-in duration-300">
+                            <div className="flex items-center gap-3">
+                                <span className="grid size-10 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
+                                    <Lock size={20} />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-black text-amber-950 flex items-center gap-2">
+                                        🔒 Store Verification Pending Approval
+                                        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                                            Under Review
+                                        </span>
+                                    </p>
+                                    <p className="text-xs text-amber-800 mt-0.5 font-medium">
+                                        Your store <strong>{storeName}</strong> has been submitted to Super Admin for verification. Product publishing, category additions, and store settings are temporarily locked until verified.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="shrink-0 text-right">
+                                <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-amber-900 border border-amber-300 shadow-2xs">
+                                    <Clock size={14} className="text-amber-600 animate-pulse" /> Awaiting Super Admin
+                                </span>
+                            </div>
                         </div>
                     )}
 

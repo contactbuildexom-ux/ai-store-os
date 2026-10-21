@@ -281,3 +281,19 @@ main section button:hover > span[aria-hidden="true"] {
 .dashboard-table-content::-webkit-scrollbar {
   display: none;
 }
+
+/* Continuous storefront announcement marquee */
+@keyframes storefront-marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-storefront-marquee {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: storefront-marquee 28s linear infinite;
+}
+
+.animate-storefront-marquee:hover {
+  animation-play-state: paused;
+}
