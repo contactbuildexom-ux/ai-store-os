@@ -5,7 +5,6 @@ import { AddStoreButton } from "@/components/add-store-button";
 import { DashboardRecordActions, type DashboardEditField } from "@/components/dashboard-record-actions";
 import { ExportCsvButton } from "@/components/export-csv-button";
 import { ProductCsvImport } from "@/components/product-csv-import";
-import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type SectionRow = {
@@ -222,6 +221,7 @@ export default async function SectionPage({
   const importAction = section === "products" ? <ProductCsvImport stores={storeOptions} /> : null;
   const exportColumns = columns.filter((column) => column !== "Actions");
   const exportRows = rows.map((row) => row.cells);
+  const dataColumns = columns[columns.length - 1] === "Actions" ? columns.slice(0, -1) : columns;
 
   return (
     <div className="space-y-6">
@@ -249,24 +249,49 @@ export default async function SectionPage({
             <input name="q" defaultValue={q} placeholder={`Search ${title.toLowerCase()}...`} className="min-w-0 flex-1 bg-transparent text-xs outline-none placeholder:text-slate-400" />
           </form>
         </div>
-        <DashboardTableScroll>
-          <table className="w-full min-w-[850px] text-left">
-            <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500">{columns.map((column) => <th key={column} className="px-5 py-3">{column}</th>)}</tr></thead>
+        <div className="space-y-3 p-4 xl:hidden">
+          {rows.map((row) => (
+            <article key={row.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+              <div className="font-medium text-slate-800">
+                {statusStyles[row.cells[0]] ? <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusStyles[row.cells[0]]}`}><span className="size-1.5 rounded-full bg-current opacity-60" />{row.cells[0]}</span> : row.cells[0]}
+              </div>
+              <dl className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {row.cells.slice(1).map((cell, index) => (
+                  <div key={`${row.id}-${dataColumns[index + 1]}`} className="min-w-0">
+                    <dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{dataColumns[index + 1]}</dt>
+                    <dd className="mt-0.5 break-words text-xs text-slate-700 [overflow-wrap:anywhere]">
+                      {statusStyles[cell] ? <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusStyles[cell]}`}><span className="size-1.5 rounded-full bg-current opacity-60" />{cell}</span> : cell}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              {row.resource && row.fields && (
+                <div className="mt-3 border-t border-slate-200 pt-3">
+                  <DashboardRecordActions resource={row.resource} recordId={row.id} values={row.values} fields={row.fields} viewHref={row.viewHref} />
+                </div>
+              )}
+            </article>
+          ))}
+          {rows.length === 0 && <p className="py-8 text-center text-sm text-slate-500">No records found.</p>}
+        </div>
+        <div className="hidden min-w-0 xl:block">
+          <table className="w-full table-fixed text-left">
+            <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500">{columns.map((column) => <th key={column} className="break-words px-2 py-3 lg:px-3">{column}</th>)}</tr></thead>
             <tbody className="divide-y divide-slate-100">
               {rows.map((row) => (
                 <tr key={row.id} className="text-xs text-slate-600 hover:bg-slate-50/70">
                   {row.cells.map((cell, index) => (
-                    <td key={index} className="whitespace-nowrap px-5 py-4">
+                    <td key={index} className="break-words px-2 py-3 align-top text-[11px] lg:px-3 [overflow-wrap:anywhere]">
                       {statusStyles[cell] ? <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ${statusStyles[cell]}`}><span className="size-1.5 rounded-full bg-current opacity-60" />{cell}</span> : <span className={index === 0 ? "font-medium text-slate-800" : ""}>{cell}</span>}
                     </td>
                   ))}
-                  {row.resource && row.fields && <td className="whitespace-nowrap px-5 py-3"><DashboardRecordActions resource={row.resource} recordId={row.id} values={row.values} fields={row.fields} viewHref={row.viewHref} /></td>}
+                  {row.resource && row.fields && <td className="break-words px-2 py-3 align-top lg:px-3"><DashboardRecordActions resource={row.resource} recordId={row.id} values={row.values} fields={row.fields} viewHref={row.viewHref} /></td>}
                 </tr>
               ))}
+              {rows.length === 0 && <tr><td colSpan={columns.length} className="px-4 py-10 text-center text-sm text-slate-500">No records found.</td></tr>}
             </tbody>
           </table>
-          {rows.length === 0 && <p className="px-5 py-12 text-center text-sm text-slate-500">No records found.</p>}
-        </DashboardTableScroll>
+        </div>
         <div className="border-t border-slate-100 px-5 py-3 text-[11px] text-slate-500">Total records: {totalCount}</div>
       </section>
     </div>

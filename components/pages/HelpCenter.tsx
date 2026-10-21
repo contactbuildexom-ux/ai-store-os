@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { usePlatformBranding } from "@/components/platform-branding";
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
-// 👉 Apni real support email yahan likho
-const SUPPORT_EMAIL = "support@yourdomain.com";
+const SUPPORT_EMAIL = DEFAULT_PLATFORM_SETTINGS.email;
 
 type IconName =
   | "rocket"
@@ -345,6 +346,8 @@ const POPULAR = ["WhatsApp", "QR code", "publish", "products", "plans"];
 /* ───────────────────────── PAGE ───────────────────────── */
 
 export default function HelpCenter() {
+  const { settings } = usePlatformBranding();
+  const supportEmail = settings.email || DEFAULT_PLATFORM_SETTINGS.email;
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string | null>(null);
 
@@ -352,8 +355,15 @@ export default function HelpCenter() {
 
   const results = useMemo(() => {
     const t = query.trim().toLowerCase();
-    if (!t) return CATEGORIES;
-    return CATEGORIES.map((c) => ({
+    const categories = CATEGORIES.map((category) => ({
+      ...category,
+      topics: category.topics.map((topic) => ({
+        ...topic,
+        steps: topic.steps.map((step) => step.replaceAll(SUPPORT_EMAIL, supportEmail)),
+      })),
+    }));
+    if (!t) return categories;
+    return categories.map((c) => ({
       ...c,
       topics: c.topics.filter(
         (x) =>
@@ -361,7 +371,7 @@ export default function HelpCenter() {
           x.steps.some((s) => s.toLowerCase().includes(t))
       ),
     })).filter((c) => c.topics.length > 0);
-  }, [query]);
+  }, [query, supportEmail]);
 
   const totalTopics = CATEGORIES.reduce((n, c) => n + c.topics.length, 0);
 
@@ -591,7 +601,7 @@ export default function HelpCenter() {
               </p>
             </div>
             <a
-              href={`mailto:${SUPPORT_EMAIL}`}
+              href={`mailto:${supportEmail}`}
               className="group rounded-2xl bg-white/10 p-5 text-center ring-1 ring-white/20 backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white/20"
             >
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-sky-200 transition duration-300 group-hover:scale-110">
@@ -599,7 +609,7 @@ export default function HelpCenter() {
               </span>
               <p className="mt-3 font-bold">Email us</p>
               <p className="mt-1 break-all text-sm text-blue-100/80">
-                {SUPPORT_EMAIL}
+                {supportEmail}
               </p>
             </a>
             <Link

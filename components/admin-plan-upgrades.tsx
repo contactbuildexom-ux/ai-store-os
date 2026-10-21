@@ -18,23 +18,42 @@ interface PendingUpgrade {
   submitted_at: string;
 }
 
+function isPendingUpgrade(value: unknown): value is PendingUpgrade {
+  if (typeof value !== "object" || value === null) return false;
+  const upgrade = value as Record<string, unknown>;
+  return [
+    "store_id", "store_name", "store_slug", "current_plan", "requested_plan",
+    "payment_method", "sender_name", "sender_number", "transaction_id",
+    "screenshot_url", "submitted_at",
+  ].every((key) => typeof upgrade[key] === "string") && typeof upgrade.amount === "number";
+}
+
 export function AdminPlanUpgradeApprovals() {
   const [upgrades, setUpgrades] = useState<PendingUpgrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [noticeIsError, setNoticeIsError] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   async function loadPendingUpgrades() {
     setLoading(true);
+    setNotice(null);
+    setNoticeIsError(false);
     try {
       const res = await fetch('/api/admin/plan-upgrades');
-      const data = await res.json();
-      if (res.ok && data.pending_upgrades) {
-        setUpgrades(data.pending_upgrades);
+      const result: unknown = await res.json();
+      if (typeof result !== "object" || result === null) throw new Error("The upgrade service returned an invalid response.");
+      const data = result as Record<string, unknown>;
+      if (!res.ok) throw new Error(typeof data.error === "string" ? data.error : "Unable to load pending upgrade requests.");
+      if (!Array.isArray(data.pending_upgrades) || !data.pending_upgrades.every(isPendingUpgrade)) {
+        throw new Error("The upgrade service returned invalid request data.");
       }
-    } catch (e) {
-      console.error('Failed to load pending upgrades', e);
+      setUpgrades(data.pending_upgrades);
+    } catch (reason) {
+      console.error('Failed to load pending upgrades', reason);
+      setNotice(reason instanceof Error ? reason.message : "Unable to load pending upgrade requests.");
+      setNoticeIsError(true);
     } finally {
       setLoading(false);
     }
@@ -47,35 +66,40 @@ export function AdminPlanUpgradeApprovals() {
   async function handleAction(storeId: string, action: 'approve' | 'reject', plan: string) {
     setProcessingId(storeId);
     setNotice(null);
+    setNoticeIsError(false);
     try {
       const res = await fetch('/api/admin/plan-upgrades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ store_id: storeId, action, plan }),
       });
-      const data = await res.json();
+      const result: unknown = await res.json();
+      if (typeof result !== "object" || result === null) throw new Error("The upgrade service returned an invalid response.");
+      const data = result as Record<string, unknown>;
       if (res.ok) {
-        setNotice(data.message || (action === 'approve' ? 'Plan approved!' : 'Plan rejected.'));
+        setNotice(typeof data.message === "string" ? data.message : (action === 'approve' ? 'Plan approved!' : 'Plan rejected.'));
         setUpgrades((prev) => prev.filter((u) => u.store_id !== storeId));
       } else {
-        setNotice(data.error || 'Failed to update plan status.');
+        setNotice(typeof data.error === "string" ? data.error : 'Failed to update plan status.');
+        setNoticeIsError(true);
       }
-    } catch {
-      setNotice('Network error occurred while updating plan.');
+    } catch (reason) {
+      setNotice(reason instanceof Error ? reason.message : 'Network error occurred while updating plan.');
+      setNoticeIsError(true);
     } finally {
       setProcessingId(null);
     }
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
             <Clock size={12} /> Pending Approvals
           </span>
-          <h3 className="mt-1 text-base font-bold text-slate-900">Merchant Plan Upgrade Requests</h3>
-          <p className="text-xs text-slate-500">
+          <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100">Merchant Plan Upgrade Requests</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Review transaction receipts and approve Pro & Business subscriptions submitted by merchants.
           </p>
         </div>
@@ -83,16 +107,16 @@ export function AdminPlanUpgradeApprovals() {
           type="button"
           onClick={loadPendingUpgrades}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs"
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
       </div>
 
       {notice && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs font-medium text-blue-900 flex items-center justify-between">
+        <div role={noticeIsError ? "alert" : "status"} className={`flex items-center justify-between gap-3 rounded-lg border p-3 text-xs font-medium ${noticeIsError ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200" : "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"}`}>
           <span>{notice}</span>
-          <button type="button" onClick={() => setNotice(null)} className="text-blue-700 hover:underline">Dismiss</button>
+          <button type="button" onClick={() => setNotice(null)} className="shrink-0 underline underline-offset-2">Dismiss</button>
         </div>
       )}
 
@@ -100,57 +124,84 @@ export function AdminPlanUpgradeApprovals() {
         <div className="py-8 text-center text-xs text-slate-400">Loading pending requests...</div>
       ) : upgrades.length === 0 ? (
         <div className="py-8 text-center">
-          <CheckCircle2 size={32} className="mx-auto text-emerald-500 mb-2 opacity-80" />
-          <p className="text-xs font-bold text-slate-800">No pending upgrade requests</p>
+          <CheckCircle2 size={32} className="mx-auto mb-2 text-emerald-500 opacity-80" />
+          <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{noticeIsError ? "Unable to load upgrade requests. Refresh to try again." : "No pending upgrade requests"}</p>
           <p className="text-[11px] text-slate-400 mt-0.5">All merchant payment proofs have been reviewed.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <>
+          <div className="space-y-3 2xl:hidden">
+            {upgrades.map((upgrade) => (
+              <article key={upgrade.store_id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h4 className="break-words text-sm font-semibold text-slate-900 dark:text-slate-100 [overflow-wrap:anywhere]">{upgrade.store_name}</h4>
+                    <a href={`/store/${encodeURIComponent(upgrade.store_slug)}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex max-w-full items-center gap-1 break-all font-mono text-[10px] text-blue-600 hover:underline dark:text-blue-400">
+                      {upgrade.store_slug} <ExternalLink size={10} className="shrink-0" />
+                    </a>
+                  </div>
+                  <span className="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">{upgrade.requested_plan}</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Current plan</dt><dd className="mt-0.5 text-xs text-slate-700 dark:text-slate-300">{upgrade.current_plan || 'basic'}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Payment</dt><dd className="mt-0.5 text-xs font-semibold capitalize text-slate-800 dark:text-slate-200">{upgrade.payment_method} · PKR {Number(upgrade.amount).toLocaleString()}</dd></div>
+                  <div className="min-w-0"><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Sender & number</dt><dd className="mt-0.5 break-words text-xs text-slate-700 dark:text-slate-300 [overflow-wrap:anywhere]">{upgrade.sender_name} ({upgrade.sender_number})</dd></div>
+                  <div className="min-w-0"><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Transaction ID</dt><dd className="mt-0.5 break-all font-mono text-xs text-slate-700 dark:text-slate-300">{upgrade.transaction_id || 'N/A'}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Receipt proof</dt><dd className="mt-1">{upgrade.screenshot_url ? <button type="button" onClick={() => setPreviewImage(upgrade.screenshot_url)} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"><Eye size={12} /> View Slip</button> : <span className="text-[10px] text-slate-400">No receipt file</span>}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Submitted</dt><dd className="mt-0.5 text-xs text-slate-700 dark:text-slate-300">{new Date(upgrade.submitted_at).toLocaleDateString()}</dd></div>
+                </dl>
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
+                  <UpgradeActionButtons upgrade={upgrade} processing={processingId === upgrade.store_id} onAction={handleAction} />
+                </div>
+              </article>
+            ))}
+          </div>
+          <div className="hidden min-w-0 2xl:block">
+          <table className="w-full table-fixed text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3">Store</th>
-                <th className="px-4 py-3">Plan Request</th>
-                <th className="px-4 py-3">Method & Amount</th>
-                <th className="px-4 py-3">Sender & TID</th>
-                <th className="px-4 py-3">Receipt Proof</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+                <th className="w-[18%] break-words px-2 py-3">Store</th>
+                <th className="w-[13%] break-words px-2 py-3">Plan Request</th>
+                <th className="w-[17%] break-words px-2 py-3">Method & Amount</th>
+                <th className="w-[22%] break-words px-2 py-3">Sender & TID</th>
+                <th className="w-[12%] break-words px-2 py-3">Receipt Proof</th>
+                <th className="w-[18%] break-words px-2 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {upgrades.map((u) => (
-                <tr key={u.store_id} className="hover:bg-slate-50/50 transition">
-                  <td className="px-4 py-3.5">
-                    <p className="font-bold text-slate-900">{u.store_name}</p>
+                <tr key={u.store_id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                  <td className="break-words px-2 py-3 align-top [overflow-wrap:anywhere]">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{u.store_name}</p>
                     <a
                       href={`/store/${u.store_slug}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-[10px] text-blue-600 hover:underline flex items-center gap-1"
+                      className="mt-1 inline-flex max-w-full items-center gap-1 break-all font-mono text-[10px] text-blue-600 hover:underline dark:text-blue-400"
                     >
                       {u.store_slug} <ExternalLink size={10} />
                     </a>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <span className="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700">
+                  <td className="break-words px-2 py-3 align-top">
+                    <span className="inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700 dark:bg-purple-950/50 dark:text-purple-300">
                       {u.requested_plan}
                     </span>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Current: {u.current_plan || 'basic'}</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">Current: {u.current_plan || 'basic'}</p>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <p className="font-semibold capitalize text-slate-800">{u.payment_method}</p>
+                  <td className="break-words px-2 py-3 align-top">
+                    <p className="font-semibold capitalize text-slate-800 dark:text-slate-200">{u.payment_method}</p>
                     <p className="font-bold text-emerald-600">PKR {Number(u.amount).toLocaleString()}</p>
                   </td>
-                  <td className="px-4 py-3.5">
-                    <p className="text-slate-800 font-medium">{u.sender_name} ({u.sender_number})</p>
-                    <p className="font-mono text-[10px] text-slate-500">Ref: {u.transaction_id || 'N/A'}</p>
+                  <td className="break-words px-2 py-3 align-top [overflow-wrap:anywhere]">
+                    <p className="font-medium text-slate-800 dark:text-slate-200">{u.sender_name} ({u.sender_number})</p>
+                    <p className="break-all font-mono text-[10px] text-slate-500">Ref: {u.transaction_id || 'N/A'}</p>
                   </td>
-                  <td className="px-4 py-3.5">
+                  <td className="break-words px-2 py-3 align-top">
                     {u.screenshot_url ? (
                       <button
                         type="button"
                         onClick={() => setPreviewImage(u.screenshot_url)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 shadow-2xs"
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300 dark:hover:bg-slate-700"
                       >
                         <Eye size={12} /> View Slip
                       </button>
@@ -158,29 +209,15 @@ export function AdminPlanUpgradeApprovals() {
                       <span className="text-[10px] text-slate-400">No receipt file</span>
                     )}
                   </td>
-                  <td className="px-4 py-3.5 text-right space-x-2">
-                    <button
-                      type="button"
-                      disabled={processingId === u.store_id}
-                      onClick={() => handleAction(u.store_id, 'approve', u.requested_plan)}
-                      className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      <CheckCircle2 size={12} /> Approve
-                    </button>
-                    <button
-                      type="button"
-                      disabled={processingId === u.store_id}
-                      onClick={() => handleAction(u.store_id, 'reject', u.requested_plan)}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      <XCircle size={12} /> Reject
-                    </button>
+                  <td className="px-2 py-3 text-right align-top">
+                    <UpgradeActionButtons upgrade={u} processing={processingId === u.store_id} onAction={handleAction} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       )}
 
       {/* Image Preview Modal */}
@@ -204,5 +241,36 @@ export function AdminPlanUpgradeApprovals() {
         </div>
       )}
     </section>
+  );
+}
+
+function UpgradeActionButtons({
+  upgrade,
+  processing,
+  onAction,
+}: {
+  upgrade: PendingUpgrade;
+  processing: boolean;
+  onAction: (storeId: string, action: 'approve' | 'reject', plan: string) => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        disabled={processing}
+        onClick={() => onAction(upgrade.store_id, 'approve', upgrade.requested_plan)}
+        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+      >
+        <CheckCircle2 size={12} /> Approve
+      </button>
+      <button
+        type="button"
+        disabled={processing}
+        onClick={() => onAction(upgrade.store_id, 'reject', upgrade.requested_plan)}
+        className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950"
+      >
+        <XCircle size={12} /> Reject
+      </button>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/components/landing/logo";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
 /* ---------- Pixel2Page (Powered by) ---------- */
 const P2P_URL = "https://yahan-pixel2page-ki-website.com";
@@ -88,6 +89,26 @@ const socials = [
       </>
     ),
   },
+  {
+    name: "Phone",
+    href: "tel:+923374257290",
+    icon: (
+      <>
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 11.19 19a19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.07 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.05 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92z" />
+      </>
+    ),
+  },
+  {
+    name: "Website",
+    href: "https://www.buildexom.com",
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M2 12h20" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </>
+    ),
+  },
 ];
 
 export default function Footer() {
@@ -95,8 +116,10 @@ export default function Footer() {
   const socialHrefs: Record<string, string> = {
     Instagram: settings.instagram || "#",
     Facebook: settings.facebook || "#",
-    WhatsApp: settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}` : "#",
-    Email: settings.email ? `mailto:${settings.email}` : "mailto:support@yourdomain.com",
+    WhatsApp: settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}` : `https://wa.me/${DEFAULT_PLATFORM_SETTINGS.whatsapp}`,
+    Email: settings.email ? `mailto:${settings.email}` : `mailto:${DEFAULT_PLATFORM_SETTINGS.email}`,
+    Phone: `tel:${settings.phone || DEFAULT_PLATFORM_SETTINGS.phone}`,
+    Website: settings.website || DEFAULT_PLATFORM_SETTINGS.website,
   };
 
   return (
@@ -133,8 +156,8 @@ export default function Footer() {
                 <a
                   key={s.name}
                   href={socialHrefs[s.name] ?? s.href}
-                  target={["Instagram", "Facebook", "WhatsApp"].includes(s.name) ? "_blank" : undefined}
-                  rel={["Instagram", "Facebook", "WhatsApp"].includes(s.name) ? "noreferrer" : undefined}
+                  target={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "_blank" : undefined}
+                  rel={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "noreferrer" : undefined}
                   aria-label={s.name}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
                 >

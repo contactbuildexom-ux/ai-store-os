@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
 export type PlatformBrandingSettings = {
   title: string;
@@ -15,6 +16,8 @@ export type PlatformBrandingSettings = {
   facebook: string;
   logoName: string;
   logoUrl: string;
+  faviconName: string;
+  faviconUrl: string;
   seoTitle: string;
   seoDescription: string;
   defaultSocialImage: string;
@@ -26,22 +29,7 @@ type PlatformBrandingContextValue = {
   updateSettings: (settings: PlatformBrandingSettings) => void;
 };
 
-export const DEFAULT_PLATFORM_BRANDING: PlatformBrandingSettings = {
-  title: "Buildexom AI",
-  description: "Commerce, in clear view.",
-  email: "",
-  phone: "",
-  whatsapp: "",
-  website: "",
-  instagram: "",
-  facebook: "",
-  logoName: "",
-  logoUrl: "",
-  seoTitle: "",
-  seoDescription: "",
-  defaultSocialImage: "",
-  keywords: "",
-};
+export const DEFAULT_PLATFORM_BRANDING: PlatformBrandingSettings = DEFAULT_PLATFORM_SETTINGS;
 
 const PlatformBrandingContext = createContext<PlatformBrandingContextValue | null>(null);
 const DEFAULT_FAVICON = "/logo.jpeg";
@@ -79,12 +67,21 @@ export function PlatformBrandingProvider({
   }, [pathname, settings.seoTitle, settings.title]);
 
   useEffect(() => {
-    const source = settings.logoUrl || DEFAULT_FAVICON;
+    const source = settings.faviconUrl || settings.logoUrl || DEFAULT_FAVICON;
     const favicon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') ?? document.createElement("link");
     favicon.rel = "icon";
     favicon.href = source;
-    favicon.sizes = "32x32";
+    if (settings.faviconUrl) {
+      favicon.removeAttribute("sizes");
+      const extension = settings.faviconName.split(".").pop()?.toLowerCase();
+      favicon.type = extension === "svg" ? "image/svg+xml" : extension === "ico" ? "image/x-icon" : "image/png";
+    } else {
+      favicon.removeAttribute("type");
+      favicon.sizes = "32x32";
+    }
     if (!favicon.isConnected) document.head.append(favicon);
+
+    if (settings.faviconUrl) return;
 
     let active = true;
     const image = new window.Image();
@@ -113,7 +110,7 @@ export function PlatformBrandingProvider({
       active = false;
       image.onload = null;
     };
-  }, [pathname, settings.logoUrl]);
+  }, [pathname, settings.faviconUrl, settings.logoUrl]);
 
   const value = useMemo(() => ({ settings, updateSettings }), [settings, updateSettings]);
 

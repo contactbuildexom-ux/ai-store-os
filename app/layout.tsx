@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images,
     },
     twitter: { card: "summary_large_image", title, description, images },
-    icons: { icon: settings.logoUrl || "/icon.png" },
+    icons: { icon: settings.faviconUrl || settings.logoUrl || "/icon.png" },
     ...(googleVerification ? { verification: { google: googleVerification } } : {}),
   };
 }

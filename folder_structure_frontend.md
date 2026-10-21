@@ -5,7 +5,7 @@ Buildexom - AI-Powered E-commerce Store BuilderThis repository contains the sour
 │   ├── page.tsx                         <-- Main Buildexom Landing Page (All landing sections will be rendered here)
 │   ├── api/                             <-- Backend APIs (AI store creation, products, orders & plan limits)
 │   ├── stores/                          <-- Customer Public Storefronts ([slug])
-│   └── dashboard/                       <-- Store Owner Admin Dashboard (Abeera's workspace)
+│   └── dashboard/                       <-- Platform admin dashboard (management sections; no Orders page)
 │
 └── components/
     └── landing/                         <-- Modular sections of the Buildexom landing page:
@@ -22,3 +22,7 @@ Buildexom - AI-Powered E-commerce Store BuilderThis repository contains the sour
         ├── Faq.tsx                      <-- Frequently asked questions accordion[cite: 15, 16]
         ├── FinalCta.tsx                 <-- Final call-to-action banner[cite: 16]
         └── Footer.tsx                   <-- 5-column footer with links and social icons[cite: 19, 20]
+
+Platform-wide contact details and social links are managed in `/dashboard/settings` and
+loaded from `platform_settings` for public frontend components. Apply
+`supabase/migrations/16_platform_favicon_upload.sql` to enable PNG, ICO, and SVG favicon uploads.

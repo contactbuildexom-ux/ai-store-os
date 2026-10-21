@@ -2,7 +2,6 @@ import Link from "next/link";
 import { AlertCircle, ArrowRight, ArrowUpRight, Bot, CreditCard, Package, ShoppingBag, Store } from "lucide-react";
 import { DashboardGreeting } from "@/components/dashboard-greeting";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DashboardTableScroll } from "@/components/dashboard-table-scroll";
 import { AdminPlanUpgradeApprovals } from "@/components/admin-plan-upgrades";
 import { AdminStoreVerifications } from "@/components/admin-store-verifications";
 
@@ -55,7 +54,6 @@ export default async function DashboardPage() {
     { label: "Orders", value: totalOrders, note: "All-time orders", icon: ShoppingBag, accent: "bg-sky-50 text-sky-700" },
   ];
   const actions = [
-    { label: "Manage orders", href: "/dashboard/orders", icon: ShoppingBag },
     { label: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
     { label: "Platform analytics", href: "/dashboard/analytics", icon: ArrowUpRight },
   ];
@@ -91,20 +89,36 @@ export default async function DashboardPage() {
             <div><h3 className="text-sm font-semibold text-slate-800">Registered stores</h3><p className="mt-1 text-[11px] text-slate-500">Latest stores created on your platform</p></div>
             <Link href="/dashboard/stores" prefetch className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-800">View all <ArrowRight size={14} /></Link>
           </div>
-          <DashboardTableScroll>
-            <table className="w-full min-w-[510px] text-left">
-              <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500"><th className="px-5 py-3">Store name</th><th className="px-4 py-3">Slug</th><th className="px-4 py-3">Plan</th><th className="px-4 py-3">Payment status</th></tr></thead>
+          <div className="space-y-3 p-4 2xl:hidden">
+            {stores.map((store) => (
+              <article key={store.id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-md bg-blue-50 font-semibold text-blue-700">{store.name?.[0] ?? "S"}</span>
+                  <span className="break-words text-xs font-medium text-slate-800 [overflow-wrap:anywhere]">{store.name ?? "Unnamed store"}</span>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="min-w-0"><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Slug</dt><dd className="mt-0.5 break-words text-xs text-slate-700 [overflow-wrap:anywhere]">{store.slug ?? "—"}</dd></div>
+                  <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Plan</dt><dd className="mt-0.5 text-xs font-semibold uppercase text-blue-700">{store.plan ?? "free"}</dd></div>
+                  <div className="col-span-2"><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Payment status</dt><dd className="mt-0.5"><Status value={store.payment_status ?? "pending"} /></dd></div>
+                </dl>
+              </article>
+            ))}
+            {stores.length === 0 && <p className="py-8 text-center text-sm text-slate-500">No stores found.</p>}
+          </div>
+          <div className="hidden min-w-0 2xl:block">
+            <table className="w-full table-fixed text-left">
+              <thead><tr className="bg-slate-50 text-[10px] font-medium uppercase tracking-wide text-slate-500"><th className="px-3 py-3">Store name</th><th className="px-3 py-3">Slug</th><th className="px-3 py-3">Plan</th><th className="px-3 py-3">Payment status</th></tr></thead>
               <tbody className="divide-y divide-slate-100">
                 {stores.map((store) => (
                   <tr key={store.id} className="text-xs text-slate-600 hover:bg-slate-50/70">
-                    <td className="px-5 py-3.5"><div className="flex items-center gap-2.5"><span className="grid size-8 place-items-center rounded-md bg-blue-50 font-semibold text-blue-700">{store.name?.[0] ?? "S"}</span><span className="font-medium text-slate-800">{store.name ?? "Unnamed store"}</span></div></td>
-                    <td className="px-4 py-3.5">{store.slug ?? "—"}</td><td className="px-4 py-3.5 font-semibold uppercase text-blue-700">{store.plan ?? "free"}</td><td className="px-4 py-3.5"><Status value={store.payment_status ?? "pending"} /></td>
+                    <td className="break-words px-3 py-3.5 [overflow-wrap:anywhere]"><div className="flex min-w-0 items-center gap-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-md bg-blue-50 font-semibold text-blue-700">{store.name?.[0] ?? "S"}</span><span className="break-words font-medium text-slate-800 [overflow-wrap:anywhere]">{store.name ?? "Unnamed store"}</span></div></td>
+                    <td className="break-words px-3 py-3.5 [overflow-wrap:anywhere]">{store.slug ?? "—"}</td><td className="break-words px-3 py-3.5 font-semibold uppercase text-blue-700">{store.plan ?? "free"}</td><td className="break-words px-3 py-3.5"><Status value={store.payment_status ?? "pending"} /></td>
                   </tr>
                 ))}
                 {stores.length === 0 && <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-slate-500">No stores found.</td></tr>}
               </tbody>
             </table>
-          </DashboardTableScroll>
+          </div>
         </section>
         <aside className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

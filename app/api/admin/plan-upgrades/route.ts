@@ -19,19 +19,20 @@ export async function GET() {
         if (stores) {
           for (const s of stores) {
             const details = (s.payment_details as any)?.pending_upgrade || {};
+            const amount = Number(details.amount ?? 3500);
             pendingUpgrades.push({
-              store_id: s.id,
-              store_name: s.name,
-              store_slug: s.slug,
-              current_plan: s.plan,
-              requested_plan: details.target_plan || 'pro',
-              payment_method: details.payment_method || 'bank',
-              sender_name: details.sender_name || 'N/A',
-              sender_number: details.sender_number || 'N/A',
-              transaction_id: details.transaction_id || 'N/A',
-              screenshot_url: details.screenshot_url || '',
-              amount: details.amount || 3500,
-              submitted_at: details.submitted_at || s.created_at,
+              store_id: String(s.id ?? ""),
+              store_name: String(s.name ?? ""),
+              store_slug: String(s.slug ?? ""),
+              current_plan: String(s.plan ?? "basic"),
+              requested_plan: String(details.target_plan || 'pro'),
+              payment_method: String(details.payment_method || 'bank'),
+              sender_name: String(details.sender_name || 'N/A'),
+              sender_number: String(details.sender_number || 'N/A'),
+              transaction_id: String(details.transaction_id || 'N/A'),
+              screenshot_url: String(details.screenshot_url || ''),
+              amount: Number.isFinite(amount) ? amount : 3500,
+              submitted_at: String(details.submitted_at || s.created_at || ''),
             });
           }
         }

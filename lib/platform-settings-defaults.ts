@@ -1,0 +1,18 @@
+export const DEFAULT_PLATFORM_SETTINGS = {
+  title: "Buildexom AI",
+  description: "Commerce, in clear view.",
+  email: "support@yourdomain.com",
+  phone: "+923374257290",
+  whatsapp: "923374257290",
+  website: "https://www.buildexom.com",
+  instagram: "",
+  facebook: "",
+  logoName: "",
+  logoUrl: "",
+  faviconName: "",
+  faviconUrl: "",
+  seoTitle: "",
+  seoDescription: "",
+  defaultSocialImage: "",
+  keywords: "",
+};

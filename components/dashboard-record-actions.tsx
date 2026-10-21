@@ -13,7 +13,7 @@ export type DashboardEditField = {
 };
 
 type DashboardRecordActionsProps = {
-  resource: "stores" | "sellers" | "products" | "orders";
+  resource: "stores" | "sellers" | "products";
   recordId: string;
   values: Array<{ label: string; value: string }>;
   fields: DashboardEditField[];

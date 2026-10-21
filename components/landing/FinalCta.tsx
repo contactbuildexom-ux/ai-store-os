@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePlatformBranding } from "@/components/platform-branding";
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
 /* ============ CONFIG ============ */
 
-const WHATSAPP_FALLBACK = "923374257290";
 const WHATSAPP_MESSAGE =
   "Hi Buildexom team, I would like to know more about building my online store.";
 /* ================================== */
@@ -111,7 +111,7 @@ function StoreVisual() {
 
 export default function FinalCta() {
   const { settings } = usePlatformBranding();
-  const number = (settings.whatsapp || WHATSAPP_FALLBACK).replace(/\D/g, "");
+  const number = (settings.whatsapp || DEFAULT_PLATFORM_SETTINGS.whatsapp).replace(/\D/g, "");
   const whatsappHref = `https://wa.me/${number}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
   return (

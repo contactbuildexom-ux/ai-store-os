@@ -18,14 +18,14 @@ export async function GET() {
       if (!error && data) {
         for (const s of data) {
           pendingStores.push({
-            id: s.id,
-            name: s.name,
-            slug: s.slug,
-            plan: s.plan,
-            owner_email: s.owner_email,
-            whatsapp_number: s.whatsapp_number,
-            created_at: s.created_at,
-            verification_status: s.verification_status || 'pending',
+            id: String(s.id ?? ""),
+            name: String(s.name ?? ""),
+            slug: String(s.slug ?? ""),
+            plan: String(s.plan ?? "basic"),
+            owner_email: String(s.owner_email ?? ""),
+            whatsapp_number: String(s.whatsapp_number ?? ""),
+            created_at: String(s.created_at ?? ""),
+            verification_status: String(s.verification_status || 'pending'),
           });
         }
       }
@@ -41,14 +41,14 @@ export async function GET() {
       if (s.is_verified === false || s.verification_status === 'pending' || !s.verification_status) {
         if (!pendingStores.some((p) => p.id === s.id || p.slug === s.slug)) {
           pendingStores.push({
-            id: s.id,
-            name: s.name,
-            slug: s.slug,
-            plan: s.plan,
-            owner_email: s.owner_email,
-            whatsapp_number: s.whatsapp_number,
-            created_at: s.created_at,
-            verification_status: s.verification_status || 'pending',
+            id: String(s.id ?? ""),
+            name: String(s.name ?? ""),
+            slug: String(s.slug ?? ""),
+            plan: String(s.plan ?? "basic"),
+            owner_email: String(s.owner_email ?? ""),
+            whatsapp_number: String(s.whatsapp_number ?? ""),
+            created_at: String(s.created_at ?? ""),
+            verification_status: String(s.verification_status || 'pending'),
           });
         }
       }
