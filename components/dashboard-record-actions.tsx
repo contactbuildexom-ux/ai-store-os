@@ -100,8 +100,8 @@ export function DashboardRecordActions({ resource, recordId, values, fields, vie
       </div>
       {error && !dialog && <p role="alert" className="mt-1 max-w-56 text-[11px] text-red-600">{error}</p>}
       {dialog && (
-        <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/45 p-4" role="presentation">
-          <section role="dialog" aria-modal="true" aria-labelledby="record-dialog-title" className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-[70] grid place-items-center overflow-y-auto bg-slate-950/45 p-4" role="presentation">
+          <section role="dialog" aria-modal="true" aria-labelledby="record-dialog-title" className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 id="record-dialog-title" className="text-lg font-semibold text-slate-900">{dialog === "edit" ? "Edit record" : "Record details"}</h2>

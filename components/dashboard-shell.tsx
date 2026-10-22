@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, Bell, BookOpenText, Boxes, ChevronDown, ChevronRight, CreditCard, DatabaseBackup, LayoutDashboard, LogOut, Menu, Package, Search, Settings, Store, Users, X } from "lucide-react";
-import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
+import { Activity, Bell, BookOpenText, ChevronDown, ChevronRight, CreditCard, DatabaseBackup, LayoutDashboard, LogOut, Menu, Package, Search, Settings, Store, Users, X } from "lucide-react";
+import { usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const navigation = [
@@ -44,14 +45,13 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
     <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
       <div className="flex min-h-[88px] items-center gap-3 border-b border-white/[0.08] px-6 py-5">
         <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 flex-1 items-center justify-start rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-          <PlatformLogo
-            fallback={
-              <>
-                <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-blue-500 text-white"><Boxes size={19} /></span>
-                <span className="truncate text-[15px] font-semibold tracking-wide">{settings.title}</span>
-              </>
-            }
-            className="max-h-10 max-w-[190px] object-contain object-left"
+          <Image
+            src="/super-admin-logo.jpg"
+            alt="Buildexom AI powered store builder"
+            width={888}
+            height={277}
+            priority
+            className="h-auto w-[190px] max-w-full object-contain object-left"
           />
         </Link>
         <button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 shrink-0 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button>

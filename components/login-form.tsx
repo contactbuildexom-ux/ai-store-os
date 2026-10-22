@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Boxes, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
-import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { usePlatformBranding } from "@/components/platform-branding";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function LoginForm({ notice }: { notice?: string }) {
@@ -150,14 +151,13 @@ export function LoginForm({ notice }: { notice?: string }) {
           <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-[#101c45]/80 to-transparent" />
         </div>
         <Link href="/" aria-label={`${settings.title} home`} className="relative z-10 flex w-fit items-center justify-start rounded-md font-semibold tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-          <PlatformLogo
-            fallback={
-              <>
-                <span className="grid size-10 place-items-center rounded-xl bg-blue-500 text-white"><Boxes size={21} /></span>
-                <span className="text-lg">{settings.title}</span>
-              </>
-            }
-            className="max-h-10 max-w-[200px] object-contain object-left"
+          <Image
+            src="/super-admin-logo.jpg"
+            alt="Buildexom AI powered store builder"
+            width={888}
+            height={277}
+            priority
+            className="h-auto w-[260px] max-w-full object-contain object-left"
           />
         </Link>
         <div className="relative z-10 max-w-xl pb-8">
@@ -171,14 +171,13 @@ export function LoginForm({ notice }: { notice?: string }) {
       <main className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
         <div className="w-full max-w-[460px]">
           <Link href="/" aria-label={`${settings.title} home`} className="mb-8 flex w-fit items-center justify-start rounded-md font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 lg:hidden">
-            <PlatformLogo
-              fallback={
-                <>
-                  <span className="grid size-10 place-items-center rounded-xl bg-blue-100 text-blue-700"><Boxes size={21} /></span>
-                  <span>{settings.title}</span>
-                </>
-              }
-              className="max-h-10 max-w-[200px] object-contain object-left"
+            <Image
+              src="/super-admin-logo.jpg"
+              alt="Buildexom AI powered store builder"
+              width={888}
+              height={277}
+              priority
+              className="h-auto w-[220px] max-w-full object-contain object-left"
             />
           </Link>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_18px_55px_-28px_rgba(30,64,175,0.28)] sm:p-9">
