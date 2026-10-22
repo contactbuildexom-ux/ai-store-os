@@ -150,6 +150,70 @@ interface KnowledgeItem {
 }
 
 const KNOWLEDGE_BASE: KnowledgeItem[] = [
+  // --- HOW TO CREATE / MAKE / BUILD A STORE ON BUILDEXOM ---
+  {
+    patterns: [
+      /\b(how|kaise|kese|tarika|tareeqa)\b.*\b(make|create|build|start|launch|setup|open|bana|banaye|banaun|banegi|banega|shuru)\b/i,
+      /\b(make|create|build|start|launch|setup|open)\b.*\b(store|shop|dukan|website)\b/i,
+      /\b(store|shop|dukan|website)\b.*\b(kaise|kese|bana|banaye|banaun|shuru|banegi|banega)\b/i,
+      /\b(how\s*i\s*make\s*store|how\s*to\s*make\s*store|how\s*to\s*create\s*store|how\s*it\s*works|how\s*to\s*start|how\s*to\s*use)\b/i
+    ],
+    en: "Creating your online store on Buildexom takes only 30 seconds! Here is the exact step-by-step process:\n\n" +
+      "1. 🚀 **Click 'Get Started Free'**: Click the blue button at the top right of this page (or pick a design from the **Templates** section below).\n" +
+      "2. 💡 **Enter Your Store Idea**: Type your business idea (e.g., 'Luxury Perfumes', 'Women\'s Clothing', 'Footwear', 'Jewelry') or pick from 24+ ready niches.\n" +
+      "3. 🎨 **Select a Theme & Colors**: Choose your branding colors (Royal Gold, Velvet Rose, Emerald, Ocean Blue, etc.).\n" +
+      "4. 📱 **Connect Your WhatsApp**: Enter your WhatsApp number so customer orders and itemized invoices arrive directly on your phone.\n" +
+      "5. ✨ **Click 'Generate Store'**: Our AI instantly builds your complete store with realistic products, descriptions, prices, categories, and your free branded link (e.g. `yourname.buildexom.store`) with Cash on Delivery ready!\n\n" +
+      "You can launch 100% free right now with zero credit card required!",
+    ur: "Buildexom par apna online store banana bohat aasan hai aur sirf 30 seconds lagtay hain! Step-by-step tareeqa ye hai:\n\n" +
+      "1. 🚀 **'Get Started Free' par click karein**: Page ke upar right side par blue button dabayein (ya niche **Templates** section mein se koi design choose karein).\n" +
+      "2. 💡 **Apna Store Idea Likhein**: Apni dukan ka idea likhein (jaise *'Perfumes'*, *'Women Clothing'*, *'Shoes'*, *'Jewelry'*) ya ready-made list se select karein.\n" +
+      "3. 🎨 **Theme & Color Chunein**: Apni pasand ka design aur color palette select karein (Royal Gold, Emerald, Velvet Rose, waghera).\n" +
+      "4. 📱 **WhatsApp Number Dalein**: Apna WhatsApp number enter karein taake customer orders direct aap ke WhatsApp par itemized receipt ke sath aayein.\n" +
+      "5. ✨ **'Generate Store' Dabayein**: AI foran aap ka mukammal store products, photos, prices, aur Cash on Delivery ke sath tayyar kar dega!\n\n" +
+      "Har store ko apna free link milta hai (jaise `aapkaname.buildexom.store`). Abhi 100% free shuru karein!",
+    domain: "platform"
+  },
+  {
+    patterns: [
+      /\b(what\s*is\s*buildexom|buildexom\s*kya\s*hai|tell\s*me\s*about\s*buildexom|about\s*buildexom|buildexom\s*kya\s*karta\s*hai)\b/i
+    ],
+    en: "**Buildexom** is an AI-powered e-commerce store operating system that allows entrepreneurs and small businesses to launch full online stores in under 30 seconds with zero coding. It features automated WhatsApp checkout, built-in Cash on Delivery (COD), designer color palettes, and AI voice management.",
+    ur: "Buildexom Pakistan aur dunya ka pehla **AI-Powered Store OS** hai! Ye small businesses aur merchants ko bina kisi coding ke 30 seconds mein professional e-commerce store bana kar deta hai. Is mein automated WhatsApp checkout, Cash on Delivery, custom themes, aur voice assistant pehlay se shaamil hain!",
+    domain: "platform"
+  },
+  {
+    patterns: [
+      /\b(is\s*it\s*free|free\s*hai|free\s*me|muft|free\s*store|paise\s*lagte\s*hain)\b/i
+    ],
+    en: "Yes, absolutely! 🎉 Creating a store on Buildexom is **100% Free**. Our **Basic Plan (Free Forever)** includes up to 20 products, a personal branded subdomain, automated WhatsApp checkout, and a printable QR code with zero credit card required!",
+    ur: "Haan bilkul! 🎉 Buildexom par store banana **100% Free** hai. Hamaray **Basic Plan (Free Forever)** mein aap 20 products, personal subdomain link, WhatsApp checkout, aur QR code bilkul free use kar saktay hain bina kisi credit card ke!",
+    domain: "platform"
+  },
+  {
+    patterns: [
+      /\b(add\s*products?|product\s*kaise\s*add|upload\s*product|naya\s*product|item\s*kaise)\b/i
+    ],
+    en: "You can add products to your store in two easy ways:\n1. **From Dashboard**: Go to the 'Products' tab in your Merchant Dashboard and click '+ Add Product' to add title, image, price, and category.\n2. **Using AI Voice Assistant**: Tap the mic and speak: *'Add Black T-Shirt, price Rs. 1,500'* and Bexi AI will catalog it automatically!",
+    ur: "Store mein products add karnay ke 2 aasan tareeqay hain:\n1. **Dashboard se**: Apnay Merchant Dashboard ke 'Products' tab mein jayein aur '+ Add Product' par click kar ke photo, name aur price dalein.\n2. **AI Voice Assistant se**: Mic button dabayein aur bolein: *'Add Black T-Shirt, price Rs. 1,500'* aur product khud ba khud add ho jayega!",
+    domain: "platform"
+  },
+  {
+    patterns: [
+      /\b(delivery\s*kaise|how\s*delivery\s*works|shipping\s*process|courier|rider|tcs|leopard|trax|postex)\b/i
+    ],
+    en: "📦 **Delivery & Shipping Process**:\n1. Customer places an order on your storefront and the itemized slip arrives on your WhatsApp.\n2. You confirm the order with the customer.\n3. Dispatch the packaged parcel via any courier service (TCS, Leopard, Trax, PostEx) on Cash on Delivery.\n4. The courier collects the cash at the customer's doorstep and deposits it into your bank or mobile wallet!",
+    ur: "📦 **Delivery & Shipping Process**:\n1. Customer store se order karta hai aur details direct aap ke WhatsApp par aati hain.\n2. Aap customer se call ya WhatsApp par order confirm kartay hain.\n3. Parcel pack kar ke kisi bhi courier company (TCS, Leopard, Trax, PostEx, M&P) ke zariye Cash on Delivery (COD) par bhejte hain.\n4. Courier customer se cash receive kar ke aap ke bank account ya JazzCash/EasyPaisa mein transfer kar deta hai!",
+    domain: "platform"
+  },
+  {
+    patterns: [
+      /\b(how\s*i\s*get\s*paid|paisa\s*kaise|payment\s*kaise\s*milti|paise\s*kaise\s*milenge|money\s*receive|earnings)\b/i
+    ],
+    en: "💰 **How You Receive Payments**:\n1. **Cash on Delivery (COD)**: Your courier partner delivers the parcel, collects cash from the customer, and deposits the money directly into your bank or mobile wallet.\n2. **Advance Bank / Wallet Transfers**: Customers can transfer directly to your bank (Meezan, HBL, etc.) or JazzCash/EasyPaisa during checkout. 100% of the money goes straight to you with 0% middleman commission from Buildexom!",
+    ur: "💰 **Payment Receive Karne Ka Tareeqa**:\n1. **Cash on Delivery (COD)**: Jab courier parcel customer ko deliver karta hai to payment collect kar ke direct aap ke bank account ya JazzCash/EasyPaisa mein transfer karta hai.\n2. **Advance Bank Transfer**: Customer checkout ke waqt aap ke Meezan/HBL bank ya JazzCash par direct payment transfer karta hai aur receipt WhatsApp par bhejta hai. 100% payment aap ke paas direct aati hai, Buildexom koi commission nahi kaatta!",
+    domain: "platform"
+  },
   // --- PAKISTAN GENERAL KNOWLEDGE ---
   {
     patterns: [

@@ -186,13 +186,28 @@ function platformReply(question: string, conversationHistory: PlatformAssistantR
       : "Awesome! 🚀 Whenever you're ready, click **'Start Building Free'** above or choose a curated business niche from our dropdown. How else can I assist you?";
   }
 
-  // 6. HOW TO CREATE A STORE / SETUP / STARTING
-  if (/(how\s*to\s*(create|make|build|start|launch)\s*(a\s*)?store|store\s*kaise\s*banaye|kese\s*banaye|tarika|shuru\s*karein)/i.test(q)) {
-    return "Creating your store takes only 3 simple steps:\n\n" +
-      "1. 💡 **Enter Your Prompt**: Type your store idea (or select from 24+ global niches in our dropdown).\n" +
-      "2. 🎨 **Select a Theme**: Choose from 10+ designer palettes like Ocean Blue, Royal Gold, or Velvet Rose.\n" +
-      "3. 📱 **Connect WhatsApp**: Enter your WhatsApp number so customer orders arrive directly on your phone.\n\n" +
-      "Click **Generate Store** and your storefront will be live in 15 seconds!";
+  // 6. HOW TO CREATE A STORE / SETUP / STARTING (Handles "how i make store", "how to make a store", etc.)
+  if (
+    /\b(how|kaise|kese|tarika|tareeqa)\b.*\b(make|create|build|start|launch|setup|open|bana|banaye|banaun|banegi|banega|shuru)\b/i.test(q) ||
+    /\b(make|create|build|start|launch|setup|open)\b.*\b(store|shop|dukan|website)\b/i.test(q) ||
+    /\b(store|shop|dukan|website)\b.*\b(kaise|kese|bana|banaye|banaun|shuru|banegi|banega)\b/i.test(q) ||
+    /\b(how\s*i\s*make\s*store|how\s*to\s*make\s*store|how\s*to\s*create\s*store|how\s*it\s*works|how\s*to\s*start|how\s*to\s*use)\b/i.test(q)
+  ) {
+    return isRomanUrdu
+      ? "Buildexom par apna online store banana bohat aasan hai aur sirf 30 seconds lagtay hain! Step-by-step tareeqa ye hai:\n\n" +
+        "1. 🚀 **'Get Started Free' par click karein**: Page ke upar right side par blue button dabayein (ya niche **Templates** section mein se koi design choose karein).\n" +
+        "2. 💡 **Apna Store Idea Likhein**: Apni dukan ka idea likhein (jaise *'Perfumes'*, *'Women Clothing'*, *'Shoes'*, *'Jewelry'*) ya ready-made list se select karein.\n" +
+        "3. 🎨 **Theme & Color Chunein**: Apni pasand ka design aur color palette select karein (Royal Gold, Emerald, Velvet Rose, waghera).\n" +
+        "4. 📱 **WhatsApp Number Dalein**: Apna WhatsApp number enter karein taake customer orders direct aap ke WhatsApp par itemized receipt ke sath aayein.\n" +
+        "5. ✨ **'Generate Store' Dabayein**: AI foran aap ka mukammal store products, photos, prices, aur Cash on Delivery ke sath tayyar kar dega!\n\n" +
+        "Har store ko apna free link milta hai (jaise `aapkaname.buildexom.store`). Abhi 100% free shuru karein!"
+      : "Creating your online store on Buildexom takes only 30 seconds! Here is the exact step-by-step process:\n\n" +
+        "1. 🚀 **Click 'Get Started Free'**: Click the blue button at the top right of this page (or choose any design from the **Templates** section below).\n" +
+        "2. 💡 **Enter Your Store Idea**: Type your business idea (e.g., *'Luxury Perfumes'*, *'Men\'s Streetwear'*, *'Home Decor'*, *'Footwear'*) or pick from 24+ ready niches.\n" +
+        "3. 🎨 **Select a Theme & Colors**: Choose your branding colors (Royal Gold, Velvet Rose, Emerald, Ocean Blue, etc.).\n" +
+        "4. 📱 **Connect Your WhatsApp**: Enter your WhatsApp number so customer orders and itemized invoices arrive directly on your phone.\n" +
+        "5. ✨ **Click 'Generate Store'**: Our AI instantly builds your complete store with realistic products, descriptions, prices, categories, and your free branded link (e.g. `yourname.buildexom.store`) with Cash on Delivery ready!\n\n" +
+        "You can launch 100% free with no credit card required!";
   }
 
   // 7. PRICING & PLANS (Free vs Pro vs Advanced)
