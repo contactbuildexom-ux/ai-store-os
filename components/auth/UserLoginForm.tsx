@@ -294,12 +294,31 @@ export default function UserLoginForm() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-[#2c4a73]">
-              New to Buildexom?{" "}
-              <Link href={SIGNUP_HREF} className="font-bold text-[#1976d2] hover:underline">
-                Create a free account
-              </Link>
-            </p>
+            {(() => {
+              const templateParam = searchParams?.get("template") || "";
+              const nicheParam = searchParams?.get("niche") || "";
+              const themeParam = searchParams?.get("theme") || "";
+              const nameParam = searchParams?.get("name") || "";
+              const promptParam = searchParams?.get("prompt") || "";
+
+              const signupQuery = new URLSearchParams();
+              if (templateParam) signupQuery.set("template", templateParam);
+              if (nicheParam) signupQuery.set("niche", nicheParam);
+              if (themeParam) signupQuery.set("theme", themeParam);
+              if (nameParam) signupQuery.set("name", nameParam);
+              if (promptParam) signupQuery.set("prompt", promptParam);
+
+              const dynamicSignupHref = signupQuery.toString() ? `${SIGNUP_HREF}?${signupQuery.toString()}` : SIGNUP_HREF;
+
+              return (
+                <p className="mt-6 text-center text-sm text-[#2c4a73]">
+                  New to Buildexom?{" "}
+                  <Link href={dynamicSignupHref} className="font-bold text-[#1976d2] hover:underline">
+                    Create a free account
+                  </Link>
+                </p>
+              );
+            })()}
           </div>
 
           <p className="mt-6 text-center text-sm">

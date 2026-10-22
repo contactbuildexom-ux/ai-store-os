@@ -23,9 +23,9 @@ Platform Knowledge:
 - 500,000+ orders processed with 99.8% uptime.
 - Store setup takes under 30 seconds: users give a prompt/description, pick a theme, enter a WhatsApp number, and their store is generated with custom subdomain (e.g. storename.buildexom.store).
 - Plans:
-  1. Free Plan (Rs. 0/mo): 20 products, 2 categories, standard checkout, personal subdomain, store QR code.
-  2. Pro Plan (Rs. 2,999/mo): 75 products, 5 categories, direct WhatsApp ordering, custom theme colors, priority order management.
-  3. Advanced Plan (Rs. 5,999/mo): Unlimited products & categories, WhatsApp automation, priority support, full custom branding.
+  1. Basic / Free Starter (Rs. 0/mo): Up to 20 products, 0 categories, standard WhatsApp checkout, personal subdomain, store QR code.
+  2. Pro Merchant (PKR 2,499/mo): Up to 75 products, up to 5 categories, WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.
+  3. Advance VIP / Business (PKR 4,999/mo): Unlimited products & categories, WhatsApp ordering, order tracking, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.
 - Orders: Customer cart is neatly itemized and sent directly to the merchant's dedicated WhatsApp number with customer name, phone, city, postal code, and address.
 - Cash on Delivery (COD) and Advance Bank Transfer are built-in.
 - Merchant Dashboard: Manage product inventory, image uploads, category limits, and order lifecycle statuses: Pending (⏳), Ready to Dispatch (📦), Shipped / In Transit (🚚), Delivered (✅), Cancelled (✕).
@@ -178,9 +178,9 @@ function platformReply(question: string, conversationHistory: PlatformAssistantR
   // 7. PRICING & PLANS (Free vs Pro vs Advanced)
   if (/(price|pricing|plan|plans|cost|charges|fee|fees|kitne\s*paise|free\s*plan|pro\s*plan|advance\s*plan|subscription)/i.test(q)) {
     return "We offer 3 straightforward plans:\n\n" +
-      "• 🟢 **Free Plan (Rs. 0 / forever)**: Up to 20 products, 2 categories, standard checkout, custom subdomain, store QR code.\n" +
-      "• 🔵 **Pro Plan (Rs. 2,999 / month)**: Up to 75 products, 5 categories, direct WhatsApp ordering, custom theme colors, priority order management.\n" +
-      "• 🟣 **Advanced Plan (Rs. 5,999 / month)**: Unlimited products & categories, WhatsApp automation, custom branding, priority 24/7 support.\n\n" +
+      "• 🟢 **Basic / Free Starter (Rs. 0 / forever)**: Up to 20 products, 0 categories, standard checkout, personal subdomain, store QR code.\n" +
+      "• 🔵 **Pro Merchant (PKR 2,499 / month)**: Up to 75 products, up to 5 categories, direct WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.\n" +
+      "• 🟣 **Advance VIP / Business (PKR 4,999 / month)**: Unlimited products & categories, WhatsApp ordering, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.\n\n" +
       "You can start 100% free with no credit card required!";
   }
 

@@ -12,6 +12,7 @@ export interface StoreRecord {
   header_title?: string;
   description?: string;
   plan: 'free' | 'basic' | 'pro' | 'advanced';
+  selected_plan?: string;
   is_verified?: boolean;
   verification_status?: 'pending' | 'verified' | 'rejected';
   selected_theme: string;

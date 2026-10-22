@@ -449,7 +449,10 @@ export default function MerchantDashboardMaster() {
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name || 'Your store');
             setStoreSlug(storeData.slug || '');
-            const normPlan = normalizePlan(storeData.plan);
+            const rawPlan = normalizePlan(storeData.plan);
+            const paymentStatus = ((storeData as any)?.payment_status || '').toLowerCase();
+            const isPaidVerified = paymentStatus === 'verified' || paymentStatus === 'approved' || paymentStatus === 'active' || paymentStatus === 'paid';
+            const normPlan = (!isPaidVerified && rawPlan !== 'basic') ? 'basic' : rawPlan;
             setStorePlan(normPlan);
 
             const isVer = Boolean((storeData as any).is_verified === true || (storeData as any).verification_status === 'verified');
@@ -457,7 +460,7 @@ export default function MerchantDashboardMaster() {
             setVerificationStatus(isVer ? 'verified' : ((storeData as any).verification_status || 'pending'));
 
             // 3-day Free Trial Check & Lock Enforcement
-            const isPaid = (storeData as any).payment_status === 'active';
+            const isPaid = isPaidVerified;
             const isFreeOrBasic = normPlan === 'basic' || (normPlan as any) === 'free';
             const createdAtStr = (storeData as any).created_at || (storeData as any).createdAt;
             const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();

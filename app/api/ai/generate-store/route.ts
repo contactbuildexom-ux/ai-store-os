@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
-import { generateStoreFromPrompt, detectNiche } from "@/lib/ai/ai-generator";
+import { generateStoreFromPrompt, detectNiche, NICHE_IMAGES } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
 import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
@@ -162,44 +162,35 @@ function normalizeGeneratedStore(
   const slug = slugify(text(requestedName, 100) || text(source.slug, 100) || storeName);
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
 
-  const fallbackImagesByNiche: Record<string, string> = {
-    footwear: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-    home: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
-    perfume: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80",
-    clothing: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
-    skincare: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80",
-    jewelry: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
-    tech: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
-    food: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
-    gaming: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80",
-    wedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
-    nature: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80",
-    handbags: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
-    fitness: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
-    baby: "https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&w=800&q=80",
-    eyewear: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80",
-    stationery: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80",
-    makeup: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
-    haircare: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80",
-  };
-  const defaultNicheImg = fallbackImagesByNiche[niche] || fallbackImagesByNiche.clothing;
+  const nicheCatalog = (NICHE_IMAGES as Record<string, any>)[niche] || (NICHE_IMAGES as Record<string, any>).clothing;
+  const nicheImgs: string[] = nicheCatalog?.images || [
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80"
+  ];
 
   const rawCategories = Array.isArray(source.categories) ? source.categories : [];
   let categories = categoryLimit === 0 ? [] : [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, categoryLimit);
   if (categoryLimit > 0 && !categories.length) {
-    categories = ["Featured", "Best Sellers", "New Arrivals", "Trending"].slice(0, categoryLimit);
+    categories = (nicheCatalog?.categories || ["Featured", "Best Sellers", "New Arrivals", "Trending"]).slice(0, categoryLimit);
   }
 
   const rawProducts = Array.isArray(source.products) ? source.products : [];
   let products: GeneratedProduct[] = rawProducts
     .slice(0, productLimit)
-    .map((item: any) => ({
-      name: text(item.name, 120),
-      price: typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0 ? item.price : 2500,
-      description: text(item.description, 500) || `Premium ${text(item.name, 120)} with nationwide delivery.`,
-      category_name: text(item.category_name ?? item.category, 60) || "General",
-      image_url: text(item.image_url, 2048) || defaultNicheImg,
-    }));
+    .map((item: any, idx: number) => {
+      const img1 = nicheImgs[idx % nicheImgs.length];
+      const img2 = nicheImgs[(idx + 1) % nicheImgs.length];
+      const img3 = nicheImgs[(idx + 2) % nicheImgs.length];
+      const multiImg = `${img1},${img2},${img3}`;
+      return {
+        name: text(item.name, 120),
+        price: typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0 ? item.price : 2500,
+        description: text(item.description, 500) || `Premium ${text(item.name, 120)} with nationwide delivery.`,
+        category_name: text(item.category_name ?? item.category, 60) || (categories[idx % categories.length] || "General"),
+        image_url: text(item.image_url, 2048) || multiImg,
+      };
+    });
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
@@ -485,9 +476,12 @@ export async function POST(request: Request) {
     }
 
     const socialLinks = normalizeSocialLinks(input.social_links);
-    const generationPrompt = requestedStoreName
-      ? `Use this exact store name: ${requestedStoreName}\n\nStore request: ${prompt}`
-      : prompt;
+    const targetNiche = detectNiche(prompt, requestedNiche, requestedStoreName);
+    const generationPrompt = [
+      requestedStoreName ? `Use this exact store name: "${requestedStoreName}".` : "",
+      targetNiche ? `Store Niche: "${targetNiche}". The store must specialize STRICTLY in this niche. All product names, descriptions, categories, banner text, and footer text must be exclusively for "${targetNiche}". Do not generate products outside of this niche.` : "",
+      `Store request details: ${prompt}`
+    ].filter(Boolean).join("\n\n");
     const openAiKey = process.env.OPENAI_API_KEY;
     const geminiKey = process.env.GEMINI_API_KEY;
 
@@ -511,7 +505,7 @@ export async function POST(request: Request) {
       const planCategory: 'free' | 'pro' | 'advanced' = planValue === 'pro' ? 'pro' : (planValue === 'business' || planValue === 'advance' || planValue === 'advanced') ? 'advanced' : 'free';
       const fallback = await generateStoreFromPrompt({
         prompt,
-        niche: requestedNiche || undefined,
+        niche: requestedNiche || targetNiche || undefined,
         plan: planCategory,
         selectedTheme: themeKey || requestedTheme,
         customStoreName: requestedStoreName,
@@ -537,8 +531,10 @@ export async function POST(request: Request) {
       };
     }
 
-    const limits = planLimits(targetStore?.plan ?? selectedPlan ?? "basic");
-    const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName);
+    // For new stores, initial generation limits follow basic plan (0 categories, 20 products) until payment approval
+    const effectivePlanForCatalog = targetStore ? (targetStore.plan || "basic") : "basic";
+    const limits = planLimits(effectivePlanForCatalog);
+    const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName, targetNiche);
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
     let store = targetStore;
@@ -559,7 +555,10 @@ export async function POST(request: Request) {
         : requestedPlan === "pro" 
           ? "pro" 
           : "basic";
-      const planToStore = normalizedPlan;
+      const isPaidPlan = normalizedPlan === "pro" || normalizedPlan === "business";
+      // Active plan must be "basic" until payment is approved by superadmin
+      const planToStore = "basic";
+      const selectedPlanToStore = normalizedPlan;
 
       if (supabase) {
         // Supabase is configured: attempt robust insertion with automatic fallback
@@ -574,8 +573,8 @@ export async function POST(request: Request) {
             password_hash,
             whatsapp_number: requestedWhatsapp || null,
             plan: planToStore,
-            selected_plan: planToStore,
-            payment_status: "pending",
+            selected_plan: selectedPlanToStore,
+            payment_status: isPaidPlan ? "pending" : "active",
             is_verified: false,
             verification_status: "pending",
             primary_color: generated.theme_color,
