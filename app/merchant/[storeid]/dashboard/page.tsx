@@ -8,7 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Send, Lock, Plus, Mic } from 'lucide-react';
+import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Send, Lock, Plus, Mic, ShieldCheck } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
 type Product = { id: string; name: string; price: number | string; description?: string | null; image_url?: string | null; category_id?: string | null; created_at?: string; has_sizes?: boolean; sizes?: string[]; has_colors?: boolean; colors?: string[]; };
@@ -939,12 +939,12 @@ export default function MerchantDashboardMaster() {
                 <nav className="grid grid-cols-2 gap-1.5 p-3 text-xs sm:grid-cols-4 md:flex md:flex-1 md:flex-col md:space-y-1.5 md:p-4" aria-label="Merchant dashboard">
                     {[
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-                        { id: 'products', label: `Products · ${products.length}`, icon: Package },
-                        { id: 'orders', label: `Orders · ${orders.length}`, icon: ShoppingBag },
-                        { id: 'categories', label: planDetails.categoryLimit === 0 ? 'Categories · Locked' : `Categories · ${categories.length}`, icon: Tag },
-                        { id: 'branding', label: 'Storefront', icon: Eye },
-                        { id: 'payments', label: 'Payments', icon: Wallet },
-                        ...(canUseBexiAi ? [{ id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles }] : []),
+                        { id: 'products', label: isVerified ? `Products · ${products.length}` : 'Products · 🔒 Locked', icon: Package },
+                        { id: 'orders', label: isVerified ? `Orders · ${orders.length}` : 'Orders · 🔒 Locked', icon: ShoppingBag },
+                        { id: 'categories', label: !isVerified ? 'Categories · 🔒 Locked' : planDetails.categoryLimit === 0 ? 'Categories · Locked' : `Categories · ${categories.length}`, icon: Tag },
+                        { id: 'branding', label: isVerified ? 'Storefront' : 'Storefront · 🔒 Locked', icon: Eye },
+                        { id: 'payments', label: isVerified ? 'Payments' : 'Payments · 🔒 Locked', icon: Wallet },
+                        ...(canUseBexiAi ? [{ id: 'bexi-ai', label: isVerified ? `${storeName} Bexi AI` : `${storeName} Bexi AI · 🔒 Locked`, icon: Sparkles }] : []),
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -976,10 +976,16 @@ export default function MerchantDashboardMaster() {
                     )}
                     <div className="hidden flex-1 md:block" />
                     <div className="hidden rounded-xl border border-white/15 bg-white/5 p-3 md:block">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Store status</p>
-                        <p className="mt-2 flex items-center gap-2 text-xs font-semibold text-white">
-                            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Your store is live
-                        </p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Account status</p>
+                        {isVerified ? (
+                            <p className="mt-2 flex items-center gap-2 text-xs font-bold text-emerald-400">
+                                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Verified by Super Admin
+                            </p>
+                        ) : (
+                            <p className="mt-2 flex items-center gap-2 text-xs font-bold text-amber-300">
+                                <span className="size-2 rounded-full bg-amber-400 animate-pulse" /> Verification Pending
+                            </p>
+                        )}
                         <a className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-medium text-slate-200 hover:text-white" href={`/store/${storeSlug || paramId}`} target="_blank" rel="noreferrer">
                             Open storefront <ExternalLink size={12} />
                         </a>
@@ -996,12 +1002,12 @@ export default function MerchantDashboardMaster() {
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
                         {isVerified ? (
-                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                                <CheckCircle2 size={12} className="text-emerald-600" /> Verified Merchant
+                            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 text-white px-3 py-1 text-xs font-black shadow-xs">
+                                <CheckCircle2 size={14} className="text-white" /> Verified Merchant Account
                             </span>
                         ) : (
-                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300">
-                                <Clock size={12} className="text-amber-600 animate-pulse" /> Verification Pending
+                            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold text-amber-900 border-2 border-amber-300 shadow-2xs">
+                                <Clock size={13} className="text-amber-600 animate-pulse" /> Verification Pending Super Admin
                             </span>
                         )}
                     </div>
@@ -1041,49 +1047,84 @@ export default function MerchantDashboardMaster() {
 
                     {/* Super Admin Store Verification Status Banners */}
                     {isVerified ? (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-emerald-400 bg-emerald-50/90 p-4 shadow-sm text-slate-800 animate-in fade-in duration-300">
-                            <div className="flex items-center gap-3">
-                                <span className="grid size-10 place-items-center rounded-xl bg-emerald-600 text-white font-bold shrink-0 shadow-xs">
-                                    <CheckCircle2 size={22} />
-                                </span>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/70 p-5 sm:p-6 shadow-md text-slate-800 animate-in fade-in duration-300">
+                            <div className="flex items-center gap-4">
+                                <div className="grid size-12 sm:size-14 place-items-center rounded-2xl bg-emerald-600 text-white font-bold shrink-0 shadow-sm">
+                                    <CheckCircle2 size={28} />
+                                </div>
                                 <div>
-                                    <p className="text-sm font-black text-emerald-950 flex items-center gap-2">
-                                        Verified Merchant Account
-                                        <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-900">
-                                            Active & Approved
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                                            ✓ Verified Merchant
                                         </span>
-                                    </p>
-                                    <p className="text-xs text-emerald-800 mt-0.5 font-medium">
-                                        Your store <strong>{storeName}</strong> has been officially verified by Super Admin. Dashboard features and rights for your plan are fully unlocked.
+                                        <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-950">
+                                            {storePlan.toUpperCase()} Plan Rights Active
+                                        </span>
+                                    </div>
+                                    <h2 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                                        Account Officially Verified by Super Admin!
+                                    </h2>
+                                    <p className="text-xs text-emerald-900 mt-0.5 font-medium leading-relaxed">
+                                        Mubarak ho! Super Admin ne aapka store account officially verify kar diya hai. Aapke <strong>{storePlan.toUpperCase()}</strong> plan ke mutabiq saare dashboard rights aur features fully unlocked hain.
                                     </p>
                                 </div>
                             </div>
-                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-300 shadow-2xs">
-                                <CheckCircle2 size={14} className="text-emerald-600" /> Account Verified
+                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-emerald-800 border-2 border-emerald-300 shadow-2xs">
+                                <ShieldCheck size={16} className="text-emerald-600" /> All Rights Active
                             </span>
                         </div>
                     ) : (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-4 shadow-md text-slate-800 animate-in fade-in duration-300">
-                            <div className="flex items-center gap-3">
-                                <span className="grid size-10 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
-                                    <Lock size={20} />
-                                </span>
-                                <div>
-                                    <p className="text-sm font-black text-amber-950 flex items-center gap-2">
-                                        🔒 Store Verification Pending Approval
-                                        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
-                                            Under Review
-                                        </span>
-                                    </p>
-                                    <p className="text-xs text-amber-800 mt-0.5 font-medium">
-                                        Your store <strong>{storeName}</strong> has been submitted to Super Admin for verification. Product publishing, category additions, and store settings are temporarily locked until verified.
-                                    </p>
+                        <div className="rounded-3xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-white to-amber-50/70 p-5 sm:p-6 shadow-md animate-in fade-in duration-300">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-amber-200 pb-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="grid size-12 sm:size-14 place-items-center rounded-2xl bg-amber-500 text-white font-bold shrink-0 shadow-sm">
+                                        <Lock size={26} />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-950">
+                                                Pending Super Admin Approval
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-500">
+                                                Plan: {storePlan.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <h2 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                                            Merchant Dashboard Locked
+                                        </h2>
+                                    </div>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => resolveStoreAndData(paramId)}
+                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 transition active:scale-95"
+                                >
+                                    <RefreshCw size={13} /> Refresh Status
+                                </button>
                             </div>
-                            <div className="shrink-0 text-right">
-                                <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-amber-900 border border-amber-300 shadow-2xs">
-                                    <Clock size={14} className="text-amber-600 animate-pulse" /> Awaiting Super Admin
-                                </span>
+
+                            <div className="mt-4 space-y-3">
+                                <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                                    Aapka online store <strong>{storeName}</strong> ban chuka hai! Lekin jab tak Super Admin aapke account ko <strong>Verify</strong> nahi karega, tab tak merchant dashboard ke saare operations (products add/edit karna, store settings change karna, catalog manage karna) <strong>LOCKED</strong> rahenge.
+                                </p>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Selected Plan</p>
+                                        <p className="font-extrabold text-slate-900 mt-0.5">{storePlan.toUpperCase()}</p>
+                                    </div>
+                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Verification Status</p>
+                                        <p className="font-extrabold text-amber-700 mt-0.5 flex items-center gap-1">
+                                            <Clock size={12} className="animate-spin" /> Pending Approval
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Dashboard Rights</p>
+                                        <p className="font-extrabold text-red-600 mt-0.5 flex items-center gap-1">
+                                            <Lock size={12} /> Temporarily Locked
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1156,7 +1197,7 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                     <button 
                                         type="button" 
-                                        onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
+                                        onClick={() => { if (!isVerified) { setMessage('Store verification is pending Super Admin approval. Adding products is temporarily locked.'); setMessageError(true); return; } setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
                                         className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-xs font-bold shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl active:scale-95" 
                                         style={{ color: themeColor }}
                                     >
@@ -1315,6 +1356,41 @@ export default function MerchantDashboardMaster() {
                         </>
                     )}
 
+{/* When unverified, non-overview tabs are locked */}
+                    {!isVerified && activeTab !== 'overview' ? (
+                        <div className="rounded-3xl border-2 border-amber-300 bg-white p-8 sm:p-12 text-center shadow-md space-y-4 max-w-xl mx-auto my-6 animate-in zoom-in-95 duration-200">
+                            <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-600 border border-amber-300 shadow-sm animate-pulse">
+                                <Lock size={32} />
+                            </div>
+                            <span className="inline-block rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 text-[11px] font-black uppercase tracking-wider">
+                                Awaiting Super Admin Approval
+                            </span>
+                            <h3 className="text-xl font-black text-slate-900">
+                                {activeTab === 'branding' ? 'Storefront Settings' : activeTab === 'bexi-ai' ? 'Bexi AI Assistant' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Locked
+                            </h3>
+                            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto font-medium">
+                                Aapka store account filhal Super Admin verification pending hai. Super Admin ke verify karne tak dashboard ke saare operations aur feature editing <strong>LOCKED</strong> hain. Super Admin ke approve karte hi aapke <strong>{storePlan.toUpperCase()}</strong> plan ke mutabiq yeh feature foran unlock ho jayega.
+                            </p>
+                            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => resolveStoreAndData(paramId)}
+                                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    <RefreshCw size={14} /> Check Verification Status
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('overview')}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                >
+                                    Back to Overview
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
                     {/* THEME & BRANDING */}
                     {activeTab === 'branding' && (
                         <div className="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -2302,6 +2378,8 @@ export default function MerchantDashboardMaster() {
                                 </form>
                             </div>
                         </div>
+                    )}
+                        </>
                     )}
                 </div>
             </main>

@@ -283,18 +283,20 @@ main section button:hover > span[aria-hidden="true"] {
 }
 
 /* Continuous storefront announcement marquee (Smooth Left to Right) */
-@keyframes storefront-marquee {
-  0% { transform: translateX(-50%); }
-  100% { transform: translateX(0%); }
+@keyframes storefrontMarqueeLtr {
+  0% { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0%, 0, 0); }
 }
 
+.storefront-ticker-ltr,
 .animate-storefront-marquee {
-  display: flex;
-  width: max-content;
-  animation: storefront-marquee 24s linear infinite;
-  will-change: transform;
+  display: flex !important;
+  width: max-content !important;
+  animation: storefrontMarqueeLtr 20s linear infinite !important;
+  will-change: transform !important;
 }
 
+.storefront-ticker-ltr:hover,
 .animate-storefront-marquee:hover {
-  animation-play-state: paused;
+  animation-play-state: paused !important;
 }

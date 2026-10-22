@@ -7,14 +7,23 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
   if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) {
     return { allowed: true };
   }
-  // 1. Store ka plan fetch karein
+  // 1. Store ka plan aur verification status fetch karein
   const { data: store, error: storeError } = await supabase
     .from('stores')
-    .select('plan')
+    .select('plan, is_verified, verification_status')
     .eq('id', storeId)
     .single();
 
   if (storeError || !store) return { allowed: true };
+
+  // Store verification check: jab tak Super Admin verify na kare, actions locked rahenge
+  const isVerified = Boolean((store as any).is_verified === true || (store as any).verification_status === 'verified');
+  if (!isVerified) {
+    return {
+      allowed: false,
+      message: 'Store verification is pending Super Admin approval. Catalog and store operations are locked until approved.',
+    };
+  }
 
   const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
 
