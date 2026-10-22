@@ -158,7 +158,9 @@ function normalizeGeneratedStore(
 ): GeneratedStore {
   if (!value || typeof value !== "object") throw new Error("The AI returned invalid store data.");
   const source = value as Record<string, unknown>;
-  const storeName = text(requestedName, 100) || text(source.store_name, 100) || "My Store";
+  const rawReqName = text(requestedName, 100).replace(/^welcome\s+to\s+/i, "").trim();
+  const rawSrcName = text(source.store_name, 100).replace(/^welcome\s+to\s+/i, "").trim();
+  const storeName = rawReqName || rawSrcName || "My Store";
   const slug = slugify(text(requestedName, 100) || text(source.slug, 100) || storeName);
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
 
@@ -331,7 +333,8 @@ export async function POST(request: Request) {
     if (rawPrompt.length > 2000) {
       return NextResponse.json({ error: "Enter a store description of no more than 2,000 characters." }, { status: 400 });
     }
-    const requestedStoreName = text(input.name ?? input.store_name, 100);
+    const rawReqName = text(input.name ?? input.store_name, 100);
+    const requestedStoreName = rawReqName.replace(/^welcome\s+to\s+/i, "").trim();
     const prompt = rawPrompt.length >= 8
       ? rawPrompt
       : `A modern e-commerce storefront for ${requestedStoreName || "My Online Store"} featuring quality products and nationwide cash on delivery.`;
@@ -521,13 +524,7 @@ export async function POST(request: Request) {
         banner_text: fallback.header_title || fallback.tagline,
         footer_text: fallback.description,
         categories: fallback.categories,
-        products: fallback.products.map((p) => ({
-          name: p.name,
-          price: p.price,
-          description: p.description,
-          category_name: p.category,
-          image_url: p.image_url,
-        })),
+        products: [], // AI must NOT generate products; only slots are available
       };
     }
 

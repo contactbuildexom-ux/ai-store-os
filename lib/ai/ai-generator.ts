@@ -662,8 +662,16 @@ export function generateSlug(name: string): string {
  * Extract or generate a brandable store name
  */
 function extractStoreName(prompt: string, niche: string): string {
-  // Check if prompt specifically mentions a name (e.g., "called Noor", "name is Velvet Aura")
-  const namedMatch = prompt.match(/(?:called|named|name is|title is)\s+["']?([A-Za-z0-9\s]{2,25})["']?/i);
+  const p = prompt.trim();
+  const cleanPrompt = p.replace(/^welcome\s+to\s+/i, '').trim();
+
+  // If prompt is a brand name (e.g. "CasCharm", "Cas Charm", "Urban Velvet")
+  if (/^[A-Za-z0-9\s&'-]{2,35}$/.test(cleanPrompt) && !/\b(store|shop|selling|delivery|pakistan|online|cash|products|accessories|boutique)\b/i.test(cleanPrompt)) {
+    return cleanPrompt;
+  }
+
+  // Check if prompt specifically mentions a name (e.g. "called Noor", "name is CasCharm", "store CasCharm")
+  const namedMatch = cleanPrompt.match(/(?:called|named|name is|title is|store name is|brand is|store name:|brand:)\s+["']?([A-Za-z0-9&'-]+(?:\s+[A-Za-z0-9&'-]+){0,3})["']?(?:\s+(?:with|for|in|offering|specializing|featuring|selling|providing|and|pk|pakistan|\.|\,|$)|$)/i);
   if (namedMatch && namedMatch[1]?.trim()) {
     return namedMatch[1].trim();
   }
@@ -755,9 +763,10 @@ export async function generateStoreFromPrompt(options: {
 
   const theme = THEME_PRESETS[themeKey] || THEME_PRESETS.emerald;
 
-  const finalName = (customStoreName && customStoreName.trim().length > 1) 
+  const rawFinalName = (customStoreName && customStoreName.trim().length > 1) 
     ? customStoreName.trim() 
     : extractStoreName(prompt, niche);
+  const finalName = rawFinalName.replace(/^welcome\s+to\s+/i, '').trim() || rawFinalName;
 
   const slug = generateSlug(finalName);
 
@@ -787,30 +796,13 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Authentic categories and products matching curated niche catalogue (no repetitive dummy duplicates or fake edition suffixes)
+  // User explicitly requested: AI must NOT generate products into the store catalog at creation.
+  // The store is created with available product slots (e.g. 20 slots on Basic, 75 on Pro, 100 on Business),
+  // and the merchant adds their authentic products personally from the Merchant Dashboard.
   const categories: string[] = nicheData.categories || [];
-  const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
+  const products: GeneratedProduct[] = [];
 
-  const products: GeneratedProduct[] = nicheData.items.map((item, idx) => {
-    const img1 = nicheData.images[idx % nicheData.images.length];
-    const img2 = nicheData.images[(idx + 1) % nicheData.images.length];
-    const img3 = nicheData.images[(idx + 2) % nicheData.images.length];
-    const multiImages = `${img1},${img2},${img3}`;
-    const cat = categories[idx % categories.length] || 'Featured';
 
-    return {
-      id: `prod_${idx + 1}_${Math.random().toString(36).substring(2, 7)}`,
-      name: item.name,
-      description: item.desc,
-      price: item.price,
-      category: cat,
-      image_url: multiImages,
-      wholesale_cost: Math.round(item.price * 0.55),
-      min_accept_price: Math.round(item.price * 0.85),
-      stock_status: idx % 3 === 1 ? 'low_stock' : 'in_stock',
-      badge: badges[idx % badges.length]
-    };
-  });
 
   return {
     name: finalName,
