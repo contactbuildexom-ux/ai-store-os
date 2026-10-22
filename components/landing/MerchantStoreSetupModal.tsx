@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Loader2,
   Package,
+  Search,
 } from 'lucide-react';
 import { StoreQRCode } from '@/components/store-qr-code';
 import EmailVerifyField from '@/components/auth/EmailVerifyField';
@@ -435,6 +436,68 @@ export const STORE_IDEA_PRESETS = [
   }
 ];
 
+const PLAN_INFO: Record<string, {
+  name: string;
+  badge: string;
+  price: string;
+  billing: string;
+  tagline: string;
+  features: string[];
+}> = {
+  basic: {
+    name: 'BASIC (Free Starter)',
+    badge: 'Free',
+    price: 'Free',
+    billing: 'forever',
+    tagline: 'Perfect for starting your online store.',
+    features: [
+      'Up to 20 Products',
+      'WhatsApp Ordering',
+      'Basic Store Customization',
+      'Product Management',
+      'Product Images & Descriptions',
+      'Basic Dashboard',
+      'Basic Order Management',
+    ],
+  },
+  pro: {
+    name: 'PRO (Pro Merchant)',
+    badge: 'Advanced',
+    price: 'PKR 2,499',
+    billing: 'per month',
+    tagline: 'For growing stores that need more flexibility.',
+    features: [
+      'Up to 75 Products',
+      'Up to 5 Categories',
+      'Up to 15 Products per Category',
+      'Advanced Store Customization',
+      'WhatsApp Ordering',
+      'Order Tracking',
+      'Payment Integration',
+      'Coupons & Discounts',
+      'Basic Analytics',
+    ],
+  },
+  advanced: {
+    name: 'BUSINESS (Advance VIP)',
+    badge: 'Unlimited',
+    price: 'PKR 4,999',
+    billing: 'per month',
+    tagline: 'For businesses ready to scale their online store.',
+    features: [
+      'Unlimited Products',
+      'Unlimited Categories',
+      'Advanced Store Customization',
+      'WhatsApp Ordering',
+      'Order Tracking',
+      'Payment Integration',
+      'AI Customer Chatbot',
+      'Advanced Analytics',
+      'Priority Support',
+    ],
+  },
+};
+
 /* Shared light-theme classes */
 const INPUT =
   'w-full rounded-xl border border-[#bfdcff] bg-[#f3f8ff] px-3.5 py-2.5 text-sm text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20';
@@ -445,7 +508,7 @@ export default function MerchantStoreSetupModal({
   isOpen,
   onClose,
   initialPrompt = '',
-  initialPlan = 'pro',
+  initialPlan = 'basic',
   initialStoreName = '',
   initialTheme = 'royal-gold',
 }: MerchantStoreSetupModalProps) {
@@ -464,6 +527,7 @@ export default function MerchantStoreSetupModal({
   const [contactPhone, setContactPhone] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [ideaSearch, setIdeaSearch] = useState('');
+  const [planPopupTarget, setPlanPopupTarget] = useState<string | null>(null);
   useEffect(() => {
     const matched = THEME_OPTIONS.find(t => t.id === selectedTheme);
     if (matched) setCustomHexColor(matched.color);
@@ -797,8 +861,8 @@ export default function MerchantStoreSetupModal({
                 <div className="space-y-4">
                   {/* Store Name Input */}
                   <div>
-                    <label className={LABEL}>
-                      <Store size={14} className="text-[#1976d2]" /> Store Name
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#0b2545]">
+                      Store Name
                     </label>
                     <input
                       type="text"
@@ -816,8 +880,8 @@ export default function MerchantStoreSetupModal({
                   {/* Curated Global Business Ideas & Niches Dropdown with "Write Your Own" */}
                   <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-3.5 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-[#0b2545]">
-                        <Sparkles size={14} className="text-[#1976d2]" /> Select Business Idea / Niche:
+                      <label className="block text-xs font-bold text-[#0b2545]">
+                        Select Business Idea / Niche:
                       </label>
                       {selectedIdeaId && (
                         <button
@@ -833,13 +897,16 @@ export default function MerchantStoreSetupModal({
                       )}
                     </div>
 
-                    <input
-                      type="text"
-                      placeholder="🔍 Search ideas (e.g. Gaming, Perfume, Shoes, Coffee, Pret, Jewelry...)"
-                      value={ideaSearch}
-                      onChange={(e) => setIdeaSearch(e.target.value)}
-                      className="w-full rounded-xl border border-[#bfdcff] bg-white px-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20"
-                    />
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search ideas (e.g. Gaming, Perfume, Shoes, Coffee, Pret, Jewelry...)"
+                        value={ideaSearch}
+                        onChange={(e) => setIdeaSearch(e.target.value)}
+                        className="w-full rounded-xl border border-[#bfdcff] bg-white pl-9 pr-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20"
+                      />
+                    </div>
 
                     <select
                       value={selectedIdeaId}
@@ -848,7 +915,7 @@ export default function MerchantStoreSetupModal({
                     >
                       <option value="">Choose a Store Idea / Niche (or choose "Write your own")</option>
                       <option value="custom" className="font-bold text-[#1976d2]">
-                        ✍️ ✨ Write Your Own Custom Idea...
+                        Write your own idea...
                       </option>
                       {filteredPresets.map((grp) => (
                         <optgroup key={grp.category} label={`── ${grp.category} ──`}>
@@ -865,7 +932,7 @@ export default function MerchantStoreSetupModal({
                     {selectedIdeaId === 'custom' && (
                       <div className="space-y-1 pt-1">
                         <label className="block text-[11px] font-bold text-[#0b2545]">
-                          ✍️ Write Your Own Concept & Niche:
+                          Write your own store idea:
                         </label>
                         <textarea
                           rows={2}
@@ -884,8 +951,8 @@ export default function MerchantStoreSetupModal({
                   {/* Interactive Cursor Color Palette Picker */}
                   <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="flex items-center gap-1.5 text-xs font-bold text-[#0b2545]">
-                        <Palette size={15} className="text-[#1976d2]" /> Choose Store Theme & Color Palette:
+                      <label className="block text-xs font-bold text-[#0b2545]">
+                        Choose Store Theme & Color Palette:
                       </label>
                       
                       {/* Native OS/Browser Cursor Color Picker Badge */}
@@ -899,7 +966,7 @@ export default function MerchantStoreSetupModal({
                           style={{ backgroundColor: customHexColor }}
                         />
                         <span className="font-mono text-[11px] uppercase tracking-wide">{customHexColor}</span>
-                        <span className="text-[10px] text-[#1976d2] font-semibold">🎨 Cursor Picker</span>
+                        <span className="text-[10px] text-[#1976d2] font-semibold">Cursor Picker</span>
                         <input
                           id="cursor-color-input"
                           type="color"
@@ -971,8 +1038,7 @@ export default function MerchantStoreSetupModal({
                       }}
                       className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 active:scale-95"
                     >
-                      <span>Continue to Details & WhatsApp</span>
-                      <ArrowRight size={16} />
+                      Continue to Details & WhatsApp
                     </button>
                   </div>
                 </div>
@@ -981,22 +1047,37 @@ export default function MerchantStoreSetupModal({
               {/* STEP 2: PLANS, WHATSAPP & CREDENTIALS */}
               {currentStep === 2 && (
                 <div className="space-y-5">
-                  {/* Plan Selection (Free Starter pre-selected, others locked with unlock option) */}
+                  {/* Plan Selection (Free Starter default, clicking opens details popup) */}
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className={LABEL}>
                         <Zap size={14} className="text-[#1976d2]" /> Subscription Plan
                       </label>
-                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                        Free Starter Selected
-                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                       {[
-                        { id: 'basic', name: 'Free Starter', desc: 'Up to 20 Products • Free Forever', icon: Store, locked: false },
-                        { id: 'pro', name: 'Pro Merchant', desc: 'WhatsApp Orders & 75 Prods', icon: MessageCircle, locked: true },
-                        { id: 'advanced', name: 'Advance VIP', desc: 'Full AI & Priority Support', icon: Crown, locked: true },
+                        { 
+                          id: 'basic', 
+                          name: 'Free Starter', 
+                          price: 'Free',
+                          desc: 'Up to 20 Products • Free Forever', 
+                          icon: Store 
+                        },
+                        { 
+                          id: 'pro', 
+                          name: 'Pro Merchant', 
+                          price: 'PKR 2,499 / mo',
+                          desc: 'Up to 75 Prods • 5 Categories', 
+                          icon: MessageCircle 
+                        },
+                        { 
+                          id: 'advanced', 
+                          name: 'Advance VIP', 
+                          price: 'PKR 4,999 / mo',
+                          desc: 'Unlimited Prods • AI Chatbot', 
+                          icon: Crown 
+                        },
                       ].map((p) => {
                         const isSelected = plan === p.id;
                         const Icon = p.icon;
@@ -1004,24 +1085,29 @@ export default function MerchantStoreSetupModal({
                           <button
                             key={p.id}
                             type="button"
-                            onClick={() => setPlan(p.id as any)}
-                            className={`relative rounded-2xl border p-3 text-left transition-all ${
+                            onClick={() => {
+                              setPlanPopupTarget(p.id);
+                            }}
+                            className={`relative rounded-2xl border p-3 text-left transition-all cursor-pointer ${
                               isSelected
-                                ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25'
+                                ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25 shadow-xs'
                                 : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff]'
                             }`}
                           >
                             <div className="mb-1.5 flex items-center justify-between">
                               <Icon size={16} className={isSelected ? 'text-[#1976d2]' : 'text-[#5b7aa3]'} />
                               {isSelected ? (
-                                <CheckCircle2 size={14} className="text-[#1976d2]" />
-                              ) : p.locked ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-bold text-slate-600">
-                                  <Lock size={10} /> Locked
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
+                                  <CheckCircle2 size={11} /> Selected
                                 </span>
-                              ) : null}
+                              ) : (
+                                <span className="text-[10px] font-bold text-[#1976d2] hover:underline">
+                                  Details →
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs font-bold text-[#0b2545]">{p.name}</p>
+                            <p className="text-[10px] font-bold text-[#1976d2]">{p.price}</p>
                             <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{p.desc}</p>
                           </button>
                         );
@@ -1175,6 +1261,82 @@ export default function MerchantStoreSetupModal({
           )}
         </div>
       </div>
+
+      {/* Plan Details & Pricing Features Popup Modal */}
+      {planPopupTarget && PLAN_INFO[planPopupTarget] && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
+          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <span className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+                  {PLAN_INFO[planPopupTarget].badge}
+                </span>
+                <h3 className="mt-1.5 text-xl font-black text-slate-900">
+                  {PLAN_INFO[planPopupTarget].name}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {PLAN_INFO[planPopupTarget].tagline}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlanPopupTarget(null)}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Price Box */}
+            <div className="rounded-2xl border border-blue-100 bg-linear-to-r from-blue-50/70 to-indigo-50/50 p-4 flex items-baseline justify-between">
+              <div>
+                <span className="text-2xl font-black text-slate-900">{PLAN_INFO[planPopupTarget].price}</span>
+                <span className="ml-1.5 text-xs font-semibold text-slate-500">/{PLAN_INFO[planPopupTarget].billing}</span>
+              </div>
+              <span className="text-[11px] font-bold text-blue-700 bg-white px-2.5 py-1 rounded-full shadow-2xs border border-blue-200">
+                Full Plan Features
+              </span>
+            </div>
+
+            {/* Features List */}
+            <div className="space-y-2 py-1">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Included Features:</p>
+              <ul className="space-y-2 text-xs font-medium text-slate-700">
+                {PLAN_INFO[planPopupTarget].features.map((feature, idx) => (
+                  <li key={idx} className="flex items-center gap-2.5">
+                    <span className="grid size-4 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                      <CheckCircle2 size={12} />
+                    </span>
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setPlan(planPopupTarget as any);
+                  setPlanPopupTarget(null);
+                }}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer"
+              >
+                Select {PLAN_INFO[planPopupTarget].name.split(' ')[0]} Plan
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlanPopupTarget(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
