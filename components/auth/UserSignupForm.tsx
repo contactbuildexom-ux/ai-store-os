@@ -132,6 +132,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
           registration: "merchant",
           store_name: storeName.trim() || undefined,
           prompt: finalPrompt,
+          niche: selectedIdea?.id || undefined,
           plan,
           owner_email: cleanEmail,
           password,

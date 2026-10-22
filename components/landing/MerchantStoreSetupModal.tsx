@@ -642,6 +642,7 @@ export default function MerchantStoreSetupModal({
           store_name: effectiveName,
           name: effectiveName,
           prompt: effectivePrompt,
+          niche: selectedIdeaId || undefined,
           plan,
           theme: selectedTheme,
           selected_theme: selectedTheme,

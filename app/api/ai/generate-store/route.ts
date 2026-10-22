@@ -167,9 +167,16 @@ function normalizeGeneratedStore(
     categories = ["Featured", "Best Sellers", "New Arrivals", "Trending"].slice(0, categoryLimit);
   }
 
-  // As requested by user: Products are not AI generated at store creation.
-  // The merchant personally adds and manages products from their merchant dashboard.
-  const products: GeneratedProduct[] = [];
+  const rawProducts = Array.isArray(source.products) ? source.products : [];
+  let products: GeneratedProduct[] = rawProducts
+    .slice(0, productLimit)
+    .map((item: any) => ({
+      name: text(item.name, 120),
+      price: typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0 ? item.price : 2500,
+      description: text(item.description, 500) || `Premium ${text(item.name, 120)} with nationwide delivery.`,
+      category_name: text(item.category_name ?? item.category, 60) || "General",
+      image_url: text(item.image_url, 2048) || "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80",
+    }));
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
@@ -316,6 +323,7 @@ export async function POST(request: Request) {
     const requestedUserId = text(input.user_id, 100);
     const requestedStoreId = text(input.store_id, 100);
     const requestedTheme = text(input.theme ?? input.selected_theme ?? "", 40);
+    const requestedNiche = text(input.niche, 40).toLowerCase();
     const requestedPlan = text(input.plan, 20).toLowerCase();
     const isMerchantRegistration =
       input.registration === "merchant" ||
@@ -479,6 +487,7 @@ export async function POST(request: Request) {
       const planCategory: 'free' | 'pro' | 'advanced' = planValue === 'pro' ? 'pro' : (planValue === 'business' || planValue === 'advance' || planValue === 'advanced') ? 'advanced' : 'free';
       const fallback = await generateStoreFromPrompt({
         prompt,
+        niche: requestedNiche || undefined,
         plan: planCategory,
         selectedTheme: themeKey || requestedTheme,
         customStoreName: requestedStoreName,
@@ -688,6 +697,11 @@ export async function POST(request: Request) {
           social_links: socialLinks,
           updated_at: new Date().toISOString(),
         }], { onConflict: "store_id" });
+
+        await supabase.from("stores").update({
+          tagline: generated.banner_text,
+          description: generated.footer_text,
+        }).eq("id", resolvedStore.id);
 
         const storeSyncPayload: Record<string, any> = {
           primary_color: generated.theme_color,

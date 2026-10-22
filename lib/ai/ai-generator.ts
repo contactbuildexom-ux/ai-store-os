@@ -448,6 +448,7 @@ function extractStoreName(prompt: string, niche: string): string {
  */
 export async function generateStoreFromPrompt(options: {
   prompt: string;
+  niche?: string;
   plan?: 'free' | 'pro' | 'advanced';
   selectedTheme?: string;
   customStoreName?: string;
@@ -455,7 +456,7 @@ export async function generateStoreFromPrompt(options: {
   ownerEmail?: string;
   socialLinks?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
 }): Promise<GeneratedStore> {
-  const { prompt, plan = 'free', selectedTheme, customStoreName, whatsappNumber, ownerEmail, socialLinks = {} } = options;
+  const { prompt, niche: explicitNiche, plan = 'free', selectedTheme, customStoreName, whatsappNumber, ownerEmail, socialLinks = {} } = options;
 
   const normalizedSocialLinks: GeneratedStore['social_links'] = {};
   for (const key of ['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const) {
@@ -473,7 +474,29 @@ export async function generateStoreFromPrompt(options: {
     normalizedSocialLinks[key] = url.toString();
   }
 
-  const niche = detectNiche(prompt);
+  let niche = detectNiche(prompt);
+  if (explicitNiche) {
+    const rawN = explicitNiche.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (rawN.includes('perfume') || rawN.includes('oud') || rawN.includes('attar') || rawN.includes('fragrance')) {
+      niche = 'perfume';
+    } else if (rawN.includes('shoe') || rawN.includes('footwear') || rawN.includes('sneaker')) {
+      niche = 'footwear';
+    } else if (rawN.includes('gaming') || rawN.includes('gamer')) {
+      niche = 'gaming';
+    } else if (rawN.includes('skin') || rawN.includes('beauty')) {
+      niche = 'skincare';
+    } else if (rawN.includes('bag') || rawN.includes('clutch')) {
+      niche = 'handbags';
+    } else if (rawN.includes('jewel')) {
+      niche = 'jewelry';
+    } else if (rawN.includes('coffee') || rawN.includes('tea') || rawN.includes('food')) {
+      niche = 'food';
+    } else if (rawN.includes('plant') || rawN.includes('nature')) {
+      niche = 'nature';
+    } else if (rawN.includes('cloth') || rawN.includes('pret') || rawN.includes('apparel') || rawN.includes('fashion')) {
+      niche = 'clothing';
+    }
+  }
   const nicheData = NICHE_IMAGES[niche] || NICHE_IMAGES.clothing;
 
   // Determine theme

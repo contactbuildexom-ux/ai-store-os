@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       const { data: dbStore } = await fetchStoreByIdOrSlug<StoreRow>(
         supabase,
         requestedId,
-        "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at"
+        "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at, is_verified, verification_status"
       );
 
 
@@ -99,8 +99,8 @@ export async function GET(request: Request) {
             primary_color: resolvedColor,
             selected_theme: dbStore.selected_theme || "ocean-blue",
             created_at: dbStore.created_at || new Date().toISOString(),
-            is_verified: (dbStore as any).is_verified ?? ((dbStore as any).verification_status === "verified" ? true : false),
-            verification_status: (dbStore as any).verification_status || "pending",
+            is_verified: Boolean((dbStore as any).is_verified === true || (dbStore as any).verification_status === "verified"),
+            verification_status: (dbStore as any).verification_status || ((dbStore as any).is_verified ? "verified" : "pending"),
           } as StoreRow,
         });
       }

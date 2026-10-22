@@ -203,7 +203,7 @@ export default function MerchantDashboardMaster() {
     const [isTrialExpired, setIsTrialExpired] = useState(false);
     const [trialDaysLeft, setTrialDaysLeft] = useState(3);
     const [isTrialActive, setIsTrialActive] = useState(false);
-    const [isVerified, setIsVerified] = useState(true);
+    const [isVerified, setIsVerified] = useState(false);
     const [verificationStatus, setVerificationStatus] = useState('verified');
 
     // Bexi AI Command Center states
@@ -452,9 +452,9 @@ export default function MerchantDashboardMaster() {
             const normPlan = normalizePlan(storeData.plan);
             setStorePlan(normPlan);
 
-            const isVer = (storeData as any).is_verified !== false;
+            const isVer = Boolean((storeData as any).is_verified === true || (storeData as any).verification_status === 'verified');
             setIsVerified(isVer);
-            setVerificationStatus((storeData as any).verification_status || (isVer ? 'verified' : 'pending'));
+            setVerificationStatus(isVer ? 'verified' : ((storeData as any).verification_status || 'pending'));
 
             // 3-day Free Trial Check & Lock Enforcement
             const isPaid = (storeData as any).payment_status === 'active';
@@ -991,10 +991,19 @@ export default function MerchantDashboardMaster() {
             <main className="merchant-main min-w-0 flex-1 flex flex-col overflow-y-auto bg-slate-50" data-dashboard-main>
                 <div className="h-1 w-full shrink-0" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}88, transparent)` }} />
                 <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 shadow-xs backdrop-blur sm:px-8">
-                    <div>
+                    <div className="flex items-center gap-3">
                         <h1 className="mt-1 text-lg font-bold capitalize tracking-tight text-slate-900">
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
+                        {isVerified ? (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-300">
+                                <CheckCircle2 size={12} className="text-emerald-600" /> Verified Merchant
+                            </span>
+                        ) : (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-300">
+                                <Clock size={12} className="text-amber-600 animate-pulse" /> Verification Pending
+                            </span>
+                        )}
                     </div>
                     <a href={`/store/${storeSlug || paramId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-2xs">
                         <Eye size={14} /> <span className="hidden sm:inline">View storefront</span><ExternalLink size={12} />
@@ -1030,8 +1039,30 @@ export default function MerchantDashboardMaster() {
                         </div>
                     )}
 
-                    {/* Super Admin Store Verification Banner */}
-                    {!isVerified && (
+                    {/* Super Admin Store Verification Status Banners */}
+                    {isVerified ? (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-emerald-400 bg-emerald-50/90 p-4 shadow-sm text-slate-800 animate-in fade-in duration-300">
+                            <div className="flex items-center gap-3">
+                                <span className="grid size-10 place-items-center rounded-xl bg-emerald-600 text-white font-bold shrink-0 shadow-xs">
+                                    <CheckCircle2 size={22} />
+                                </span>
+                                <div>
+                                    <p className="text-sm font-black text-emerald-950 flex items-center gap-2">
+                                        Verified Merchant Account
+                                        <span className="rounded-full bg-emerald-200 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-900">
+                                            Active & Approved
+                                        </span>
+                                    </p>
+                                    <p className="text-xs text-emerald-800 mt-0.5 font-medium">
+                                        Your store <strong>{storeName}</strong> has been officially verified by Super Admin. Dashboard features and rights for your plan are fully unlocked.
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <CheckCircle2 size={14} className="text-emerald-600" /> Account Verified
+                            </span>
+                        </div>
+                    ) : (
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50/95 p-4 shadow-md text-slate-800 animate-in fade-in duration-300">
                             <div className="flex items-center gap-3">
                                 <span className="grid size-10 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
@@ -1635,7 +1666,7 @@ export default function MerchantDashboardMaster() {
                                                                 style={{ backgroundColor: idx === 0 ? themeColor : '#94a3b8' }}
                                                             />
                                                             <span className="max-w-[110px] truncate text-slate-700 font-medium">
-                                                                {idx === 0 ? '⭐ ' : ''}{file.name}
+                                                                {file.name}
                                                             </span>
                                                             <button
                                                                 type="button"
@@ -1657,7 +1688,7 @@ export default function MerchantDashboardMaster() {
 
 
 
-                                    <button type="submit" disabled={uploadingImage || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
+                                    <button type="submit" disabled={uploadingImage || !isVerified || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                                         {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
                                     </button>
                                     {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}

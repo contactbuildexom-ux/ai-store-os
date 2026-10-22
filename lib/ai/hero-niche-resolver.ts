@@ -173,7 +173,7 @@ export function detectStoreNiche(
   }
 
   // 5. Perfume & Fragrances
-  if (/\b(perfume|perfumes|fragrance|fragrances|attar|scent|scents|oud|cologne|eau de|itr|khus|amber)\b/i.test(combined)) {
+  if (/\b(perfume|perfumes|fragrance|fragrances|attar|attars|scent|scents|oud|cologne|parfum|edp|eau de|itr|khus|amber|musk)\b/i.test(combined) || (store as any)?.niche === 'perfume' || (store as any)?.selected_niche === 'perfume') {
     return 'perfume';
   }
 

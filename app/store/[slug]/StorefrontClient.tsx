@@ -308,37 +308,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
         return filteredProducts.slice(0, INITIAL_PRODUCT_LIMIT);
     }, [filteredProducts, showAllProducts, selectedCategory, searchQuery]);
 
-    const defaultFeatured: Product[] = [
-        {
-            id: 'feat-1',
-            name: 'Running Shoes',
-            price: 12000,
-            image_url: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80',
-            description: 'Ultra-cushioned performance running sneakers engineered for endurance, speed, and all-day comfort.'
-        },
-        {
-            id: 'feat-2',
-            name: 'Hoodie',
-            price: 8200,
-            image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=600&q=80',
-            description: 'Heavyweight premium French terry cotton fleece hoodie with double-lined hood and relaxed fit.'
-        },
-        {
-            id: 'feat-3',
-            name: 'Cap',
-            price: 2499,
-            image_url: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?auto=format&fit=crop&w=600&q=80',
-            description: 'Embroidered 6-panel structured cotton twill cap with adjustable brass buckle strap.'
-        },
-        {
-            id: 'feat-4',
-            name: 'Smart Watch',
-            price: 14000,
-            image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
-            description: 'Next-gen fitness tracker with AMOLED touch screen, heart rate sensor, and waterproof casing.'
-        }
-    ];
-
     const featuredItems = useMemo(() => {
         if (liveProducts.length >= 4) {
             return liveProducts.slice(0, 4);
@@ -678,22 +647,11 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             {/* Top Announcement Bar - Continuous smooth marquee ticker */}
             <div className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
                 <div className="overflow-hidden whitespace-nowrap">
-                    <div className="animate-storefront-marquee flex items-center gap-10 text-[11px] sm:text-xs font-bold tracking-wide">
-                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} className="animate-pulse" /> Fast Nationwide Delivery on All Orders</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-2"><Truck size={14} /> Express Doorstep Delivery</span>
+                    <div className="animate-storefront-marquee flex items-center gap-16 text-[11px] sm:text-xs font-bold tracking-wide">
+                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
                     </div>
                 </div>
             </div>
@@ -738,7 +696,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             { name: 'Shop', href: '#featured' },
                             ...(!isBasic && categories.filter((c) => c !== 'All').length > 0 ? [{ name: 'Categories', href: '#categories' }] : []),
                             { name: 'All Products', href: '#products' },
-                            { name: 'About', href: '#about' },
+                            ...(!isBasic ? [{ name: 'About', href: '#about' }] : []),
                         ].map((link) => (
                             <a
                                 key={link.name}
@@ -1393,7 +1351,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     )}
                 </section>
 
-                {/* 4. About Store Section (Clean & Focused) */}
+                {/* 4. About Store Section (Locked on Free/Basic plan) */}
+                {!isBasic && (
                 <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
                     <div className="w-full space-y-3">
                         <div>
@@ -1420,6 +1379,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </p>
                     </div>
                 </section>
+                )}
 
                 {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
                 {hasAiChatbot && (
