@@ -644,14 +644,25 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Continuous smooth marquee ticker */}
-            <div className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition" style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}>
-                <div className="overflow-hidden whitespace-nowrap">
-                    <div className="animate-storefront-marquee flex items-center gap-16 text-[11px] sm:text-xs font-bold tracking-wide">
-                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                        <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+            {/* Top Announcement Bar - Continuous smooth marquee ticker traveling Left to Right */}
+            <div 
+                className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition select-none" 
+                style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}
+            >
+                <div className="flex overflow-hidden">
+                    <div className="animate-storefront-marquee flex shrink-0 items-center">
+                        <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-bold tracking-wide">
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-bold tracking-wide" aria-hidden="true">
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -939,19 +950,15 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             </section>
 
             {/* Main Page Body - Edge-to-edge with zero bottom gap before footer */}
-            <main className="w-full px-2 sm:px-4 lg:px-6 pt-5 pb-0 space-y-5 sm:space-y-6">
+            <main className="w-full px-0 sm:px-2 lg:px-3 pt-4 pb-0 space-y-6 sm:space-y-8">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
                     <section 
                         id="featured" 
-                        className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
-                        style={{
-                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-                            borderColor: `${themeColor}28`,
-                        }}
+                        className="w-full space-y-3 sm:space-y-4"
                     >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between px-2 sm:px-3">
                             <div>
                                 <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
                                     Featured Products
@@ -968,22 +975,15 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </a>
                         </div>
 
-                        {/* 4-Column Grid on Desktop, 2-Column on Mobile - flush card boxes */}
-                        <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
+                        {/* Full-width flush product cards with zero side space */}
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full px-0">
                             {featuredItems.map((item) => (
                                 <article
                                     key={item.id}
                                     onClick={() => openProductModal(item)}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
-                                    style={{
-                                        backgroundColor: `${themeColor}10`,
-                                        borderColor: `${themeColor}24`,
-                                    }}
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer w-full"
                                 >
-                                    <div 
-                                        className="relative aspect-square w-full overflow-hidden"
-                                        style={{ backgroundColor: `${themeColor}0d` }}
-                                    >
+                                    <div className="relative aspect-square w-full overflow-hidden bg-slate-50">
                                         <img
                                             src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
                                             alt={item.name}
@@ -993,15 +993,14 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         />
                                     </div>
 
-                                    <div className="p-3 sm:p-3.5">
+                                    <div className="p-2.5 sm:p-3.5 bg-white">
                                         <h4 className="line-clamp-1 text-xs font-bold text-slate-900 sm:text-sm">
                                             {item.name}
                                         </h4>
-                                        <div className="mt-2.5 flex items-center justify-between">
+                                        <div className="mt-2 flex items-center justify-between">
                                             <span className="text-xs font-extrabold text-slate-900 sm:text-sm">
                                                 {money(item.price)}
                                             </span>
-                                            {/* Dynamic circular cart button matching theme */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -1009,7 +1008,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                                     addToCart(item, true);
                                                 }}
                                                 aria-label={`Add ${item.name} to cart`}
-                                                className="grid size-8 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95"
+                                                className="grid size-8 place-items-center rounded-full text-white shadow-xs transition hover:scale-110 active:scale-95"
                                                 style={{ backgroundColor: themeColor }}
                                             >
                                                 <ShoppingCart size={15} />
@@ -1024,7 +1023,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                 {/* 3. Category Icons Strip (Only available when not Basic plan and categories exist) */}
                 {!isBasic && categories.filter((c) => c !== 'All').length > 0 && (
-                <section id="categories" className="w-full pt-1 space-y-3">
+                <section id="categories" className="w-full px-2 sm:px-3 pt-1 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Explore Categories
@@ -1091,7 +1090,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 )}
 
                 {/* 2. Search & Category Bar */}
-                <section className="w-full space-y-3">
+                <section className="w-full px-2 sm:px-3 space-y-3">
                     {/* Search Input */}
                     <div className="relative">
                         <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1141,13 +1140,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
                 <section 
                     id="products" 
-                    className="w-full rounded-2xl sm:rounded-3xl border p-3.5 sm:p-5 lg:p-6 space-y-4 sm:space-y-5 shadow-xs transition"
-                    style={{
-                        background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-                        borderColor: `${themeColor}28`,
-                    }}
+                    className="w-full space-y-3 sm:space-y-4"
                 >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between px-2 sm:px-3">
                         <div>
                             <h3 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">
                                 {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
@@ -1171,7 +1166,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     {liveProducts.length === 0 ? (
                         <div className="w-full">
                             {/* Full-width flush product container boxes with zero side waste */}
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full px-0">
                                 {[1, 2, 3, 4, 5, 6].map((slot) => (
                                     <div
                                         key={`empty-slot-${slot}`}
@@ -1245,16 +1240,12 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full">
+                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full px-0">
                                 {displayedProducts.map((product) => (
                                 <article
                                     key={product.id}
                                     onClick={() => openProductModal(product)}
-                                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer w-full"
-                                    style={{
-                                        backgroundColor: `${themeColor}10`,
-                                        borderColor: `${themeColor}24`,
-                                    }}
+                                    className="group relative flex flex-col justify-between overflow-hidden rounded-xl sm:rounded-2xl border border-slate-200/90 bg-white shadow-xs transition duration-300 hover:-translate-y-1 hover:shadow-md cursor-pointer w-full"
                                 >
                                     {/* Image Container with Badges */}
                                     <div 
@@ -1286,7 +1277,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     </div>
 
                                     {/* Product Details & Price */}
-                                    <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4">
+                                    <div className="flex flex-1 flex-col justify-between p-2.5 sm:p-3.5 bg-white">
                                         <div>
                                             {(product as any).category && !isBasic && (
                                                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -1301,15 +1292,14 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
                                             <div>
-                                                <span className="block text-[10px] text-slate-400 font-medium">Price</span>
-                                                <span className="text-xs font-extrabold text-slate-900 sm:text-sm" style={{ color: themeColor }}>
+                                                <span className="block text-[9px] text-slate-400 font-medium">Price</span>
+                                                <span className="text-xs font-extrabold sm:text-sm" style={{ color: themeColor }}>
                                                     {money(product.price)}
                                                 </span>
                                             </div>
 
-                                            {/* Circular Floating Cart Button (Matching Screenshot with Trolley Icon) */}
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -1317,7 +1307,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                                     addToCart(product, true);
                                                 }}
                                                 aria-label={`Add ${product.name} to cart`}
-                                                className="grid size-9 place-items-center rounded-full text-white shadow-md transition hover:scale-110 active:scale-95 sm:size-10"
+                                                className="grid size-8 place-items-center rounded-full text-white shadow-xs transition hover:scale-110 active:scale-95 sm:size-9"
                                                 style={{ backgroundColor: themeColor }}
                                             >
                                                 <ShoppingCart size={16} />
@@ -1353,7 +1343,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                 {/* 4. About Store Section (Locked on Free/Basic plan) */}
                 {!isBasic && (
-                <section id="about" className="rounded-3xl border p-6 sm:p-8 shadow-xs" style={{ background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`, borderColor: `${themeColor}28` }}>
+                <section id="about" className="mx-2 sm:mx-3 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/90 backdrop-blur-xs p-5 sm:p-8 shadow-xs">
                     <div className="w-full space-y-3">
                         <div>
                             <span
@@ -1383,7 +1373,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                 {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
                 {hasAiChatbot && (
-                <div className="!mt-3 !mb-3 flex items-center justify-center sm:justify-end">
+                <div className="mx-2 sm:mx-3 !mt-3 !mb-4 flex items-center justify-center sm:justify-end">
                     <button
                         type="button"
                         onClick={() => setIsAiOpen(true)}
@@ -1426,6 +1416,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
                 )}
             </main>
+
+            {/* Visual Separation Divider before Footer */}
+            <div className="w-full border-t-2 mt-8 sm:mt-12" style={{ borderColor: `${themeColor}25` }} />
 
             {/* Store Footer Unified In Store Background */}
             <StoreFooter 
