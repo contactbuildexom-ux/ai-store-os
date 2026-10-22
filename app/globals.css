@@ -188,15 +188,6 @@ main:has(#hero) section[id] :has(+ h2) {
   text-transform: uppercase !important;
   margin-bottom: 0.85rem !important;
 }
-main:has(#hero) section[id] :has(+ h2)::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  flex: none;
-  border-radius: 9999px;
-  background: #1976d2;
-  animation: bx-pulse-dot 2s ease-in-out infinite;
-}
 main:has(#hero) section[id] :has(+ h2) > * {
   background: none !important;
   border: 0 !important;

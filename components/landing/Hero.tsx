@@ -277,11 +277,9 @@ export default function Hero() {
       <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:py-10">
         {/* ================= LEFT ================= */}
         <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-2.5 rounded-full border border-[#1976d2]/25 bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-[#1976d2] shadow-[0_6px_18px_-8px_rgba(25,118,210,0.5)]">
+          <span className="inline-flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-[0.14em] text-[#1976d2] shadow-[0_6px_18px_-8px_rgba(25,118,210,0.5)]">
             <span
               aria-hidden="true"
-              className="h-2 w-2 rounded-full bg-[#1976d2]"
-              style={{ animation: "bx-pulse-dot 2s ease-in-out infinite" }}
             />
             AI-Powered Store Builder
           </span>

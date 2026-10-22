@@ -58,7 +58,7 @@ const templates: TemplateItem[] = [
     categoryBadge: "Gaming & Audio",
     headline: "Mechanical Keyboards & Pro Esports Gear",
     heroImage: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=600&q=80",
-    secondaryImage: "https://images.unsplash.com/photo-1612287233207-68698c92a6c8?auto=format&fit=crop&w=600&q=80",
+    secondaryImage: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=600&q=80",
     priceTag: "Rs. 7,200",
     primaryColor: "#1e1b4b",
     text: "Gadgets, mechanical keyboards, audio, and devices.",
@@ -245,23 +245,20 @@ export default function Templates() {
                     {/* Right: High-Definition Product Imagery Collage */}
                     <div className="relative w-28 h-full shrink-0 flex items-center justify-end">
                       {/* Main Hero Product Photo */}
-                      <div className="relative h-24 w-20 overflow-hidden rounded-xl border border-white shadow-md transition-transform duration-300 group-hover:scale-105">
+                      <div className="relative h-24 w-20 overflow-hidden rounded-xl border border-white shadow-md transition-transform duration-300 group-hover:scale-105 bg-slate-100">
                         <img
                           src={t.heroImage}
                           alt={t.sampleName}
                           className="h-full w-full object-cover"
                           loading="lazy"
                         />
-                        <div className="absolute bottom-1 right-1 rounded-sm bg-black/75 px-1 py-0.5 text-[7px] font-bold text-white backdrop-blur-xs">
-                          {t.priceTag}
-                        </div>
                       </div>
 
                       {/* Floating Secondary Thumbnail */}
-                      <div className="absolute bottom-0 left-0 h-14 w-12 overflow-hidden rounded-lg border-2 border-white shadow-lg transition-transform duration-300 group-hover:-translate-y-1">
+                      <div className="absolute bottom-0 left-0 h-14 w-12 overflow-hidden rounded-lg border-2 border-white shadow-lg transition-transform duration-300 group-hover:-translate-y-1 bg-slate-100">
                         <img
                           src={t.secondaryImage}
-                          alt={t.sampleName}
+                          alt=""
                           className="h-full w-full object-cover"
                           loading="lazy"
                         />

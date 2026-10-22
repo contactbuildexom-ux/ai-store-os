@@ -1,16 +1,35 @@
-﻿"use client";
+﻿/* eslint-disable @next/next/no-img-element */
+"use client";
 
 import Link from "next/link";
 import { usePlatformBranding } from "@/components/platform-branding";
-import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
 /* ============ CONFIG ============ */
 
+const WHATSAPP_FALLBACK = "923374257290";
 const WHATSAPP_MESSAGE =
   "Hi Buildexom team, I would like to know more about building my online store.";
 /* ================================== */
 
 const perks = ["Free plan available", "No credit card needed", "Live in minutes"];
+
+const products = [
+  {
+    img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80",
+    title: "Sport Runner",
+    price: "Rs. 4,900",
+  },
+  {
+    img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=300&q=80",
+    title: "Soy Candle",
+    price: "Rs. 2,450",
+  },
+  {
+    img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=300&q=80",
+    title: "French EDP",
+    price: "Rs. 3,800",
+  },
+];
 
 function Tick() {
   return (
@@ -49,40 +68,43 @@ function WhatsAppIcon() {
   );
 }
 
-/* Right side: chhota store mockup */
+/* Right side: a real store picture inside a small browser frame (desktop only) */
 function StoreVisual() {
   return (
-    <div className="relative mx-auto hidden h-[280px] w-full max-w-[440px] lg:block" aria-hidden="true">
+    <div
+      className="relative mx-auto hidden h-[280px] w-full max-w-[440px] lg:block"
+      aria-hidden="true"
+    >
       {/* Main store card with browser chrome */}
-      <div className="absolute inset-x-2 bottom-0 top-3 rounded-2xl border border-white/80 bg-white p-3 shadow-2xl overflow-hidden">
+      <div className="absolute inset-x-2 bottom-0 top-3 overflow-hidden rounded-2xl border border-white/80 bg-white p-3 shadow-2xl">
         {/* Browser bar */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-rose-400" />
             <span className="h-2 w-2 rounded-full bg-amber-400" />
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
           </div>
-          <span className="rounded-full bg-slate-50 border border-slate-200 px-3 py-0.5 text-[9px] font-medium text-slate-500">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-0.5 text-[9px] font-medium text-slate-500">
             mystore.buildexom.store
           </span>
           <div className="w-8" />
         </div>
 
         {/* Announcement Ticker */}
-        <div className="mt-1 flex items-center justify-center rounded-md bg-[#1976d2] py-0.5 px-2 text-[8px] font-bold text-white tracking-wide">
+        <div className="mt-1 flex items-center justify-center rounded-md bg-[#1976d2] px-2 py-0.5 text-[8px] font-bold tracking-wide text-white">
           <span>⚡ Fast Nationwide Delivery on All Orders</span>
         </div>
 
         {/* Hero banner */}
-        <div className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/80 p-3 flex items-center justify-between gap-3">
+        <div className="relative mt-2 flex items-center justify-between gap-3 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/80 p-3">
           <div className="space-y-1">
             <span className="inline-block rounded-md bg-[#1976d2] px-1.5 py-0.5 text-[8px] font-bold text-white">
               Featured Collection
             </span>
-            <p className="text-xs font-black text-slate-900 leading-tight">
+            <p className="text-xs font-black leading-tight text-slate-900">
               Aura Lifestyle Atelier
             </p>
-            <p className="text-[9px] text-slate-600 line-clamp-1">
+            <p className="line-clamp-1 text-[9px] text-slate-600">
               Curated premium essentials delivered across Pakistan.
             </p>
             <div className="flex items-center gap-1.5 pt-1">
@@ -95,7 +117,7 @@ function StoreVisual() {
             </div>
           </div>
 
-          <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl shadow-md border border-white">
+          <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl border border-white shadow-md">
             <img
               src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80"
               alt="Store Preview"
@@ -106,18 +128,25 @@ function StoreVisual() {
 
         {/* Product tiles with real images */}
         <div className="mt-2.5 grid grid-cols-3 gap-2">
-          {[
-            { img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80", title: "Sport Runner", price: "Rs. 4,900" },
-            { img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=300&q=80", title: "Soy Candle", price: "Rs. 2,450" },
-            { img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=300&q=80", title: "French EDP", price: "Rs. 3,800" },
-          ].map((item, idx) => (
-            <div key={idx} className="rounded-lg bg-slate-50 p-1 border border-slate-100 flex flex-col justify-between">
+          {products.map((item) => (
+            <div
+              key={item.title}
+              className="flex flex-col justify-between rounded-lg border border-slate-100 bg-slate-50 p-1"
+            >
               <div className="relative h-12 w-full overflow-hidden rounded-md bg-slate-200">
-                <img src={item.img} alt={item.title} className="h-full w-full object-cover" />
+                <img
+                  src={item.img}
+                  alt={item.title}
+                  className="h-full w-full object-cover"
+                />
               </div>
               <div className="mt-1 flex items-center justify-between px-0.5">
-                <span className="text-[8px] font-bold text-slate-800 truncate">{item.title}</span>
-                <span className="text-[7px] font-extrabold text-[#1976d2]">{item.price}</span>
+                <span className="truncate text-[8px] font-bold text-slate-800">
+                  {item.title}
+                </span>
+                <span className="text-[7px] font-extrabold text-[#1976d2]">
+                  {item.price}
+                </span>
               </div>
             </div>
           ))}
@@ -151,7 +180,7 @@ function StoreVisual() {
 
 export default function FinalCta() {
   const { settings } = usePlatformBranding();
-  const number = (settings.whatsapp || DEFAULT_PLATFORM_SETTINGS.whatsapp).replace(/\D/g, "");
+  const number = (settings.whatsapp || WHATSAPP_FALLBACK).replace(/\D/g, "");
   const whatsappHref = `https://wa.me/${number}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
   return (
@@ -197,7 +226,10 @@ export default function FinalCta() {
 
             <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
               {perks.map((p) => (
-                <li key={p} className="flex items-center gap-2 text-sm font-medium text-blue-100">
+                <li
+                  key={p}
+                  className="flex items-center gap-2 text-sm font-medium text-blue-100"
+                >
                   <Tick />
                   {p}
                 </li>
@@ -205,7 +237,7 @@ export default function FinalCta() {
             </ul>
           </div>
 
-          {/* Right: visual (sirf laptop par) */}
+          {/* Right: visual (desktop only) */}
           <StoreVisual />
         </div>
       </div>

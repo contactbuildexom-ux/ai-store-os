@@ -9,6 +9,13 @@ import {
 
 /* ============ CONFIG ============ */
 const BEXI_ICON = "/bexi-ai.jpeg"; // Bexi AI icon (put the file inside /public). Use .jpeg here if your file is .jpeg
+
+// Zoom on the robot's head so the icon looks clear at small sizes
+const BEXI_ICON_STYLE: React.CSSProperties = {
+  objectPosition: "50% 30%",
+  transform: "scale(1.8)",
+  transformOrigin: "58% 34%",
+};
 /* ================================== */
 
 type Msg = { from: "bot" | "user"; text: string };
@@ -93,6 +100,7 @@ export default function FloatingChat() {
                 src={BEXI_ICON}
                 alt="Bexi AI"
                 className="h-full w-full object-cover"
+                style={BEXI_ICON_STYLE}
               />
             </span>
             <div className="flex-1">
@@ -198,21 +206,18 @@ export default function FloatingChat() {
           <span className="text-lg">✕</span>
         ) : (
           <>
-            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full">
+            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
               <img
                 src={BEXI_ICON}
                 alt=""
                 aria-hidden="true"
                 className="h-full w-full object-cover"
+                style={BEXI_ICON_STYLE}
               />
             </span>
             <span className="pointer-events-none absolute right-full mr-2 whitespace-nowrap rounded-full bg-[#0b2545] px-3 py-1 text-xs font-bold text-white opacity-0 shadow-md transition group-hover:opacity-100">
               Bexi AI
             </span>
-            <span
-              aria-hidden="true"
-              className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400"
-            />
           </>
         )}
       </button>
