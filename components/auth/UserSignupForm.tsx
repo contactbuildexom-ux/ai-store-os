@@ -118,6 +118,8 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
       finalPrompt = selectedIdea.prompt;
     } else if (prompt.trim().length >= 8) {
       finalPrompt = prompt.trim();
+    } else if (storeName.trim().length >= 2) {
+      finalPrompt = `A modern e-commerce storefront for ${storeName.trim()} specializing in quality products with nationwide delivery.`;
     } else {
       return setError("Please select a store niche from the dropdown or write your custom store idea.");
     }
@@ -131,8 +133,9 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
         body: JSON.stringify({
           registration: "merchant",
           store_name: storeName.trim() || undefined,
+          name: storeName.trim() || undefined,
           prompt: finalPrompt,
-          niche: selectedIdea?.id || undefined,
+          niche: selectedIdea?.id || (isCustomMode && customIdea.trim() ? customIdea.trim() : undefined),
           plan,
           owner_email: cleanEmail,
           password,

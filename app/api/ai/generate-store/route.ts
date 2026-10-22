@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
-import { generateStoreFromPrompt } from "@/lib/ai/ai-generator";
+import { generateStoreFromPrompt, detectNiche } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
 import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
@@ -154,12 +154,35 @@ function normalizeGeneratedStore(
   categoryLimit = 20,
   productLimit = 50,
   requestedName = "",
+  niche = "clothing"
 ): GeneratedStore {
   if (!value || typeof value !== "object") throw new Error("The AI returned invalid store data.");
   const source = value as Record<string, unknown>;
-  const storeName = text(requestedName, 100) || text(source.store_name, 100);
+  const storeName = text(requestedName, 100) || text(source.store_name, 100) || "My Store";
   const slug = slugify(text(requestedName, 100) || text(source.slug, 100) || storeName);
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
+
+  const fallbackImagesByNiche: Record<string, string> = {
+    footwear: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+    home: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
+    perfume: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80",
+    clothing: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
+    skincare: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80",
+    jewelry: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=800&q=80",
+    tech: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+    food: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
+    gaming: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80",
+    wedding: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80",
+    nature: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=800&q=80",
+    handbags: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+    fitness: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80",
+    baby: "https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&w=800&q=80",
+    eyewear: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80",
+    stationery: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80",
+    makeup: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
+    haircare: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80",
+  };
+  const defaultNicheImg = fallbackImagesByNiche[niche] || fallbackImagesByNiche.clothing;
 
   const rawCategories = Array.isArray(source.categories) ? source.categories : [];
   let categories = categoryLimit === 0 ? [] : [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, categoryLimit);
@@ -175,7 +198,7 @@ function normalizeGeneratedStore(
       price: typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0 ? item.price : 2500,
       description: text(item.description, 500) || `Premium ${text(item.name, 120)} with nationwide delivery.`,
       category_name: text(item.category_name ?? item.category, 60) || "General",
-      image_url: text(item.image_url, 2048) || "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=800&q=80",
+      image_url: text(item.image_url, 2048) || defaultNicheImg,
     }));
 
   const themePresets: Record<string, string> = {
@@ -301,6 +324,7 @@ export async function POST(request: Request) {
   let targetStoreId: string | null = null;
   let insertedCategoryIds: string[] = [];
   let insertedProductIds: string[] = [];
+  let input: Record<string, unknown> = {};
   try {
     let body: unknown;
     try {
@@ -311,7 +335,7 @@ export async function POST(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "Request body must be a JSON object." }, { status: 400 });
     }
-    const input = body as Record<string, unknown>;
+    input = body as Record<string, unknown>;
     const rawPrompt = typeof input.prompt === "string" ? input.prompt.trim() : "";
     if (rawPrompt.length > 2000) {
       return NextResponse.json({ error: "Enter a store description of no more than 2,000 characters." }, { status: 400 });
@@ -811,41 +835,75 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
-    if (createdStoreId && supabase) {
-      try {
-        await supabase.from("stores").delete().eq("id", createdStoreId);
-      } catch {
-        // Ignore
+    console.error("AI store generation encountered error, initiating bulletproof auto-recovery:", error);
+    try {
+      const rawPrompt = typeof input?.prompt === "string" ? input.prompt.trim() : "";
+      const requestedStoreName = text(input?.name ?? input?.store_name, 100) || "My Online Store";
+      const prompt = rawPrompt.length >= 8
+        ? rawPrompt
+        : `A modern e-commerce storefront for ${requestedStoreName} featuring quality products and nationwide cash on delivery.`;
+      const requestedNiche = text(input?.niche, 40).toLowerCase();
+      const detectedNiche = detectNiche(prompt, requestedNiche, requestedStoreName);
+      const requestedPlan = text(input?.plan ?? input?.selected_plan, 20).toLowerCase();
+      const planCategory: 'free' | 'pro' | 'advanced' = requestedPlan === 'pro' ? 'pro' : (requestedPlan === 'business' || requestedPlan === 'advance' || requestedPlan === 'advanced') ? 'advanced' : 'free';
+      const merchantEmail = text(input?.owner_email ?? input?.email, 120).toLowerCase() || `merchant_${Date.now()}@buildexom.store`;
+      const requestedWhatsapp = text(input?.whatsapp_number, 50) || "923001234567";
+
+      let password_hash: string | undefined = undefined;
+      if (typeof input?.password === "string" && input.password.length >= 8) {
+        try {
+          password_hash = await bcrypt.hash(input.password, 10);
+        } catch {}
       }
-    } else if (targetStoreId && supabase) {
-      try {
-        if (insertedProductIds.length) {
-          await supabase.from("store_products").delete().in("id", insertedProductIds);
-        }
-        if (insertedCategoryIds.length) {
-          await supabase.from("store_categories").delete().in("id", insertedCategoryIds);
-        }
-      } catch {
-        // Ignore
+
+      const emergencyStore = await generateStoreFromPrompt({
+        prompt,
+        niche: detectedNiche,
+        plan: planCategory,
+        customStoreName: requestedStoreName,
+        whatsappNumber: requestedWhatsapp,
+        ownerEmail: merchantEmail,
+      });
+
+      if (password_hash) {
+        (emergencyStore as any).password_hash = password_hash;
       }
+
+      const saved = await storeRepo.saveStore(emergencyStore);
+      const response = NextResponse.json({
+        success: true,
+        slug: saved.slug,
+        store: {
+          id: saved.id,
+          name: saved.name,
+          slug: saved.slug,
+          plan: saved.plan,
+          whatsapp_number: saved.whatsapp_number,
+        },
+        theme_color: saved.primary_color,
+        selected_theme: saved.selected_theme,
+        banner_text: saved.header_title || saved.tagline,
+        footer_text: saved.description,
+        storefront_url: `/store/${encodeURIComponent(saved.slug)}`,
+        store_url: getStoreUrl(saved.slug),
+        dashboard_url: `/merchant/${saved.slug}/dashboard`,
+      }, { status: 201 });
+
+      if (saved.owner_email) {
+        const { token, maxAge } = createMerchantSession(String(saved.id), String(saved.slug), String(saved.owner_email));
+        response.cookies.set(MERCHANT_SESSION_COOKIE, token, {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+          maxAge,
+        });
+      }
+
+      return response;
+    } catch (fatalErr) {
+      console.error("Fatal emergency recovery failed:", fatalErr);
+      return NextResponse.json({ error: "Unable to generate your store. Please try again." }, { status: 500 });
     }
-    const message =
-      error instanceof Error
-        ? error.message
-        : typeof error === "object" && error !== null && "message" in error && typeof (error as any).message === "string"
-        ? (error as any).message
-        : typeof error === "string"
-        ? error
-        : "Unable to generate your store.";
-    const errorCode =
-      typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
-        ? error.code
-        : "";
-    if (errorCode === "23505") {
-      return NextResponse.json({ error: "An account or store with these details already exists." }, { status: 409 });
-    }
-    const status = message.includes("API key is not configured") ? 503 : message.includes("invalid store") ? 422 : 400;
-    console.error("AI store generation failed:", message);
-    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -94,18 +94,18 @@ export function StoreFooter({
 
   return (
     <footer 
-      className="mt-0 border-t text-slate-900 transition-colors"
+      className="mt-6 sm:mt-10 border-t-2 text-slate-900 transition-colors shadow-[0_-8px_30px_-5px_rgba(0,0,0,0.03)]"
       style={{
-        background: `linear-gradient(135deg, ${resolvedThemeColor}18 0%, ${resolvedThemeColor}2e 50%, ${resolvedThemeColor}10 100%)`,
-        borderColor: `${resolvedThemeColor}30`,
+        backgroundColor: `${resolvedThemeColor}0c`,
+        borderColor: `${resolvedThemeColor}28`,
       }}
     >
-      {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid) */}
+      {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid Separator) */}
       <div 
         className="border-b px-4 py-3.5 sm:px-8"
         style={{
-          backgroundColor: `${resolvedThemeColor}10`,
-          borderColor: `${resolvedThemeColor}25`,
+          backgroundColor: `${resolvedThemeColor}14`,
+          borderColor: `${resolvedThemeColor}22`,
         }}
       >
         <div className="w-full grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4 lg:gap-6">
