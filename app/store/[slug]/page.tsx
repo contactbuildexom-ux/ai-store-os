@@ -33,23 +33,38 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
 
   if (store && supabase) {
     try {
-      const [settingsResult, builderProducts, legacyProducts, deliveryResult, paymentResult] = await Promise.all([
+      const [settingsResult, builderProducts, legacyProducts, deliveryResult, paymentResult, categoriesResult] = await Promise.all([
         supabase.from('store_settings').select('*').eq('store_id', store.id).maybeSingle(),
         supabase.from('store_products').select('id, name, description, price, image_url, category_id, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
         supabase.from('products').select('id, name, description, price, image_url, category, created_at').eq('store_id', store.id).order('created_at', { ascending: false }),
         supabase.from('delivery_settings').select('*').eq('store_id', store.id).maybeSingle(),
         supabase.from('store_payments').select('provider_name, account_title, account_number').eq('store_id', store.id).eq('is_active', true),
+        supabase.from('store_categories').select('id, name').eq('store_id', store.id),
       ]);
       settingsData = settingsResult.data ?? null;
       deliveryData = deliveryResult.data ?? null;
-      const productById = new Map<string, { id: string; name: string; description: string | null; price: number; image_url: string | null }>();
-      for (const product of [...(legacyProducts.data ?? []), ...(builderProducts.data ?? [])]) {
+      const isBasicStore = ['basic', 'free'].includes(String(store.plan || 'basic').toLowerCase());
+      const categoryMap = new Map((categoriesResult.data ?? []).map((c: any) => [String(c.id), String(c.name)]));
+
+      const productById = new Map<string, { id: string; name: string; description: string | null; price: number; image_url: string | null; category?: string | null }>();
+      for (const product of (legacyProducts.data ?? [])) {
         productById.set(String(product.id), {
           id: String(product.id),
           name: String(product.name ?? ""),
           description: typeof product.description === "string" ? product.description : null,
           price: Number(product.price ?? 0),
           image_url: typeof product.image_url === "string" ? product.image_url : null,
+          category: isBasicStore ? null : (typeof product.category === 'string' ? product.category : null),
+        });
+      }
+      for (const product of (builderProducts.data ?? [])) {
+        productById.set(String(product.id), {
+          id: String(product.id),
+          name: String(product.name ?? ""),
+          description: typeof product.description === "string" ? product.description : null,
+          price: Number(product.price ?? 0),
+          image_url: typeof product.image_url === "string" ? product.image_url : null,
+          category: isBasicStore ? null : (product.category_id && categoryMap.get(String(product.category_id)) ? categoryMap.get(String(product.category_id)) : null),
         });
       }
       products = [...productById.values()];

@@ -16,7 +16,7 @@ export interface GeneratedProduct {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category?: string;
   image_url: string;
   wholesale_cost?: number;
   min_accept_price?: number;
@@ -530,15 +530,16 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Generate minimum 30 products spread across categories (matching user request for minimum 30 products)
-  const categories = nicheData.categories;
-  const targetProductCount = 32;
+  // Plan-specific limits: Free Starter has 0 categories & max 20 products
+  const isFreePlan = plan === 'free';
+  const categories: string[] = isFreePlan ? [] : plan === 'pro' ? nicheData.categories.slice(0, 5) : nicheData.categories;
+  const targetProductCount = isFreePlan ? 20 : plan === 'pro' ? 32 : 36;
   const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
 
   const products: GeneratedProduct[] = [];
   for (let i = 0; i < targetProductCount; i++) {
     const baseItem = nicheData.items[i % nicheData.items.length];
-    const cat = categories[i % categories.length];
+    const cat = categories.length > 0 ? categories[i % categories.length] : '';
     const img1 = nicheData.images[i % nicheData.images.length];
     const img2 = nicheData.images[(i + 1) % nicheData.images.length];
     const img3 = nicheData.images[(i + 2) % nicheData.images.length];

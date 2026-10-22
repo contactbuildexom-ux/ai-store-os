@@ -162,8 +162,10 @@ function normalizeGeneratedStore(
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
 
   const rawCategories = Array.isArray(source.categories) ? source.categories : [];
-  let categories = [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, categoryLimit);
-  if (!categories.length) categories = ["Featured", "Best Sellers", "New Arrivals", "Trending"];
+  let categories = categoryLimit === 0 ? [] : [...new Set(rawCategories.map((item) => text(item, 60)).filter(Boolean))].slice(0, categoryLimit);
+  if (categoryLimit > 0 && !categories.length) {
+    categories = ["Featured", "Best Sellers", "New Arrivals", "Trending"].slice(0, categoryLimit);
+  }
 
   // As requested by user: Products are not AI generated at store creation.
   // The merchant personally adds and manages products from their merchant dashboard.
@@ -236,7 +238,7 @@ function planLimits(planValue: unknown) {
   const plan = text(planValue, 20).toLowerCase();
   if (plan === "pro") return { plan: "pro", categories: 5, products: 75 };
   if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 20, products: 100 };
-  return { plan: "basic", categories: 4, products: 20 };
+  return { plan: "basic", categories: 0, products: 20 };
 }
 
 function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
@@ -473,7 +475,7 @@ export async function POST(request: Request) {
       }
     }
     if (!rawGenerated) {
-      const planValue = text(targetStore?.plan, 20).toLowerCase();
+      const planValue = text(targetStore?.plan ?? selectedPlan, 20).toLowerCase();
       const planCategory: 'free' | 'pro' | 'advanced' = planValue === 'pro' ? 'pro' : (planValue === 'business' || planValue === 'advance' || planValue === 'advanced') ? 'advanced' : 'free';
       const fallback = await generateStoreFromPrompt({
         prompt,
@@ -502,7 +504,7 @@ export async function POST(request: Request) {
       };
     }
 
-    const limits = planLimits(targetStore?.plan ?? "basic");
+    const limits = planLimits(targetStore?.plan ?? selectedPlan ?? "basic");
     const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName);
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
@@ -623,10 +625,11 @@ export async function POST(request: Request) {
 
     if (supabase && createdStoreId) {
       try {
-        const { data: categories } = await supabase.from("store_categories")
-          .insert(generated.categories.map((name) => ({ store_id: resolvedStore.id, name })))
-          .select("id, name");
-        if (categories && categories.length > 0) {
+        if (generated.categories.length > 0) {
+          const { data: categories } = await supabase.from("store_categories")
+            .insert(generated.categories.map((name) => ({ store_id: resolvedStore.id, name })))
+            .select("id, name");
+          if (categories && categories.length > 0) {
           insertedCategoryIds = categories.map((category) => String(category.id));
           const categoryIds = new Map(categories.map((category) => [category.name.toLowerCase(), category.id]));
           const productRows = generated.products.map((product) => ({
@@ -652,6 +655,28 @@ export async function POST(request: Request) {
           } catch {
             // Legacy products table optional
           }
+        }
+        } else if (generated.products.length > 0) {
+          const productRows = generated.products.map((product) => ({
+            store_id: resolvedStore.id,
+            category_id: null,
+            name: product.name,
+            price: product.price,
+            description: product.description || null,
+            image_url: product.image_url || null,
+          }));
+          const { data: insertedProducts } = await supabase.from("store_products").insert(productRows).select("id");
+          if (insertedProducts) insertedProductIds = insertedProducts.map((p) => String(p.id));
+          try {
+            await supabase.from("products").insert(productRows.map((p) => ({
+              store_id: p.store_id,
+              name: p.name,
+              price: p.price,
+              description: p.description,
+              image_url: p.image_url,
+              category: null,
+            })));
+          } catch {}
         }
 
         await supabase.from("store_settings").upsert([{

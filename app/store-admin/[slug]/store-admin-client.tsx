@@ -120,7 +120,7 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
     setProductForm({
       name: p.name,
       price: String(p.price),
-      category: p.category,
+      category: p.category || '',
       description: p.description || '',
       image_url: p.image_url || ''
     });

@@ -234,8 +234,10 @@ export default function StorefrontClient({ store, settings, products, delivery, 
         return () => clearTimeout(timer);
     }, [toastMessage]);
 
-    // Derived catalog values: strictly exactly 4 working categories
+    // Derived catalog values: strictly real categories if on Pro/Business; none on Basic
     const categories = useMemo(() => {
+        if (isBasic) return ['All'];
+
         const catMap = new Map<string, number>();
         liveProducts.forEach((p) => {
             const cat = ((p as any).category || (p as any).category_name || '').trim();
@@ -249,54 +251,43 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             .sort((a, b) => b[1] - a[1])
             .map(([name]) => name);
 
-        if (activeCats.length < 4) {
-            const niche = detectStoreNiche(liveStore, liveProducts);
-            const fallbackNicheCats: Record<string, string[]> = {
-                nature: ['Indoor Plants', 'Succulents', 'Planters', 'Herbal Greens'],
-                handbags: ['Velvet Clutches', 'Shoulder Bags', 'Tote Bags', 'Evening Purses'],
-                jewelry: ['Rings', 'Necklaces', 'Earrings', 'Bracelets'],
-                perfume: ['Luxury Oud', 'Eau De Parfum', 'Attars & Oils', 'Gift Discovery Sets'],
-                footwear: ['Running Shoes', 'Sneakers', 'Casual Kicks', 'Athletic Trainers'],
-                clothing: ['Pret Wear', 'Festive Lawn', 'Luxury 3-Piece', 'Casual Tunics'],
-                skincare: ['Glow Serums', 'Face Cleansers', 'Moisturizers', 'Sun Protection'],
-                tech: ['Headphones', 'Smart Wearables', 'Wireless Audio', 'Accessories'],
-                food: ['Artisan Roast', 'Espresso Blends', 'Cold Brew Kits', 'Gourmet Treats'],
-                wedding: ['Bridal Accessories', 'Royal Boxes', 'Mehndi Keepsakes', 'Traditional Sets'],
-                general: ['Best Sellers', 'New Arrivals', 'Featured Items', 'Trending Now']
-            };
-            const suggestions = fallbackNicheCats[niche] || fallbackNicheCats.general;
-            for (const s of suggestions) {
-                if (activeCats.length >= 4) break;
-                if (!activeCats.some(c => c.toLowerCase() === s.toLowerCase())) {
-                    activeCats.push(s);
+        if (Array.isArray((liveStore as any).categories) && (liveStore as any).categories.length > 0) {
+            for (const catItem of (liveStore as any).categories) {
+                const cName = (typeof catItem === 'string' ? catItem : (catItem as any)?.name || '').trim();
+                if (cName && !activeCats.some(c => c.toLowerCase() === cName.toLowerCase())) {
+                    activeCats.push(cName);
                 }
             }
         }
 
-        activeCats = activeCats.slice(0, 4);
-        if (activeCats.length === 0) activeCats.push('Featured');
-        return ['All', ...activeCats];
-    }, [liveProducts, liveStore]);
+        if (isPro) {
+            activeCats = activeCats.slice(0, 5);
+        }
 
-    // Guarantees every product belongs to one of the 4 active categories so clicking any category shows products
+        if (activeCats.length === 0) {
+            return ['All'];
+        }
+
+        return ['All', ...activeCats];
+    }, [liveProducts, liveStore, isBasic, isPro]);
+
     const catalogProducts = useMemo(() => {
         let prods = liveProducts;
         if (productLimit !== null) {
             prods = prods.slice(0, productLimit);
         }
+        if (isBasic) {
+            return prods.map((p) => ({ ...p, category: undefined }));
+        }
         const activeCats = categories.filter((c) => c !== 'All');
         if (activeCats.length === 0) return prods;
 
-        return prods.map((p, idx) => {
+        return prods.map((p) => {
             const rawCat = ((p as any).category || (p as any).category_name || '').trim();
             const matched = activeCats.find((c) => c.toLowerCase() === rawCat.toLowerCase());
-            if (matched) {
-                return { ...p, category: matched };
-            }
-            const fallbackCat = activeCats[idx % activeCats.length];
-            return { ...p, category: fallbackCat };
+            return { ...p, category: matched || rawCat || null };
         });
-    }, [liveProducts, categories, productLimit]);
+    }, [liveProducts, categories, productLimit, isBasic]);
 
     const filteredProducts = useMemo(() => {
         return catalogProducts.filter((p) => {
@@ -745,7 +736,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         {[
                             { name: 'Home', href: '#hero' },
                             { name: 'Shop', href: '#featured' },
-                            { name: 'Categories', href: '#categories' },
+                            ...(!isBasic && categories.filter((c) => c !== 'All').length > 0 ? [{ name: 'Categories', href: '#categories' }] : []),
                             { name: 'All Products', href: '#products' },
                             { name: 'About', href: '#about' },
                         ].map((link) => (
@@ -837,6 +828,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </div>
 
                             {/* Categories Navigation */}
+                            {!isBasic && categories.filter((c) => c !== 'All').length > 0 && (
                             <div>
                                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Categories</label>
                                 <div className="mt-2 space-y-1">
@@ -860,6 +852,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     ))}
                                 </div>
                             </div>
+                            )}
 
                             {/* WhatsApp Direct Help */}
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
@@ -1071,7 +1064,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     </section>
                 )}
 
-                {/* 3. Category Icons Strip (Relatable to Store's Actual Niche) */}
+                {/* 3. Category Icons Strip (Only available when not Basic plan and categories exist) */}
+                {!isBasic && categories.filter((c) => c !== 'All').length > 0 && (
                 <section id="categories" className="w-full pt-1 space-y-3">
                     <div className="flex items-center justify-between pb-1">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -1136,6 +1130,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         })}
                     </div>
                 </section>
+                )}
 
                 {/* 2. Search & Category Bar */}
                 <section className="w-full space-y-3">
@@ -1160,8 +1155,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         )}
                     </div>
 
-                    {/* Category Scrollable Pills (Matching Screenshot) */}
-                    {categories.length > 1 && (
+                    {/* Category Scrollable Pills */}
+                    {!isBasic && categories.length > 1 && (
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
                         {categories.map((cat) => {
                             const isSelected = selectedCategory === cat;
@@ -1335,7 +1330,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     {/* Product Details & Price */}
                                     <div className="flex flex-1 flex-col justify-between p-3.5 sm:p-4">
                                         <div>
-                                            {(product as any).category && (
+                                            {(product as any).category && !isBasic && (
                                                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                                     {(product as any).category}
                                                 </p>
@@ -2038,7 +2033,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             {/* Product Info & Controls */}
                             <div className="flex flex-col justify-between space-y-4">
                                 <div className="space-y-2">
-                                    {(selectedProductForModal as any).category && (
+                                    {(selectedProductForModal as any).category && !isBasic && (
                                         <span
                                             className="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                                             style={{ backgroundColor: `${themeColor}15`, color: themeColor }}

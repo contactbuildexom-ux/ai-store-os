@@ -39,7 +39,7 @@ export interface ProductRecord {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category?: string;
   image_url: string;
   wholesale_cost?: number;
   min_accept_price?: number;
@@ -214,6 +214,7 @@ class StoreRepository {
 
     const prods: ProductRecord[] = generated.products.map(p => ({
       ...p,
+      category: p.category || '',
       id: randomUUID(),
       store_id: id,
       created_at: new Date().toISOString()

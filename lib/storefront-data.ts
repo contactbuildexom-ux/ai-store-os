@@ -108,11 +108,20 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
           secondary_color: String(store.secondary_color ?? "#0f172a"),
         };
 
+        const isBasicPlan = ["basic", "free"].includes(String(store.plan ?? store.plan_type ?? "free").toLowerCase());
+        const resolvedCategories = isBasicPlan 
+          ? [] 
+          : (categoryResult.data && categoryResult.data.length > 0)
+            ? categoryResult.data.map((category) => category.name)
+            : [...new Set(products.map((product) => product.category).filter((c) => c && c !== "General"))];
+
+        const cleanProducts = isBasicPlan ? products.map(p => ({ ...p, category: "" })) : products;
+
         return {
           success: true,
           store: publicStore,
-          categories: [...new Set(products.map((product) => product.category))],
-          products,
+          categories: resolvedCategories,
+          products: cleanProducts,
         };
       }
     } catch (e) {
@@ -139,6 +148,12 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
       || "#1d7555";
     const repoSelectedTheme = repoStore.theme?.id || repoStore.selected_theme || "emerald";
 
+    const isBasicRepo = ["basic", "free"].includes(String(repoStore.plan || "free").toLowerCase());
+    const resolvedRepoCategories = isBasicRepo 
+      ? [] 
+      : [...new Set(publicProducts.map((p) => p.category).filter((c) => c && c !== "General"))];
+    const cleanRepoProducts = isBasicRepo ? publicProducts.map(p => ({ ...p, category: "" })) : publicProducts;
+
     return {
       success: true,
       store: {
@@ -153,8 +168,8 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         primary_color: repoThemeColor,
         secondary_color: "#0f172a",
       },
-      categories: [...new Set(publicProducts.map((p) => p.category))],
-      products: publicProducts,
+      categories: resolvedRepoCategories,
+      products: cleanRepoProducts,
     };
   }
 

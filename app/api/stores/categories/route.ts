@@ -25,8 +25,26 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
-    let categories: any[] = [];
     const supabase = getSupabase();
+    let storePlan = 'basic';
+    if (supabase) {
+      try {
+        const { data: st } = await supabase.from('stores').select('plan').eq('id', storeId).maybeSingle();
+        if (st?.plan) storePlan = st.plan;
+      } catch {}
+    } else {
+      try {
+        const st = await storeRepo.getStore(storeId);
+        if (st?.plan) storePlan = st.plan;
+      } catch {}
+    }
+
+    const isBasic = ['basic', 'free'].includes(storePlan.toLowerCase());
+    if (isBasic) {
+      return NextResponse.json({ success: true, categories: [] });
+    }
+
+    let categories: any[] = [];
     if (supabase) {
       try {
         const { data, error } = await supabase

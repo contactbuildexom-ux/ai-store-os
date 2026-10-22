@@ -51,7 +51,7 @@ const PLAN_DETAILS: Record<Plan, {
         pricePKR: 0,
         priceLabel: 'Free',
         productLimit: 20, 
-        categoryLimit: null, 
+        categoryLimit: 0, 
         checkout: 'WhatsApp Ordering',
         badge: 'Free',
         features: [
@@ -61,8 +61,7 @@ const PLAN_DETAILS: Record<Plan, {
             'Product Management',
             'Product Images & Descriptions',
             'Basic Dashboard',
-            'Basic Order Management',
-            'Store Categories'
+            'Basic Order Management'
         ]
     },
     pro: { 
@@ -875,6 +874,11 @@ export default function MerchantDashboardMaster() {
             setMessageError(true);
             return;
         }
+        if (planDetails.categoryLimit === 0) {
+            setMessage('Categories are locked on the Free Starter plan. Upgrade to Pro Merchant or Advance VIP to add categories.');
+            setMessageError(true);
+            return;
+        }
         if (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit) {
             setMessage(`Your ${planDetails.title} plan limit of ${planDetails.categoryLimit} categories has been reached. Please upgrade to Business for unlimited categories.`);
             setMessageError(true);
@@ -937,7 +941,7 @@ export default function MerchantDashboardMaster() {
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
                         { id: 'products', label: `Products · ${products.length}`, icon: Package },
                         { id: 'orders', label: `Orders · ${orders.length}`, icon: ShoppingBag },
-                        { id: 'categories', label: `Categories · ${categories.length}`, icon: Tag },
+                        { id: 'categories', label: planDetails.categoryLimit === 0 ? 'Categories · Locked' : `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: 'Storefront', icon: Eye },
                         { id: 'payments', label: 'Payments', icon: Wallet },
                         ...(canUseBexiAi ? [{ id: 'bexi-ai', label: `${storeName} Bexi AI`, icon: Sparkles }] : []),
@@ -1135,7 +1139,7 @@ export default function MerchantDashboardMaster() {
                                     { title: 'Catalog products', value: products.length, note: planDetails.productLimit === null ? 'No cap on this plan' : `${Math.max(0, planDetails.productLimit - products.length)} remaining`, icon: Package, tone: 'bg-blue-50 text-blue-700' },
                                     { title: 'Orders received', value: orders.length, note: `${pendingOrders} awaiting action`, icon: ShoppingBag, tone: 'bg-violet-50 text-violet-700' },
                                     { title: 'Sales recorded', value: formatPKR(totalRevenue), note: 'Total from loaded orders', icon: Wallet, tone: 'bg-emerald-50 text-emerald-700' },
-                                    { title: 'Categories', value: categories.length, note: planDetails.categoryLimit === null ? 'No cap on this plan' : `${Math.max(0, planDetails.categoryLimit - categories.length)} remaining`, icon: Tag, tone: 'bg-amber-50 text-amber-700' },
+                                    { title: 'Categories', value: planDetails.categoryLimit === 0 ? 'Locked' : categories.length, note: planDetails.categoryLimit === 0 ? 'Available on Pro & VIP' : planDetails.categoryLimit === null ? 'No cap on this plan' : `${Math.max(0, planDetails.categoryLimit - categories.length)} remaining`, icon: Tag, tone: planDetails.categoryLimit === 0 ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-700' },
                                 ].map(({ title, value, note, icon: Icon, tone }) => (
                                     <article key={title} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                                         <div className="flex items-start justify-between"><p className="text-xs font-medium text-slate-500">{title}</p><span className={`grid size-9 place-items-center rounded-lg ${tone}`}><Icon size={17} /></span></div>
@@ -1176,7 +1180,7 @@ export default function MerchantDashboardMaster() {
                                         <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p><h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{planDetails.title} plan</h3></div><span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><Sparkles size={17} /></span></div>
                                         <div className="mt-4 space-y-3">
                                             <div><div className="mb-1.5 flex justify-between text-[10px]"><span className="text-slate-500">Products</span><span className="font-semibold text-slate-700">{products.length} / {planDetails.productLimit ?? '∞'}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full transition-all" style={{ backgroundColor: themeColor, width: `${planDetails.productLimit ? Math.min(100, products.length / planDetails.productLimit * 100) : products.length ? 100 : 0}%` }} /></div></div>
-                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]"><span className="text-slate-500">Categories</span><span className="font-semibold text-slate-700">{categories.length} / {planDetails.categoryLimit ?? '∞'}</span></div>
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]"><span className="text-slate-500">Categories</span><span className="font-semibold text-slate-700">{planDetails.categoryLimit === 0 ? 'Locked on Free (Upgrade to Pro)' : `${categories.length} / ${planDetails.categoryLimit ?? '∞'}`}</span></div>
                                             <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Checkout</span><span className="text-right font-medium text-slate-700">{planDetails.checkout}</span></div>
                                             {planDetails.perCategoryLimit && <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Products per category</span><span className="font-medium text-slate-700">Up to {planDetails.perCategoryLimit}</span></div>}
                                         </div>
@@ -1451,11 +1455,52 @@ export default function MerchantDashboardMaster() {
                     {/* CATEGORIES */}
                     {activeTab === 'categories' && (
                         <div className="max-w-2xl space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog organization</p><h3 className="mt-1 text-base font-semibold text-slate-900">Product categories</h3><p className="mt-1 text-xs text-slate-500">{planDetails.categoryLimit === null ? 'Your Business plan has no category cap configured.' : `${categories.length} of ${planDetails.categoryLimit} categories used on your ${planDetails.title} plan.`}</p></div>
-                            <form onSubmit={handleAddCategory} className="flex gap-2">
-                                <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" required disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="min-w-0 flex-1 rounded-lg border border-slate-200 p-2.5 text-xs disabled:bg-slate-100" />
-                                <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>Add category</button>
-                            </form>
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog organization</p>
+                                    <h3 className="mt-1 text-base font-semibold text-slate-900">Product categories</h3>
+                                    <p className="mt-1 text-xs text-slate-500">
+                                        {planDetails.categoryLimit === 0 
+                                            ? 'Categories are locked on the Free Starter plan. Upgrade to Pro Merchant or Advance VIP to add and organize categories.'
+                                            : planDetails.categoryLimit === null 
+                                                ? 'Your Business plan has no category cap configured.' 
+                                                : `${categories.length} of ${planDetails.categoryLimit} categories used on your ${planDetails.title} plan.`}
+                                    </p>
+                                </div>
+                                {planDetails.categoryLimit === 0 && (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 border border-amber-200">
+                                        <Lock size={12} /> Locked on Free
+                                    </span>
+                                )}
+                            </div>
+
+                            {planDetails.categoryLimit === 0 ? (
+                                <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-5 text-center">
+                                    <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-100 text-amber-700 mb-3 shadow-xs">
+                                        <Lock size={22} />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-900">Categories are a Pro & VIP Feature</h4>
+                                    <p className="mt-1 text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                                        On the Free Starter plan, all your products are displayed directly in your storefront collection. Upgrade to <strong className="text-slate-800">Pro Merchant</strong> to unlock up to 5 categories, or <strong className="text-slate-800">Advance VIP</strong> for unlimited categories.
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveTab('subscription')}
+                                            className="rounded-lg px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-95"
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            Upgrade Plan to Unlock
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <form onSubmit={handleAddCategory} className="flex gap-2">
+                                    <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" required disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="min-w-0 flex-1 rounded-lg border border-slate-200 p-2.5 text-xs disabled:bg-slate-100" />
+                                    <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>Add category</button>
+                                </form>
+                            )}
+
                             {categories.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{categories.map((category) => <div key={category.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5"><span className="flex items-center gap-2 text-xs font-medium text-slate-700"><Tag size={14} className="text-slate-400" />{category.name}</span><span className="text-[10px] text-slate-400">{products.filter((product) => product.category_id === category.id).length} products</span></div>)}</div>}
                         </div>
                     )}
@@ -1479,20 +1524,33 @@ export default function MerchantDashboardMaster() {
                                     <div>
                                         <div className="flex items-center justify-between mb-1">
                                             <label className="block text-[11px] font-semibold text-slate-700">Category</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setIsAddingNewCategory(!isAddingNewCategory);
-                                                    if (!isAddingNewCategory) {
-                                                        setProdCategory('');
-                                                    }
-                                                }}
-                                                className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 underline"
-                                            >
-                                                {isAddingNewCategory ? '← Choose existing category' : '+ Type new category'}
-                                            </button>
+                                            {planDetails.categoryLimit === 0 ? (
+                                                <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700">
+                                                    <Lock size={10} /> Locked on Free (Pro/VIP feature)
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsAddingNewCategory(!isAddingNewCategory);
+                                                        if (!isAddingNewCategory) {
+                                                            setProdCategory('');
+                                                        }
+                                                    }}
+                                                    className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800 underline"
+                                                >
+                                                    {isAddingNewCategory ? '← Choose existing category' : '+ Type new category'}
+                                                </button>
+                                            )}
                                         </div>
-                                        {isAddingNewCategory ? (
+                                        {planDetails.categoryLimit === 0 ? (
+                                            <input
+                                                type="text"
+                                                disabled
+                                                value="All Products (Categories locked on Free plan)"
+                                                className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-500 cursor-not-allowed"
+                                            />
+                                        ) : isAddingNewCategory ? (
                                             <div>
                                                 <input
                                                     type="text"

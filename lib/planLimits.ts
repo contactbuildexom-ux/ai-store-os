@@ -18,26 +18,24 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
 
   const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
 
-  // 2. WhatsApp Integration Limit Check (Basic plan par restricted)
+  // 2. WhatsApp Integration Limit Check (Included on all plans as per specification)
   if (type === 'whatsapp_order') {
+    return { allowed: true };
+  }
+
+  // 3. Category Limits Check (Basic/Free plan has categories locked)
+  if (type === 'category') {
     if (plan === 'basic') {
       return { 
         allowed: false, 
-        message: 'WhatsApp integration is available on Pro and Business plans only. Basic plan uses standard checkout.' 
+        message: 'Categories are locked on the Free Starter plan. Upgrade to Pro Merchant or Advance VIP to add categories.' 
       };
     }
-  }
-
-  // 3. Category Limits Check
-  if (type === 'category') {
     const { count } = await supabase
       .from('store_categories')
       .select('*', { count: 'exact', head: true })
       .eq('store_id', storeId);
 
-    if (plan === 'basic' && (count || 0) >= 2) {
-      return { allowed: false, message: 'Basic plan allows maximum 2 categories.' };
-    }
     if (plan === 'pro' && (count || 0) >= 5) {
       return { allowed: false, message: 'Pro plan allows maximum 5 categories.' };
     }
