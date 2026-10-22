@@ -9,19 +9,30 @@ type Tab = "login" | "signup";
 const USER_LOGIN_HREF = "/user/login";
 const USER_SIGNUP_HREF = "/user/signup";
 
+export interface TemplateMetadata {
+  id: string;
+  name: string;
+  niche?: string;
+  theme?: string;
+  sampleName?: string;
+  prompt?: string;
+}
+
 export default function AuthModal({
   open,
   onClose,
   initialTab = "signup",
+  templateData,
 }: {
   open: boolean;
   onClose: () => void;
   initialTab?: Tab;
+  templateData?: TemplateMetadata | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
   const [wasOpen, setWasOpen] = useState(open);
 
-  // Modal khulne par tab ko initialTab par reset karo (effect ke baghair, flicker nahi hota)
+  // Modal khulne par tab ko initialTab par reset karo
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) setTab(initialTab);
@@ -43,9 +54,28 @@ export default function AuthModal({
 
   if (!open) return null;
 
+  // Build target query URLs carrying forward the selected template & theme
+  const signupParams = new URLSearchParams();
+  if (templateData) {
+    if (templateData.id) signupParams.set("template", templateData.id);
+    if (templateData.niche) signupParams.set("niche", templateData.niche);
+    if (templateData.theme) signupParams.set("theme", templateData.theme);
+    if (templateData.sampleName) signupParams.set("name", templateData.sampleName);
+    if (templateData.prompt) signupParams.set("prompt", templateData.prompt);
+  }
+  const signupHref = signupParams.toString() ? `${USER_SIGNUP_HREF}?${signupParams.toString()}` : USER_SIGNUP_HREF;
+
+  const loginParams = new URLSearchParams();
+  if (templateData) {
+    if (templateData.id) loginParams.set("template", templateData.id);
+    if (templateData.niche) loginParams.set("niche", templateData.niche);
+    if (templateData.theme) loginParams.set("theme", templateData.theme);
+  }
+  const loginHref = loginParams.toString() ? `${USER_LOGIN_HREF}?${loginParams.toString()}` : USER_LOGIN_HREF;
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b2545]/70 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0b2545]/70 p-4 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
       role="presentation"
     >
@@ -79,8 +109,16 @@ export default function AuthModal({
           </p>
         </div>
 
+        {/* Selected Template Badge (if arrived from Use Template) */}
+        {templateData && (
+          <div className="mx-6 mt-4 flex items-center gap-2 rounded-2xl border border-blue-200/80 bg-blue-50/70 px-4 py-2.5 text-xs text-[#0b2545]">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-[#1976d2] animate-pulse" />
+            <span>Selected Template: <strong className="font-bold text-[#1976d2]">{templateData.name}</strong></span>
+          </div>
+        )}
+
         {/* Tabs */}
-        <div className="px-6 pt-5">
+        <div className="px-6 pt-4">
           <div className="grid grid-cols-2 gap-1 rounded-full bg-[#e6f1ff] p-1">
             <button
               type="button"
@@ -112,7 +150,7 @@ export default function AuthModal({
           {tab === "signup" ? (
             <>
               <Link
-                href={USER_SIGNUP_HREF}
+                href={signupHref}
                 onClick={onClose}
                 className="block rounded-full bg-[#1976d2] px-6 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-[#1565c0]"
               >
@@ -132,7 +170,7 @@ export default function AuthModal({
           ) : (
             <>
               <Link
-                href={USER_LOGIN_HREF}
+                href={loginHref}
                 onClick={onClose}
                 className="block rounded-full bg-[#1976d2] px-6 py-3.5 text-center text-sm font-bold text-white shadow-md shadow-blue-500/30 transition hover:bg-[#1565c0]"
               >

@@ -172,7 +172,7 @@ export const THEME_PRESETS: Record<string, StoreThemeConfig> = {
 };
 
 // Curated high quality product images categorized by niche
-const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; items: Array<{ name: string; price: number; desc: string }> }> = {
+export const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; items: Array<{ name: string; price: number; desc: string }> }> = {
   nature: {
     categories: ['Indoor Plants', 'Air-Purifying Succulents', 'Organic Botanicals & Herbs', 'Artisan Planters'],
     images: [
@@ -381,6 +381,139 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
       { name: 'Handcrafted Scented Wedding Soy Candle Souvenirs', price: 2800, desc: 'Pack of 6 personalized fragrant soy wax jars with floral notes and customized tags.' },
       { name: 'Velvet Shagun & Cash Envelopes (Pack of 10)', price: 1800, desc: 'Premium velvet textured monetary gift envelopes with traditional embossed motif.' }
     ]
+  },
+  home: {
+    categories: ['Scented Candles & Aromatherapy', 'Ceramic Tableware & Vases', 'Handwoven Throws & Linen', 'Artisan Lighting & Decor'],
+    images: [
+      'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1540518614846-7ede433c4ef7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Artisan Amber Jar Scented Soy Candle', price: 2450, desc: 'Hand-poured 100% natural soy wax candle with botanical essential oils and cotton wick.' },
+      { name: 'Handcrafted Fluted Terracotta Ceramic Vase', price: 3800, desc: 'Matte fluted stoneware ceramic decorative vase suitable for dried florals and pampas.' },
+      { name: 'Pure Washed Belgian Linen Throw Blanket', price: 6200, desc: 'Ultra-soft breathable washed pure linen blanket with fringed edges for cozy living spaces.' },
+      { name: 'Aromatherapy Amber Glass Reed Room Diffuser', price: 2900, desc: 'Long-lasting natural rattan reed diffuser infused with soothing cedarwood and bergamot.' },
+      { name: 'Solid Natural Teak Wood Sculptural Catchall Tray', price: 3400, desc: 'Hand-carved organic edge hardwood catchall tray for console and coffee table decor.' },
+      { name: 'Minimalist Textured Ceramic Mug & Saucer Set', price: 1850, desc: 'Hand-thrown speckled stoneware ceramic coffee mug with artisanal curved handle.' }
+    ]
+  },
+  eyewear: {
+    categories: ['Polarized Sunglasses', 'Chronograph & Minimalist Watches', 'Blue Light Blocking Frames', 'Watch Accessories & Cases'],
+    images: [
+      'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1533139502658-0198f920d8e8?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Matte Black Polarized Aviator Sunglasses', price: 4200, desc: 'Lightweight titanium frame with UV400 anti-glare polarized scratch-resistant lenses.' },
+      { name: 'Sapphire Crystal Minimalist Stainless Watch', price: 14500, desc: 'Japanese quartz movement timepiece with scratch-proof sapphire crystal and mesh strap.' },
+      { name: 'Acetate Anti-Blue Light Computer Glasses', price: 3600, desc: 'Ergonomic hand-polished Italian acetate optical frames that block 99% harmful digital blue light.' },
+      { name: 'Vintage Tortoiseshell Wayfarer Sunnies', price: 4800, desc: 'Classic retro silhouette sunglasses with warm amber polarized gradient lenses.' },
+      { name: 'Genuine Italian Leather 3-Watch Travel Roll', price: 5400, desc: 'Hand-stitched full-grain leather protective watch case with soft velvet dividers.' },
+      { name: 'Ultra-Thin Chronograph Black Leather Watch', price: 16800, desc: 'Subtle multi-dial chronograph timepiece with genuine calfskin leather strap.' }
+    ]
+  },
+  fitness: {
+    categories: ['High-Waist Compression Leggings', 'Performance Workout Sets', 'Gym Water Bottles & Shakers', 'Fitness & Yoga Gear'],
+    images: [
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Seamless High-Waist Sculpting Gym Leggings', price: 3400, desc: 'Squat-proof four-way stretch compression fabric with supportive ribbed tummy-control band.' },
+      { name: 'Breathable Longline Athletic Sports Bra', price: 2400, desc: 'Medium-to-high support workout sports bra with moisture-wicking and removable padded cups.' },
+      { name: 'Triple-Insulated Stainless Steel Sport Bottle (1L)', price: 2950, desc: 'Double-wall vacuum insulated water bottle keeping drinks icy cold for 24 hours.' },
+      { name: 'Eco-Friendly High-Density Non-Slip Yoga Mat', price: 4200, desc: '6mm textured dual-layer TPE alignment exercise mat with carrying strap.' },
+      { name: 'Non-Slip Fabric Resistance Booty Bands (Set of 3)', price: 1850, desc: 'Heavy-duty non-rolling fabric resistance bands in light, medium, and heavy tension.' },
+      { name: 'Ultra-Lightweight 2-in-1 Quick-Dry Training Shorts', price: 2800, desc: 'Breathable athletic workout shorts with integrated compression liner and zipper phone pocket.' }
+    ]
+  },
+  baby: {
+    categories: ['Organic Cotton Rompers', 'Montessori Wooden Toys', 'Muslin Swaddle Blankets', 'Nursery Decor & Essentials'],
+    images: [
+      'https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1596870230751-ebdfce98ec42?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1584839619566-4c89be3764da?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: '100% Organic Ribbed Cotton Baby Romper', price: 2200, desc: 'Ultra-soft GOTS certified organic ribbed cotton onesie with easy-snap two-way zippers.' },
+      { name: 'Breathable 4-Layer Bamboo Muslin Swaddle Blanket', price: 2600, desc: 'Silky soft, pre-washed bamboo muslin blanket designed for sweet dreaming and nursing.' },
+      { name: 'Montessori Natural Beechwood Teething Rattle Set', price: 1950, desc: 'Non-toxic splinter-free natural beechwood sensory rattle toy with smooth rounded edges.' },
+      { name: 'Hand-Knitted Chunky Cotton Baby Crib Blanket', price: 3800, desc: 'Breathable hypoallergenic cable-knit blanket perfect for stroller and nursery comfort.' },
+      { name: 'Food-Grade Silicone Suction Baby Bowl & Spoon Set', price: 1750, desc: 'Strong suction base silicone feeding set that is microwave, dishwasher, and freezer safe.' },
+      { name: 'Soft Neutral Knotted Baby Beanie & Mitten Set', price: 1200, desc: 'Comfortable stretch cotton cap with adjustable knot and scratch-prevention newborn mittens.' }
+    ]
+  },
+  stationery: {
+    categories: ['Hardcover Vegan Leather Journals', 'Daily Productivity Planners', 'Calligraphy & Fountain Pens', 'Desk Organization Accessories'],
+    images: [
+      'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: '160 GSM Ultra-Thick Bullet Grid Journal', price: 2600, desc: 'Bleedproof 160gsm bamboo paper hardcover notebook with lay-flat binding and ribbon bookmarks.' },
+      { name: 'Undated 6-Month Habit & Productivity Planner', price: 2900, desc: 'Structured daily, weekly, and monthly goal tracker designed for peak focus and mindfulness.' },
+      { name: 'Matte Brass Weight-Balanced Fine Nib Fountain Pen', price: 3800, desc: 'Precision-weighted brass barrel with smooth iridium fine nib and refillable ink converter.' },
+      { name: 'Pastel Aesthetic Dual-Tip Highlighters (Pack of 6)', price: 1250, desc: 'Quick-drying smudge-free water-based chisel and fine point aesthetic pastel markers.' },
+      { name: 'Waterproof Dual-Sided Vegan Leather Desk Mat', price: 2400, desc: 'Large 80x40cm spill-resistant desk blotter mouse pad with smooth tracking surface.' },
+      { name: 'Archival Micro-Pigment Precision Fineliner Set', price: 1650, desc: 'Fade-resistant waterproof black ink technical pens from 0.05mm to 0.8mm brush tip.' }
+    ]
+  },
+  makeup: {
+    categories: ['Hydrating Lip Tints & Gloss', 'Dewy Liquid Blush & Bronzers', 'Weightless Complexion Serums', 'Eyeshadow Palettes & Liners'],
+    images: [
+      'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1583241797746-d2efad56f8f5?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1503236823255-94609f598e71?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Velvet Matte Long-Wear Lip Stain Cream', price: 1850, desc: 'Transfer-resistant featherweight formula enriched with vitamin E for non-drying velvety lips.' },
+      { name: 'Dewy Liquid Blush & Highlighting Wand', price: 2200, desc: 'Blendable weightless cheek tint with buildable soft-focus glow and sponge applicator.' },
+      { name: 'Skin-Matching Breathable Hydrating Foundation', price: 3400, desc: 'Medium buildable coverage foundation infused with hyaluronic acid for fresh second-skin finish.' },
+      { name: 'Precision Waterproof Liquid Felt-Tip Eyeliner', price: 1450, desc: 'Ultra-pigmented smudge-proof carbon black liner with 0.1mm flexible felt applicator tip.' },
+      { name: 'Warm Terracotta 9-Shade Eyeshadow Palette', price: 2950, desc: 'High-impact buttery mattes, satins, and metallic foils for effortless everyday and evening glam.' },
+      { name: 'Nourishing Peptide Plumping Lip Gloss Oil', price: 1750, desc: 'Non-sticky ultra-glossy botanical treatment that visibly softens, hydrates, and volumizes lips.' }
+    ]
+  },
+  haircare: {
+    categories: ['Sulfate-Free Shampoos & Cleansers', 'Deep Moisture Hair Masks', 'Scalp & Growth Stimulating Oils', 'Heat Defense & Styling Serums'],
+    images: [
+      'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1608248597359-5753068e1462?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1585232351009-aa87416fca90?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Cold-Pressed Rosemary & Biotin Scalp Oil', price: 2200, desc: 'Stimulating botanical scalp treatment with rosemary, peppermint, and biotin to promote hair density.' },
+      { name: 'Raw Moroccan Argan & Keratin Deep Treatment Mask', price: 2900, desc: 'Intense hydration restorative mask that repairs damaged strands and restores glossy bounce.' },
+      { name: 'Clarifying Sulfate-Free Apple Cider Vinegar Shampoo', price: 2450, desc: 'Gentle clarifying wash that clears build-up while maintaining essential natural scalp moisture.' },
+      { name: 'Leave-In Anti-Frizz & 450°F Heat Defense Mist', price: 2100, desc: 'Weightless thermal protection spray shielding hair from styling tools while smoothing flyaways.' },
+      { name: '100% Pure Mulberry Silk Sleep Scrunchies (Pack of 3)', price: 1600, desc: 'Frictionless grade-6A silk hair ties that prevent breakage, kinks, and split ends.' },
+      { name: 'Gentle Ergonomic Bamboo Bristle Scalp Massager Brush', price: 1450, desc: 'Eco-friendly natural bamboo cushion brush for gentle detangling and follicle stimulation.' }
+    ]
   }
 };
 
@@ -545,7 +678,14 @@ function extractStoreName(prompt: string, niche: string): string {
     skincare: ['Glow Botanica', 'Pure Aura Skincare', 'Silk & Dew Beauty', 'Aura Dermacare'],
     jewelry: ['Celestia Jewels', 'Zircon & Gold Atelier', 'Royal Heritage Ornaments', 'Aura Trinkets'],
     tech: ['Nexus Wave Tech', 'Pulse Gadget Lab', 'Apex Horizon Gear', 'Nova Volt Gear'],
-    food: ['Artisan Brew Bar', 'Velvet Bean Roasters', 'Sweet Praline Co.', 'Roast & Sip Co.']
+    food: ['Artisan Brew Bar', 'Velvet Bean Roasters', 'Sweet Praline Co.', 'Roast & Sip Co.'],
+    home: ['Haven Living Atelier', 'Artisan Nest Decor', 'Velvet Hearth Living', 'Aura Terra Home'],
+    eyewear: ['Vanguard Optics & Watches', 'Chrono Atelier', 'Aura Eyewear Co.', 'Solstice Timepieces'],
+    fitness: ['Apex Pulse Activewear', 'Aura Velocity Fitness', 'Stride Form Athletic', 'Iron & Zen Co.'],
+    baby: ['Little Nest Organics', 'Bloom Baby Atelier', 'Tiny Sprout Co.', 'Aura Sweet Tots'],
+    stationery: ['Paper & Quill Atelier', 'Artisan Notebook Co.', 'Velvet Script Stationery', 'Focus Page Studio'],
+    makeup: ['Velvet Aura Cosmetics', 'Lumiere Beauty Studio', 'Aura Bloom Cosmetics', 'Chic Glow Atelier'],
+    haircare: ['Botanica Strand Studio', 'Aura Crown Haircare', 'Luxe Scalp & Strand', 'Silk Follicle Atelier']
   };
 
   const pool = nicheNames[niche] || nicheNames.clothing;
@@ -583,29 +723,7 @@ export async function generateStoreFromPrompt(options: {
     normalizedSocialLinks[key] = url.toString();
   }
 
-  let niche = detectNiche(prompt);
-  if (explicitNiche) {
-    const rawN = explicitNiche.toLowerCase().replace(/[^a-z0-9]/g, '');
-    if (rawN.includes('perfume') || rawN.includes('oud') || rawN.includes('attar') || rawN.includes('fragrance')) {
-      niche = 'perfume';
-    } else if (rawN.includes('shoe') || rawN.includes('footwear') || rawN.includes('sneaker')) {
-      niche = 'footwear';
-    } else if (rawN.includes('gaming') || rawN.includes('gamer')) {
-      niche = 'gaming';
-    } else if (rawN.includes('skin') || rawN.includes('beauty')) {
-      niche = 'skincare';
-    } else if (rawN.includes('bag') || rawN.includes('clutch')) {
-      niche = 'handbags';
-    } else if (rawN.includes('jewel')) {
-      niche = 'jewelry';
-    } else if (rawN.includes('coffee') || rawN.includes('tea') || rawN.includes('food')) {
-      niche = 'food';
-    } else if (rawN.includes('plant') || rawN.includes('nature')) {
-      niche = 'nature';
-    } else if (rawN.includes('cloth') || rawN.includes('pret') || rawN.includes('apparel') || rawN.includes('fashion')) {
-      niche = 'clothing';
-    }
-  }
+  const niche = detectNiche(prompt, explicitNiche, customStoreName);
   const nicheData = NICHE_IMAGES[niche] || NICHE_IMAGES.clothing;
 
   // Determine theme
@@ -655,7 +773,14 @@ export async function generateStoreFromPrompt(options: {
     jewelry: 'Handcrafted luxury jewelry and 18K gold-plated keepsakes designed to shine on every occasion.',
     tech: 'Cutting-edge smart wearables, precision acoustics, and premium workstation essentials.',
     food: 'Freshly roasted single-origin specialty coffees, hand-poured beans, and gourmet artisan treats.',
-    wedding: 'Exquisite bridal accessories, royal wedding favor boxes, and handcrafted traditional keepsakes for your special moments.'
+    wedding: 'Exquisite bridal accessories, royal wedding favor boxes, and handcrafted traditional keepsakes for your special moments.',
+    home: 'Artisanal soy candles, handcrafted ceramic homeware, and cozy natural decor curated for peaceful living.',
+    eyewear: 'Polarized precision sunglasses, minimalist timepieces, and blue-light eyewear built for modern elegance.',
+    fitness: 'High-performance squat-proof activewear, insulated hydration gear, and recovery essentials for every athlete.',
+    baby: 'Pure organic cotton essentials, non-toxic wooden Montessori toys, and soothing swaddles for your little ones.',
+    stationery: 'Bleedproof 160gsm journals, structured daily planners, and executive pens engineered for peak creativity.',
+    makeup: 'Clean buildable cosmetics, velvety lip stains, and weightless glowing pigments crafted for natural radiant beauty.',
+    haircare: 'Botanical scalp therapies, sulfate-free cleansers, and intense argan masks for radiant, healthy bounce.'
   };
 
   const tagline = taglines[niche] || 'Exquisite quality products handcrafted with passion and delivered swiftly to your doorstep.';

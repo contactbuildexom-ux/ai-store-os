@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, ChevronDown, Check } from "lucide-react";
 import Logo from "@/components/landing/logo";
 import EmailVerifyField from "@/components/auth/EmailVerifyField";
@@ -32,6 +32,15 @@ type GenerateResponse = {
 
 export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateParam = searchParams?.get("template") || "";
+  const nicheParam = searchParams?.get("niche") || "";
+  const themeParam = searchParams?.get("theme") || "";
+  const nameParam = searchParams?.get("name") || "";
+  const promptParam = searchParams?.get("prompt") || "";
+
+  const [selectedTheme, setSelectedTheme] = useState(themeParam || "");
+  const [activeTemplateName, setActiveTemplateName] = useState("");
   const [storeName, setStoreName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -43,6 +52,54 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
 
   // Curated niches and global store ideas
   const allIdeas = STORE_IDEA_PRESETS.flatMap((grp) => grp.options);
+
+  // Pre-fill if coming from a template or query params
+  useEffect(() => {
+    if (!templateParam && !nicheParam && !promptParam && !nameParam) return;
+
+    const matched = allIdeas.find(
+      (opt) =>
+        opt.id === nicheParam ||
+        opt.id === templateParam ||
+        opt.name.toLowerCase().includes((nicheParam || templateParam).toLowerCase())
+    );
+
+    if (matched) {
+      setSelectedIdeaId(matched.id);
+      setIsCustomMode(false);
+      setActiveTemplateName(matched.name);
+      if (nameParam) {
+        setStoreName(nameParam);
+      } else if (!storeName) {
+        setStoreName(matched.sampleName);
+      }
+      if (promptParam) {
+        setPrompt(promptParam);
+      } else if (!prompt) {
+        setPrompt(matched.prompt);
+      }
+      if (themeParam) {
+        setSelectedTheme(themeParam);
+      } else if (matched.theme) {
+        setSelectedTheme(matched.theme);
+      }
+    } else {
+      if (templateParam || nicheParam) {
+        setActiveTemplateName(templateParam || nicheParam);
+      }
+      if (nameParam && !storeName) {
+        setStoreName(nameParam);
+      }
+      if (promptParam) {
+        setIsCustomMode(true);
+        setCustomIdea(promptParam);
+        setPrompt(promptParam);
+      }
+      if (themeParam) {
+        setSelectedTheme(themeParam);
+      }
+    }
+  }, [templateParam, nicheParam, themeParam, nameParam, promptParam]);
   const [selectedIdeaId, setSelectedIdeaId] = useState("");
   const [nicheSearch, setNicheSearch] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -83,6 +140,10 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
       setStoreName(opt.sampleName);
     }
     setPrompt(opt.prompt);
+    if (opt.theme) {
+      setSelectedTheme(opt.theme);
+    }
+    setActiveTemplateName(opt.name);
     setIsDropdownOpen(false);
     setError("");
   };
@@ -118,6 +179,8 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
       finalPrompt = selectedIdea.prompt;
     } else if (prompt.trim().length >= 8) {
       finalPrompt = prompt.trim();
+    } else if (promptParam.trim().length >= 8) {
+      finalPrompt = promptParam.trim();
     } else if (storeName.trim().length >= 2) {
       finalPrompt = `A modern e-commerce storefront for ${storeName.trim()} specializing in quality products with nationwide delivery.`;
     } else {
@@ -135,7 +198,8 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
           store_name: storeName.trim() || undefined,
           name: storeName.trim() || undefined,
           prompt: finalPrompt,
-          niche: selectedIdea?.id || (isCustomMode && customIdea.trim() ? customIdea.trim() : undefined),
+          niche: selectedIdea?.id || nicheParam || (isCustomMode && customIdea.trim() ? customIdea.trim() : undefined),
+          theme: selectedTheme || themeParam || selectedIdea?.theme || undefined,
           plan,
           owner_email: cleanEmail,
           password,
@@ -218,6 +282,18 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                 ? "Sign up and let AI build your store."
                 : "Your store starts on the free plan and upgrades after payment approval."}
             </p>
+
+            {activeTemplateName && (
+              <div className="mt-4 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-2.5 text-xs text-[#0b2545]">
+                <span className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-[#1976d2] animate-pulse" />
+                  Selected Template: <strong className="text-[#1976d2]">{activeTemplateName}</strong>
+                </span>
+                <span className="font-bold text-[#1976d2] uppercase tracking-wider text-[10px] bg-blue-100 px-2 py-0.5 rounded-full">
+                  Auto Applied
+                </span>
+              </div>
+            )}
 
             <form onSubmit={onSubmit} noValidate className="mt-6 space-y-4">
               {error && (
@@ -416,12 +492,23 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-[#2c4a73]">
-              Already have an account?{" "}
-              <Link href={LOGIN_HREF} className="font-bold text-[#1976d2] hover:underline">
-                Log in
-              </Link>
-            </p>
+            {(() => {
+              const loginQuery = new URLSearchParams();
+              if (templateParam) loginQuery.set("template", templateParam);
+              if (nicheParam) loginQuery.set("niche", nicheParam);
+              if (themeParam) loginQuery.set("theme", themeParam);
+              if (nameParam) loginQuery.set("name", nameParam);
+              if (promptParam) loginQuery.set("prompt", promptParam);
+              const dynamicLoginHref = loginQuery.toString() ? `${LOGIN_HREF}?${loginQuery.toString()}` : LOGIN_HREF;
+              return (
+                <p className="mt-6 text-center text-sm text-[#2c4a73]">
+                  Already have an account?{" "}
+                  <Link href={dynamicLoginHref} className="font-bold text-[#1976d2] hover:underline">
+                    Log in
+                  </Link>
+                </p>
+              );
+            })()}
           </div>
 
           <p className="mt-6 text-center text-sm">
