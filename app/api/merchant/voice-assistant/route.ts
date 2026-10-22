@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { storeRepo, type ProductRecord } from '@/lib/store-repository';
 import { parseVoiceCommand, type ParsedVoiceAction } from '@/lib/ai/voice-intent-parser';
+import { resolveUniversalAnswer, sanitizeForVoiceSpeech } from '@/lib/ai/universal-knowledge-engine';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST(req: Request) {
@@ -268,7 +269,7 @@ Strict Instructions:
 4. Do NOT use bullet points, asterisks (*), markdown headers, or emojis that sound awkward when read aloud by TTS.`;
 
       // 1. Try Gemini
-      const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
+      const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
       if (geminiKey) {
         try {
           const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -300,8 +301,9 @@ Strict Instructions:
       }
 
       // 2. Try OpenAI if Gemini didn't answer and OpenAI key is available
-      if (parsed.reply.includes('Main aap ka Buildexom AI Voice Assistant') || parsed.reply.includes('I am your Buildexom Voice-to-Action')) {
-        const openAiKey = process.env.OPENAI_API_KEY;
+      let llmAnswered = !parsed.reply.includes('Main aap ka Buildexom AI Voice Assistant') && !parsed.reply.includes('I am your Buildexom Voice-to-Action');
+      if (!llmAnswered) {
+        const openAiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
         if (openAiKey) {
           try {
             const oRes = await fetch('https://api.openai.com/v1/chat/completions', {

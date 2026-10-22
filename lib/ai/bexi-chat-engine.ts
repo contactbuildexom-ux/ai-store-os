@@ -7,6 +7,8 @@ export interface BexiProduct {
   image_url?: string;
 }
 
+import { resolveUniversalAnswer } from './universal-knowledge-engine';
+
 export interface BexiStoreInfo {
   id?: string;
   name?: string;
@@ -605,7 +607,16 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
-  // 22. DYNAMIC LANGUAGE-MATCHED CONTEXTUAL FALLBACK
+  // 22. UNIVERSAL KNOWLEDGE CHECK BEFORE STORE FALLBACK
+  const universal = resolveUniversalAnswer(cleanMsg);
+  if (universal.domain !== 'conversational') {
+    return {
+      reply: universal.reply,
+      languageDetected: universal.language,
+    };
+  }
+
+  // 23. DYNAMIC LANGUAGE-MATCHED CONTEXTUAL FALLBACK
   const isQuestion = message.includes('?') || /\b(kya|kia|kab|kese|kaise|kitna|why|how|when|where|which|who|can|do)\b/i.test(cleanMsg);
 
   if (style === 'ur-script') {
