@@ -1,3 +1,5 @@
+import { resolveUniversalAnswer } from './universal-knowledge-engine';
+
 export type VoiceIntentType = 
   | 'ADD_PRODUCT'
   | 'UPDATE_PRODUCT'
@@ -575,29 +577,16 @@ export function parseVoiceCommand(command: string, context: VoiceStoreContext = 
   }
 
   // =========================================================================
-  // 9. GENERAL / HELP QUERY FALLBACK
+  // 9. GENERAL / WORLD KNOWLEDGE / HELP QUERY FALLBACK
   // =========================================================================
-  const generalReply = lang === 'ur'
-    ? `Main aap ka Buildexom AI Voice Assistant hoon! Aap mujhe bol kar keh sakte hain:
-• "Add a Black T-shirt for Rs. 1,500 in Clothing"
-• "Aaj kitne orders aye hain?"
-• "Running Shoes ki price 13,000 kardo"
-• "Delete Smart Watch"
-• "Summer Sale category add karo"`
-    : `I am your Buildexom Voice-to-Action AI Assistant! You can speak naturally:
-• "Add a Black T-shirt, price Rs. 1,500 in Clothing"
-• "How many orders did I receive today?"
-• "Which product is selling the most?"
-• "Update price of Running Shoes to 13,000"
-• "Delete Smart Watch" (with confirmation)
-• "Create a new category called Summer Sale"`;
+  const universal = resolveUniversalAnswer(raw, { forVoice: true, storeContext: context });
 
   return {
     intent: 'GENERAL_QUERY',
     requiresConfirmation: false,
-    reply: generalReply,
+    reply: universal.reply,
     rawCommand: raw,
-    languageDetected: lang
+    languageDetected: universal.language
   };
 }
 

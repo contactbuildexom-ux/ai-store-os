@@ -1153,7 +1153,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
                             </h3>
                             <p className="text-xs text-slate-500">
-                                {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'} available
+                                {liveProducts.length > 0 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} available` : `${productLimit ?? 20} product slots available (0/${productLimit ?? 20} used)`}
                             </p>
                         </div>
                         {selectedCategory !== 'All' && (
@@ -1172,7 +1172,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         <div className="w-full">
                             {/* Full-width flush product container boxes with zero side waste */}
                             <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full px-0">
-                                {[1, 2, 3, 4, 5, 6].map((slot) => (
+                                {Array.from({ length: Math.min(productLimit ?? 20, 12) }, (_, i) => i + 1).map((slot) => (
                                     <div
                                         key={`empty-slot-${slot}`}
                                         className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:shadow-md w-full bg-white/80"

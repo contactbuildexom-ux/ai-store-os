@@ -90,8 +90,8 @@ async function generateWithOpenAI(prompt: string): Promise<unknown> {
           role: "system",
           content: [
             "Create a comprehensive, realistic starter storefront from the user's request.",
-            "Return only a JSON object with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name).",
-            "Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Product prices must be positive numbers in the local PKR currency (e.g. 1500 to 12000), with no currency symbols. Every product category_name must match one of the categories exactly.",
+            "Return only a JSON object with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings).",
+            "Generate 4 to 6 relevant categories based strictly on the user's store idea. Do not generate products; slots will be empty for the merchant to upload authentic products.",
             "Do not include markdown, comments, or additional properties.",
           ].join(" "),
         },
@@ -128,7 +128,7 @@ async function generateWithGemini(prompt: string): Promise<unknown> {
         role: "user",
         parts: [{
           text: [
-            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Prices must be positive numbers in PKR currency without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
+            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings). Generate 4 to 6 relevant categories based strictly on the store idea. Do not generate products; product slots remain empty for the merchant to upload authentic inventory. Do not add markdown or extra properties.",
             `Store request: ${prompt}`,
           ].join("\n\n"),
         }],
@@ -158,7 +158,9 @@ function normalizeGeneratedStore(
 ): GeneratedStore {
   if (!value || typeof value !== "object") throw new Error("The AI returned invalid store data.");
   const source = value as Record<string, unknown>;
-  const storeName = text(requestedName, 100) || text(source.store_name, 100) || "My Store";
+  const rawReqName = text(requestedName, 100).replace(/^welcome\s+to\s+/i, "").trim();
+  const rawSrcName = text(source.store_name, 100).replace(/^welcome\s+to\s+/i, "").trim();
+  const storeName = rawReqName || rawSrcName || "My Store";
   const slug = slugify(text(requestedName, 100) || text(source.slug, 100) || storeName);
   if (storeName.length < 2 || !slug) throw new Error("The AI could not create a valid store name.");
 
@@ -175,22 +177,9 @@ function normalizeGeneratedStore(
     categories = (nicheCatalog?.categories || ["Featured", "Best Sellers", "New Arrivals", "Trending"]).slice(0, categoryLimit);
   }
 
-  const rawProducts = Array.isArray(source.products) ? source.products : [];
-  let products: GeneratedProduct[] = rawProducts
-    .slice(0, productLimit)
-    .map((item: any, idx: number) => {
-      const img1 = nicheImgs[idx % nicheImgs.length];
-      const img2 = nicheImgs[(idx + 1) % nicheImgs.length];
-      const img3 = nicheImgs[(idx + 2) % nicheImgs.length];
-      const multiImg = `${img1},${img2},${img3}`;
-      return {
-        name: text(item.name, 120),
-        price: typeof item.price === "number" && Number.isFinite(item.price) && item.price > 0 ? item.price : 2500,
-        description: text(item.description, 500) || `Premium ${text(item.name, 120)} with nationwide delivery.`,
-        category_name: text(item.category_name ?? item.category, 60) || (categories[idx % categories.length] || "General"),
-        image_url: text(item.image_url, 2048) || multiImg,
-      };
-    });
+  // User explicitly requested: AI must NOT generate dummy products into the store catalog at creation.
+  // The catalog must start with empty slots ready for the merchant to add authentic products personally from the Merchant Dashboard.
+  const products: GeneratedProduct[] = [];
 
   const themePresets: Record<string, string> = {
     emerald: "#1d7555",
@@ -231,7 +220,7 @@ function normalizeGeneratedStore(
     slug,
     theme_color: /^#[0-9a-f]{6}$/i.test(themeColor) ? themeColor : "#1976d2",
     selected_theme: selectedTheme,
-    banner_text: text(source.banner_text, 160) || `Welcome to ${storeName}`,
+    banner_text: (rawReqName && (!source.banner_text || String(source.banner_text).toLowerCase().includes("welcome"))) ? `Welcome to ${storeName}` : (text(source.banner_text, 160) || `Welcome to ${storeName}`),
     footer_text: text(source.footer_text, 500) || `Thank you for visiting ${storeName}.`,
     categories,
     products,
@@ -331,7 +320,8 @@ export async function POST(request: Request) {
     if (rawPrompt.length > 2000) {
       return NextResponse.json({ error: "Enter a store description of no more than 2,000 characters." }, { status: 400 });
     }
-    const requestedStoreName = text(input.name ?? input.store_name, 100);
+    const rawReqName = text(input.name ?? input.store_name, 100);
+    const requestedStoreName = rawReqName.replace(/^welcome\s+to\s+/i, "").trim();
     const prompt = rawPrompt.length >= 8
       ? rawPrompt
       : `A modern e-commerce storefront for ${requestedStoreName || "My Online Store"} featuring quality products and nationwide cash on delivery.`;
@@ -357,30 +347,33 @@ export async function POST(request: Request) {
     const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
     let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
-    if (merchantSession && supabase) {
-      try {
-        const { data, error } = await supabase.from("stores")
-          .select("id, name, slug, owner_email, plan, whatsapp_number")
-          .eq("id", merchantSession.storeId)
-          .maybeSingle();
-        if (!error && data && String(data.owner_email ?? "").toLowerCase() === merchantSession.email.toLowerCase()) {
-          targetStore = data;
+    // Only bind to targetStore if requestedStoreId is explicitly passed and this is NOT a new store registration
+    if (requestedStoreId && !isMerchantRegistration) {
+      if (merchantSession && supabase) {
+        try {
+          const { data, error } = await supabase.from("stores")
+            .select("id, name, slug, owner_email, plan, whatsapp_number")
+            .eq("id", requestedStoreId)
+            .maybeSingle();
+          if (!error && data) {
+            targetStore = data;
+          }
+        } catch {
+          // Fallback
         }
-      } catch {
-        // Fallback
       }
-    }
-    if (!targetStore && merchantSession) {
-      const repoStore = await storeRepo.getStore(merchantSession.storeId);
-      if (repoStore) {
-        targetStore = {
-          id: repoStore.id,
-          name: repoStore.name,
-          slug: repoStore.slug,
-          owner_email: repoStore.owner_email,
-          plan: repoStore.plan,
-          whatsapp_number: repoStore.whatsapp_number,
-        };
+      if (!targetStore) {
+        const repoStore = await storeRepo.getStore(requestedStoreId);
+        if (repoStore) {
+          targetStore = {
+            id: repoStore.id,
+            name: repoStore.name,
+            slug: repoStore.slug,
+            owner_email: repoStore.owner_email,
+            plan: repoStore.plan,
+            whatsapp_number: repoStore.whatsapp_number,
+          };
+        }
       }
     }
     if (!isMerchantRegistration && !merchantSession && supabase) {
@@ -521,13 +514,7 @@ export async function POST(request: Request) {
         banner_text: fallback.header_title || fallback.tagline,
         footer_text: fallback.description,
         categories: fallback.categories,
-        products: fallback.products.map((p) => ({
-          name: p.name,
-          price: p.price,
-          description: p.description,
-          category_name: p.category,
-          image_url: p.image_url,
-        })),
+        products: [], // AI must NOT generate products; only slots are available
       };
     }
 

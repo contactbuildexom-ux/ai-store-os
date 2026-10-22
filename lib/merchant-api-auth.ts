@@ -59,26 +59,22 @@ export async function getMerchantSessionStore(requestedId?: string) {
   const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
   const targetLookup = requestedId || merchantSession?.storeId || merchantSession?.slug;
 
-  if (merchantSession) {
+  if (targetLookup) {
     const admin = createAdminClient();
     const isSupabaseValid = admin && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
     if (isSupabaseValid && admin) {
       try {
         const { data, error } = await fetchStoreByIdOrSlug(
           admin,
-          targetLookup || merchantSession.storeId || merchantSession.slug,
+          targetLookup,
           "id, name, slug, plan, payment_status, owner_email, whatsapp_number"
         );
-    
-
-
-
         if (!error && data) return data;
       } catch {
         // Fallback to storeRepo
       }
     }
-    const repoStore = await storeRepo.getStore(merchantSession.storeId) || await storeRepo.getStore(merchantSession.slug);
+    const repoStore = await storeRepo.getStore(targetLookup);
     if (repoStore) {
       return {
         id: repoStore.id,
@@ -92,9 +88,8 @@ export async function getMerchantSessionStore(requestedId?: string) {
     }
   }
 
-  // If no merchantSession cookie, but requestedId is passed (or session fallback didn't hit)
-  if (targetLookup) {
-    const repoStore = await storeRepo.getStore(targetLookup);
+  if (merchantSession) {
+    const repoStore = await storeRepo.getStore(merchantSession.storeId) || await storeRepo.getStore(merchantSession.slug);
     if (repoStore) {
       return {
         id: repoStore.id,
@@ -117,7 +112,6 @@ export async function getMerchantSessionStore(requestedId?: string) {
     if (error || !user) return null;
     if (user.app_metadata?.role === "super_admin") return null;
     const { data, error: storeError } = await admin.from("stores")
-
       .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number")
       .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
       .maybeSingle();

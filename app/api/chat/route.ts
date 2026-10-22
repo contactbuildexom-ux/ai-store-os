@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveUniversalAnswer } from "@/lib/ai/universal-knowledge-engine";
 import type {
   PlatformAssistantRequest,
   PlatformAssistantResponse,
@@ -6,7 +7,7 @@ import type {
 
 // Call Gemini if key is provided
 async function callGemini(messages: PlatformAssistantRequest["messages"]): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   if (!apiKey) return null;
 
   try {
@@ -15,21 +16,34 @@ async function callGemini(messages: PlatformAssistantRequest["messages"]): Promi
       {
         role: "user",
         parts: [{
-          text: `You are Bexi AI, the intelligent, friendly, and expert shopping & store consultant for Buildexom AI Store OS.
-You help Pakistani and global merchants build, manage, and scale AI-powered e-commerce stores with automated WhatsApp checkout.
+          text: `You are Bexi AI, a super-intelligent, all-knowing universal AI assistant powered by advanced LLM intelligence (comparable to Gemini, GPT-4o, and Qwen).
 
-Platform Knowledge:
-- Over 10,000+ stores created across Pakistan (Lahore, Karachi, Islamabad, etc.) and internationally.
-- 500,000+ orders processed with 99.8% uptime.
-- Store setup takes under 30 seconds: users give a prompt/description, pick a theme, enter a WhatsApp number, and their store is generated with custom subdomain (e.g. storename.buildexom.store).
-- Plans:
-  1. Basic / Free Starter (Rs. 0/mo): Up to 20 products, 0 categories, standard WhatsApp checkout, personal subdomain, store QR code.
-  2. Pro Merchant (PKR 2,499/mo): Up to 75 products, up to 5 categories, WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.
-  3. Advance VIP / Business (PKR 4,999/mo): Unlimited products & categories, WhatsApp ordering, order tracking, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.
-- Orders: Customer cart is neatly itemized and sent directly to the merchant's dedicated WhatsApp number with customer name, phone, city, postal code, and address.
-- Cash on Delivery (COD) and Advance Bank Transfer are built-in.
-- Merchant Dashboard: Manage product inventory, image uploads, category limits, and order lifecycle statuses: Pending (⏳), Ready to Dispatch (📦), Shipped / In Transit (🚚), Delivered (✅), Cancelled (✕).
-- Tone: Helpful, enthusiastic, concise, professional. Understands English, Urdu, and Roman Urdu. Always answer the user's specific question directly.`
+Core Capabilities:
+1. UNIVERSAL WORLD KNOWLEDGE:
+   You have vast, accurate knowledge across ALL domains in the entire world:
+   - General knowledge, history, world geography, countries, capitals, politics, cultures, and global milestones.
+   - Science, physics, chemistry, biology, astronomy, human anatomy, nature, and the universe.
+   - Mathematics, arithmetic, formulas, percentages, conversions, and problem solving.
+   - Technology, computers, AI, software engineering, programming (Python, JavaScript, Next.js, APIs), and internet.
+   - Pakistan general knowledge: history (14 August 1947), Quaid-e-Azam, Allama Iqbal, cities (Karachi, Lahore, Islamabad), economy, and sports (1992 World Cup).
+   - Daily life practical knowledge: recipes, cooking, health advice, fitness, productivity, and language translation.
+
+2. BUILDEXOM PLATFORM EXPERTISE:
+   You are also the co-pilot for Buildexom AI Store OS:
+   - Over 10,000+ stores created across Pakistan and internationally with 99.8% uptime.
+   - Plans:
+     * Basic / Free Starter (Rs. 0 forever): Up to 20 products, 0 categories, standard WhatsApp checkout, personal subdomain, store QR code.
+     * Pro Merchant (PKR 2,499/mo): Up to 75 products, up to 5 categories, WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.
+     * Advance VIP / Business (PKR 4,999/mo): Unlimited products & categories, WhatsApp ordering, order tracking, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.
+   - Orders flow directly into the merchant's WhatsApp with full itemization, Cash on Delivery, or advance bank transfer.
+
+STRICT INSTRUCTIONS:
+1. Accurately and directly answer ANY and EVERY question the user asks on ANY topic in the world. Never refuse a question or say you only answer store queries.
+2. Reply in the exact same language and script as the user:
+   - If they ask in Roman Urdu (e.g. "chaand par pehla insan kon gaya?", "biryani kaise banate hain?", "Pakistan ka capital kya hai?"), reply in fluent, natural Roman Urdu.
+   - If they ask in Urdu script, reply in fluent Urdu script.
+   - If they ask in English, reply in articulate, professional English.
+3. Keep answers clear, accurate, direct, and concise (2 to 5 sentences unless more detail is requested).`
         }]
       },
       ...messages.map(m => ({
@@ -59,7 +73,7 @@ Platform Knowledge:
 
 // Call OpenAI if key is provided
 async function callOpenAI(messages: PlatformAssistantRequest["messages"]): Promise<string | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
   if (!apiKey) return null;
 
   try {
@@ -76,9 +90,9 @@ async function callOpenAI(messages: PlatformAssistantRequest["messages"]): Promi
         messages: [
           {
             role: "system",
-            content: `You are Bexi AI, the expert platform consultant for Buildexom AI Store OS.
-Help merchants build and scale their e-commerce stores with automated WhatsApp checkout and Cash on Delivery.
-Keep responses concise, friendly, and directly relevant to the user's question. Support English and Roman Urdu.`
+            content: `You are Bexi AI, a super-intelligent universal AI assistant (like Gemini, GPT-4o, and Qwen).
+Answer ANY question accurately on ANY topic in the entire world (general knowledge, science, history, geography, mathematics, tech, coding, everyday advice, recipes, and Buildexom store building).
+Always match the user's language (Roman Urdu, native Urdu, or English). Be concise, articulate, and 100% factually accurate.`
           },
           ...messages.map(m => ({ role: m.role, content: m.content }))
         ]
@@ -97,6 +111,12 @@ Keep responses concise, friendly, and directly relevant to the user's question. 
 // Advanced Semantic Fallback Engine (Never repeats generic robotic boilerplate)
 function platformReply(question: string, conversationHistory: PlatformAssistantRequest["messages"] = []): string {
   const q = question.toLowerCase().trim();
+
+  // First check Universal Multi-Domain Knowledge Base for world/science/math/history/facts
+  const universal = resolveUniversalAnswer(question);
+  if (universal.domain !== 'conversational') {
+    return universal.reply;
+  }
 
   const isRomanUrdu = /\b(kya|kia|kitna|kitne|kitni|kab|kese|kaise|kahan|kyun|kon|batao|bataiye|chahiye|hai|hain|hoga|hogi|bhai|yar|acha|theek|salam|pesa|paise|pesy|shuru|karein|dukan|chalega|mil|sakta)\b/i.test(q);
 
@@ -166,13 +186,28 @@ function platformReply(question: string, conversationHistory: PlatformAssistantR
       : "Awesome! 🚀 Whenever you're ready, click **'Start Building Free'** above or choose a curated business niche from our dropdown. How else can I assist you?";
   }
 
-  // 6. HOW TO CREATE A STORE / SETUP / STARTING
-  if (/(how\s*to\s*(create|make|build|start|launch)\s*(a\s*)?store|store\s*kaise\s*banaye|kese\s*banaye|tarika|shuru\s*karein)/i.test(q)) {
-    return "Creating your store takes only 3 simple steps:\n\n" +
-      "1. 💡 **Enter Your Prompt**: Type your store idea (or select from 24+ global niches in our dropdown).\n" +
-      "2. 🎨 **Select a Theme**: Choose from 10+ designer palettes like Ocean Blue, Royal Gold, or Velvet Rose.\n" +
-      "3. 📱 **Connect WhatsApp**: Enter your WhatsApp number so customer orders arrive directly on your phone.\n\n" +
-      "Click **Generate Store** and your storefront will be live in 15 seconds!";
+  // 6. HOW TO CREATE A STORE / SETUP / STARTING (Handles "how i make store", "how to make a store", etc.)
+  if (
+    /\b(how|kaise|kese|tarika|tareeqa)\b.*\b(make|create|build|start|launch|setup|open|bana|banaye|banaun|banegi|banega|shuru)\b/i.test(q) ||
+    /\b(make|create|build|start|launch|setup|open)\b.*\b(store|shop|dukan|website)\b/i.test(q) ||
+    /\b(store|shop|dukan|website)\b.*\b(kaise|kese|bana|banaye|banaun|shuru|banegi|banega)\b/i.test(q) ||
+    /\b(how\s*i\s*make\s*store|how\s*to\s*make\s*store|how\s*to\s*create\s*store|how\s*it\s*works|how\s*to\s*start|how\s*to\s*use)\b/i.test(q)
+  ) {
+    return isRomanUrdu
+      ? "Buildexom par apna online store banana bohat aasan hai aur sirf 30 seconds lagtay hain! Step-by-step tareeqa ye hai:\n\n" +
+        "1. 🚀 **'Get Started Free' par click karein**: Page ke upar right side par blue button dabayein (ya niche **Templates** section mein se koi design choose karein).\n" +
+        "2. 💡 **Apna Store Idea Likhein**: Apni dukan ka idea likhein (jaise *'Perfumes'*, *'Women Clothing'*, *'Shoes'*, *'Jewelry'*) ya ready-made list se select karein.\n" +
+        "3. 🎨 **Theme & Color Chunein**: Apni pasand ka design aur color palette select karein (Royal Gold, Emerald, Velvet Rose, waghera).\n" +
+        "4. 📱 **WhatsApp Number Dalein**: Apna WhatsApp number enter karein taake customer orders direct aap ke WhatsApp par itemized receipt ke sath aayein.\n" +
+        "5. ✨ **'Generate Store' Dabayein**: AI foran aap ka mukammal store products, photos, prices, aur Cash on Delivery ke sath tayyar kar dega!\n\n" +
+        "Har store ko apna free link milta hai (jaise `aapkaname.buildexom.store`). Abhi 100% free shuru karein!"
+      : "Creating your online store on Buildexom takes only 30 seconds! Here is the exact step-by-step process:\n\n" +
+        "1. 🚀 **Click 'Get Started Free'**: Click the blue button at the top right of this page (or choose any design from the **Templates** section below).\n" +
+        "2. 💡 **Enter Your Store Idea**: Type your business idea (e.g., *'Luxury Perfumes'*, *'Men\'s Streetwear'*, *'Home Decor'*, *'Footwear'*) or pick from 24+ ready niches.\n" +
+        "3. 🎨 **Select a Theme & Colors**: Choose your branding colors (Royal Gold, Velvet Rose, Emerald, Ocean Blue, etc.).\n" +
+        "4. 📱 **Connect Your WhatsApp**: Enter your WhatsApp number so customer orders and itemized invoices arrive directly on your phone.\n" +
+        "5. ✨ **Click 'Generate Store'**: Our AI instantly builds your complete store with realistic products, descriptions, prices, categories, and your free branded link (e.g. `yourname.buildexom.store`) with Cash on Delivery ready!\n\n" +
+        "You can launch 100% free with no credit card required!";
   }
 
   // 7. PRICING & PLANS (Free vs Pro vs Advanced)

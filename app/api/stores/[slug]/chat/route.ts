@@ -90,7 +90,7 @@ Strict Instructions:
 4. Keep replies concise (2 to 3 sentences), warm, and helpful.`;
 
     // 1. Try Gemini
-    const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.AI_GATEWAY_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (geminiKey) {
       try {
         const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -127,7 +127,7 @@ Strict Instructions:
     }
 
     // 2. Try OpenAI
-    const openAiKey = process.env.OPENAI_API_KEY;
+    const openAiKey = process.env.OPENAI_API_KEY || process.env.OPENAI_KEY;
     if (openAiKey) {
       try {
         const oRes = await fetch('https://api.openai.com/v1/chat/completions', {

@@ -633,7 +633,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
   }
 
   // Nature, Plants & Gardening
-  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|lawn)\b/i.test(combined)) {
+  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|turf|greenery)\b/i.test(combined)) {
     return 'nature';
   }
 
@@ -662,8 +662,16 @@ export function generateSlug(name: string): string {
  * Extract or generate a brandable store name
  */
 function extractStoreName(prompt: string, niche: string): string {
-  // Check if prompt specifically mentions a name (e.g., "called Noor", "name is Velvet Aura")
-  const namedMatch = prompt.match(/(?:called|named|name is|title is)\s+["']?([A-Za-z0-9\s]{2,25})["']?/i);
+  const p = prompt.trim();
+  const cleanPrompt = p.replace(/^welcome\s+to\s+/i, '').trim();
+
+  // If prompt is a brand name (e.g. "CasCharm", "Cas Charm", "Urban Velvet")
+  if (/^[A-Za-z0-9\s&'-]{2,35}$/.test(cleanPrompt) && !/\b(store|shop|selling|delivery|pakistan|online|cash|products|accessories|boutique)\b/i.test(cleanPrompt)) {
+    return cleanPrompt;
+  }
+
+  // Check if prompt specifically mentions a name (e.g. "called Noor", "name is CasCharm", "store CasCharm")
+  const namedMatch = cleanPrompt.match(/(?:called|named|name is|title is|store name is|brand is|store name:|brand:)\s+["']?([A-Za-z0-9&'-]+(?:\s+[A-Za-z0-9&'-]+){0,3})["']?(?:\s+(?:with|for|in|offering|specializing|featuring|selling|providing|and|pk|pakistan|\.|\,|$)|$)/i);
   if (namedMatch && namedMatch[1]?.trim()) {
     return namedMatch[1].trim();
   }
@@ -755,9 +763,10 @@ export async function generateStoreFromPrompt(options: {
 
   const theme = THEME_PRESETS[themeKey] || THEME_PRESETS.emerald;
 
-  const finalName = (customStoreName && customStoreName.trim().length > 1) 
+  const rawFinalName = (customStoreName && customStoreName.trim().length > 1) 
     ? customStoreName.trim() 
     : extractStoreName(prompt, niche);
+  const finalName = rawFinalName.replace(/^welcome\s+to\s+/i, '').trim() || rawFinalName;
 
   const slug = generateSlug(finalName);
 
@@ -787,38 +796,13 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Plan-specific limits: Free Starter has 0 categories & max 20 products
-  const isFreePlan = plan === 'free';
-  const categories: string[] = isFreePlan ? [] : plan === 'pro' ? nicheData.categories.slice(0, 5) : nicheData.categories;
-  const targetProductCount = isFreePlan ? 20 : plan === 'pro' ? 32 : 36;
-  const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
-
+  // User explicitly requested: AI must NOT generate products into the store catalog at creation.
+  // The store is created with available product slots (e.g. 20 slots on Basic, 75 on Pro, 100 on Business),
+  // and the merchant adds their authentic products personally from the Merchant Dashboard.
+  const categories: string[] = nicheData.categories || [];
   const products: GeneratedProduct[] = [];
-  for (let i = 0; i < targetProductCount; i++) {
-    const baseItem = nicheData.items[i % nicheData.items.length];
-    const cat = categories.length > 0 ? categories[i % categories.length] : '';
-    const img1 = nicheData.images[i % nicheData.images.length];
-    const img2 = nicheData.images[(i + 1) % nicheData.images.length];
-    const img3 = nicheData.images[(i + 2) % nicheData.images.length];
-    const multiImages = `${img1},${img2},${img3}`;
-    const cycle = Math.floor(i / nicheData.items.length);
-    const editionSuffix = cycle === 1 ? ' · Signature Edition' : cycle === 2 ? ' · Luxe Edition' : cycle === 3 ? ' · Elite Series' : cycle === 4 ? ' · Reserve' : '';
-    const priceAdjustment = cycle * 350;
-    const finalPrice = baseItem.price + priceAdjustment;
 
-    products.push({
-      id: `prod_${i + 1}_${Math.random().toString(36).substring(2, 7)}`,
-      name: `${baseItem.name}${editionSuffix}`,
-      description: baseItem.desc,
-      price: finalPrice,
-      category: cat,
-      image_url: multiImages,
-      wholesale_cost: Math.round(finalPrice * 0.55),
-      min_accept_price: Math.round(finalPrice * 0.85),
-      stock_status: i % 5 === 2 ? 'low_stock' : 'in_stock',
-      badge: badges[i % badges.length]
-    });
-  }
+
 
   return {
     name: finalName,
