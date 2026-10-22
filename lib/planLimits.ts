@@ -21,7 +21,7 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
   if (!isVerified) {
     return {
       allowed: false,
-      message: 'Store verification is pending Super Admin approval. Catalog and store operations are locked until approved.',
+      message: 'Store verification is in progress. Catalog and store operations will unlock once verified.',
     };
   }
 

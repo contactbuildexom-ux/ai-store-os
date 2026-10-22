@@ -307,7 +307,7 @@ export default function MerchantDashboardMaster() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to submit upgrade proof.');
 
-            setUpgradeSuccess(`🎉 Payment submitted! Superadmin will verify your transaction and activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
+            setUpgradeSuccess(`🎉 Payment submitted! Your transaction will be verified to activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
             setUpgradeModalPlan(null);
             setUpgradeTrxId('');
             setUpgradeSenderName('');
@@ -557,7 +557,7 @@ export default function MerchantDashboardMaster() {
         setMessage('');
         setMessageError(false);
         if (!isVerified) {
-            setMessage('Store verification is pending Super Admin approval. Store settings modifications are temporarily locked.');
+            setMessage('Store verification is in progress. Settings will unlock once verified.');
             setMessageError(true);
             return;
         }
@@ -656,7 +656,7 @@ export default function MerchantDashboardMaster() {
         e.preventDefault();
         setMessage('');
         if (!isVerified) {
-            setMessage('Store verification is pending Super Admin approval. Adding or editing products is temporarily locked.');
+            setMessage('Store verification is in progress. Product management will unlock once verified.');
             setMessageError(true);
             return;
         }
@@ -745,7 +745,7 @@ export default function MerchantDashboardMaster() {
 
     const handleDeleteProduct = async (id: string) => {
         if (!isVerified) {
-            setMessage('Store verification is pending Super Admin approval. Deleting products is temporarily locked.');
+            setMessage('Store verification is in progress. Catalog editing will unlock once verified.');
             setMessageError(true);
             return;
         }
@@ -817,7 +817,7 @@ export default function MerchantDashboardMaster() {
         e.preventDefault();
         if (!bulkText.trim() || bulkLoading) return;
         if (!isVerified) {
-            setMessage('Store verification is pending Super Admin approval. Bulk adding products is temporarily locked.');
+            setMessage('Store verification is in progress. Catalog editing will unlock once verified.');
             setMessageError(true);
             return;
         }
@@ -870,7 +870,7 @@ export default function MerchantDashboardMaster() {
     const handleAddCategory = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isVerified) {
-            setMessage('Store verification is pending Super Admin approval. Creating categories is temporarily locked.');
+            setMessage('Store verification is in progress. Category management will unlock once verified.');
             setMessageError(true);
             return;
         }
@@ -979,7 +979,7 @@ export default function MerchantDashboardMaster() {
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-300">Account status</p>
                         {isVerified ? (
                             <p className="mt-2 flex items-center gap-2 text-xs font-bold text-emerald-400">
-                                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Verified by Super Admin
+                                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" /> Verified Account
                             </p>
                         ) : (
                             <p className="mt-2 flex items-center gap-2 text-xs font-bold text-amber-300">
@@ -1002,12 +1002,12 @@ export default function MerchantDashboardMaster() {
                             {activeTab === 'overview' ? 'Store overview' : activeTab === 'bexi-ai' ? 'Bexi AI Command Center' : activeTab}
                         </h1>
                         {isVerified ? (
-                            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 text-white px-3 py-1 text-xs font-black shadow-xs">
-                                <CheckCircle2 size={14} className="text-white" /> Verified Merchant Account
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <CheckCircle2 size={13} className="text-emerald-600" /> Verified Account
                             </span>
                         ) : (
-                            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold text-amber-900 border-2 border-amber-300 shadow-2xs">
-                                <Clock size={13} className="text-amber-600 animate-pulse" /> Verification Pending Super Admin
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-300 shadow-2xs">
+                                <Clock size={13} className="text-amber-600 animate-pulse" /> Verification Pending
                             </span>
                         )}
                     </div>
@@ -1032,100 +1032,16 @@ export default function MerchantDashboardMaster() {
                                 </span>
                                 <div>
                                     <p className="text-xs font-bold text-amber-950">
-                                        ⏳ Upgrade to {PLAN_DETAILS[pendingUpgradeStatus as Plan]?.title || 'Pro'} Pending Superadmin Approval
+                                        ⏳ Upgrade to {PLAN_DETAILS[pendingUpgradeStatus as Plan]?.title || 'Pro'} Under Review
                                     </p>
                                     <p className="text-[11px] text-amber-800">
-                                        Your payment transaction proof has been submitted for verification. Once approved by Superadmin, your upgraded features (Bexi AI, Voice AI, higher product limits) will activate automatically!
+                                        Your payment transaction proof has been submitted for verification. Once approved, your upgraded features (Bexi AI, Voice AI, higher product limits) will activate automatically!
                                     </p>
                                 </div>
                             </div>
                             <span className="rounded-full bg-amber-200/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-900 shrink-0">
                                 Under Review
                             </span>
-                        </div>
-                    )}
-
-                    {/* Super Admin Store Verification Status Banners */}
-                    {isVerified ? (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border-2 border-emerald-500 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/70 p-5 sm:p-6 shadow-md text-slate-800 animate-in fade-in duration-300">
-                            <div className="flex items-center gap-4">
-                                <div className="grid size-12 sm:size-14 place-items-center rounded-2xl bg-emerald-600 text-white font-bold shrink-0 shadow-sm">
-                                    <CheckCircle2 size={28} />
-                                </div>
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                                            ✓ Verified Merchant
-                                        </span>
-                                        <span className="rounded-full bg-emerald-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-emerald-950">
-                                            {storePlan.toUpperCase()} Plan Rights Active
-                                        </span>
-                                    </div>
-                                    <h2 className="text-base sm:text-lg font-black text-slate-900 mt-1">
-                                        Account Officially Verified by Super Admin!
-                                    </h2>
-                                    <p className="text-xs text-emerald-900 mt-0.5 font-medium leading-relaxed">
-                                        Mubarak ho! Super Admin ne aapka store account officially verify kar diya hai. Aapke <strong>{storePlan.toUpperCase()}</strong> plan ke mutabiq saare dashboard rights aur features fully unlocked hain.
-                                    </p>
-                                </div>
-                            </div>
-                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-emerald-800 border-2 border-emerald-300 shadow-2xs">
-                                <ShieldCheck size={16} className="text-emerald-600" /> All Rights Active
-                            </span>
-                        </div>
-                    ) : (
-                        <div className="rounded-3xl border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-white to-amber-50/70 p-5 sm:p-6 shadow-md animate-in fade-in duration-300">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-amber-200 pb-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="grid size-12 sm:size-14 place-items-center rounded-2xl bg-amber-500 text-white font-bold shrink-0 shadow-sm">
-                                        <Lock size={26} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-950">
-                                                Pending Super Admin Approval
-                                            </span>
-                                            <span className="text-xs font-bold text-slate-500">
-                                                Plan: {storePlan.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <h2 className="text-base sm:text-lg font-black text-slate-900 mt-1">
-                                            Merchant Dashboard Locked
-                                        </h2>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => resolveStoreAndData(paramId)}
-                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 shadow-xs hover:bg-amber-50 transition active:scale-95"
-                                >
-                                    <RefreshCw size={13} /> Refresh Status
-                                </button>
-                            </div>
-
-                            <div className="mt-4 space-y-3">
-                                <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                                    Aapka online store <strong>{storeName}</strong> ban chuka hai! Lekin jab tak Super Admin aapke account ko <strong>Verify</strong> nahi karega, tab tak merchant dashboard ke saare operations (products add/edit karna, store settings change karna, catalog manage karna) <strong>LOCKED</strong> rahenge.
-                                </p>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
-                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Selected Plan</p>
-                                        <p className="font-extrabold text-slate-900 mt-0.5">{storePlan.toUpperCase()}</p>
-                                    </div>
-                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Verification Status</p>
-                                        <p className="font-extrabold text-amber-700 mt-0.5 flex items-center gap-1">
-                                            <Clock size={12} className="animate-spin" /> Pending Approval
-                                        </p>
-                                    </div>
-                                    <div className="rounded-xl border border-amber-200 bg-white/80 p-3">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Dashboard Rights</p>
-                                        <p className="font-extrabold text-red-600 mt-0.5 flex items-center gap-1">
-                                            <Lock size={12} /> Temporarily Locked
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -1197,7 +1113,7 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                     <button 
                                         type="button" 
-                                        onClick={() => { if (!isVerified) { setMessage('Store verification is pending Super Admin approval. Adding products is temporarily locked.'); setMessageError(true); return; } setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
+                                        onClick={() => { if (!isVerified) { setMessage('Store verification is in progress. Adding products will unlock once verified.'); setMessageError(true); return; } setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); setActiveTab('products'); }} 
                                         className="inline-flex h-11 items-center gap-2 rounded-xl bg-white px-5 text-xs font-bold shadow-lg transition-all hover:bg-slate-50 hover:shadow-xl active:scale-95" 
                                         style={{ color: themeColor }}
                                     >
@@ -1362,14 +1278,14 @@ export default function MerchantDashboardMaster() {
                             <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-600 border border-amber-300 shadow-sm animate-pulse">
                                 <Lock size={32} />
                             </div>
-                            <span className="inline-block rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 text-[11px] font-black uppercase tracking-wider">
-                                Awaiting Super Admin Approval
+                            <span className="inline-block rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-3 py-0.5 text-[11px] font-bold">
+                                Verification in Progress
                             </span>
-                            <h3 className="text-xl font-black text-slate-900">
-                                {activeTab === 'branding' ? 'Storefront Settings' : activeTab === 'bexi-ai' ? 'Bexi AI Assistant' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Locked
+                            <h3 className="text-lg font-bold text-slate-900">
+                                {activeTab === 'branding' ? 'Storefront Settings' : activeTab === 'bexi-ai' ? 'Bexi AI Assistant' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} is Locked
                             </h3>
-                            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto font-medium">
-                                Aapka store account filhal Super Admin verification pending hai. Super Admin ke verify karne tak dashboard ke saare operations aur feature editing <strong>LOCKED</strong> hain. Super Admin ke approve karte hi aapke <strong>{storePlan.toUpperCase()}</strong> plan ke mutabiq yeh feature foran unlock ho jayega.
+                            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto font-normal">
+                                Your store account is currently undergoing verification. All features for your <strong>{storePlan.toUpperCase()}</strong> plan will activate automatically once verified.
                             </p>
                             <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
                                 <button
@@ -1810,7 +1726,7 @@ export default function MerchantDashboardMaster() {
                                             <button
                                                 type="button"
                                                 disabled={!isVerified}
-                                                onClick={() => { if (!isVerified) { setMessage('Verification pending Super Admin approval.'); setMessageError(true); return; } setIsBulkAddOpen(true); }}
+                                                onClick={() => { if (!isVerified) { setMessage('Verification is in progress.'); setMessageError(true); return; } setIsBulkAddOpen(true); }}
                                                 className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <Plus size={13} /> Bulk Add
