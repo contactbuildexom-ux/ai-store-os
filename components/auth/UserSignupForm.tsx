@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ChevronDown, Check, Sparkles, PenLine } from "lucide-react";
+import { Search, ChevronDown, Check } from "lucide-react";
 import Logo from "@/components/landing/logo";
 import EmailVerifyField from "@/components/auth/EmailVerifyField";
 import { STORE_IDEA_PRESETS } from "@/components/landing/MerchantStoreSetupModal";
@@ -297,17 +297,9 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                   <button
                     type="button"
                     onClick={() => setIsCustomMode((prev) => !prev)}
-                    className="text-xs font-bold text-[#1976d2] hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-[#1976d2] hover:underline"
                   >
-                    {isCustomMode ? (
-                      <>
-                        <Sparkles size={12} /> Choose from curated niches
-                      </>
-                    ) : (
-                      <>
-                        <PenLine size={12} /> Or write custom idea
-                      </>
-                    )}
+                    {isCustomMode ? "Choose from curated niches" : "Or write custom idea"}
                   </button>
                 </div>
 
@@ -349,7 +341,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                         {/* Search Input */}
                         <div className="sticky top-0 z-10 border-b border-slate-100 bg-white p-2">
                           <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400/80 stroke-[1.75]" />
                             <input
                               type="text"
                               placeholder="Search global e-commerce niches..."
@@ -367,10 +359,9 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                           <button
                             type="button"
                             onClick={handleSwitchToCustom}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-[#1976d2] bg-blue-50/70 hover:bg-blue-50 transition"
+                            className="flex w-full items-center rounded-lg px-3 py-2 text-left text-xs font-bold text-[#1976d2] bg-blue-50/70 hover:bg-blue-50 transition"
                           >
-                            <PenLine size={13} />
-                            <span>Write my own custom idea...</span>
+                            <span>Write my own custom idea</span>
                           </button>
 
                           {filteredIdeas.length === 0 ? (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Store, Sparkles, Palette, ArrowRight } from "lucide-react";
+import { Store, ArrowRight } from "lucide-react";
 import { THEME_OPTIONS, type ThemeOption } from "@/lib/store-theme";
 
 /* User login page */

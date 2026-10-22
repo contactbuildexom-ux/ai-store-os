@@ -898,13 +898,13 @@ export default function MerchantStoreSetupModal({
                     </div>
 
                     <div className="relative">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400/80 stroke-[1.75]" />
                       <input
                         type="text"
                         placeholder="Search ideas (e.g. Gaming, Perfume, Shoes, Coffee, Pret, Jewelry...)"
                         value={ideaSearch}
                         onChange={(e) => setIdeaSearch(e.target.value)}
-                        className="w-full rounded-xl border border-[#bfdcff] bg-white pl-9 pr-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20"
+                        className="w-full rounded-xl border border-[#bfdcff] bg-white pl-8.5 pr-3 py-2 text-xs text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20"
                       />
                     </div>
 
@@ -913,12 +913,12 @@ export default function MerchantStoreSetupModal({
                       onChange={(e) => handleSelectIdea(e.target.value)}
                       className={`${INPUT} font-semibold`}
                     >
-                      <option value="">Choose a Store Idea / Niche (or choose "Write your own")</option>
+                      <option value="">Select a store idea or niche</option>
                       <option value="custom" className="font-bold text-[#1976d2]">
-                        Write your own idea...
+                        Write your own idea
                       </option>
                       {filteredPresets.map((grp) => (
-                        <optgroup key={grp.category} label={`── ${grp.category} ──`}>
+                        <optgroup key={grp.category} label={grp.category}>
                           {grp.options.map((opt) => (
                             <option key={opt.id} value={opt.id}>
                               {opt.name}
