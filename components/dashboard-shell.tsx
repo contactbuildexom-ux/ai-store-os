@@ -43,7 +43,7 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
   const sidebar = (
     <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
       <div className="flex min-h-[88px] items-center gap-3 border-b border-white/[0.08] px-6 py-5">
-        <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+        <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 flex-1 items-center justify-start rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
           <PlatformLogo
             fallback={
               <>
@@ -51,9 +51,8 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
                 <span className="truncate text-[15px] font-semibold tracking-wide">{settings.title}</span>
               </>
             }
-            className="max-h-10 max-w-[190px] object-contain"
+            className="max-h-10 max-w-[190px] object-contain object-left"
           />
-          {settings.logoUrl && <span className="truncate text-[13px] font-semibold tracking-wide">{settings.title}</span>}
         </Link>
         <button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 shrink-0 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button>
       </div>
