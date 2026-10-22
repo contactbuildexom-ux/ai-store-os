@@ -32,6 +32,7 @@ export interface GeneratedStore {
   description: string;
   header_title: string;
   plan: 'free' | 'pro' | 'advanced';
+  niche?: string;
   is_verified?: boolean;
   verification_status?: 'pending' | 'verified' | 'rejected';
   whatsapp_number: string;
@@ -401,23 +402,42 @@ export const NICHE_IMAGES: Record<string, { images: string[]; categories: string
       { name: 'Minimalist Textured Ceramic Mug & Saucer Set', price: 1850, desc: 'Hand-thrown speckled stoneware ceramic coffee mug with artisanal curved handle.' }
     ]
   },
+  watches: {
+    categories: ['Luxury Chronographs', 'Automatic Timepieces', 'Minimalist Leather Watches', 'Classic Dress Watches', 'Stainless Steel Sport Watches'],
+    images: [
+      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1533139502658-0198f920d8e8?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1547996160-71dfabb1a7b1?auto=format&fit=crop&w=800&q=80'
+    ],
+    items: [
+      { name: 'Sapphire Crystal Automatic Skeleton Watch', price: 18500, desc: 'Self-winding mechanical movement with visible open-heart balance wheel and sapphire crystal glass.' },
+      { name: 'Midnight Black Minimalist Chronograph', price: 14200, desc: 'Triple-subdial chronograph timepiece with surgical-grade 316L stainless steel case and genuine leather strap.' },
+      { name: 'Classic Rose Gold Roman Dress Watch', price: 11900, desc: 'Ultra-slim 7mm profile with sunburst dial, Roman numeral markers, and Italian calfskin strap.' },
+      { name: 'Brushed Silver Stainless Diver 200M', price: 16400, desc: 'Rotating ceramic bezel, luminous hands and hour markers with screw-down crown.' },
+      { name: 'Vintage Tonneau Heritage Leather Watch', price: 13800, desc: 'Curved tonneau case inspired by 1930s art deco horology with hand-stitched leather.' },
+      { name: 'Full-Grain Leather 3-Slot Watch Travel Case', price: 4800, desc: 'Handcrafted luxury watch roll with velvet cushions and snap enclosure.' }
+    ]
+  },
   eyewear: {
-    categories: ['Polarized Sunglasses', 'Chronograph & Minimalist Watches', 'Blue Light Blocking Frames', 'Watch Accessories & Cases'],
+    categories: ['Polarized Sunglasses', 'UV400 Aviators', 'Blue Light Blocking Frames', 'Wayfarer Sunglasses'],
     images: [
       'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1533139502658-0198f920d8e8?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1577803645773-f96470509666?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1509695507497-903c140c43b0?auto=format&fit=crop&w=800&q=80'
     ],
     items: [
       { name: 'Matte Black Polarized Aviator Sunglasses', price: 4200, desc: 'Lightweight titanium frame with UV400 anti-glare polarized scratch-resistant lenses.' },
-      { name: 'Sapphire Crystal Minimalist Stainless Watch', price: 14500, desc: 'Japanese quartz movement timepiece with scratch-proof sapphire crystal and mesh strap.' },
       { name: 'Acetate Anti-Blue Light Computer Glasses', price: 3600, desc: 'Ergonomic hand-polished Italian acetate optical frames that block 99% harmful digital blue light.' },
       { name: 'Vintage Tortoiseshell Wayfarer Sunnies', price: 4800, desc: 'Classic retro silhouette sunglasses with warm amber polarized gradient lenses.' },
-      { name: 'Genuine Italian Leather 3-Watch Travel Roll', price: 5400, desc: 'Hand-stitched full-grain leather protective watch case with soft velvet dividers.' },
-      { name: 'Ultra-Thin Chronograph Black Leather Watch', price: 16800, desc: 'Subtle multi-dial chronograph timepiece with genuine calfskin leather strap.' }
+      { name: 'Titanium Rimless Round Reading Glasses', price: 3200, desc: 'Ultra-flexible lightweight rimless reading spectacles with anti-reflective coating.' },
+      { name: 'Oversized Gradient Square Sunglasses', price: 4500, desc: 'Chic bold square statement sunglasses offering complete UVA and UVB defense.' },
+      { name: 'Hard Shell Leather Sunglasses Protective Case', price: 1800, desc: 'Structured velvet-lined case with microfiber cleaning cloth.' }
     ]
   },
   fitness: {
@@ -534,7 +554,8 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
     if (rawN.includes('footwear') || rawN.includes('shoe') || rawN.includes('sneaker') || rawN.includes('loafer')) return 'footwear';
     if (rawN.includes('home') || rawN.includes('decor') || rawN.includes('candle') || rawN.includes('pottery') || rawN.includes('bedding') || rawN.includes('cushion') || rawN.includes('furniture')) return 'home';
     if (rawN.includes('perfume') || rawN.includes('oud') || rawN.includes('attar') || rawN.includes('fragrance') || rawN.includes('scent')) return 'perfume';
-    if (rawN.includes('watch') || rawN.includes('eyewear') || rawN.includes('sunglass')) return 'eyewear';
+    if (rawN.includes('watch') || rawN.includes('timepiece') || rawN.includes('chronograph')) return 'watches';
+    if (rawN.includes('eyewear') || rawN.includes('sunglass')) return 'eyewear';
     if (rawN.includes('hair')) return 'haircare';
     if (rawN.includes('makeup') || rawN.includes('cosmetic')) return 'makeup';
     if (rawN.includes('baby') || rawN.includes('kid')) return 'baby';
@@ -567,8 +588,13 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
     return 'perfume';
   }
 
-  // Eyewear, Watches & Timepieces
-  if (/\b(watch|watches|timepiece|timepieces|chronograph|sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles)\b/i.test(combined)) {
+  // Watches, Luxury Horology & Timepieces
+  if (/\b(watch|watches|wristwatch|wristwatches|timepiece|timepieces|chronograph|chronometer|horology|automatic watch|quartz watch|dial|bezel|rolex|patek|audemars|omega|tissot|casio|seiko|rado|tag heuer|hublot|ghari|ghariyan|ghadi)\b/i.test(combined)) {
+    return 'watches';
+  }
+
+  // Eyewear, Sunglasses & Optical Frames
+  if (/\b(sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles|aviator|wayfarer)\b/i.test(combined)) {
     return 'eyewear';
   }
 
@@ -688,7 +714,8 @@ function extractStoreName(prompt: string, niche: string): string {
     tech: ['Nexus Wave Tech', 'Pulse Gadget Lab', 'Apex Horizon Gear', 'Nova Volt Gear'],
     food: ['Artisan Brew Bar', 'Velvet Bean Roasters', 'Sweet Praline Co.', 'Roast & Sip Co.'],
     home: ['Haven Living Atelier', 'Artisan Nest Decor', 'Velvet Hearth Living', 'Aura Terra Home'],
-    eyewear: ['Vanguard Optics & Watches', 'Chrono Atelier', 'Aura Eyewear Co.', 'Solstice Timepieces'],
+    watches: ['Chrono Luxe Timepieces', 'Vanguard Horology Atelier', 'Aura Chronograph Co.', 'Apex Timepieces Studio'],
+    eyewear: ['Vanguard Optics', 'Solstice Eyewear Co.', 'Aura Polarized Studio', 'Luxe Frames Atelier'],
     fitness: ['Apex Pulse Activewear', 'Aura Velocity Fitness', 'Stride Form Athletic', 'Iron & Zen Co.'],
     baby: ['Little Nest Organics', 'Bloom Baby Atelier', 'Tiny Sprout Co.', 'Aura Sweet Tots'],
     stationery: ['Paper & Quill Atelier', 'Artisan Notebook Co.', 'Velvet Script Stationery', 'Focus Page Studio'],
@@ -784,7 +811,8 @@ export async function generateStoreFromPrompt(options: {
     food: 'Freshly roasted single-origin specialty coffees, hand-poured beans, and gourmet artisan treats.',
     wedding: 'Exquisite bridal accessories, royal wedding favor boxes, and handcrafted traditional keepsakes for your special moments.',
     home: 'Artisanal soy candles, handcrafted ceramic homeware, and cozy natural decor curated for peaceful living.',
-    eyewear: 'Polarized precision sunglasses, minimalist timepieces, and blue-light eyewear built for modern elegance.',
+    watches: 'Precision automatic timepieces, luxury chronographs, and timeless artisan wristwatches crafted for distinction.',
+    eyewear: 'Polarized precision sunglasses, UV400 lenses, and blue-light optical frames built for modern elegance.',
     fitness: 'High-performance squat-proof activewear, insulated hydration gear, and recovery essentials for every athlete.',
     baby: 'Pure organic cotton essentials, non-toxic wooden Montessori toys, and soothing swaddles for your little ones.',
     stationery: 'Bleedproof 160gsm journals, structured daily planners, and executive pens engineered for peak creativity.',

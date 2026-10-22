@@ -46,6 +46,8 @@ export const THEME_PALETTES: Record<string, string> = {
  */
 export function getStoreNicheColor(name?: string | null, slug?: string | null): string {
   const combined = `${name || ''} ${slug || ''}`.toLowerCase();
+  if (/watch|watches|chronograph|timepiece|horology|rolex|ghari/.test(combined)) return '#0f172a'; // Luxury obsidian / horology black & gold
+  if (/eyewear|sunglass|sunglasses|glasses|shades/.test(combined)) return '#1e293b'; // Sleek titanium slate
   if (/brew|coffee|cafe|tea|roast|cup|mug|beans|chai/.test(combined)) return '#92400e'; // Warm roasted brew / coffee
   if (/shoe|sneaker|kicks|trainer|footwear|athletic|runner/.test(combined)) return '#0284c7'; // Athletic cobalt blue
   if (/bag|clutch|purse|leather|tote|backpack|wallet/.test(combined)) return '#831843'; // Luxury velvet ruby / rose

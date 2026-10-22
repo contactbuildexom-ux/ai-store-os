@@ -10,6 +10,14 @@ export type StoreNiche =
   | 'clothing'
   | 'wedding'
   | 'gaming'
+  | 'watches'
+  | 'home'
+  | 'eyewear'
+  | 'fitness'
+  | 'baby'
+  | 'stationery'
+  | 'makeup'
+  | 'haircare'
   | 'general';
 
 export interface StoreHeroInfo {
@@ -35,6 +43,70 @@ const NICHE_HERO_ASSETS: Record<
     altText: string;
   }
 > = {
+  watches: {
+    image: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1508057198894-247b23fe5ade?auto=format&fit=crop&w=800&q=80',
+    badge: 'Luxury Horology • Precision Timepieces',
+    defaultTagline: 'Exquisite chronographs, automatic movements, and timeless luxury wristwatches crafted for distinction.',
+    altText: 'Luxury Chronographs & Precision Timepieces Collection',
+  },
+  home: {
+    image: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+    badge: 'Artisan Living • Cozy Homeware',
+    defaultTagline: 'Artisanal soy candles, handcrafted ceramic tableware, and cozy natural decor curated for peaceful living.',
+    altText: 'Artisanal Homeware and Cozy Modern Living Collection',
+  },
+  eyewear: {
+    image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1508296695146-257a814070b4?auto=format&fit=crop&w=800&q=80',
+    badge: 'Polarized Eyewear • Optical Frames',
+    defaultTagline: 'Precision polarized sunglasses, UV400 lenses, and blue-light optical frames designed for modern style.',
+    altText: 'Polarized Sunglasses and Optical Frames Collection',
+  },
+  fitness: {
+    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=800&q=80',
+    badge: 'Performance Activewear • Gym & Yoga',
+    defaultTagline: 'Squat-proof compression sets, hydration gear, and ergonomic fitness essentials for every athlete.',
+    altText: 'High Performance Fitness and Activewear Gear',
+  },
+  baby: {
+    image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?auto=format&fit=crop&w=800&q=80',
+    badge: 'Organic Baby Care • Montessori Toys',
+    defaultTagline: 'Pure organic cotton rompers, non-toxic wooden Montessori toys, and soothing muslin swaddles for your little ones.',
+    altText: 'Organic Baby Apparel and Educational Toys Collection',
+  },
+  stationery: {
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=800&q=80',
+    badge: 'Artisan Stationery • Planners & Journals',
+    defaultTagline: 'Bleedproof 160gsm journals, structured daily planners, and executive pens engineered for peak creativity.',
+    altText: 'Bespoke Journals, Planners & Fine Stationery Collection',
+  },
+  makeup: {
+    image: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=800&q=80',
+    badge: 'Clean Cosmetics • Velvety Pigments',
+    defaultTagline: 'Clean buildable cosmetics, velvety lip stains, and weightless glowing pigments crafted for natural radiant beauty.',
+    altText: 'Luxury Cosmetics, Palettes and Lip Stains Collection',
+  },
+  haircare: {
+    image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=1000&q=85',
+    secondaryImage: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80',
+    tertiaryImage: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?auto=format&fit=crop&w=800&q=80',
+    badge: 'Botanical Hair Therapy • Scalp Nutrition',
+    defaultTagline: 'Botanical scalp therapies, sulfate-free cleansers, and intense argan masks for radiant, healthy bounce.',
+    altText: 'Organic Hair Nutrition and Salon Treatments Collection',
+  },
   gaming: {
     image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1000&q=85',
     secondaryImage: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80',
@@ -137,9 +209,33 @@ const NICHE_HERO_ASSETS: Record<
  * Detect store niche from name, tagline, description and products
  */
 export function detectStoreNiche(
-  store?: { name?: string | null; tagline?: string | null; description?: string | null },
+  store?: { name?: string | null; tagline?: string | null; description?: string | null; niche?: string | null; selected_niche?: string | null },
   products?: Array<{ name?: string | null; category?: string | null; category_name?: string | null; description?: string | null }>
 ): StoreNiche {
+  // 1. Direct explicit niche matching
+  const explicit = (store?.niche || store?.selected_niche || '').toLowerCase().trim();
+  if (explicit) {
+    if (explicit.includes('watch') || explicit.includes('timepiece') || explicit.includes('chronograph')) return 'watches';
+    if (explicit.includes('home') || explicit.includes('decor') || explicit.includes('candle') || explicit.includes('furniture')) return 'home';
+    if (explicit.includes('eyewear') || explicit.includes('sunglass') || explicit.includes('glasses')) return 'eyewear';
+    if (explicit.includes('fitness') || explicit.includes('gym') || explicit.includes('yoga') || explicit.includes('workout')) return 'fitness';
+    if (explicit.includes('baby') || explicit.includes('kid') || explicit.includes('toy')) return 'baby';
+    if (explicit.includes('stationery') || explicit.includes('journal') || explicit.includes('planner') || explicit.includes('book')) return 'stationery';
+    if (explicit.includes('makeup') || explicit.includes('cosmetic') || explicit.includes('lipstick')) return 'makeup';
+    if (explicit.includes('hair') || explicit.includes('scalp')) return 'haircare';
+    if (explicit.includes('footwear') || explicit.includes('shoe') || explicit.includes('sneaker') || explicit.includes('kicks')) return 'footwear';
+    if (explicit.includes('bag') || explicit.includes('clutch') || explicit.includes('purse')) return 'handbags';
+    if (explicit.includes('jewel') || explicit.includes('gold') || explicit.includes('silver')) return 'jewelry';
+    if (explicit.includes('perfume') || explicit.includes('fragrance') || explicit.includes('oud') || explicit.includes('attar')) return 'perfume';
+    if (explicit.includes('skin') || explicit.includes('serum') || explicit.includes('beauty')) return 'skincare';
+    if (explicit.includes('gaming') || explicit.includes('esports')) return 'gaming';
+    if (explicit.includes('food') || explicit.includes('coffee') || explicit.includes('tea') || explicit.includes('bakery')) return 'food';
+    if (explicit.includes('wedding') || explicit.includes('bridal')) return 'wedding';
+    if (explicit.includes('nature') || explicit.includes('plant')) return 'nature';
+    if (explicit.includes('tech') || explicit.includes('gadget') || explicit.includes('electronics')) return 'tech';
+    if (explicit.includes('cloth') || explicit.includes('fashion') || explicit.includes('apparel') || explicit.includes('pret')) return 'clothing';
+  }
+
   const combined = [
     store?.name || '',
     store?.tagline || '',
@@ -147,58 +243,98 @@ export function detectStoreNiche(
     ...(products || []).map((p) => `${p.name || ''} ${(p as any).category || (p as any).category_name || ''} ${p.description || ''}`)
   ].join(' ').toLowerCase();
 
-  // 1. Gaming / RGB / Mechanical Keyboards / Setup (High Priority)
-  if (/\b(gaming|gamer|games|game|rgb|battlestation|console|streamer|gpu|pc build|setup|joystick|gamepad|keyboard|mouse|headset)\b/i.test(combined) && !/\b(nature|plant|dress|kurta|lawn)\b/i.test(combined)) {
+  // 1. Watches, Luxury Horology & Timepieces (High priority before tech & eyewear)
+  if (/\b(watch|watches|wristwatch|wristwatches|timepiece|timepieces|chronograph|chronometer|horology|automatic watch|quartz watch|dial|bezel|rolex|patek|audemars|omega|tissot|casio|seiko|rado|tag heuer|hublot|ghari|ghariyan|ghadi)\b/i.test(combined)) {
+    return 'watches';
+  }
+
+  // 2. Home Decor, Candles & Living
+  if (/\b(home|decor|living|furniture|interior|candle|candles|scented candle|vase|vases|ceramic|ceramics|pottery|bedding|linen|cushion|cushions|quilt|rug|rugs|sofa|tableware|kitchen|cookware|mugs|mug|diffuser)\b/i.test(combined)) {
+    return 'home';
+  }
+
+  // 3. Eyewear & Sunglasses
+  if (/\b(eyewear|sunglass|sunglasses|glasses|shades|spectacles|goggles|aviator|wayfarer|optical frames|anti blue light)\b/i.test(combined)) {
+    return 'eyewear';
+  }
+
+  // 4. Fitness, Gym & Activewear
+  if (/\b(fitness|gym|workout|activewear|sport|sports|athletic|yoga|pilates|compression|exercise|leggings|crossfit)\b/i.test(combined)) {
+    return 'fitness';
+  }
+
+  // 5. Baby & Kids
+  if (/\b(baby|babies|kid|kids|infant|toddler|toddlers|children|toy|toys|onesie|onesies|romper|swaddle|nursery|montessori)\b/i.test(combined)) {
+    return 'baby';
+  }
+
+  // 6. Stationery, Books & Planners
+  if (/\b(stationery|notebook|notebooks|journal|journals|planner|planners|pen|pens|fountain pen|diary|calligraphy|paper)\b/i.test(combined)) {
+    return 'stationery';
+  }
+
+  // 7. Makeup & Cosmetics
+  if (/\b(makeup|make-up|cosmetic|cosmetics|lipstick|lipsticks|lip tint|lip gloss|foundation|eyeliner|blush|mascara)\b/i.test(combined)) {
+    return 'makeup';
+  }
+
+  // 8. Haircare & Scalp
+  if (/\b(hair|haircare|shampoo|conditioner|hair oil|scalp|biotin|keratin|hair mask)\b/i.test(combined)) {
+    return 'haircare';
+  }
+
+  // 9. Gaming / RGB / Mechanical Keyboards / Setup
+  if (/\b(gaming|gamer|games|game|rgb|battlestation|console|streamer|gpu|pc build|setup|joystick|gamepad|mechanical keyboard|gaming mouse)\b/i.test(combined) && !/\b(nature|plant|dress|kurta|lawn)\b/i.test(combined)) {
     return 'gaming';
   }
 
-  // 2. Nature / Plants / Organic Greens (High Priority)
+  // 10. Nature / Plants / Organic Greens
   if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|botanical|organic tea|nursery|lawn)\b/i.test(combined)) {
     return 'nature';
   }
 
-  // 2. Handbags / Clutches / Purses / Leather Bags (High Priority)
+  // 11. Handbags / Clutches / Purses / Leather Bags
   if (/\b(handbag|handbags|hanbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets)\b/i.test(combined)) {
     return 'handbags';
   }
 
-  // 3. Jewelry (Checked before wedding so jewelry is never confused with wedding bride & groom)
+  // 12. Jewelry (Checked before wedding)
   if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|jhumka|jhumkay|gold|silver|zircon|diamond|pendant|pendants|bracelet|bangle|bangles|choker|chokers)\b/i.test(combined)) {
     return 'jewelry';
   }
 
-  // 4. Shoes / Footwear
-  if (/\b(shoe|shoes|footwear|sneaker|sneakers|kicks|jogger|joggers|boots|sandals|heels|loafers|slides|chappal)\b/i.test(combined)) {
+  // 13. Shoes / Footwear
+  if (/\b(shoe|shoes|footwear|sneaker|sneakers|kicks|jogger|joggers|boots|sandals|heels|loafers|slides|chappal|jootay|joota)\b/i.test(combined)) {
     return 'footwear';
   }
 
-  // 5. Perfume & Fragrances
-  if (/\b(perfume|perfumes|fragrance|fragrances|attar|attars|scent|scents|oud|cologne|parfum|edp|eau de|itr|khus|amber|musk)\b/i.test(combined) || (store as any)?.niche === 'perfume' || (store as any)?.selected_niche === 'perfume') {
+  // 14. Perfume & Fragrances
+  if (/\b(perfume|perfumes|fragrance|fragrances|attar|attars|scent|scents|oud|cologne|parfum|edp|eau de|itr|khus|amber|musk|khushboo|khushbu)\b/i.test(combined)) {
     return 'perfume';
   }
 
-  // 6. Skincare & Cosmetics
+  // 15. Skincare & Cosmetics
   if (/\b(skin|skincare|serum|serums|lotion|cream|creams|beauty|sunscreen|spf|toner|cleanser|moisturizer|acne|glow|dermal)\b/i.test(combined)) {
     return 'skincare';
   }
 
-  // 7. Tech & Electronics
-  if (/\b(tech|gadget|gadgets|electronics|headphone|headphones|earbuds|smartwatch|watch|bluetooth|keyboard|mouse|laptop|charger|audio|magsafe)\b/i.test(combined)) {
+  // 16. Tech & Electronics (Without watch, so watch is always caught by watches)
+  if (/\b(tech|gadget|gadgets|electronics|headphone|headphones|earbuds|smartwatch|bluetooth|keyboard|mouse|laptop|charger|audio|magsafe|airpods|speaker|speakers)\b/i.test(combined)) {
     return 'tech';
   }
 
-  // 8. Food, Coffee & Bakery
-  if (/\b(coffee|tea|cafe|bean|beans|roast|espresso|bakery|cake|cakes|sweet|sweets|food|chocolate|truffle|beverage|snack)\b/i.test(combined)) {
+  // 17. Food, Coffee & Bakery
+  if (/\b(coffee|tea|cafe|bean|beans|roast|espresso|bakery|cake|cakes|sweet|sweets|food|chocolate|truffle|beverage|snack|mithai|chai)\b/i.test(combined)) {
     return 'food';
   }
 
-  // 9. Wedding Couture & Bridal Services (Strict wedding events)
+  // 18. Wedding Couture & Bridal Services
   if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|favor box|shagun)\b/i.test(combined)) {
     return 'wedding';
   }
 
-  // 10. Clothing & Fashion
-  if (/\b(cloth|clothes|clothing|dress|dresses|apparel|fashion|pret|kurta|kurtas|suit|suits|hoodie|hoodies|t-shirt|shirt|shirts|trouser|jeans|wear|outfit|chiffon|silk|lawn)\b/i.test(combined)) {
+  // 19. Clothing & Fashion
+  if (/\b(cloth|clothes|clothing|dress|dresses|apparel|fashion|pret|kurta|kurtas|suit|suits|hoodie|hoodies|t-shirt|shirt|shirts|trouser|jeans|wear|outfit|chiffon|silk|lawn|kapray|kapra)\b/i.test(combined)) {
     return 'clothing';
   }
 
@@ -209,7 +345,7 @@ export function detectStoreNiche(
  * Resolves complete hero presentation details tailored to the store's concept
  */
 export function resolveStoreHero(
-  store: { name?: string | null; tagline?: string | null; description?: string | null },
+  store: { name?: string | null; tagline?: string | null; description?: string | null; niche?: string | null; selected_niche?: string | null },
   products: Array<{ name?: string | null; category?: string | null; category_name?: string | null; description?: string | null; image_url?: string | null }> = []
 ): StoreHeroInfo {
   const niche = detectStoreNiche(store, products);

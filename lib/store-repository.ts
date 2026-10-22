@@ -26,6 +26,7 @@ export interface StoreRecord {
   social_links?: Partial<Record<'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'x', string>>;
   logo_url?: string;
   password_hash?: string;
+  niche?: string;
   delivery?: {
     store_city?: string;
     city_rate?: number;
@@ -207,6 +208,7 @@ class StoreRepository {
       social_links: generated.social_links ?? {},
       password_hash: (generated as any).password_hash,
       delivery: (generated as any).delivery,
+      niche: (generated as any).niche || (generated as any).selected_niche,
     };
 
     // Save in memory cache

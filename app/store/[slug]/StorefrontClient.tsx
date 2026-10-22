@@ -75,6 +75,8 @@ export type Store = {
     accepts_advance: boolean;
     advance_percentage: number;
     tagline?: string | null;
+    description?: string | null;
+    niche?: string | null;
 };
 
 export type Props = {

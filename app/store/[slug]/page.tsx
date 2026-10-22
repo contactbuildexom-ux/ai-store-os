@@ -99,6 +99,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         accepts_advance: false,
         advance_percentage: 50,
         tagline: repoStore.tagline,
+        description: repoStore.description,
+        niche: (repoStore as any).niche,
         payment_details: {}
       };
       if (!settingsData) {
@@ -161,6 +163,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     accepts_advance: store.accepts_advance ?? false,
     advance_percentage: store.advance_percentage ?? 50,
     tagline: (store as Record<string, unknown>).tagline as string ?? repoStoreFallback?.tagline ?? null,
+    description: (store as Record<string, unknown>).description as string ?? repoStoreFallback?.description ?? null,
+    niche: (store as Record<string, unknown>).niche as string ?? (repoStoreFallback as any)?.niche ?? null,
     primary_color: resolvedThemeColor,
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,

@@ -15,6 +15,9 @@ type StoreRow = {
   created_at?: string | null;
   is_verified?: boolean;
   verification_status?: string | null;
+  niche?: string | null;
+  tagline?: string | null;
+  description?: string | null;
 };
 
 async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAdminClient>>, userId: string) {
@@ -65,6 +68,9 @@ export async function GET(request: Request) {
             created_at: repoStore.created_at || new Date().toISOString(),
             is_verified: repoStore.is_verified ?? false,
             verification_status: repoStore.verification_status || "pending",
+            niche: (repoStore as any).niche || null,
+            tagline: repoStore.tagline || null,
+            description: repoStore.description || null,
           } as StoreRow,
         });
       }
@@ -136,3 +142,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

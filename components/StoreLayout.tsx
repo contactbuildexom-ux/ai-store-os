@@ -126,6 +126,15 @@ export default function StoreLayout({
     if (activeCats.length < 4 && products.length >= 4) {
       const niche = detectStoreNiche({ name: storeName, tagline, description } as any, products as any);
       const fallbackNicheCats: Record<string, string[]> = {
+        watches: ['Luxury Chronographs', 'Automatic Timepieces', 'Leather Strap Watches', 'Classic Dress Watches'],
+        home: ['Scented Candles', 'Ceramic Tableware', 'Living Room Decor', 'Artisan Lighting'],
+        eyewear: ['Polarized Sunglasses', 'Optical Frames', 'Anti-Blue Light Glasses', 'Aviators'],
+        fitness: ['Activewear Sets', 'Compression Leggings', 'Sports Bras', 'Gym Accessories'],
+        baby: ['Organic Rompers', 'Wooden Toys', 'Muslin Swaddles', 'Nursery Essentials'],
+        stationery: ['Daily Planners', 'Bullet Journals', 'Executive Pens', 'Desk Accessories'],
+        makeup: ['Velvet Lipsticks', 'Face Palettes', 'Glowing Blush', 'Eye Essentials'],
+        haircare: ['Scalp Treatments', 'Botanical Shampoos', 'Hair Oils', 'Deep Conditioners'],
+        gaming: ['Mechanical Keyboards', 'Gaming Mice', 'RGB Accessories', 'Wireless Headsets'],
         nature: ['Indoor Plants', 'Succulents', 'Planters', 'Herbal Greens'],
         handbags: ['Velvet Clutches', 'Shoulder Bags', 'Tote Bags', 'Evening Purses'],
         jewelry: ['Rings', 'Necklaces', 'Earrings', 'Bracelets'],

@@ -552,7 +552,10 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     plants: ['plant', 'plants', 'green', 'greens', 'flora', 'succulent', 'botanical', 'herb', 'nature', 'pot'],
     jewelry: ['jewel', 'jewelry', 'jewellery', 'gold', 'silver', 'ring', 'rings', 'necklace', 'earring', 'pendant', 'choker', 'jhumka'],
     clothes: ['cloth', 'clothes', 'clothing', 'kurta', 'suit', 'dress', 'shirt', 'hoodie', 'pret', 'lawn', 'kapray'],
-    tech: ['tech', 'headphone', 'headphones', 'watch', 'smartwatch', 'earbuds', 'charger', 'audio', 'magsafe', 'gaming']
+    watches: ['watch', 'watches', 'wristwatch', 'wristwatches', 'timepiece', 'timepieces', 'chronograph', 'ghari', 'ghadi'],
+    home: ['candle', 'candles', 'vase', 'decor', 'homeware', 'linen', 'diffuser'],
+    eyewear: ['sunglass', 'sunglasses', 'glasses', 'shades', 'frames'],
+    tech: ['tech', 'headphone', 'headphones', 'smartwatch', 'earbuds', 'charger', 'audio', 'magsafe', 'gaming']
   };
 
   const stopWords = new Set([
