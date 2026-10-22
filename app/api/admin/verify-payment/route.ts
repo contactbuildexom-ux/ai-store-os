@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { storeRepo } from '@/lib/store-repository';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,9 +17,26 @@ export async function POST(request: Request) {
     }
 
     const newStatus = action === 'verify' ? 'verified' : 'rejected';
-    const storePlan = action === 'verify' ? 'pro' : 'free';
 
-    // 1. Update payment request status
+    // 1. Determine target plan from store's selected_plan
+    let storePlan = 'pro';
+    try {
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('selected_plan')
+        .eq('id', store_id)
+        .maybeSingle();
+
+      if (storeRow?.selected_plan === 'business') {
+        storePlan = 'business';
+      } else if (storeRow?.selected_plan === 'pro') {
+        storePlan = 'pro';
+      }
+    } catch {}
+
+    const resolvedPlan = action === 'verify' ? storePlan : 'basic';
+
+    // 2. Update payment request status in store_payments
     const { error: paymentError } = await supabase
       .from('store_payments')
       .update({ status: newStatus })
@@ -28,11 +46,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: paymentError.message }, { status: 500 });
     }
 
-    // 2. If verified, upgrade store plan to 'pro' and payment_status to 'verified'
+    // 3. If verified, upgrade store plan and payment_status to 'verified'
     const { error: storeError } = await supabase
       .from('stores')
       .update({
-        plan: storePlan,
+        plan: resolvedPlan,
         payment_status: newStatus
       })
       .eq('id', store_id);
@@ -41,8 +59,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: storeError.message }, { status: 500 });
     }
 
+    // 4. Also update store in local repo
+    try {
+      await storeRepo.updateStore(store_id, {
+        plan: resolvedPlan as any,
+        payment_status: newStatus
+      });
+    } catch {}
+
     return NextResponse.json({
-      message: `Payment ${newStatus} successfully! Store plan updated to ${storePlan.toUpperCase()}.`
+      message: `Payment ${newStatus} successfully! Store plan updated to ${resolvedPlan.toUpperCase()}.`
     }, { status: 200 });
 
   } catch (err: any) {

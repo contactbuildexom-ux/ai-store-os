@@ -23,7 +23,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
       const { data: dbStore } = await fetchStoreByIdOrSlug(
         supabase,
         slug,
-        'id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details'
+        'id, name, slug, plan, selected_plan, payment_status, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details'
       );
       store = dbStore;
     } catch (e) {
@@ -43,7 +43,10 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
       ]);
       settingsData = settingsResult.data ?? null;
       deliveryData = deliveryResult.data ?? null;
-      const isBasicStore = ['basic', 'free'].includes(String(store.plan || 'basic').toLowerCase());
+      const rawStorePlan = String(store.plan || 'basic').toLowerCase();
+      const isStorePaid = ['verified', 'approved', 'active', 'paid'].includes(String(store.payment_status || '').toLowerCase());
+      const effectiveStorePlan = (!isStorePaid && rawStorePlan !== 'basic' && rawStorePlan !== 'free') ? 'basic' : rawStorePlan;
+      const isBasicStore = ['basic', 'free'].includes(effectiveStorePlan);
       const categoryMap = new Map((categoriesResult.data ?? []).map((c: any) => [String(c.id), String(c.name)]));
 
       const productById = new Map<string, { id: string; name: string; description: string | null; price: number; image_url: string | null; category?: string | null }>();
@@ -87,6 +90,8 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
         name: repoStore.name,
         slug: repoStore.slug,
         plan: repoStore.plan || 'basic',
+        selected_plan: repoStore.selected_plan,
+        payment_status: repoStore.payment_status,
         whatsapp_number: repoStore.whatsapp_number || '',
         primary_color: repoStore.theme?.primaryColor || repoStore.primary_color || '#1976d2',
         selected_theme: repoStore.theme?.id || repoStore.selected_theme || 'emerald',
@@ -139,11 +144,18 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     || repoStoreFallback?.selected_theme 
     || 'royal-gold';
 
+  const rawPlanValue = String(store.plan ?? repoStoreFallback?.plan ?? 'basic').toLowerCase();
+  const paymentStatusValue = String(store.payment_status ?? repoStoreFallback?.payment_status ?? 'pending').toLowerCase();
+  const isPaid = ['verified', 'approved', 'active', 'paid'].includes(paymentStatusValue);
+  const effectiveFinalPlan = (!isPaid && rawPlanValue !== 'basic' && rawPlanValue !== 'free') ? 'basic' : rawPlanValue;
+
   const safeStore = {
     id: store.id,
     name: store.name,
     slug: store.slug,
-    plan: store.plan ?? repoStoreFallback?.plan ?? 'basic',
+    plan: effectiveFinalPlan,
+    selected_plan: store.selected_plan ?? repoStoreFallback?.selected_plan ?? null,
+    payment_status: paymentStatusValue,
     whatsapp_number: store.whatsapp_number ?? repoStoreFallback?.whatsapp_number ?? '',
     accepts_cod: store.accepts_cod ?? true,
     accepts_advance: store.accepts_advance ?? false,

@@ -531,7 +531,9 @@ export async function POST(request: Request) {
       };
     }
 
-    const limits = planLimits(targetStore?.plan ?? selectedPlan ?? "basic");
+    // For new stores, initial generation limits follow basic plan (0 categories, 20 products) until payment approval
+    const effectivePlanForCatalog = targetStore ? (targetStore.plan || "basic") : "basic";
+    const limits = planLimits(effectivePlanForCatalog);
     const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName, targetNiche);
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
@@ -553,7 +555,10 @@ export async function POST(request: Request) {
         : requestedPlan === "pro" 
           ? "pro" 
           : "basic";
-      const planToStore = normalizedPlan;
+      const isPaidPlan = normalizedPlan === "pro" || normalizedPlan === "business";
+      // Active plan must be "basic" until payment is approved by superadmin
+      const planToStore = "basic";
+      const selectedPlanToStore = normalizedPlan;
 
       if (supabase) {
         // Supabase is configured: attempt robust insertion with automatic fallback
@@ -568,8 +573,8 @@ export async function POST(request: Request) {
             password_hash,
             whatsapp_number: requestedWhatsapp || null,
             plan: planToStore,
-            selected_plan: planToStore,
-            payment_status: "pending",
+            selected_plan: selectedPlanToStore,
+            payment_status: isPaidPlan ? "pending" : "active",
             is_verified: false,
             verification_status: "pending",
             primary_color: generated.theme_color,

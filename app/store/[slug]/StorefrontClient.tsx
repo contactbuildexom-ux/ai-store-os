@@ -68,6 +68,8 @@ export type Store = {
     name: string;
     slug: string;
     plan: string;
+    selected_plan?: string | null;
+    payment_status?: string | null;
     whatsapp_number: string;
     accepts_cod: boolean;
     accepts_advance: boolean;
@@ -164,7 +166,10 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     );
     const themeColor = liveThemeColor;
     const bannerText = settings?.banner_text || 'Free delivery nationwide on orders above Rs. 3,000!';
-    const planNormalized = (liveStore.plan || 'basic').toLowerCase();
+    const rawPlan = (liveStore.plan || 'basic').toLowerCase();
+    const paymentStatus = ((liveStore as any)?.payment_status || '').toLowerCase();
+    const isPaidVerified = paymentStatus === 'verified' || paymentStatus === 'approved' || paymentStatus === 'active' || paymentStatus === 'paid';
+    const planNormalized = (!isPaidVerified && rawPlan !== 'basic' && rawPlan !== 'free') ? 'basic' : rawPlan;
     const isBasic = planNormalized === 'basic' || planNormalized === 'free';
     const isPro = planNormalized === 'pro' || planNormalized === 'advanced';
     const isBusiness = planNormalized === 'business' || planNormalized === 'unlimited';
