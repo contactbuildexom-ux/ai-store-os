@@ -91,7 +91,7 @@ async function generateWithOpenAI(prompt: string): Promise<unknown> {
           content: [
             "Create a comprehensive, realistic starter storefront from the user's request.",
             "Return only a JSON object with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name).",
-            "Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Product prices must be positive numbers in the local PKR currency (e.g. 1500 to 12000), with no currency symbols. Every product category_name must match one of the categories exactly.",
+            "Generate 4 to 6 relevant categories and 6 to 12 distinct, authentic, high-quality products spread across these categories (never create dummy, repetitive products or fake edition suffixes). Product prices must be positive numbers in the local PKR currency (e.g. 1500 to 12000), with no currency symbols. Every product category_name must match one of the categories exactly.",
             "Do not include markdown, comments, or additional properties.",
           ].join(" "),
         },
@@ -128,7 +128,7 @@ async function generateWithGemini(prompt: string): Promise<unknown> {
         role: "user",
         parts: [{
           text: [
-            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate 4 to 6 relevant categories and 30 to 36 plausible, high-quality products spread across these categories. Prices must be positive numbers in PKR currency without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
+            "Create a comprehensive, realistic starter storefront from this request. Return only valid JSON with fields: store_name (string), slug (URL-friendly string), theme_color (six-digit hex color), banner_text (string), footer_text (short brand-appropriate footer copy), categories (array of strings), products (array of objects with name, price, description, category_name). Generate 4 to 6 relevant categories and 6 to 12 distinct, authentic, high-quality products spread across these categories (no dummy duplicate products or synthetic edition suffixes). Prices must be positive numbers in PKR currency without currency symbols. Each product category_name must exactly match one category. Do not add markdown or extra properties.",
             `Store request: ${prompt}`,
           ].join("\n\n"),
         }],

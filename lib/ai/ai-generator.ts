@@ -633,7 +633,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
   }
 
   // Nature, Plants & Gardening
-  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|lawn)\b/i.test(combined)) {
+  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|turf|greenery)\b/i.test(combined)) {
     return 'nature';
   }
 
@@ -787,38 +787,30 @@ export async function generateStoreFromPrompt(options: {
   const header_title = `Welcome to ${finalName}`;
   const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
-  // Plan-specific limits: Free Starter has 0 categories & max 20 products
-  const isFreePlan = plan === 'free';
-  const categories: string[] = isFreePlan ? [] : plan === 'pro' ? nicheData.categories.slice(0, 5) : nicheData.categories;
-  const targetProductCount = isFreePlan ? 20 : plan === 'pro' ? 32 : 36;
+  // Authentic categories and products matching curated niche catalogue (no repetitive dummy duplicates or fake edition suffixes)
+  const categories: string[] = nicheData.categories || [];
   const badges = ['Bestseller', 'New Arrival', 'Limited Edition', 'Top Pick', 'Trending', 'Customer Favorite'];
 
-  const products: GeneratedProduct[] = [];
-  for (let i = 0; i < targetProductCount; i++) {
-    const baseItem = nicheData.items[i % nicheData.items.length];
-    const cat = categories.length > 0 ? categories[i % categories.length] : '';
-    const img1 = nicheData.images[i % nicheData.images.length];
-    const img2 = nicheData.images[(i + 1) % nicheData.images.length];
-    const img3 = nicheData.images[(i + 2) % nicheData.images.length];
+  const products: GeneratedProduct[] = nicheData.items.map((item, idx) => {
+    const img1 = nicheData.images[idx % nicheData.images.length];
+    const img2 = nicheData.images[(idx + 1) % nicheData.images.length];
+    const img3 = nicheData.images[(idx + 2) % nicheData.images.length];
     const multiImages = `${img1},${img2},${img3}`;
-    const cycle = Math.floor(i / nicheData.items.length);
-    const editionSuffix = cycle === 1 ? ' · Signature Edition' : cycle === 2 ? ' · Luxe Edition' : cycle === 3 ? ' · Elite Series' : cycle === 4 ? ' · Reserve' : '';
-    const priceAdjustment = cycle * 350;
-    const finalPrice = baseItem.price + priceAdjustment;
+    const cat = categories[idx % categories.length] || 'Featured';
 
-    products.push({
-      id: `prod_${i + 1}_${Math.random().toString(36).substring(2, 7)}`,
-      name: `${baseItem.name}${editionSuffix}`,
-      description: baseItem.desc,
-      price: finalPrice,
+    return {
+      id: `prod_${idx + 1}_${Math.random().toString(36).substring(2, 7)}`,
+      name: item.name,
+      description: item.desc,
+      price: item.price,
       category: cat,
       image_url: multiImages,
-      wholesale_cost: Math.round(finalPrice * 0.55),
-      min_accept_price: Math.round(finalPrice * 0.85),
-      stock_status: i % 5 === 2 ? 'low_stock' : 'in_stock',
-      badge: badges[i % badges.length]
-    });
-  }
+      wholesale_cost: Math.round(item.price * 0.55),
+      min_accept_price: Math.round(item.price * 0.85),
+      stock_status: idx % 3 === 1 ? 'low_stock' : 'in_stock',
+      badge: badges[idx % badges.length]
+    };
+  });
 
   return {
     name: finalName,
