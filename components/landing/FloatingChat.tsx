@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -5,6 +6,10 @@ import {
   isPlatformAssistantResponse,
   type PlatformAssistantRequest,
 } from "@/lib/storefront-types";
+
+/* ============ CONFIG ============ */
+const BEXI_ICON = "/bexi-ai.jpeg"; // Bexi AI icon (put the file inside /public). Use .jpeg here if your file is .jpeg
+/* ================================== */
 
 type Msg = { from: "bot" | "user"; text: string };
 
@@ -83,8 +88,12 @@ export default function FloatingChat() {
         <div className="flex h-[480px] w-[calc(100vw-2rem)] max-w-[360px] flex-col overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-2xl shadow-[#0b2545]/20">
           {/* Header */}
           <div className="flex items-center gap-3 bg-gradient-to-r from-[#0b2545] to-[#1976d2] px-4 py-3.5 text-white">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-lg">
-              🤖
+            <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white ring-2 ring-white/30">
+              <img
+                src={BEXI_ICON}
+                alt="Bexi AI"
+                className="h-full w-full object-cover"
+              />
             </span>
             <div className="flex-1">
               <p className="text-sm font-bold leading-tight">Bexi AI</p>
@@ -173,33 +182,30 @@ export default function FloatingChat() {
         </div>
       )}
 
-      {/* Bexi AI button: compact gol icon (44px), label sirf hover par dikhta hai */}
+      {/* Bexi AI button: gol robot icon (48px), label sirf hover par dikhta hai */}
       <button
         type="button"
         aria-label={open ? "Close Bexi AI chat" : "Open Bexi AI chat"}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="group relative flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white shadow-md shadow-[#0b2545]/25 transition hover:-translate-y-0.5 hover:brightness-110"
+        className={`group relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-md shadow-[#0b2545]/25 transition hover:-translate-y-0.5 hover:brightness-110 ${
+          open
+            ? "bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white"
+            : "bg-white ring-2 ring-[#1976d2]/40"
+        }`}
       >
         {open ? (
           <span className="text-lg">✕</span>
         ) : (
           <>
-            <svg
-              aria-hidden="true"
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12z" />
-              <path d="M9.5 9h.01" />
-              <path d="M14.5 9h.01" />
-              <path d="M9.5 13a3.5 3.5 0 0 0 5 0" />
-            </svg>
+            <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full">
+              <img
+                src={BEXI_ICON}
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover"
+              />
+            </span>
             <span className="pointer-events-none absolute right-full mr-2 whitespace-nowrap rounded-full bg-[#0b2545] px-3 py-1 text-xs font-bold text-white opacity-0 shadow-md transition group-hover:opacity-100">
               Bexi AI
             </span>
