@@ -52,56 +52,96 @@ function WhatsAppIcon() {
 /* Right side: chhota store mockup */
 function StoreVisual() {
   return (
-    <div className="relative mx-auto hidden h-[270px] w-full max-w-[420px] lg:block" aria-hidden="true">
-      {/* Main store card */}
-      <div className="absolute inset-x-4 bottom-0 top-6 rounded-2xl border border-white/60 bg-white p-4">
+    <div className="relative mx-auto hidden h-[280px] w-full max-w-[440px] lg:block" aria-hidden="true">
+      {/* Main store card with browser chrome */}
+      <div className="absolute inset-x-2 bottom-0 top-3 rounded-2xl border border-white/80 bg-white p-3 shadow-2xl overflow-hidden">
         {/* Browser bar */}
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-rose-300" />
-          <span className="h-2 w-2 rounded-full bg-amber-300" />
-          <span className="h-2 w-2 rounded-full bg-emerald-300" />
-          <span className="ml-3 h-4 flex-1 rounded-full bg-slate-100" />
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-rose-400" />
+            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          </div>
+          <span className="rounded-full bg-slate-50 border border-slate-200 px-3 py-0.5 text-[9px] font-medium text-slate-500">
+            mystore.buildexom.store
+          </span>
+          <div className="w-8" />
+        </div>
+
+        {/* Announcement Ticker */}
+        <div className="mt-1 flex items-center justify-center rounded-md bg-[#1976d2] py-0.5 px-2 text-[8px] font-bold text-white tracking-wide">
+          <span>⚡ Fast Nationwide Delivery on All Orders</span>
         </div>
 
         {/* Hero banner */}
-        <div className="relative mt-4 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-sky-100 p-4">
-          <span className="block h-2.5 w-28 rounded-full bg-brand-navy" />
-          <span className="mt-2 block h-2 w-20 rounded-full bg-slate-300" />
-          <span className="mt-3 block h-5 w-16 rounded-md bg-brand-blue" />
-          <span className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-blue-300/50" />
-          <span className="absolute bottom-0 right-8 h-12 w-10 rounded-t-2xl bg-white/80" />
+        <div className="relative mt-2 overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50/80 p-3 flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <span className="inline-block rounded-md bg-[#1976d2] px-1.5 py-0.5 text-[8px] font-bold text-white">
+              Featured Collection
+            </span>
+            <p className="text-xs font-black text-slate-900 leading-tight">
+              Aura Lifestyle Atelier
+            </p>
+            <p className="text-[9px] text-slate-600 line-clamp-1">
+              Curated premium essentials delivered across Pakistan.
+            </p>
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="rounded-md bg-[#1976d2] px-2 py-0.5 text-[8px] font-bold text-white">
+                Shop Collection
+              </span>
+              <span className="rounded-md bg-emerald-600 px-2 py-0.5 text-[8px] font-bold text-white">
+                WhatsApp
+              </span>
+            </div>
+          </div>
+
+          <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl shadow-md border border-white">
+            <img
+              src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80"
+              alt="Store Preview"
+              className="h-full w-full object-cover"
+            />
+          </div>
         </div>
 
-        {/* Product tiles */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {["bg-indigo-200", "bg-sky-200", "bg-blue-300"].map((c) => (
-            <div key={c} className="rounded-lg bg-slate-50 p-1.5">
-              <span className={`block h-10 w-full rounded-md ${c}`} />
-              <span className="mt-1.5 block h-1.5 w-3/4 rounded-full bg-slate-300" />
-              <span className="mt-1 block h-1.5 w-1/2 rounded-full bg-slate-200" />
+        {/* Product tiles with real images */}
+        <div className="mt-2.5 grid grid-cols-3 gap-2">
+          {[
+            { img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80", title: "Sport Runner", price: "Rs. 4,900" },
+            { img: "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=300&q=80", title: "Soy Candle", price: "Rs. 2,450" },
+            { img: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?auto=format&fit=crop&w=300&q=80", title: "French EDP", price: "Rs. 3,800" },
+          ].map((item, idx) => (
+            <div key={idx} className="rounded-lg bg-slate-50 p-1 border border-slate-100 flex flex-col justify-between">
+              <div className="relative h-12 w-full overflow-hidden rounded-md bg-slate-200">
+                <img src={item.img} alt={item.title} className="h-full w-full object-cover" />
+              </div>
+              <div className="mt-1 flex items-center justify-between px-0.5">
+                <span className="text-[8px] font-bold text-slate-800 truncate">{item.title}</span>
+                <span className="text-[7px] font-extrabold text-[#1976d2]">{item.price}</span>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Chip: new order */}
-      <div className="animate-float absolute -left-2 top-0 flex items-center gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm text-emerald-600">
+      {/* Floating Chip: New order via WhatsApp */}
+      <div className="animate-float absolute -left-2 top-0 flex items-center gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 shadow-lg">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-600">
           ✓
         </span>
         <div>
-          <p className="text-[11px] font-bold leading-tight text-brand-navy">New order</p>
+          <p className="text-[11px] font-bold leading-tight text-slate-900">New order</p>
           <p className="text-[10px] leading-tight text-slate-500">via WhatsApp</p>
         </div>
       </div>
 
-      {/* Chip: store live */}
-      <div className="animate-float absolute -right-2 bottom-6 flex items-center gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm text-blue-600">
+      {/* Floating Chip: Store is live */}
+      <div className="animate-float absolute -right-2 bottom-3 flex items-center gap-2 rounded-2xl border border-blue-100 bg-white px-3 py-2 shadow-lg">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-[#1976d2]">
           ✦
         </span>
         <div>
-          <p className="text-[11px] font-bold leading-tight text-brand-navy">Store is live</p>
+          <p className="text-[11px] font-bold leading-tight text-slate-900">Store is live</p>
           <p className="text-[10px] leading-tight text-slate-500">Built in minutes</p>
         </div>
       </div>
