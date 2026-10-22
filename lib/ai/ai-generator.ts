@@ -385,22 +385,131 @@ const NICHE_IMAGES: Record<string, { images: string[]; categories: string[]; ite
 };
 
 /**
- * Detect niche from user prompt
+ * Detect niche from user prompt, explicit niche ID, and custom store name
  */
-function detectNiche(prompt: string): string {
-  const p = prompt.toLowerCase();
-  if (/\b(gaming|gamer|games|game|rgb|battlestation|console|streamer|gpu|pc build|setup|joystick|gamepad|keyboard|mouse|headset)\b/i.test(p) && !/\b(nature|plant|dress|kurta|lawn)\b/i.test(p)) return 'gaming';
-  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|botanical|lawn)\b/i.test(p)) return 'nature';
-  if (/\b(handbag|handbags|hanbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets)\b/i.test(p)) return 'handbags';
-  if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bangles|jhumka|jhumkay|chain|choker)\b/i.test(p)) return 'jewelry';
-  if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|boot|boots|jootay|joota|chappal|heels|sandals)\b/i.test(p)) return 'footwear';
-  if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne)\b/i.test(p)) return 'perfume';
-  if (/\b(skin|skincare|cosmetic|cosmetics|beauty|serum|serums|cream|lotion|makeup|glow|face wash|sunscreen)\b/i.test(p)) return 'skincare';
-  if (/\b(tech|phone|phones|mobile|gadget|gadgets|smartwatch|watch|watches|electronic|electronics|laptop|earbuds|charger)\b/i.test(p)) return 'tech';
-  if (/\b(coffee|tea|chai|food|cake|cakes|sweet|sweets|mithai|chocolate|chocolates|bakery|beans|cafe|roast)\b/i.test(p)) return 'food';
-  if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|favor|shagun)\b/i.test(p)) return 'wedding';
-  if (/\b(cloth|clothes|clothing|dress|dresses|fashion|wear|hoodie|hoodies|kurta|kurtas|suit|suits|apparel|kapray|shirt|shirts|pret|lawn|chiffon)\b/i.test(p)) return 'clothing';
-  return 'clothing'; // default versatile fallback
+export function detectNiche(prompt: string, explicitNiche?: string, customStoreName?: string): string {
+  // Combine all inputs into a single text pool for robust keyword matching
+  const combined = [
+    explicitNiche || '',
+    customStoreName || '',
+    prompt || ''
+  ].join(' ').toLowerCase();
+
+  // 1. Direct explicit niche ID matching
+  if (explicitNiche) {
+    const rawN = explicitNiche.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (rawN.includes('footwear') || rawN.includes('shoe') || rawN.includes('sneaker') || rawN.includes('loafer')) return 'footwear';
+    if (rawN.includes('home') || rawN.includes('decor') || rawN.includes('candle') || rawN.includes('pottery') || rawN.includes('bedding') || rawN.includes('cushion') || rawN.includes('furniture')) return 'home';
+    if (rawN.includes('perfume') || rawN.includes('oud') || rawN.includes('attar') || rawN.includes('fragrance') || rawN.includes('scent')) return 'perfume';
+    if (rawN.includes('watch') || rawN.includes('eyewear') || rawN.includes('sunglass')) return 'eyewear';
+    if (rawN.includes('hair')) return 'haircare';
+    if (rawN.includes('makeup') || rawN.includes('cosmetic')) return 'makeup';
+    if (rawN.includes('baby') || rawN.includes('kid')) return 'baby';
+    if (rawN.includes('fitness') || rawN.includes('yoga') || rawN.includes('gym') || rawN.includes('sport')) return 'fitness';
+    if (rawN.includes('stationery') || rawN.includes('journal') || rawN.includes('notebook') || rawN.includes('planner')) return 'stationery';
+    if (rawN.includes('skin') || rawN.includes('beauty')) return 'skincare';
+    if (rawN.includes('bag') || rawN.includes('clutch') || rawN.includes('leather')) return 'handbags';
+    if (rawN.includes('jewel') || rawN.includes('silver') || rawN.includes('gold')) return 'jewelry';
+    if (rawN.includes('gaming') || rawN.includes('gamer')) return 'gaming';
+    if (rawN.includes('coffee') || rawN.includes('tea') || rawN.includes('food') || rawN.includes('bakery') || rawN.includes('chocolate')) return 'food';
+    if (rawN.includes('plant') || rawN.includes('nature')) return 'nature';
+    if (rawN.includes('wedding') || rawN.includes('bridal')) return 'wedding';
+    if (rawN.includes('tech') || rawN.includes('audio') || rawN.includes('phone') || rawN.includes('gadget')) return 'tech';
+    if (rawN.includes('cloth') || rawN.includes('pret') || rawN.includes('apparel') || rawN.includes('fashion') || rawN.includes('streetwear') || rawN.includes('hoodie')) return 'clothing';
+  }
+
+  // 2. High priority keyword checks in combined text
+  // Footwear & Shoes
+  if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|kicks|boot|boots|trainer|trainers|loafer|loafers|oxford|oxfords|heels|sandals|jootay|joota|chappal)\b/i.test(combined)) {
+    return 'footwear';
+  }
+
+  // Home Decor, Living & Furniture
+  if (/\b(home|decor|living|furniture|interior|candle|candles|scented candle|vase|vases|ceramic|ceramics|pottery|bedding|linen|cushion|cushions|quilt|rug|rugs|sofa|tableware|kitchen|cookware|mugs|mug|diffuser)\b/i.test(combined)) {
+    return 'home';
+  }
+
+  // Perfume, Fragrances & Oud
+  if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne|parfum|edp|eau de parfum)\b/i.test(combined)) {
+    return 'perfume';
+  }
+
+  // Eyewear, Watches & Timepieces
+  if (/\b(watch|watches|timepiece|timepieces|chronograph|sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles)\b/i.test(combined)) {
+    return 'eyewear';
+  }
+
+  // Handbags & Leather Goods
+  if (/\b(handbag|handbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets|satchel)\b/i.test(combined)) {
+    return 'handbags';
+  }
+
+  // Jewelry & Ornaments
+  if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bracelets|bangles|jhumka|jhumkay|chain|choker|pendant|pendants|zirconia)\b/i.test(combined)) {
+    return 'jewelry';
+  }
+
+  // Skincare & Dermacare
+  if (/\b(skin|skincare|serum|serums|cream|lotion|derma|dermacare|glow|sunscreen|moisturizer|face wash|toner|hyaluronic|niacinamide)\b/i.test(combined)) {
+    return 'skincare';
+  }
+
+  // Haircare & Scalp
+  if (/\b(hair|haircare|shampoo|conditioner|hair oil|scalp|biotin|keratin|hair mask)\b/i.test(combined)) {
+    return 'haircare';
+  }
+
+  // Makeup & Cosmetics
+  if (/\b(makeup|make-up|cosmetic|cosmetics|lipstick|lipsticks|lip tint|lip gloss|foundation|eyeliner|blush|mascara)\b/i.test(combined)) {
+    return 'makeup';
+  }
+
+  // Fitness & Activewear
+  if (/\b(fitness|gym|workout|activewear|sport|sports|athletic|yoga|pilates|compression|exercise|leggings|crossfit)\b/i.test(combined)) {
+    return 'fitness';
+  }
+
+  // Baby & Kids
+  if (/\b(baby|babies|kid|kids|infant|toddler|toddlers|children|toy|toys|onesie|onesies|romper|swaddle|nursery|montessori)\b/i.test(combined)) {
+    return 'baby';
+  }
+
+  // Stationery, Books & Planners
+  if (/\b(stationery|notebook|notebooks|journal|journals|planner|planners|pen|pens|fountain pen|diary|calligraphy|paper)\b/i.test(combined)) {
+    return 'stationery';
+  }
+
+  // Gaming
+  if (/\b(gaming|gamer|games|game|rgb|battlestation|console|streamer|gpu|pc build|setup|joystick|gamepad|mechanical keyboard|gaming mouse)\b/i.test(combined) && !/\b(nature|plant|dress|kurta|lawn)\b/i.test(combined)) {
+    return 'gaming';
+  }
+
+  // Tech, Mobile & Electronics
+  if (/\b(tech|technology|phone|phones|mobile|gadget|gadgets|smartwatch|electronic|electronics|laptop|earbuds|charger|chargers|headphones|airpods)\b/i.test(combined)) {
+    return 'tech';
+  }
+
+  // Food, Coffee & Gourmet
+  if (/\b(coffee|tea|chai|food|cake|cakes|sweet|sweets|mithai|chocolate|chocolates|bakery|beans|cafe|roast|honey|spices|snack|snacks)\b/i.test(combined)) {
+    return 'food';
+  }
+
+  // Wedding & Bridal
+  if (/\b(wedding|bridal|shaadi|shadi|dulhan|groom|bride|marriage|mehndi|nikkah|barat|walima|valima|favor|favors|shagun)\b/i.test(combined)) {
+    return 'wedding';
+  }
+
+  // Nature, Plants & Gardening
+  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|lawn)\b/i.test(combined)) {
+    return 'nature';
+  }
+
+  // Clothing & Apparel (broad catch)
+  if (/\b(cloth|clothes|clothing|dress|dresses|fashion|wear|hoodie|hoodies|kurta|kurtas|suit|suits|apparel|kapray|shirt|shirts|pret|lawn|chiffon|abaya|abayas|hijab|hijabs|shawl|shawls|trousers|co-ord)\b/i.test(combined)) {
+    return 'clothing';
+  }
+
+  return 'clothing';
 }
 
 /**
