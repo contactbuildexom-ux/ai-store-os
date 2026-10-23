@@ -38,7 +38,8 @@ export default function MerchantLoginPage() {
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Unable to create your store account.");
-        router.replace("/ai-store-test");
+        const newSlug = result?.store?.slug || result?.slug || storeSlug;
+        router.replace(newSlug ? `/merchant/${encodeURIComponent(newSlug)}/dashboard` : "/dashboard");
         router.refresh();
         return;
       }
@@ -51,7 +52,8 @@ export default function MerchantLoginPage() {
           });
           const result = await response.json();
           if (!response.ok) throw new Error(result.error || "No store is linked to this account.");
-          router.replace("/ai-store-test");
+          const currentSlug = result?.store?.slug || result?.slug;
+          router.replace(currentSlug ? `/merchant/${encodeURIComponent(currentSlug)}/dashboard` : "/dashboard");
           router.refresh();
           return;
         }
@@ -65,7 +67,8 @@ export default function MerchantLoginPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to sign in to this store.");
 
-      router.replace("/ai-store-test");
+      const loggedInSlug = result?.store?.slug || result?.slug;
+      router.replace(loggedInSlug ? `/merchant/${encodeURIComponent(loggedInSlug)}/dashboard` : "/dashboard");
       router.refresh();
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Unable to sign in.");

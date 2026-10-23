@@ -68,7 +68,18 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, categories });
+    // Strictly deduplicate categories by lowercase trimmed name
+    const seenCatNames = new Set<string>();
+    const deduplicatedCategories: any[] = [];
+    for (const c of categories) {
+      const k = (c.name || '').trim().toLowerCase();
+      if (k && !seenCatNames.has(k)) {
+        seenCatNames.add(k);
+        deduplicatedCategories.push(c);
+      }
+    }
+
+    return NextResponse.json({ success: true, categories: deduplicatedCategories });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load categories.";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -98,11 +109,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: limitCheck.message }, { status: 403 });
     }
 
-    const { data: category, error } = await supabase
+    const imageUrl = textValue(body?.image_url);
+
+    // Check if category already exists for this store to prevent duplicate
+    const { data: existingCat } = await supabase
       .from("store_categories")
-      .insert([{ store_id: storeId, name }])
+      .select("*")
+      .eq("store_id", storeId)
+      .ilike("name", name)
+      .maybeSingle();
+
+    if (existingCat) {
+      if (imageUrl && !existingCat.image_url) {
+        try {
+          await supabase.from("store_categories").update({ image_url: imageUrl }).eq("id", existingCat.id);
+          existingCat.image_url = imageUrl;
+        } catch {}
+      }
+      return NextResponse.json({ success: true, category: existingCat, message: "Category already exists." });
+    }
+
+    let insertPayload: any = { store_id: storeId, name };
+    if (imageUrl) insertPayload.image_url = imageUrl;
+
+    let { data: category, error } = await supabase
+      .from("store_categories")
+      .insert([insertPayload])
       .select()
       .single();
+
+    if (error && (error.message?.includes("image_url") || error.code === "PGRST204")) {
+      const fallbackRes = await supabase
+        .from("store_categories")
+        .insert([{ store_id: storeId, name }])
+        .select()
+        .single();
+      category = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error) throw error;
 

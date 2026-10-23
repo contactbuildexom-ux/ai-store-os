@@ -32,6 +32,10 @@ export interface GeneratedStore {
   description: string;
   header_title: string;
   plan: 'free' | 'pro' | 'advanced';
+  selected_plan?: string;
+  payment_status?: string;
+  payment_details?: Record<string, unknown>;
+  hero_images?: string[];
   niche?: string;
   is_verified?: boolean;
   verification_status?: 'pending' | 'verified' | 'rejected';

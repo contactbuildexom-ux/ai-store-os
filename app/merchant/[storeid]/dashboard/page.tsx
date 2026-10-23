@@ -185,8 +185,14 @@ export default function MerchantDashboardMaster() {
     const [proofUrl, setProofUrl] = useState('');
     const [pendingUpgradeStatus, setPendingUpgradeStatus] = useState<string | null>(null);
 
-    // Category Form
+    // Category Form & Logo
     const [catName, setCatName] = useState('');
+    const [catLogoFile, setCatLogoFile] = useState<File | null>(null);
+    const [catLogoUrl, setCatLogoUrl] = useState('');
+    const [uploadingCatLogo, setUploadingCatLogo] = useState(false);
+
+    // Hero Section Showcase Images (3 custom images)
+    const [heroImages, setHeroImages] = useState<string[]>(['', '', '']);
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
@@ -532,6 +538,13 @@ export default function MerchantDashboardMaster() {
             if (settingsData.settings) {
                 setBannerText(settingsData.settings.banner_text || '');
                 setLogoUrl(settingsData.settings.logo_url || '');
+                if (Array.isArray(settingsData.settings.hero_images)) {
+                    setHeroImages([
+                        settingsData.settings.hero_images[0] || '',
+                        settingsData.settings.hero_images[1] || '',
+                        settingsData.settings.hero_images[2] || '',
+                    ]);
+                }
                 setWhatsappNumber(settingsData.settings.whatsapp_number || '');
                 setAcceptsCod(settingsData.settings.accepts_cod ?? true);
                 setAcceptsAdvance(settingsData.settings.accepts_advance ?? false);
@@ -633,7 +646,7 @@ export default function MerchantDashboardMaster() {
                 settingsPayload.advance_percentage = Number(advancePercentage);
                 settingsPayload.payment_details = paymentDetails;
             }
-            if (activeTab === 'branding') settingsPayload.social_links = socialLinks;
+            if (activeTab === 'branding') { settingsPayload.social_links = socialLinks; settingsPayload.hero_images = heroImages.filter(Boolean); }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -938,16 +951,39 @@ export default function MerchantDashboardMaster() {
             setMessageError(true);
             return;
         }
+
+        let finalCatImg = catLogoUrl.trim();
+        if (catLogoFile && resolvedStoreId) {
+            try {
+                setUploadingCatLogo(true);
+                finalCatImg = await uploadStoreImage(catLogoFile, resolvedStoreId);
+            } catch (err) {
+                console.warn('Category image upload warning:', err);
+            } finally {
+                setUploadingCatLogo(false);
+            }
+        }
+
         const res = await fetch('/api/stores/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ store_id: resolvedStoreId, name: catName })
+            body: JSON.stringify({ 
+                store_id: resolvedStoreId, 
+                name: catName.trim(),
+                image_url: finalCatImg || undefined
+            })
         });
         const data = await res.json();
         if (data.success) {
-            setMessage('Category added.');
+            setMessage('Category added successfully.');
+            setMessageError(false);
             setCatName('');
+            setCatLogoFile(null);
+            setCatLogoUrl('');
             fetchMeshData(resolvedStoreId);
+        } else {
+            setMessage(data.error || 'Failed to add category.');
+            setMessageError(true);
         }
     };
 
@@ -1469,6 +1505,83 @@ export default function MerchantDashboardMaster() {
                                         <input type="url" value={logoUrl} onChange={event => { setLogoUrl(event.target.value); setLogoFile(null); }} placeholder="https://example.com/logo.png" className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </label>
                                 </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-bold text-slate-900">Hero Section Showcase Images (3 Images)</label>
+                                        <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                                            Recommended: 800 x 1000 px (Portrait)
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mb-3">
+                                        Customize the 3 showcase images displayed in the storefront hero section. Upload high-res images or enter image URLs.
+                                    </p>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {[0, 1, 2].map((idx) => {
+                                            const imgUrl = heroImages[idx] || '';
+                                            const labels = ['Hero Image 1 (Main)', 'Hero Image 2 (Secondary)', 'Hero Image 3 (Accent)'];
+                                            return (
+                                                <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+                                                    <p className="text-[11px] font-bold text-slate-800">{labels[idx]}</p>
+                                                    <div className="relative aspect-[3/4] w-full rounded-lg border border-dashed border-slate-300 bg-white overflow-hidden flex items-center justify-center">
+                                                        {imgUrl ? (
+                                                            <>
+                                                                <img src={imgUrl} alt={`Hero ${idx + 1}`} className="size-full object-cover" />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const copy = [...heroImages];
+                                                                        copy[idx] = '';
+                                                                        setHeroImages(copy);
+                                                                    }}
+                                                                    className="absolute top-1.5 right-1.5 p-1 rounded-md bg-rose-600 text-white shadow-xs hover:bg-rose-700"
+                                                                    title="Delete image"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-400 font-medium">No image set</span>
+                                                        )}
+                                                    </div>
+                                                    <label className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs">
+                                                        <Upload size={12} /> Upload File
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={async (e) => {
+                                                                const file = e.target.files?.[0];
+                                                                if (file && resolvedStoreId) {
+                                                                    try {
+                                                                        const uploadedUrl = await uploadStoreImage(file, resolvedStoreId);
+                                                                        const copy = [...heroImages];
+                                                                        copy[idx] = uploadedUrl;
+                                                                        setHeroImages(copy);
+                                                                    } catch (upErr) {
+                                                                        console.warn('Hero image upload warning:', upErr);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="sr-only"
+                                                        />
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        placeholder="Or paste image URL"
+                                                        value={imgUrl}
+                                                        onChange={(e) => {
+                                                            const copy = [...heroImages];
+                                                            copy[idx] = e.target.value;
+                                                            setHeroImages(copy);
+                                                        }}
+                                                        className="w-full rounded-lg border border-slate-200 bg-white p-1.5 text-[10px] text-slate-700 outline-none focus:border-blue-400"
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -1654,13 +1767,71 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                 </div>
                             ) : (
-                                <form onSubmit={handleAddCategory} className="flex gap-2">
-                                    <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Category name" required disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} className="min-w-0 flex-1 rounded-lg border border-slate-200 p-2.5 text-xs disabled:bg-slate-100" />
-                                    <button type="submit" disabled={!isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} className="rounded-lg px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>Add category</button>
+                                <form onSubmit={handleAddCategory} className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                                    <div className="flex flex-col sm:flex-row gap-2.5">
+                                        <input 
+                                            type="text" 
+                                            value={catName} 
+                                            onChange={e => setCatName(e.target.value)} 
+                                            placeholder="Category name (e.g. Footwear, Perfumes, Summer Lawn)" 
+                                            required 
+                                            disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} 
+                                            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-blue-400 disabled:bg-slate-100" 
+                                        />
+                                        <button 
+                                            type="submit" 
+                                            disabled={uploadingCatLogo || !isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} 
+                                            className="rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" 
+                                            style={{ backgroundColor: themeColor }}
+                                        >
+                                            {uploadingCatLogo ? 'Uploading…' : 'Add Category'}
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs">
+                                            <Upload size={13} /> {catLogoFile ? catLogoFile.name : 'Category Logo / Image (Optional)'}
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={e => setCatLogoFile(e.target.files?.[0] || null)} 
+                                                className="sr-only" 
+                                            />
+                                        </label>
+                                        <input 
+                                            type="url" 
+                                            value={catLogoUrl} 
+                                            onChange={e => { setCatLogoUrl(e.target.value); setCatLogoFile(null); }} 
+                                            placeholder="Or paste category logo image URL" 
+                                            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs outline-none focus:border-blue-400" 
+                                        />
+                                    </div>
                                 </form>
                             )}
 
-                            {categories.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{categories.map((category) => <div key={category.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2.5"><span className="flex items-center gap-2 text-xs font-medium text-slate-700"><Tag size={14} className="text-slate-400" />{category.name}</span><span className="text-[10px] text-slate-400">{products.filter((product) => product.category_id === category.id).length} products</span></div>)}</div>}
+                            {categories.length > 0 && (
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {categories.map((category) => {
+                                        const catImg = (category as any).image_url;
+                                        return (
+                                            <div key={category.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-2xs">
+                                                <span className="flex items-center gap-2.5 text-xs font-bold text-slate-800">
+                                                    {catImg ? (
+                                                        <img src={catImg} alt={category.name} className="size-7 rounded-lg object-cover border border-slate-100" />
+                                                    ) : (
+                                                        <span className="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500">
+                                                            <Tag size={14} />
+                                                        </span>
+                                                    )}
+                                                    {category.name}
+                                                </span>
+                                                <span className="text-[11px] font-semibold text-slate-500">
+                                                    {products.filter((p) => p.category_id === category.id || ((p as any).category || '').toLowerCase() === category.name.toLowerCase()).length} products
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -2472,14 +2643,14 @@ export default function MerchantDashboardMaster() {
                                 className="flex-1 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
                                 style={{ backgroundColor: themeColor }}
                             >
-                                Activate Pro (PKR 3,500/mo)
+                                Activate Pro
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setUpgradeModalPlan('business')}
                                 className="flex-1 rounded-xl bg-slate-900 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
                             >
-                                Activate Business (PKR 7,500/mo)
+                                Activate Business
                             </button>
                         </div>
                     </div>
@@ -2497,7 +2668,7 @@ export default function MerchantDashboardMaster() {
                                     className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white"
                                     style={{ backgroundColor: upgradeModalPlan === 'business' ? '#0f172a' : themeColor }}
                                 >
-                                    <Sparkles size={11} /> Upgrade Plan
+                                    Upgrade Plan
                                 </span>
                                 <h3 className="mt-1.5 text-lg sm:text-xl font-extrabold text-slate-900">
                                     {PLAN_DETAILS[upgradeModalPlan].title} Plan Subscription
@@ -2679,8 +2850,7 @@ export default function MerchantDashboardMaster() {
                                         </>
                                     ) : (
                                         <>
-                                            <Sparkles size={14} />
-                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : `Submit Payment Proof for Approval`}
+                                            {upgradeModalPlan === 'basic' ? 'Switch to Basic' : 'Submit'}
                                         </>
                                     )}
                                 </button>

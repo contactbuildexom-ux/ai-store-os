@@ -81,7 +81,7 @@ export type Store = {
 
 export type Props = {
     store: Store;
-    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null } | null;
+    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null; hero_images?: string[] | null } | null;
     products: Product[];
     delivery: DeliverySettings | null;
     paymentDetails?: any;
@@ -221,6 +221,10 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
     // Dynamic Niche & Hero Info
     const heroInfo = useMemo(() => resolveStoreHero(liveStore, liveProducts), [liveStore, liveProducts]);
+
+    const heroImage1 = settings?.hero_images?.[0] || heroInfo.heroImage;
+    const heroImage2 = settings?.hero_images?.[1] || heroInfo.secondaryHeroImage || heroInfo.heroImage;
+    const heroImage3 = settings?.hero_images?.[2] || heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage;
 
     // Bexi AI Chat states
     const [aiMessages, setAiMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
@@ -918,7 +922,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 style={{ borderColor: `${themeColor}35` }}
                             >
                                 <img
-                                    src={heroInfo.heroImage}
+                                    src={heroImage1}
                                     alt={heroInfo.altText}
                                     className="size-full object-cover transition duration-500 hover:scale-105"
                                     loading="eager"
@@ -931,7 +935,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
                             >
                                 <img
-                                    src={heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    src={heroImage2}
                                     alt={heroInfo.altText}
                                     className="size-full object-cover transition duration-500 hover:scale-105"
                                     loading="eager"
@@ -944,7 +948,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
                             >
                                 <img
-                                    src={heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage}
+                                    src={heroImage3}
                                     alt={heroInfo.altText}
                                     className="size-full object-cover transition duration-500 hover:scale-105"
                                     loading="eager"
@@ -1075,15 +1079,29 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                             }
                                     }
                                 >
-                                    <span 
-                                        className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition shadow-2xs"
-                                        style={{
-                                            backgroundColor: isSelected ? themeColor : `${themeColor}18`,
-                                            color: isSelected ? '#ffffff' : themeColor
-                                        }}
-                                    >
-                                        {getCategorySymbol(cat)}
-                                    </span>
+                                    {(() => {
+                                        const matchingCatObj = Array.isArray((liveStore as any).categories) 
+                                            ? (liveStore as any).categories.find((c: any) => (typeof c === 'object' ? c?.name?.toLowerCase() === cat.toLowerCase() : c?.toLowerCase() === cat.toLowerCase()))
+                                            : null;
+                                        const catImageUrl = matchingCatObj && typeof matchingCatObj === 'object' ? matchingCatObj.image_url : null;
+                                        return catImageUrl ? (
+                                            <img 
+                                                src={catImageUrl} 
+                                                alt={cat} 
+                                                className="size-8 sm:size-9 shrink-0 rounded-xl object-cover shadow-2xs" 
+                                            />
+                                        ) : (
+                                            <span 
+                                                className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition shadow-2xs"
+                                                style={{
+                                                    backgroundColor: isSelected ? themeColor : `${themeColor}18`,
+                                                    color: isSelected ? '#ffffff' : themeColor
+                                                }}
+                                            >
+                                                {getCategorySymbol(cat)}
+                                            </span>
+                                        );
+                                    })()}
                                     <div className="min-w-0 flex-1">
                                         <p className="text-xs sm:text-sm font-bold truncate leading-tight">{cat}</p>
                                         <p className="text-[10px] text-slate-500 font-medium pt-0.5">{productCount} {productCount === 1 ? 'item' : 'items'}</p>
@@ -1154,7 +1172,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
                             </h3>
                             <p className="text-xs text-slate-500">
-                                {liveProducts.length > 0 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} available` : `${productLimit ?? 20} product slots available (0/${productLimit ?? 20} used)`}
+                                {liveProducts.length > 0 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} available` : 'Explore our curated catalog'}
                             </p>
                         </div>
                         {selectedCategory !== 'All' && (
@@ -1170,63 +1188,17 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                     {/* Products Grid - flush card boxes */}
                     {liveProducts.length === 0 ? (
-                        <div className="w-full">
-                            {/* Full-width flush product container boxes with zero side waste */}
-                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2.5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 w-full px-0">
-                                {Array.from({ length: Math.min(productLimit ?? 20, 12) }, (_, i) => i + 1).map((slot) => (
-                                    <div
-                                        key={`empty-slot-${slot}`}
-                                        className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border shadow-xs transition duration-300 hover:shadow-md w-full bg-white/80"
-                                        style={{
-                                            borderColor: `${themeColor}28`,
-                                        }}
-                                    >
-                                        <div 
-                                            className="relative aspect-square w-full overflow-hidden flex flex-col items-center justify-center p-4 text-center border-b"
-                                            style={{ 
-                                                backgroundColor: `${themeColor}0a`,
-                                                borderColor: `${themeColor}18` 
-                                            }}
-                                        >
-                                            <div 
-                                                className="grid size-12 place-items-center rounded-2xl mb-2.5 transition-transform duration-300 group-hover:scale-110 shadow-2xs"
-                                                style={{ backgroundColor: `${themeColor}16`, color: themeColor }}
-                                            >
-                                                <PackagePlus size={22} />
-                                            </div>
-                                            <span 
-                                                className="text-xs font-bold tracking-tight text-slate-800"
-                                            >
-                                                Product #{slot}
-                                            </span>
-                                            <span 
-                                                className="text-[10px] font-semibold mt-0.5"
-                                                style={{ color: themeColor }}
-                                            >
-                                                Slot Available
-                                            </span>
-                                        </div>
-
-                                        <div className="p-3 sm:p-3.5 bg-white">
-                                            <p className="line-clamp-1 text-xs font-bold text-slate-800">
-                                                Awaiting Product
-                                            </p>
-                                            <div className="mt-2.5 flex items-center justify-between">
-                                                <span className="text-xs font-extrabold text-slate-500">
-                                                    --
-                                                </span>
-                                                <div 
-                                                    className="grid size-8 place-items-center rounded-full text-white/70 shadow-xs"
-                                                    style={{ backgroundColor: themeColor }}
-                                                    title="Product slot ready"
-                                                >
-                                                    <ShoppingCart size={14} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-10 sm:p-14 text-center max-w-md mx-auto my-6">
+                            <div 
+                                className="mx-auto grid size-14 place-items-center rounded-2xl mb-3 shadow-xs"
+                                style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+                            >
+                                <PackagePlus size={26} />
                             </div>
+                            <h4 className="text-sm font-bold text-slate-800">Catalog is being prepared</h4>
+                            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                                Products added by the merchant from the dashboard will appear here in high resolution.
+                            </p>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
@@ -1377,47 +1349,25 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
                 )}
 
-                {/* 5. Animated Ask Bexi AI Button (Only Button Directly Below About, Screen-matching Background) */}
+                {/* 5. Floating Ask Bexi AI Shopping Assistant in Bottom-Right Corner */}
                 {hasAiChatbot && (
-                <div className="mx-2 sm:mx-3 !mt-3 !mb-4 flex items-center justify-center sm:justify-end">
+                <div className="fixed bottom-4 right-4 z-40">
                     <button
                         type="button"
                         onClick={() => setIsAiOpen(true)}
-                        className="group relative inline-flex items-center gap-2.5 overflow-hidden rounded-2xl px-5 py-2.5 text-xs font-black text-slate-900 shadow-md backdrop-blur-xs transition-all duration-300 hover:scale-105 active:scale-95 border"
-                        style={{
-                            background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}12 100%)`,
-                            borderColor: `${themeColor}45`,
-                        }}
+                        className="group relative flex items-center gap-2.5 overflow-hidden rounded-full bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl transition hover:bg-slate-800 hover:scale-105 active:scale-95 border border-slate-700"
                         aria-label="Open Bexi AI Store Assistant"
                     >
-                        {/* Animated Glowing Pulse Halo */}
                         <span 
-                            className="absolute -inset-1 rounded-2xl opacity-60 blur-xs transition group-hover:opacity-100 animate-pulse duration-1000" 
-                            style={{
-                                background: `linear-gradient(90deg, ${themeColor}40, #10b98150, ${themeColor}50)`,
-                            }}
-                        />
-
-                        <span 
-                            className="relative grid size-6 place-items-center rounded-xl text-white shadow-2xs"
-                            style={{ backgroundColor: themeColor }}
+                            className="grid size-6 place-items-center rounded-full text-slate-950 font-bold"
+                            style={{ backgroundColor: themeColor || '#10b981' }}
                         >
-                            <Sparkles size={13} className="animate-spin duration-1000 text-white" />
+                            <Sparkles size={14} />
                         </span>
-
-                        <span className="relative font-black text-xs tracking-wide text-slate-900">
+                        <span className="font-bold text-xs tracking-wide text-white">
                             Ask Bexi AI
                         </span>
-
-                        <span 
-                            className="relative rounded-full px-2.5 py-0.5 text-[9.5px] font-black uppercase tracking-wider"
-                            style={{
-                                backgroundColor: `${themeColor}22`,
-                                color: themeColor,
-                            }}
-                        >
-                            Shopping Assistant
-                        </span>
+                        <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
                     </button>
                 </div>
                 )}

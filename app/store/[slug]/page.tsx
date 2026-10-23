@@ -174,10 +174,12 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     ...settingsData,
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
+    hero_images: settingsData.hero_images || repoStoreFallback?.hero_images || [],
   } : {
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
     banner_text: safeStore.tagline || 'Free delivery nationwide on orders above Rs. 3,000!',
+    hero_images: repoStoreFallback?.hero_images || [],
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)

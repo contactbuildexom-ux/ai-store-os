@@ -19,6 +19,7 @@ import {
   Loader2,
   Package,
   Search,
+  Wallet,
 } from 'lucide-react';
 import { StoreQRCode } from '@/components/store-qr-code';
 import EmailVerifyField from '@/components/auth/EmailVerifyField';
@@ -528,6 +529,13 @@ export default function MerchantStoreSetupModal({
   const [verificationToken, setVerificationToken] = useState('');
   const [ideaSearch, setIdeaSearch] = useState('');
   const [planPopupTarget, setPlanPopupTarget] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa'>('jazzcash');
+  const [upgradeSenderName, setUpgradeSenderName] = useState('');
+  const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
+  const [upgradeTrxId, setUpgradeTrxId] = useState('');
+  const [upgradeReceiptBase64, setUpgradeReceiptBase64] = useState<string>('');
+  const [upgradeReceiptFileName, setUpgradeReceiptFileName] = useState<string>('');
+  const [paidPlanConfirmed, setPaidPlanConfirmed] = useState<boolean>(false);
   useEffect(() => {
     const matched = THEME_OPTIONS.find(t => t.id === selectedTheme);
     if (matched) setCustomHexColor(matched.color);
@@ -653,6 +661,11 @@ export default function MerchantStoreSetupModal({
           owner_phone: contactPhone.trim() || undefined,
           verification_token: verificationToken || undefined,
           social_links: socialLinks,
+          payment_method: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? paymentMethod : undefined,
+          sender_name: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeSenderName.trim() || undefined) : undefined,
+          sender_number: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeSenderNumber.trim() || undefined) : undefined,
+          transaction_id: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeTrxId.trim() || undefined) : undefined,
+          screenshot_base64: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeReceiptBase64 || undefined) : undefined,
         }),
       });
 
@@ -1263,21 +1276,21 @@ export default function MerchantStoreSetupModal({
         </div>
       </div>
 
-      {/* Plan Details & Pricing Features Popup Modal */}
+      {/* Plan Details & Payment Popup Modal (Matching Merchant Dashboard Flow) */}
       {planPopupTarget && PLAN_INFO[planPopupTarget] && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <span className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                  {PLAN_INFO[planPopupTarget].badge}
+                  {planPopupTarget === 'basic' ? 'Free Starter' : 'Subscription Plan'}
                 </span>
-                <h3 className="mt-1.5 text-xl font-black text-slate-900">
+                <h3 className="mt-1.5 text-lg font-black text-slate-900">
                   {PLAN_INFO[planPopupTarget].name}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {PLAN_INFO[planPopupTarget].tagline}
+                  {planPopupTarget === 'basic' ? 'No payment required for Basic plan.' : `Billed monthly at ${PLAN_INFO[planPopupTarget].price}. Cancel or switch anytime.`}
                 </p>
               </div>
               <button
@@ -1289,52 +1302,175 @@ export default function MerchantStoreSetupModal({
               </button>
             </div>
 
-            {/* Price Box */}
-            <div className="rounded-2xl border border-blue-100 bg-linear-to-r from-blue-50/70 to-indigo-50/50 p-4 flex items-baseline justify-between">
-              <div>
-                <span className="text-2xl font-black text-slate-900">{PLAN_INFO[planPopupTarget].price}</span>
-                <span className="ml-1.5 text-xs font-semibold text-slate-500">/{PLAN_INFO[planPopupTarget].billing}</span>
-              </div>
-              <span className="text-[11px] font-bold text-blue-700 bg-white px-2.5 py-1 rounded-full shadow-2xs border border-blue-200">
-                Full Plan Features
-              </span>
-            </div>
-
             {/* Features List */}
-            <div className="space-y-2 py-1">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Included Features:</p>
-              <ul className="space-y-2 text-xs font-medium text-slate-700">
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2">
+              <p className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
+                <CheckCircle2 size={14} className="text-blue-600" />
+                Features included on {PLAN_INFO[planPopupTarget].name}:
+              </p>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-700">
                 {PLAN_INFO[planPopupTarget].features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center gap-2.5">
-                    <span className="grid size-4 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">
-                      <CheckCircle2 size={12} />
-                    </span>
+                  <li key={idx} className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-blue-600 shrink-0" />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setPlan(planPopupTarget as any);
-                  setPlanPopupTarget(null);
-                }}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer"
-              >
-                Select {PLAN_INFO[planPopupTarget].name.split(' ')[0]} Plan
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlanPopupTarget(null)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
+            {/* Payment Section for Paid Plans (Pro / Business) */}
+            {planPopupTarget !== 'basic' ? (
+              <div className="space-y-3.5 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Select Payment Method
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'jazzcash' as const, label: 'JazzCash' },
+                      { id: 'easypaisa' as const, label: 'EasyPaisa' },
+                    ].map((method) => {
+                      const isSelected = paymentMethod === method.id;
+                      return (
+                        <button
+                          key={method.id}
+                          type="button"
+                          onClick={() => setPaymentMethod(method.id)}
+                          className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-2.5 text-center transition cursor-pointer ${
+                            isSelected
+                              ? 'border-blue-600 bg-blue-50/70 font-bold text-blue-700 shadow-xs ring-1 ring-blue-600'
+                              : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+                          }`}
+                        >
+                          <Wallet size={16} className={isSelected ? 'text-blue-600' : 'text-slate-500'} />
+                          <span className="text-[11px]">{method.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Gateway Instructions */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Payment gateway</span>
+                    <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
+                  </div>
+                  <p className="text-slate-800 font-semibold text-[11px]">Merchant account: Not configured yet</p>
+                  <p className="font-mono text-[11px] font-bold text-slate-900 bg-white/80 px-2 py-0.5 rounded border border-blue-100 inline-block">Account details will be published here</p>
+                  <p className="text-[10px] text-slate-500 pt-0.5 leading-relaxed">
+                    Gateway instructions are placeholders until payment credentials are configured. Submit a screenshot for manual verification; do not send funds to an unverified account.
+                  </p>
+                </div>
+
+                {/* Sender & Transaction Details */}
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase">Sender Account Title</label>
+                      <input
+                        type="text"
+                        value={upgradeSenderName}
+                        onChange={(e) => setUpgradeSenderName(e.target.value)}
+                        placeholder="Your Name on Account"
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase">Sender Mobile / Account #</label>
+                      <input
+                        type="text"
+                        value={upgradeSenderNumber}
+                        onChange={(e) => setUpgradeSenderNumber(e.target.value)}
+                        placeholder="03XX XXXXXXX"
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #)</label>
+                      <input
+                        type="text"
+                        value={upgradeTrxId}
+                        onChange={(e) => setUpgradeTrxId(e.target.value)}
+                        placeholder="e.g. 1092837465"
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof</label>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setUpgradeReceiptFileName(file.name);
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              if (typeof reader.result === 'string') {
+                                setUpgradeReceiptBase64(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none file:mr-2 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {upgradeReceiptFileName && (
+                        <p className="mt-0.5 text-[10px] text-emerald-600 truncate">Selected: {upgradeReceiptFileName}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons: Clean Submit without stars, tags, or price */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlan(planPopupTarget as any);
+                      setPaidPlanConfirmed(true);
+                      setPlanPopupTarget(null);
+                    }}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer text-center"
+                  >
+                    Submit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlanPopupTarget(null)}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Basic Plan Action Buttons */
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlan('basic');
+                    setPaidPlanConfirmed(false);
+                    setPlanPopupTarget(null);
+                  }}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer"
+                >
+                  Select Free Starter Plan
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlanPopupTarget(null)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
