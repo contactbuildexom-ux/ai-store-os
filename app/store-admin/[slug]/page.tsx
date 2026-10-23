@@ -1,6 +1,8 @@
 import { storeRepo } from '@/lib/store-repository';
 import StoreAdminClient from './store-admin-client';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { hasApprovedSubscriptionPayment } from '@/lib/subscription-plans';
+import { canAccessStore } from '@/lib/merchant-api-auth';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -13,12 +15,18 @@ export default async function StoreAdminPage({ params }: PageProps) {
   if (!store) {
     notFound();
   }
+  if (!(await canAccessStore(store.id))) redirect('/store-admin/login');
 
-  const products = await storeRepo.getProducts(store.id || store.slug);
+  const plan = String(store.plan || 'basic').toLowerCase();
+  const entitledStore = ['free', 'basic'].includes(plan) || hasApprovedSubscriptionPayment(store.payment_status)
+    ? store
+    : { ...store, plan: 'basic' as const };
+
+  const products = await storeRepo.getProducts(entitledStore.id || entitledStore.slug);
 
   return (
     <StoreAdminClient
-      store={store}
+      store={entitledStore}
       initialProducts={products}
     />
   );

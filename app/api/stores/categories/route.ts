@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkStoreLimits } from "@/lib/planLimits";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
+import { hasApprovedSubscriptionPayment } from "@/lib/subscription-plans";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -28,15 +29,25 @@ export async function GET(req: Request) {
     const supabase = getSupabase();
     let storePlan = 'basic';
     if (supabase) {
-      try {
-        const { data: st } = await supabase.from('stores').select('plan').eq('id', storeId).maybeSingle();
-        if (st?.plan) storePlan = st.plan;
-      } catch {}
+      const { data: st, error } = await supabase
+        .from('stores')
+        .select('plan, payment_status')
+        .eq('id', storeId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!st) return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
+      const requestedPlan = String(st.plan || 'basic').toLowerCase();
+      storePlan = ['free', 'basic'].includes(requestedPlan) || hasApprovedSubscriptionPayment(st.payment_status)
+        ? requestedPlan
+        : 'basic';
     } else {
-      try {
-        const st = await storeRepo.getStore(storeId);
-        if (st?.plan) storePlan = st.plan;
-      } catch {}
+      const st = await storeRepo.getStore(storeId);
+      if (st) {
+        const requestedPlan = String(st.plan || 'basic').toLowerCase();
+        storePlan = ['free', 'basic'].includes(requestedPlan) || hasApprovedSubscriptionPayment(st.payment_status)
+          ? requestedPlan
+          : 'basic';
+      }
     }
 
     const isBasic = ['basic', 'free'].includes(storePlan.toLowerCase());

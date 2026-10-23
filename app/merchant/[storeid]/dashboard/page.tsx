@@ -8,6 +8,7 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
+import { hasApprovedSubscriptionPayment, SUBSCRIPTION_PLAN_PRICES } from '@/lib/subscription-plans';
 import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Send, Lock, Plus, Mic, ShieldCheck } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
@@ -66,7 +67,7 @@ const PLAN_DETAILS: Record<Plan, {
     },
     pro: { 
         title: 'PRO', 
-        pricePKR: 2499,
+        pricePKR: SUBSCRIPTION_PLAN_PRICES.pro,
         priceLabel: 'PKR 2,499 / mo',
         productLimit: 75, 
         categoryLimit: 5, 
@@ -87,7 +88,7 @@ const PLAN_DETAILS: Record<Plan, {
     },
     business: { 
         title: 'BUSINESS', 
-        pricePKR: 4999,
+        pricePKR: SUBSCRIPTION_PLAN_PRICES.business,
         priceLabel: 'PKR 4,999 / mo',
         productLimit: null, 
         categoryLimit: null, 
@@ -190,11 +191,16 @@ export default function MerchantDashboardMaster() {
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa'>('jazzcash');
+    const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa' | 'sadapay'>('jazzcash');
     const [upgradeSenderName, setUpgradeSenderName] = useState('');
     const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
     const [upgradeTrxId, setUpgradeTrxId] = useState('');
     const [upgradeReceiptFile, setUpgradeReceiptFile] = useState<File | null>(null);
+    const [subscriptionPaymentAccounts, setSubscriptionPaymentAccounts] = useState({
+        easypaisa: { title: '', number: '' },
+        jazzcash: { title: '', number: '' },
+        sadapay: { title: '', number: '' },
+    });
     const [trxRef, setTrxRef] = useState('');
     const [isUpgrading, setIsUpgrading] = useState(false);
     const [upgradeSuccess, setUpgradeSuccess] = useState('');
@@ -306,8 +312,8 @@ export default function MerchantDashboardMaster() {
                 return;
             }
 
-            if (!upgradeReceiptFile) throw new Error('Upload a screenshot of your payment to submit the upgrade request.');
-            const screenshotUrl = await uploadStoreImage(upgradeReceiptFile, sid);
+            if (!upgradeTrxId.trim()) throw new Error('Enter the transaction ID (TID) from your payment receipt.');
+            const screenshotUrl = upgradeReceiptFile ? await uploadStoreImage(upgradeReceiptFile, sid) : '';
 
             const res = await fetch('/api/merchant/upgrade-request', {
                 method: 'POST',
@@ -326,7 +332,8 @@ export default function MerchantDashboardMaster() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to submit upgrade proof.');
 
-            setUpgradeSuccess(`🎉 Payment submitted! Your transaction will be verified to activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
+            setPendingUpgradeStatus(targetPlan);
+            setUpgradeSuccess(`Payment submitted. Your ${PLAN_DETAILS[targetPlan].title} features will unlock after Super Admin approval.`);
             setUpgradeModalPlan(null);
             setUpgradeTrxId('');
             setUpgradeSenderName('');
@@ -469,8 +476,7 @@ export default function MerchantDashboardMaster() {
             setStoreName(storeData.name || 'Your store');
             setStoreSlug(storeData.slug || '');
             const rawPlan = normalizePlan(storeData.plan);
-            const paymentStatus = ((storeData as any)?.payment_status || '').toLowerCase();
-            const isPaidVerified = paymentStatus === 'verified' || paymentStatus === 'approved' || paymentStatus === 'active' || paymentStatus === 'paid';
+            const isPaidVerified = hasApprovedSubscriptionPayment((storeData as any)?.payment_status);
             const normPlan = (!isPaidVerified && rawPlan !== 'basic') ? 'basic' : rawPlan;
             setStorePlan(normPlan);
 
@@ -512,14 +518,30 @@ export default function MerchantDashboardMaster() {
             }
 
             // Load settings and dashboard data at the same time to avoid a network waterfall.
-            const [settingsData] = await Promise.all([
+            const [settingsData, , paymentInstructions] = await Promise.all([
                 fetch(`/api/stores/settings?store_id=${storeData.id}`).then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) throw new Error(data.error || 'Unable to load storefront settings.');
                     return data;
                 }),
                 fetchMeshData(storeData.id),
+                fetch(`/api/merchant/upgrade-request?store_id=${encodeURIComponent(storeData.id)}`, { cache: 'no-store' })
+                    .then(async (response) => {
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.error || 'Unable to load subscription payment instructions.');
+                        return data;
+                    })
+                    .catch((error: unknown) => {
+                        console.error('Unable to load subscription payment instructions:', error);
+                        setMessage(error instanceof Error ? error.message : 'Unable to load subscription payment instructions.');
+                        setMessageError(true);
+                        return null;
+                    }),
             ]);
+            if (paymentInstructions) {
+                setSubscriptionPaymentAccounts(paymentInstructions.payment_accounts);
+                setPendingUpgradeStatus(paymentInstructions.pending_upgrade?.plan ?? null);
+            }
 
             const nicheColor = getStoreNicheColor(storeData.name, storeData.slug);
             const resolvedColor = settingsData?.settings?.theme_color 
@@ -577,12 +599,12 @@ export default function MerchantDashboardMaster() {
 
     // Background auto-polling every 8 seconds so merchant never stays stuck when admin verifies
     useEffect(() => {
-        if (isVerified || !paramId) return;
+        if ((isVerified && !pendingUpgradeStatus) || !paramId) return;
         const interval = setInterval(() => {
             void resolveStoreAndData(paramId, true);
         }, 8000);
         return () => clearInterval(interval);
-    }, [isVerified, paramId, resolveStoreAndData]);
+    }, [isVerified, pendingUpgradeStatus, paramId, resolveStoreAndData]);
 
     const handleCheckVerification = async () => {
         if (checkingVerification || !paramId) return;
@@ -2541,10 +2563,11 @@ export default function MerchantDashboardMaster() {
                                     <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
                                         Select Payment Method
                                     </label>
-                                    <div className="grid grid-cols-2 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         {[
                                             { id: 'jazzcash' as const, label: 'JazzCash' },
                                             { id: 'easypaisa' as const, label: 'EasyPaisa' },
+                                            { id: 'sadapay' as const, label: 'SadaPay' },
                                         ].map((method) => {
                                             const isSelected = paymentMethod === method.id;
                                             return (
@@ -2566,15 +2589,20 @@ export default function MerchantDashboardMaster() {
                                     </div>
                                 </div>
 
-                                {/* Placeholder payment details until merchant credentials are configured. */}
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Payment gateway</span>
-                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send PKR {PLAN_DETAILS[upgradeModalPlan].pricePKR} to platform account</span>
+                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay'}</span>
                                     </div>
-                                    <p className="text-slate-800 font-semibold text-xs">Merchant account: Not configured yet</p>
-                                    <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">Account details will be published here</p>
-                                    <p className="text-[10px] text-slate-500 pt-0.5">Gateway instructions are placeholders until payment credentials are configured. Submit a screenshot for manual verification; do not send funds to an unverified account.</p>
+                                    {subscriptionPaymentAccounts[paymentMethod].number ? (
+                                        <>
+                                            <p className="text-slate-800 font-semibold text-xs">{subscriptionPaymentAccounts[paymentMethod].title || (paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay')}</p>
+                                            <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">{subscriptionPaymentAccounts[paymentMethod].number}</p>
+                                            <p className="text-[10px] text-slate-500 pt-0.5">Transfer the exact plan amount, then enter the TID below. Your paid features unlock after Super Admin approval.</p>
+                                        </>
+                                    ) : (
+                                        <p role="alert" className="text-[10px] font-medium text-red-700">This payment account is not configured yet. Contact the Super Admin before sending payment.</p>
+                                    )}
                                 </div>
 
                                 {/* Real-World Payment Verification Form */}
@@ -2604,21 +2632,21 @@ export default function MerchantDashboardMaster() {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #)</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Transaction ID (TID / Ref #) *</label>
                                             <input 
                                                 type="text" 
                                                 value={upgradeTrxId}
                                                 onChange={(e) => setUpgradeTrxId(e.target.value)}
+                                                required
                                                 placeholder="e.g. 1092837465"
                                                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-semibold text-slate-900 outline-none focus:border-blue-500"
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof *</label>
+                                            <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof (optional)</label>
                                             <input 
                                                 type="file" 
                                                 accept="image/jpeg,image/png,image/webp,image/gif"
-                                                required
                                                 onChange={(e) => {
                                                     const nextFile = e.target.files?.[0] || null;
                                                     if (nextFile && !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(nextFile.type)) {

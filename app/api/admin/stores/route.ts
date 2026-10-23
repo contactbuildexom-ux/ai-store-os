@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { isAdminRequest } from "@/lib/admin-api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { storeRepo } from "@/lib/store-repository";
 
 export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
@@ -77,8 +78,9 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
 
-  const { data, error } = await supabase.from("stores").delete().eq("id", id).select("id").maybeSingle();
+  const { data, error } = await supabase.from("stores").delete().eq("id", id).select("id, slug").maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Store not found." }, { status: 404 });
+  await storeRepo.invalidateStore(data.id, data.slug);
   return NextResponse.json({ success: true });
 }

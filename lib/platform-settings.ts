@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PlatformBrandingSettings } from "@/components/platform-branding";
 import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
+import { SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS } from "@/lib/subscription-payment-accounts";
 
 export const PLATFORM_SETTINGS_CACHE_TAG = "platform-settings";
 let legacySchemaWarningLogged = false;
@@ -21,7 +22,9 @@ export const getPlatformSettings = unstable_cache(
   async (): Promise<PlatformBrandingSettings> => {
     const supabase = createAdminClient();
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) return defaults;
+    if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) {
+      return { ...defaults, ...SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS };
+    }
 
     const result = await supabase
       .from("platform_settings")
@@ -71,6 +74,12 @@ export const getPlatformSettings = unstable_cache(
       logoUrl: stringValue(branding.logoUrl),
       faviconName: stringValue(branding.faviconName),
       faviconUrl: stringValue(branding.faviconUrl),
+      easypaisaTitle: stringValue(branding.easypaisaTitle),
+      easypaisaNumber: stringValue(branding.easypaisaNumber),
+      jazzcashTitle: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashTitle || stringValue(branding.jazzcashTitle),
+      jazzcashNumber: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashNumber || stringValue(branding.jazzcashNumber),
+      sadapayTitle: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayTitle || stringValue(branding.sadapayTitle),
+      sadapayNumber: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayNumber || stringValue(branding.sadapayNumber),
       seoTitle: stringValue(seo.title),
       seoDescription: stringValue(seo.description),
       defaultSocialImage: stringValue(seo.defaultSocialImage),

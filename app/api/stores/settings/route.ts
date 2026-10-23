@@ -316,6 +316,9 @@ export async function POST(req: Request) {
     if (!storeId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
+    if (typeof body?.plan === "string" && !["basic", "free"].includes(body.plan.toLowerCase())) {
+      return NextResponse.json({ error: "Paid plans require a manual payment request and Super Admin approval." }, { status: 409 });
+    }
     if (!(await canAccessStore(storeId))) return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
 
     let targetStoreId = storeId;
@@ -337,8 +340,8 @@ export async function POST(req: Request) {
         }
         if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
         if (body.logo_url) repoStore.logo_url = String(body.logo_url);
-        if (typeof body.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
-          repoStore.plan = body.plan.toLowerCase() as any;
+        if (typeof body.plan === "string" && ["basic", "free"].includes(body.plan.toLowerCase())) {
+          repoStore.plan = "basic";
           repoStore.payment_status = "active";
         }
       }
@@ -398,8 +401,8 @@ export async function POST(req: Request) {
       if (storeError && !isMissingStoreColumn(storeError)) throw storeError;
     }
 
-    if (typeof body?.plan === "string" && ["basic", "pro", "business"].includes(body.plan.toLowerCase())) {
-      const updatedPlan = body.plan.toLowerCase();
+    if (typeof body?.plan === "string" && ["basic", "free"].includes(body.plan.toLowerCase())) {
+      const updatedPlan = "basic";
       const { error: planError } = await supabase
         .from("stores")
         .update({ plan: updatedPlan, payment_status: "active" })

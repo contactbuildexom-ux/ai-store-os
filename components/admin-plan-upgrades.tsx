@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, Clock, ShieldCheck, Eye, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface PendingUpgrade {
+  request_id: string;
   store_id: string;
   store_name: string;
   store_slug: string;
+  user_email: string;
   current_plan: string;
   requested_plan: string;
   payment_method: string;
@@ -22,7 +24,7 @@ function isPendingUpgrade(value: unknown): value is PendingUpgrade {
   if (typeof value !== "object" || value === null) return false;
   const upgrade = value as Record<string, unknown>;
   return [
-    "store_id", "store_name", "store_slug", "current_plan", "requested_plan",
+    "request_id", "store_id", "store_name", "store_slug", "user_email", "current_plan", "requested_plan",
     "payment_method", "sender_name", "sender_number", "transaction_id",
     "screenshot_url", "submitted_at",
   ].every((key) => typeof upgrade[key] === "string") && typeof upgrade.amount === "number";
@@ -63,22 +65,22 @@ export function AdminPlanUpgradeApprovals() {
     loadPendingUpgrades();
   }, []);
 
-  async function handleAction(storeId: string, action: 'approve' | 'reject', plan: string) {
-    setProcessingId(storeId);
+  async function handleAction(requestId: string, action: 'approve' | 'reject') {
+    setProcessingId(requestId);
     setNotice(null);
     setNoticeIsError(false);
     try {
       const res = await fetch('/api/admin/plan-upgrades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store_id: storeId, action, plan }),
+        body: JSON.stringify({ request_id: requestId, action }),
       });
       const result: unknown = await res.json();
       if (typeof result !== "object" || result === null) throw new Error("The upgrade service returned an invalid response.");
       const data = result as Record<string, unknown>;
       if (res.ok) {
         setNotice(typeof data.message === "string" ? data.message : (action === 'approve' ? 'Plan approved!' : 'Plan rejected.'));
-        setUpgrades((prev) => prev.filter((u) => u.store_id !== storeId));
+        setUpgrades((prev) => prev.filter((u) => u.request_id !== requestId));
       } else {
         setNotice(typeof data.error === "string" ? data.error : 'Failed to update plan status.');
         setNoticeIsError(true);
@@ -132,10 +134,11 @@ export function AdminPlanUpgradeApprovals() {
         <>
           <div className="space-y-3 2xl:hidden">
             {upgrades.map((upgrade) => (
-              <article key={upgrade.store_id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+              <article key={upgrade.request_id} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h4 className="break-words text-sm font-semibold text-slate-900 dark:text-slate-100 [overflow-wrap:anywhere]">{upgrade.store_name}</h4>
+                    <p className="mt-1 break-all text-[11px] text-slate-600 dark:text-slate-400">{upgrade.user_email || "Email unavailable"}</p>
                     <a href={`/store/${encodeURIComponent(upgrade.store_slug)}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex max-w-full items-center gap-1 break-all font-mono text-[10px] text-blue-600 hover:underline dark:text-blue-400">
                       {upgrade.store_slug} <ExternalLink size={10} className="shrink-0" />
                     </a>
@@ -151,7 +154,7 @@ export function AdminPlanUpgradeApprovals() {
                   <div><dt className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Submitted</dt><dd className="mt-0.5 text-xs text-slate-700 dark:text-slate-300">{new Date(upgrade.submitted_at).toLocaleDateString()}</dd></div>
                 </dl>
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                  <UpgradeActionButtons upgrade={upgrade} processing={processingId === upgrade.store_id} onAction={handleAction} />
+                  <UpgradeActionButtons upgrade={upgrade} processing={processingId === upgrade.request_id} onAction={handleAction} />
                 </div>
               </article>
             ))}
@@ -160,9 +163,9 @@ export function AdminPlanUpgradeApprovals() {
           <table className="w-full table-fixed text-left text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
-                <th className="w-[18%] break-words px-2 py-3">Store</th>
+                <th className="w-[22%] break-words px-2 py-3">Merchant</th>
                 <th className="w-[13%] break-words px-2 py-3">Plan Request</th>
-                <th className="w-[17%] break-words px-2 py-3">Method & Amount</th>
+                <th className="w-[15%] break-words px-2 py-3">Method & Amount</th>
                 <th className="w-[22%] break-words px-2 py-3">Sender & TID</th>
                 <th className="w-[12%] break-words px-2 py-3">Receipt Proof</th>
                 <th className="w-[18%] break-words px-2 py-3 text-right">Actions</th>
@@ -170,9 +173,10 @@ export function AdminPlanUpgradeApprovals() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {upgrades.map((u) => (
-                <tr key={u.store_id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                <tr key={u.request_id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                   <td className="break-words px-2 py-3 align-top [overflow-wrap:anywhere]">
                     <p className="font-semibold text-slate-900 dark:text-slate-100">{u.store_name}</p>
+                    <p className="mt-1 break-all text-[10px] text-slate-600 dark:text-slate-400">{u.user_email || "Email unavailable"}</p>
                     <a
                       href={`/store/${u.store_slug}`}
                       target="_blank"
@@ -210,7 +214,7 @@ export function AdminPlanUpgradeApprovals() {
                     )}
                   </td>
                   <td className="px-2 py-3 text-right align-top">
-                    <UpgradeActionButtons upgrade={u} processing={processingId === u.store_id} onAction={handleAction} />
+                    <UpgradeActionButtons upgrade={u} processing={processingId === u.request_id} onAction={handleAction} />
                   </td>
                 </tr>
               ))}
@@ -251,22 +255,27 @@ function UpgradeActionButtons({
 }: {
   upgrade: PendingUpgrade;
   processing: boolean;
-  onAction: (storeId: string, action: 'approve' | 'reject', plan: string) => void;
+  onAction: (requestId: string, action: 'approve' | 'reject') => void;
 }) {
+  function reviewPayment(action: 'approve' | 'reject') {
+    if (action === 'approve' && !window.confirm('Confirm that payment has been received and verified before activating this plan?')) return;
+    onAction(upgrade.request_id, action);
+  }
+
   return (
     <>
       <button
         type="button"
         disabled={processing}
-        onClick={() => onAction(upgrade.store_id, 'approve', upgrade.requested_plan)}
+        onClick={() => reviewPayment('approve')}
         className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
       >
-        <CheckCircle2 size={12} /> Approve
+        <CheckCircle2 size={12} /> Confirm payment & approve
       </button>
       <button
         type="button"
         disabled={processing}
-        onClick={() => onAction(upgrade.store_id, 'reject', upgrade.requested_plan)}
+        onClick={() => reviewPayment('reject')}
         className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950"
       >
         <XCircle size={12} /> Reject

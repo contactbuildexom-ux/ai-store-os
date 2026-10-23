@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
+import { isAdminRequest } from '@/lib/admin-api-auth';
 
 export async function GET() {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   const pendingStores: any[] = [];
   const supabase = createAdminClient();
 
@@ -64,6 +66,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   try {
     const body = await req.json();
     const { store_id, action } = body;

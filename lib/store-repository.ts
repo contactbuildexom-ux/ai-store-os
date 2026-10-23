@@ -305,11 +305,42 @@ class StoreRepository {
   async getStore(idOrSlug: string): Promise<StoreRecord | null> {
     if (!idOrSlug) return null;
     await this.hydrateLocalCache();
-    // 1. Check memory cache direct
+    const supabase = this.getSupabase();
+    if (supabase) {
+      const { data, error } = await fetchStoreByIdOrSlug(supabase, idOrSlug, '*');
+      if (error) {
+        throw new Error(`Supabase fetch store failed: ${error.message}`);
+      }
+      if (!data) {
+        this.clearCachedStore(idOrSlug);
+        this.persistLocalCache();
+        return null;
+      }
+
+      const rec: StoreRecord = {
+        id: data.id,
+        name: data.name || data.store_name,
+        slug: data.slug || idOrSlug,
+        tagline: data.tagline || data.header_title || 'Welcome to our store',
+        header_title: data.header_title || data.name,
+        plan: data.plan || data.plan_type || 'free',
+        selected_theme: data.selected_theme || 'royal-gold',
+        primary_color: data.primary_color || '#0f172a',
+        whatsapp_number: data.whatsapp_number || '',
+        owner_email: data.owner_email || '',
+        payment_status: data.payment_status || 'active',
+        created_at: data.created_at,
+        social_links: data.social_links || {},
+        theme: THEME_PRESETS[data.selected_theme] || THEME_PRESETS['royal-gold']
+      };
+      memoryStores.set(rec.slug, rec);
+      memoryStores.set(rec.id, rec);
+      return rec;
+    }
+
     const cached = memoryStores.get(idOrSlug);
     if (cached) return cached;
 
-    // 1b. Check case-insensitively in memoryStores
     const target = idOrSlug.trim().toLowerCase();
     for (const [key, store] of memoryStores.entries()) {
       if (key.toLowerCase() === target || store.id.toLowerCase() === target || store.slug.toLowerCase() === target) {
@@ -317,46 +348,44 @@ class StoreRepository {
       }
     }
 
-    // 2. Query Supabase
-    const supabase = this.getSupabase();
-    if (supabase) {
-      try {
-        const { data, error } = await fetchStoreByIdOrSlug(supabase, idOrSlug, '*');
-
-
-
-
-
-        if (data && !error) {
-          const rec: StoreRecord = {
-            id: data.id,
-            name: data.name || data.store_name,
-            slug: data.slug || idOrSlug,
-            tagline: data.tagline || data.header_title || 'Welcome to our store',
-            header_title: data.header_title || data.name,
-            plan: data.plan || data.plan_type || 'free',
-            selected_theme: data.selected_theme || 'royal-gold',
-            primary_color: data.primary_color || '#0f172a',
-            whatsapp_number: data.whatsapp_number || '',
-            owner_email: data.owner_email || '',
-            payment_status: data.payment_status || 'active',
-            created_at: data.created_at,
-            social_links: data.social_links || {},
-            theme: THEME_PRESETS[data.selected_theme] || THEME_PRESETS['royal-gold']
-          };
-          memoryStores.set(rec.slug, rec);
-          memoryStores.set(rec.id, rec);
-          return rec;
-        }
-      } catch (err) {
-        console.warn('Supabase fetch store warning:', err);
-      }
-    }
-
     return null;
   }
 
+  async invalidateStore(id: string, slug?: string | null): Promise<void> {
+    this.clearCachedStore(id, slug);
+    this.persistLocalCache();
+  }
+
   async getAllStores(): Promise<StoreRecord[]> {
+    const supabase = this.getSupabase();
+    if (supabase) {
+      const { data, error } = await supabase.from('stores').select('*');
+      if (error) throw new Error(`Supabase fetch all stores failed: ${error.message}`);
+
+      const stores = (data ?? []).map((store): StoreRecord => ({
+        id: store.id,
+        name: store.name || store.store_name,
+        slug: store.slug,
+        tagline: store.tagline || store.header_title || '',
+        plan: store.plan || store.plan_type || 'free',
+        selected_theme: store.selected_theme || 'emerald',
+        primary_color: store.primary_color || '#1d7555',
+        whatsapp_number: store.whatsapp_number,
+        owner_email: store.owner_email,
+        payment_status: store.payment_status || 'active',
+        created_at: store.created_at
+      }));
+      const activeIds = new Set(stores.map((store) => store.id));
+      for (const cached of new Set(memoryStores.values())) {
+        if (!activeIds.has(cached.id)) this.clearCachedStore(cached.id, cached.slug);
+      }
+      for (const store of stores) {
+        memoryStores.set(store.id, store);
+        memoryStores.set(store.slug, store);
+      }
+      return stores;
+    }
+
     const list: StoreRecord[] = [];
     const seen = new Set<string>();
 
@@ -367,36 +396,37 @@ class StoreRepository {
       }
     }
 
-    const supabase = this.getSupabase();
-    if (supabase) {
-      try {
-        const { data } = await supabase.from('stores').select('*');
-        if (data && Array.isArray(data)) {
-          for (const d of data) {
-            if (!seen.has(d.id)) {
-              seen.add(d.id);
-              list.push({
-                id: d.id,
-                name: d.name || d.store_name,
-                slug: d.slug,
-                tagline: d.tagline || d.header_title || '',
-                plan: d.plan || d.plan_type || 'free',
-                selected_theme: d.selected_theme || 'emerald',
-                primary_color: d.primary_color || '#1d7555',
-                whatsapp_number: d.whatsapp_number,
-                owner_email: d.owner_email,
-                payment_status: d.payment_status || 'active',
-                created_at: d.created_at
-              });
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Supabase fetch all stores warning:', e);
+    return list;
+  }
+
+  private clearCachedStore(idOrSlug: string, slug?: string | null): void {
+    const identifiers = new Set([idOrSlug, slug].filter((value): value is string => Boolean(value)).map((value) => value.toLowerCase()));
+    const matchingStores = new Set(
+      [...memoryStores.values()].filter((store) =>
+        identifiers.has(store.id.toLowerCase()) || identifiers.has(store.slug.toLowerCase())
+      )
+    );
+
+    for (const store of matchingStores) {
+      identifiers.add(store.id.toLowerCase());
+      identifiers.add(store.slug.toLowerCase());
+      memoryStores.delete(store.id);
+      memoryStores.delete(store.slug);
+      memoryProducts.delete(store.id);
+      memoryProducts.delete(store.slug);
+    }
+
+    for (const [key, store] of memoryStores.entries()) {
+      if (identifiers.has(key.toLowerCase())) memoryStores.delete(key);
+      if (identifiers.has(store.id.toLowerCase()) || identifiers.has(store.slug.toLowerCase())) {
+        memoryProducts.delete(store.id);
+        memoryProducts.delete(store.slug);
       }
     }
 
-    return list;
+    for (const key of memoryProducts.keys()) {
+      if (identifiers.has(key.toLowerCase())) memoryProducts.delete(key);
+    }
   }
 
   async getProducts(storeIdOrSlug: string): Promise<ProductRecord[]> {

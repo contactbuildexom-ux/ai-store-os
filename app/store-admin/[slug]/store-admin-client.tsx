@@ -26,6 +26,7 @@ import {
 import { THEME_PRESETS } from '@/lib/ai/ai-generator';
 import type { ProductRecord, StoreRecord } from '@/lib/store-repository';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
+import { SUBSCRIPTION_PLAN_PRICES } from '@/lib/subscription-plans';
 
 interface StoreAdminClientProps {
   store: StoreRecord;
@@ -70,6 +71,10 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
   const isLimitReached = products.length >= maxProducts;
 
   const handleUpdatePlan = async (newPlan: 'basic' | 'pro' | 'advanced') => {
+    if (newPlan !== 'basic') {
+      showNotice('error', 'Paid plans require a manual payment request and Super Admin approval. Use the Merchant Dashboard to submit your TID.');
+      return;
+    }
     setIsUpdatingPlan(true);
     try {
       const res = await fetch('/api/stores/upgrade', {
@@ -840,8 +845,11 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
             <div>
               <h2 className="text-lg font-bold text-slate-900">Subscription Plans & Store Upgrades</h2>
               <p className="text-xs text-slate-500">
-                Choose the plan that suits your scale. Upgrades apply instantly to catalog limits and AI features.
+                Paid plan upgrades require EasyPaisa or JazzCash payment and Super Admin approval before features unlock.
               </p>
+              <Link href={`/merchant/${encodeURIComponent(currentStore.id)}/dashboard`} className="mt-2 inline-flex text-xs font-semibold text-emerald-700 hover:underline">
+                Open Merchant Dashboard to submit payment
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -914,7 +922,7 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
                   </div>
                   <div>
                     <h3 className="text-base font-extrabold text-slate-900">Pro Merchant</h3>
-                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. 2,999 <span className="text-xs font-normal text-slate-500">/mo</span></p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. {SUBSCRIPTION_PLAN_PRICES.pro.toLocaleString()} <span className="text-xs font-normal text-slate-500">/mo</span></p>
                     <p className="text-[11px] text-slate-500">Automated WhatsApp ordering & Bexi AI shopping bot.</p>
                   </div>
                   <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
@@ -961,7 +969,7 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
                   </div>
                   <div>
                     <h3 className="text-base font-extrabold text-slate-900">Advanced VIP</h3>
-                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. 5,999 <span className="text-xs font-normal text-slate-500">/mo</span></p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. {SUBSCRIPTION_PLAN_PRICES.business.toLocaleString()} <span className="text-xs font-normal text-slate-500">/mo</span></p>
                     <p className="text-[11px] text-slate-500">Full AI Voice Control & unlimited store scaling.</p>
                   </div>
                   <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">

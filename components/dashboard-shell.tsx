@@ -14,7 +14,7 @@ const navigation = [
   { label: "Stores", href: "/dashboard/stores", icon: Store },
   { label: "Products", href: "/dashboard/products", icon: Package },
   { label: "Blogs", href: "/dashboard/blogs", icon: BookOpenText },
-  { label: "Subscriptions", href: "/dashboard/subscriptions", icon: CreditCard },
+  { label: "Subscriptions & Payments", href: "/dashboard/subscriptions", icon: CreditCard },
   { label: "Analytics", href: "/dashboard/analytics", icon: Activity },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
   { label: "Backup", href: "/dashboard/backup", icon: DatabaseBackup },
@@ -42,7 +42,7 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
   }
 
   const sidebar = (
-    <aside className="flex h-full w-[258px] shrink-0 flex-col bg-slate-900 text-white">
+    <aside className="flex h-full w-[258px] shrink-0 flex-col overflow-hidden bg-slate-900 text-white">
       <div className="flex min-h-[88px] items-center gap-3 border-b border-white/[0.08] px-6 py-5">
         <Link href="/" aria-label={`${settings.title} home`} onClick={() => setMobileOpen(false)} className="flex min-w-0 flex-1 items-center justify-start rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
           <Image
@@ -56,11 +56,11 @@ export function DashboardShell({ children, email }: { children: React.ReactNode;
         </Link>
         <button onClick={() => setMobileOpen(false)} className="ml-auto grid size-8 shrink-0 place-items-center text-slate-300 lg:hidden" aria-label="Close menu"><X size={19} /></button>
       </div>
-      <div className="px-4 pt-7"><p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">Workspace</p><nav className="space-y-1" aria-label="Main navigation">{navigation.map(({ label, href, icon: Icon }) => {
+      <div className="scrollbar-hidden min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-7"><p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-[0.17em] text-slate-400">Workspace</p><nav className="space-y-1" aria-label="Main navigation">{navigation.map(({ label, href, icon: Icon }) => {
         const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
         return <Link key={href} href={href} prefetch onClick={() => setMobileOpen(false)} aria-current={active ? "page" : undefined} className={`group flex h-10 items-center gap-3 rounded-md px-3 text-[13px] transition-colors ${active ? "bg-blue-600 font-medium text-white shadow-sm shadow-blue-950/20" : "text-slate-300 hover:bg-white/[0.07] hover:text-white"}`}><Icon size={17} strokeWidth={active ? 2.2 : 1.8} /><span className="flex-1">{label}</span>{active && <ChevronRight size={14} className="text-blue-100" />}</Link>;
       })}</nav></div>
-      <div className="mt-auto border-t border-white/[0.08] p-4"><div className="flex items-center gap-3 rounded-lg bg-white/[0.055] p-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-blue-500/25 text-xs font-semibold text-blue-100">{initials}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-white">{email.split("@")[0]}</span><span className="mt-1 block text-[10px] text-slate-400">Super Admin</span></span><button onClick={signOut} aria-label="Log out" title="Log out" className="grid size-8 place-items-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"><LogOut size={16} /></button></div></div>
+      <div className="mt-auto shrink-0 border-t border-white/[0.08] p-4"><div className="flex items-center gap-3 rounded-lg bg-white/[0.055] p-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-blue-500/25 text-xs font-semibold text-blue-100">{initials}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-white">{email.split("@")[0]}</span><span className="mt-1 block text-[10px] text-slate-400">Super Admin</span></span><button onClick={signOut} aria-label="Log out" title="Log out" className="grid size-8 place-items-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"><LogOut size={16} /></button></div></div>
     </aside>
   );
 

@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasApprovedSubscriptionPayment } from "@/lib/subscription-plans";
 
 export async function checkStoreLimits(storeId: string, type: 'product' | 'category' | 'whatsapp_order', categoryId?: string) {
   const supabase = createAdminClient();
@@ -7,14 +8,16 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
   if (!supabase || !url || url.includes("placeholder-project") || url.includes("your-project")) {
     return { allowed: true };
   }
-  // 1. Store ka plan aur verification status fetch karein
   const { data: store, error: storeError } = await supabase
     .from('stores')
-    .select('plan, is_verified, verification_status')
+    .select('plan, payment_status, is_verified, verification_status')
     .eq('id', storeId)
-    .single();
+    .maybeSingle();
 
-  if (storeError || !store) return { allowed: true };
+  if (storeError) throw storeError;
+  if (!store) {
+    return { allowed: false, message: 'Store not found.' };
+  }
 
   // Store verification check: jab tak Super Admin verify na kare, actions locked rahenge
   const isVerified = Boolean((store as any).is_verified === true || (store as any).verification_status === 'verified');
@@ -25,7 +28,10 @@ export async function checkStoreLimits(storeId: string, type: 'product' | 'categ
     };
   }
 
-  const plan = (store.plan || 'basic') === 'free' ? 'basic' : (store.plan || 'basic'); // 'basic', 'pro', 'business'
+  const requestedPlan = String(store.plan || 'basic').toLowerCase();
+  const plan = ['free', 'basic'].includes(requestedPlan) || hasApprovedSubscriptionPayment(store.payment_status)
+    ? requestedPlan
+    : 'basic';
 
   // 2. WhatsApp Integration Limit Check (Included on all plans as per specification)
   if (type === 'whatsapp_order') {

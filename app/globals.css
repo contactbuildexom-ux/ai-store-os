@@ -264,6 +264,13 @@ main section button:hover > span[aria-hidden="true"] {
   border: 2px solid #e6f4ff;
 }
 ::-webkit-scrollbar-thumb:hover { background: #0b2545; }
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
 /* The dashboard uses a synchronized scrollbar above long tables. */
 .dashboard-table-content {
   scrollbar-width: none;

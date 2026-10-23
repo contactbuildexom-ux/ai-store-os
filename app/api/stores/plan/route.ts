@@ -4,7 +4,7 @@ import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
 import { updateStoreByIdOrSlug } from "@/lib/store-id-slug";
 
-const VALID_PLANS = ["basic", "pro", "business"] as const;
+const VALID_PLANS = ["basic"] as const;
 type PlanType = (typeof VALID_PLANS)[number];
 
 export async function POST(req: Request) {
@@ -19,9 +19,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
+    if (requestedPlan === "pro" || requestedPlan === "business") {
+      return NextResponse.json({ error: "Paid plans require a manual payment request and Super Admin approval." }, { status: 409 });
+    }
+
     if (!VALID_PLANS.includes(requestedPlan as PlanType)) {
       return NextResponse.json(
-        { error: "Invalid plan. Choose 'basic', 'pro', or 'business'." },
+        { error: "Only the Basic plan can be activated directly." },
         { status: 400 }
       );
     }

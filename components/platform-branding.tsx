@@ -17,6 +17,12 @@ export type PlatformBrandingSettings = {
   logoUrl: string;
   faviconName: string;
   faviconUrl: string;
+  easypaisaTitle: string;
+  easypaisaNumber: string;
+  jazzcashTitle: string;
+  jazzcashNumber: string;
+  sadapayTitle: string;
+  sadapayNumber: string;
   seoTitle: string;
   seoDescription: string;
   defaultSocialImage: string;

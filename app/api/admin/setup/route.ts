@@ -19,8 +19,16 @@ export async function POST(request: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const adminEmail = 'admin@aistore.com';
-    const plainPassword = 'superadminpassword123';
+    const body: unknown = await request.json();
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      return NextResponse.json({ error: 'A valid admin email and password are required.' }, { status: 400 });
+    }
+    const input = body as Record<string, unknown>;
+    const adminEmail = typeof input.email === 'string' ? input.email.trim().toLowerCase() : '';
+    const plainPassword = typeof input.password === 'string' ? input.password : '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail) || plainPassword.length < 12 || plainPassword.length > 128) {
+      return NextResponse.json({ error: 'Provide a valid admin email and a password between 12 and 128 characters.' }, { status: 400 });
+    }
 
     const { data: existingAdmin, error: lookupError } = await supabase
       .from('super_admins')
@@ -50,7 +58,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      message: 'Super Admin successfully create ho gaya hai!',
+      message: 'Initial Super Admin created successfully.',
       admin_email: data.email
     }, { status: 200 });
 

@@ -182,7 +182,6 @@ export function LoginForm({ notice }: { notice?: string }) {
           </Link>
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_18px_55px_-28px_rgba(30,64,175,0.28)] sm:p-9">
             <div className="mb-8">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-blue-700">Admin workspace</p>
               <h2 className="text-[30px] font-semibold tracking-tight text-slate-900 sm:text-[32px]">Welcome back</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">Sign in to continue to your dashboard.</p>
             </div>

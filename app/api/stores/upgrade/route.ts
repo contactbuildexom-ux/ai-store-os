@@ -7,7 +7,7 @@ import { updateStoreByIdOrSlug } from '@/lib/store-id-slug';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { store_id, plan, payment_method, transaction_id, amount } = body;
+    const { store_id, plan } = body;
 
     if (!store_id) {
       return NextResponse.json({ error: 'Store identifier is required.' }, { status: 400 });
@@ -16,71 +16,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
     }
 
+    if (!plan || typeof plan !== "string") {
+      return NextResponse.json({ error: "Choose a plan. Paid upgrades must be submitted for Super Admin approval." }, { status: 400 });
+    }
+    const planVal = plan.toLowerCase();
+    if (planVal !== "basic" && planVal !== "free") {
+      return NextResponse.json({ error: "Paid plans require a manual payment request and Super Admin approval from the Merchant Dashboard." }, { status: 409 });
+    }
+
     const supabase = createAdminClient();
-
-    // 1. Direct Plan Change (Basic, Pro, Advanced) from Dashboard
-    if (plan && ['free', 'basic', 'pro', 'advanced'].includes(String(plan).toLowerCase())) {
-      const planVal = String(plan).toLowerCase();
-      if (supabase) {
-        try {
-          await updateStoreByIdOrSlug(supabase, String(store_id), { plan: planVal, plan_type: planVal });
-
-
-
-        } catch (e) {
-          console.warn('Supabase plan update warning:', e);
-        }
-      }
-      await storeRepo.updateStore(String(store_id), { plan: planVal as any });
-      return NextResponse.json({
-        success: true,
-        message: `Store plan updated successfully to ${planVal.toUpperCase()}!`,
-        plan: planVal,
-      });
-    }
-
-    // 2. Offline Payment Submission Verification
-    if (!payment_method || !transaction_id || !amount) {
-      return NextResponse.json({ error: 'All payment fields are required.' }, { status: 400 });
-    }
-
     if (supabase) {
-      const { data, error } = await supabase
-        .from('store_payments')
-        .insert([
-          {
-            store_id,
-            payment_method,
-            transaction_id: String(transaction_id).trim(),
-            amount,
-            status: 'pending',
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      await supabase
-        .from('stores')
-        .update({ payment_status: 'pending' })
-        .eq('id', store_id);
-
-      return NextResponse.json(
-        {
-          message: 'Payment request submitted successfully! Waiting for admin verification.',
-          payment: data,
-        },
-        { status: 201 }
-      );
+      const { error } = await updateStoreByIdOrSlug(supabase, String(store_id), {
+        plan: "basic",
+        plan_type: "basic",
+        selected_plan: "basic",
+        payment_status: "active",
+      });
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Plan change recorded.',
-    });
+    await storeRepo.updateStore(String(store_id), { plan: "basic", payment_status: "active" });
+    return NextResponse.json({ success: true, message: "Store switched to the Basic plan.", plan: "basic" });
   } catch (err: unknown) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Unable to submit the upgrade payment.' },

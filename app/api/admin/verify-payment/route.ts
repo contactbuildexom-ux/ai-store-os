@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { isAdminRequest } from '@/lib/admin-api-auth';
 import { storeRepo } from '@/lib/store-repository';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: Request) {
   try {
+    if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    const supabase = createAdminClient();
+    if (!supabase) return NextResponse.json({ error: 'Payment database is not configured.' }, { status: 503 });
     const body = await request.json();
     const { payment_id, store_id, action } = body; // action: 'verify' or 'reject'
 
-    if (!payment_id || !store_id || !action) {
+    if (!payment_id || !store_id || (action !== 'verify' && action !== 'reject')) {
       return NextResponse.json({ error: 'Payment ID, Store ID and action are required.' }, { status: 400 });
     }
 

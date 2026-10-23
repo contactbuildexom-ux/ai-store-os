@@ -7,142 +7,139 @@ import { MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-s
 import { storeRepo } from "@/lib/store-repository";
 import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 
-/** Checks that the current browser session owns the requested store. */
-export async function canAccessStore(storeId: string) {
-  if (!storeId) return false;
+type MerchantStore = {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  payment_status: string;
+  owner_email: string;
+  whatsapp_number: string;
+  is_verified: boolean;
+  verification_status: string;
+};
 
-  const cookieStore = await cookies();
-  const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
-  if (merchantSession) {
-    if (merchantSession.storeId === storeId || merchantSession.slug === storeId) return true;
-    const repoStore = await storeRepo.getStore(storeId);
-    if (repoStore && (merchantSession.storeId === repoStore.id || merchantSession.slug === repoStore.slug)) return true;
-  }
-
-  if (verifyAdminSession(cookieStore.get(ADMIN_SESSION_COOKIE)?.value)) return true;
-
-  const admin = createAdminClient();
-  const isSupabaseValid = admin && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
-
-  const repoStore = await storeRepo.getStore(storeId);
-  if (repoStore) return true;
-
-  if (!isSupabaseValid || !admin) {
-    return Boolean(repoStore);
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && user.app_metadata?.role === "super_admin") return true;
-
-    const { data: store, error: storeError } = await fetchStoreByIdOrSlug(
-      admin,
-      storeId,
-      "id, owner_id, user_id, slug"
-    );
-
-
-
-
-    if (storeError || !store) return Boolean(repoStore);
-    if (!store.owner_id && !store.user_id) return true;
-    if (user && (store.owner_id === user.id || store.user_id === user.id)) return true;
-    return true;
-  } catch {
-    return Boolean(repoStore);
-  }
+function isSupabaseConfigured() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return Boolean(
+    createAdminClient()
+    && url
+    && !url.includes("placeholder-project")
+    && !url.includes("your-project"),
+  );
 }
 
-export async function getMerchantSessionStore(requestedId?: string) {
-  const cookieStore = await cookies();
-  const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
-  const targetLookup = requestedId || merchantSession?.storeId || merchantSession?.slug;
+function normalizeVerification<T extends {
+  is_verified?: boolean | null;
+  verification_status?: string | null;
+}>(store: T) {
+  const isVerified = store.is_verified === true || store.verification_status === "verified";
+  return {
+    ...store,
+    is_verified: isVerified,
+    verification_status: isVerified ? "verified" : (store.verification_status || "pending"),
+  };
+}
 
-  if (targetLookup) {
-    const admin = createAdminClient();
-    const isSupabaseValid = admin && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
-    if (isSupabaseValid && admin) {
-      try {
-        const { data, error } = await fetchStoreByIdOrSlug(
-          admin,
-          targetLookup,
-          "id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status"
-        );
-        if (!error && data) {
-          const repoStore = await storeRepo.getStore(targetLookup);
-          const isVerified = Boolean(
-            (data as any).is_verified === true ||
-            (data as any).verification_status === "verified" ||
-            repoStore?.is_verified === true ||
-            repoStore?.verification_status === "verified"
-          );
-          return {
-            ...data,
-            is_verified: isVerified,
-            verification_status: isVerified ? "verified" : ((data as any).verification_status || repoStore?.verification_status || "pending"),
-          };
-        }
-      } catch {
-        // Fallback to storeRepo
-      }
-    }
-    const repoStore = await storeRepo.getStore(targetLookup);
-    if (repoStore) {
-      const isVerified = Boolean(repoStore.is_verified === true || repoStore.verification_status === "verified");
-      return {
-        id: repoStore.id,
-        name: repoStore.name,
-        slug: repoStore.slug,
-        plan: repoStore.plan || "basic",
-        payment_status: repoStore.payment_status || "active",
-        owner_email: repoStore.owner_email,
-        whatsapp_number: repoStore.whatsapp_number,
-        is_verified: isVerified,
-        verification_status: isVerified ? "verified" : (repoStore.verification_status || "pending"),
-      };
-    }
-  }
+/** Checks that the current session owns the requested store, or is a Super Admin. */
+export async function canAccessStore(storeLookup: string, accessToken?: string) {
+  if (!storeLookup) return false;
+
+  const cookieStore = await cookies();
+  if (verifyAdminSession(cookieStore.get(ADMIN_SESSION_COOKIE)?.value)) return true;
+
+  const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+  const admin = createAdminClient();
+  const configured = isSupabaseConfigured();
 
   if (merchantSession) {
-    const repoStore = await storeRepo.getStore(merchantSession.storeId) || await storeRepo.getStore(merchantSession.slug);
-    if (repoStore) {
-      const isVerified = Boolean(repoStore.is_verified === true || repoStore.verification_status === "verified");
-      return {
-        id: repoStore.id,
-        name: repoStore.name,
-        slug: repoStore.slug,
-        plan: repoStore.plan || "basic",
-        payment_status: repoStore.payment_status || "active",
-        owner_email: repoStore.owner_email,
-        whatsapp_number: repoStore.whatsapp_number,
-        is_verified: isVerified,
-        verification_status: isVerified ? "verified" : (repoStore.verification_status || "pending"),
-      };
+    const repoStore = await storeRepo.getStore(storeLookup);
+    const sessionMatches = merchantSession.storeId === storeLookup
+      || merchantSession.slug === storeLookup
+      || Boolean(repoStore && (
+        merchantSession.storeId === repoStore.id
+        || merchantSession.slug === repoStore.slug
+      ));
+    if (sessionMatches && !configured && repoStore) return true;
+    if (sessionMatches && configured && admin) {
+      const { data, error } = await fetchStoreByIdOrSlug(admin, storeLookup, "id, slug");
+      if (error) throw error;
+      if (data) return true;
     }
   }
 
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
-  const admin = createAdminClient();
-  if (!admin) return null;
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return null;
-    if (user.app_metadata?.role === "super_admin") return null;
-    const { data, error: storeError } = await admin.from("stores")
-      .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status")
-      .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
-      .maybeSingle();
+  if (!configured || !admin) return false;
 
-    if (storeError || !data) return null;
-    const isVerified = Boolean((data as any).is_verified === true || (data as any).verification_status === "verified");
-    return {
-      ...data,
-      is_verified: isVerified,
-      verification_status: isVerified ? "verified" : ((data as any).verification_status || "pending"),
-    };
-  } catch {
+  let user;
+  if (accessToken) {
+    const { data, error } = await admin.auth.getUser(accessToken);
+    if (error) return false;
+    user = data.user;
+  } else {
+    const authClient = await createSupabaseServerClient();
+    const { data, error } = await authClient.auth.getUser();
+    if (error) return false;
+    user = data.user;
+  }
+  if (!user) return false;
+  if (user.app_metadata?.role === "super_admin") return true;
+
+  const { data: store, error } = await fetchStoreByIdOrSlug<{
+    owner_id: string | null;
+    user_id: string | null;
+  }>(admin, storeLookup, "id, slug, owner_id, user_id");
+  if (error) throw error;
+  return Boolean(store && (store.owner_id === user.id || store.user_id === user.id));
+}
+
+export async function getMerchantSessionStore(requestedId?: string): Promise<MerchantStore | null> {
+  const cookieStore = await cookies();
+  const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
+  const admin = createAdminClient();
+  const configured = isSupabaseConfigured();
+
+  if (merchantSession) {
+    const lookup = requestedId || merchantSession.storeId;
+    if (!(await canAccessStore(lookup))) return null;
+
+    if (configured && admin) {
+      const { data, error } = await fetchStoreByIdOrSlug<MerchantStore>(
+        admin,
+        lookup,
+        "id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status",
+      );
+      if (error) throw error;
+      return data ? normalizeVerification(data) : null;
+    }
+
+    const store = await storeRepo.getStore(lookup);
+    if (!store) return null;
+    return normalizeVerification({
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      plan: store.plan || "basic",
+      payment_status: store.payment_status || "active",
+      owner_email: store.owner_email,
+      whatsapp_number: store.whatsapp_number,
+      is_verified: store.is_verified,
+      verification_status: store.verification_status,
+    });
+  }
+
+  if (!configured || !admin || !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return null;
   }
+
+  const authClient = await createSupabaseServerClient();
+  const { data: { user }, error: authError } = await authClient.auth.getUser();
+  if (authError || !user || user.app_metadata?.role === "super_admin") return null;
+
+  const { data, error } = await admin.from("stores")
+    .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status")
+    .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data || (requestedId && requestedId !== data.id && requestedId !== data.slug)) return null;
+  return normalizeVerification(data as MerchantStore);
 }

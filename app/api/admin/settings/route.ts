@@ -5,6 +5,7 @@ import { isAdminRequest } from "@/lib/admin-api-auth";
 import { PLATFORM_SETTINGS_CACHE_TAG } from "@/lib/platform-settings";
 import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS } from "@/lib/subscription-payment-accounts";
 
 type SettingsPayload = {
   title: string;
@@ -19,6 +20,12 @@ type SettingsPayload = {
   logoUrl: string;
   faviconName: string;
   faviconUrl: string;
+  easypaisaTitle: string;
+  easypaisaNumber: string;
+  jazzcashTitle: string;
+  jazzcashNumber: string;
+  sadapayTitle: string;
+  sadapayNumber: string;
   seoTitle: string;
   seoDescription: string;
   defaultSocialImage: string;
@@ -37,6 +44,8 @@ function parseSettings(value: unknown): SettingsPayload | null {
     title: 100, description: 300, email: 254, phone: 30, whatsapp: 30,
     website: 2048, instagram: 2048, facebook: 2048, logoName: 255, logoUrl: 2048,
     faviconName: 255, faviconUrl: 2048,
+    easypaisaTitle: 120, easypaisaNumber: 40, jazzcashTitle: 120, jazzcashNumber: 40,
+    sadapayTitle: 120, sadapayNumber: 40,
     seoTitle: 200, seoDescription: 500, defaultSocialImage: 2048, keywords: 1000,
   };
   const settings = {} as SettingsPayload;
@@ -88,11 +97,21 @@ export async function GET() {
       logoUrl: typeof branding.logoUrl === "string" ? branding.logoUrl : "",
       faviconName: typeof branding.faviconName === "string" ? branding.faviconName : "",
       faviconUrl: typeof branding.faviconUrl === "string" ? branding.faviconUrl : "",
+      easypaisaTitle: typeof branding.easypaisaTitle === "string" ? branding.easypaisaTitle : "",
+      easypaisaNumber: typeof branding.easypaisaNumber === "string" ? branding.easypaisaNumber : "",
+      jazzcashTitle: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashTitle
+        || (typeof branding.jazzcashTitle === "string" ? branding.jazzcashTitle : ""),
+      jazzcashNumber: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashNumber
+        || (typeof branding.jazzcashNumber === "string" ? branding.jazzcashNumber : ""),
+      sadapayTitle: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayTitle
+        || (typeof branding.sadapayTitle === "string" ? branding.sadapayTitle : ""),
+      sadapayNumber: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayNumber
+        || (typeof branding.sadapayNumber === "string" ? branding.sadapayNumber : ""),
       seoTitle: typeof seo.title === "string" ? seo.title : "",
       seoDescription: typeof seo.description === "string" ? seo.description : "",
       defaultSocialImage: typeof seo.defaultSocialImage === "string" ? seo.defaultSocialImage : "",
       keywords: typeof seo.keywords === "string" ? seo.keywords : "",
-    } : defaults,
+    } : { ...defaults, ...SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS },
   });
 }
 
@@ -187,6 +206,12 @@ export async function PUT(request: Request) {
       logoUrl: settings.logoUrl,
       faviconName: settings.faviconName,
       faviconUrl: settings.faviconUrl,
+      easypaisaTitle: settings.easypaisaTitle,
+      easypaisaNumber: settings.easypaisaNumber,
+      jazzcashTitle: settings.jazzcashTitle,
+      jazzcashNumber: settings.jazzcashNumber,
+      sadapayTitle: settings.sadapayTitle,
+      sadapayNumber: settings.sadapayNumber,
     },
     seo_settings: {
       title: settings.seoTitle,
@@ -220,6 +245,12 @@ export async function PUT(request: Request) {
     logoUrl: settings.logoUrl,
     faviconName: settings.faviconName,
     faviconUrl: settings.faviconUrl,
+    easypaisaTitle: settings.easypaisaTitle,
+    easypaisaNumber: settings.easypaisaNumber,
+    jazzcashTitle: settings.jazzcashTitle,
+    jazzcashNumber: settings.jazzcashNumber,
+    sadapayTitle: settings.sadapayTitle,
+    sadapayNumber: settings.sadapayNumber,
     seoTitle: settings.seoTitle,
     seoDescription: settings.seoDescription,
     defaultSocialImage: settings.defaultSocialImage,

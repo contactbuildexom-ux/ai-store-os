@@ -185,6 +185,8 @@ export function SettingsForm() {
           title: 100, description: 300, email: 254, phone: 30, whatsapp: 30,
           website: 2048, instagram: 2048, facebook: 2048, logoName: 255, logoUrl: 2048,
           faviconName: 255, faviconUrl: 2048,
+          easypaisaTitle: 120, easypaisaNumber: 40, jazzcashTitle: 120, jazzcashNumber: 40,
+          sadapayTitle: 120, sadapayNumber: 40,
           seoTitle: 200, seoDescription: 500, defaultSocialImage: 2048, keywords: 1000,
         }[name]}
         className="mt-1.5 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -205,6 +207,18 @@ export function SettingsForm() {
             <div className="sm:col-span-2">{field("description", "Site description")}</div>
             {field("phone", "Contact phone", "tel")}
             {field("whatsapp", "WhatsApp number", "tel")}
+          </div>
+        </section>
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="text-sm font-semibold text-slate-800">Subscription payment accounts</h3>
+          <p className="mt-1 text-xs text-slate-500">These platform-owned EasyPaisa, JazzCash, and SadaPay details are shown to merchants when they submit a paid plan upgrade.</p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {field("easypaisaTitle", "EasyPaisa account title")}
+            {field("easypaisaNumber", "EasyPaisa mobile/account number", "tel")}
+            {field("jazzcashTitle", "JazzCash account title")}
+            {field("jazzcashNumber", "JazzCash mobile/account number", "tel")}
+            {field("sadapayTitle", "SadaPay account title")}
+            {field("sadapayNumber", "SadaPay mobile/account number", "tel")}
           </div>
         </section>
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">

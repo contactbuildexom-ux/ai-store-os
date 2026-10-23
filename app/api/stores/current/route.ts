@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMerchantSessionStore } from "@/lib/merchant-api-auth";
+import { canAccessStore, getMerchantSessionStore } from "@/lib/merchant-api-auth";
 import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 
 type StoreRow = {
@@ -44,6 +44,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const requestedId = searchParams.get("store_id") || searchParams.get("id") || searchParams.get("slug");
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+
+    if (requestedId && !(await canAccessStore(requestedId, token))) {
+      return NextResponse.json({ error: "You are not authorized to access this store." }, { status: 403 });
+    }
 
     const merchantStore = await getMerchantSessionStore(requestedId || undefined);
     if (merchantStore) return NextResponse.json({ store: merchantStore as StoreRow });
@@ -116,7 +121,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Store not found." }, { status: 404 });
     }
 
-    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
     if (!token) {
       return NextResponse.json({ error: "Store not found or authentication required." }, { status: 404 });
     }
@@ -142,4 +146,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

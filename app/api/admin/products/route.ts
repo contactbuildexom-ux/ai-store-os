@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { isAdminRequest } from '@/lib/admin-api-auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,7 @@ const supabase = createClient(
 
 // GET: Fetch all products for the Super Admin dashboard
 export async function GET(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   try {
     const { data, error } = await supabase
       .from('products')
@@ -26,6 +28,7 @@ export async function GET(request: Request) {
 
 // POST: Add a new product from the Super Admin dashboard
 export async function POST(request: Request) {
+  if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   try {
     const body = await request.json();
     const { product, store, category, price, status } = body;
