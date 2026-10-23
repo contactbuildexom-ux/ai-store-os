@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
@@ -205,6 +205,25 @@ export default function MerchantDashboardMaster() {
     const [isTrialActive, setIsTrialActive] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
     const [verificationStatus, setVerificationStatus] = useState('verified');
+    const [checkingVerification, setCheckingVerification] = useState(false);
+    const [verificationTimerSeconds, setVerificationTimerSeconds] = useState(720); // 12 mins
+    const [lastVerifiedCheckTime, setLastVerifiedCheckTime] = useState<string | null>(null);
+    const wasVerifiedRef = useRef(false);
+
+    // Active verification countdown timer
+    useEffect(() => {
+        if (isVerified) return;
+        const interval = setInterval(() => {
+            setVerificationTimerSeconds(prev => (prev > 1 ? prev - 1 : 600));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isVerified]);
+
+    const formatTimer = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const remaining = secs % 60;
+        return `${String(mins).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+    };
 
     // Bexi AI Command Center states
     const [bexiChatHistory, setBexiChatHistory] = useState<Array<{ sender: 'ai' | 'merchant'; text: string; time: string }>>([
@@ -408,7 +427,7 @@ export default function MerchantDashboardMaster() {
         }
     }, []);
 
-    const resolveStoreAndData = useCallback(async (identifier: string) => {
+    const resolveStoreAndData = useCallback(async (identifier: string, isSilent = false) => {
         try {
             const supabase = createClient();
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -458,6 +477,18 @@ export default function MerchantDashboardMaster() {
             const isVer = Boolean((storeData as any).is_verified === true || (storeData as any).verification_status === 'verified');
             setIsVerified(isVer);
             setVerificationStatus(isVer ? 'verified' : ((storeData as any).verification_status || 'pending'));
+
+            if (isVer) {
+                if (!wasVerifiedRef.current) {
+                    wasVerifiedRef.current = true;
+                    if (isSilent) {
+                        setMessage('🎉 Store account verified successfully! All dashboard features are now active.');
+                        setMessageError(false);
+                    }
+                }
+            } else {
+                wasVerifiedRef.current = false;
+            }
 
             // 3-day Free Trial Check & Lock Enforcement
             const isPaid = isPaidVerified;
@@ -543,6 +574,26 @@ export default function MerchantDashboardMaster() {
             cancelled = true;
         };
     }, [paramId, resolveStoreAndData]);
+
+    // Background auto-polling every 8 seconds so merchant never stays stuck when admin verifies
+    useEffect(() => {
+        if (isVerified || !paramId) return;
+        const interval = setInterval(() => {
+            void resolveStoreAndData(paramId, true);
+        }, 8000);
+        return () => clearInterval(interval);
+    }, [isVerified, paramId, resolveStoreAndData]);
+
+    const handleCheckVerification = async () => {
+        if (checkingVerification || !paramId) return;
+        setCheckingVerification(true);
+        setLastVerifiedCheckTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        try {
+            await resolveStoreAndData(paramId);
+        } finally {
+            setCheckingVerification(false);
+        }
+    };
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -1075,6 +1126,61 @@ export default function MerchantDashboardMaster() {
                         </div>
                     )}
 
+                    {/* Verification in Process Timer Banner for Overview */}
+                    {!isVerified && (
+                        <div className="relative overflow-hidden rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-4 sm:p-5 shadow-sm text-slate-800">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-start sm:items-center gap-3.5">
+                                    <div className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white shadow-md">
+                                        <Clock size={22} className="animate-spin" style={{ animationDuration: '8s' }} />
+                                        <span className="absolute -top-1 -right-1 flex size-3">
+                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                                            <span className="relative inline-flex size-3 rounded-full bg-amber-600"></span>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <h4 className="text-sm font-bold text-slate-900">
+                                                Verification in process
+                                            </h4>
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-950">
+                                                <span className="size-1.5 rounded-full bg-amber-600 animate-pulse" /> Reviewing Store
+                                            </span>
+                                        </div>
+                                        <p className="mt-1 text-xs text-slate-600 max-w-xl">
+                                            Super Admin is reviewing your store. As soon as approved, all tabs, WhatsApp orders, and AI features will automatically unlock.
+                                        </p>
+                                        {lastVerifiedCheckTime && (
+                                            <p className="mt-1 text-[11px] text-slate-500">
+                                                Last checked: {lastVerifiedCheckTime}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                                    <div className="flex items-center justify-center gap-2.5 rounded-xl bg-white/90 border border-amber-200 px-4 py-2 shadow-xs">
+                                        <Clock size={16} className="text-amber-600" />
+                                        <div className="text-left">
+                                            <p className="text-[9px] uppercase tracking-wider font-bold text-slate-500">Est. Review Time</p>
+                                            <p className="text-sm font-black font-mono text-amber-700">{formatTimer(verificationTimerSeconds)}</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleCheckVerification}
+                                        disabled={checkingVerification}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
+                                        style={{ backgroundColor: themeColor }}
+                                    >
+                                        <RefreshCw size={14} className={checkingVerification ? "animate-spin" : ""} />
+                                        {checkingVerification ? 'Checking Status…' : 'Check Verification Status'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* OVERVIEW */}
                     {activeTab === 'overview' && (
                         <>
@@ -1277,32 +1383,59 @@ export default function MerchantDashboardMaster() {
 
 {/* When unverified, non-overview tabs are locked */}
                     {!isVerified && activeTab !== 'overview' ? (
-                        <div className="rounded-3xl border-2 border-amber-300 bg-white p-8 sm:p-12 text-center shadow-md space-y-4 max-w-xl mx-auto my-6 animate-in zoom-in-95 duration-200">
-                            <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-600 border border-amber-300 shadow-sm animate-pulse">
-                                <Lock size={32} />
+                        <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-b from-white via-amber-50/20 to-white p-8 sm:p-12 text-center shadow-lg space-y-5 max-w-xl mx-auto my-8 animate-in zoom-in-95 duration-200">
+                            <div className="relative mx-auto grid size-20 place-items-center rounded-3xl bg-gradient-to-tr from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-200">
+                                <Lock size={36} />
+                                <span className="absolute -top-1 -right-1 flex size-4">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex size-4 rounded-full bg-amber-600 border-2 border-white"></span>
+                                </span>
                             </div>
-                            <span className="inline-block rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-3 py-0.5 text-[11px] font-bold">
-                                Verification in Progress
-                            </span>
-                            <h3 className="text-lg font-bold text-slate-900">
-                                {activeTab === 'branding' ? 'Storefront Settings' : activeTab === 'bexi-ai' ? 'Bexi AI Assistant' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} is Locked
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto font-normal">
-                                Your store account is currently undergoing verification. All features for your <strong>{storePlan.toUpperCase()}</strong> plan will activate automatically once verified.
-                            </p>
-                            <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+                            
+                            <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3.5 py-1 text-xs font-bold tracking-wide">
+                                    <Clock size={13} className="animate-spin" style={{ animationDuration: '8s' }} /> Verification in Process
+                                </span>
+                                <h3 className="text-xl font-bold text-slate-900 pt-2">
+                                    {activeTab === 'branding' ? 'Storefront Settings' : activeTab === 'bexi-ai' ? 'Bexi AI Assistant' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} is Locked
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto font-normal">
+                                    Your store account is currently undergoing verification by the Super Admin. As soon as verification is approved, all features for your <strong>{storePlan.toUpperCase()}</strong> plan will activate automatically without delay.
+                                </p>
+                            </div>
+
+                            {/* Verification in Process Timer Card */}
+                            <div className="rounded-2xl border border-amber-200 bg-white p-4 max-w-md mx-auto shadow-xs flex items-center justify-between gap-4">
+                                <div className="text-left">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</p>
+                                    <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
+                                        <span className="size-2 rounded-full bg-amber-500 animate-pulse" /> Review in Progress
+                                    </p>
+                                    {lastVerifiedCheckTime && (
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Last checked: {lastVerifiedCheckTime}</p>
+                                    )}
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Est. Review Time</p>
+                                    <p className="text-lg font-black font-mono text-slate-900">{formatTimer(verificationTimerSeconds)}</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => resolveStoreAndData(paramId)}
-                                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                                    onClick={handleCheckVerification}
+                                    disabled={checkingVerification}
+                                    className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
                                     style={{ backgroundColor: themeColor }}
                                 >
-                                    <RefreshCw size={14} /> Check Verification Status
+                                    <RefreshCw size={14} className={checkingVerification ? "animate-spin" : ""} />
+                                    {checkingVerification ? 'Checking Status…' : 'Check Verification Status'}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab('overview')}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-xs"
                                 >
                                     Back to Overview
                                 </button>

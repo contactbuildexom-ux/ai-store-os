@@ -361,13 +361,14 @@ export default function StoreLayout({
 
   // Direct single-product WhatsApp order
   const handleDirectWhatsAppOrder = (product: ProductItem) => {
-    const text = 
-`Hello *${storeName}*! 👋%0A%0A` +
-`I would like to place an order for:%0A` +
-`🛍️ *Product:* ${encodeURIComponent(product.name)}%0A` +
-`💰 *Price:* Rs. ${product.price.toLocaleString()}%0A` +
-`📍 *Store Link:* https://${storeSlug}.buildexom.store%0A%0A` +
-`Please confirm availability and share payment/delivery details! Thank you!`;
+    const text = encodeURIComponent(
+`INSTANT ORDER — ${storeName.toUpperCase()}\n\n` +
+`Hello! I want to order:\n` +
+`Product: ${product.name}\n` +
+`Price: Rs. ${product.price.toLocaleString()}\n` +
+`Store: https://${storeSlug}.buildexom.store\n\n` +
+`Please confirm availability and share payment/delivery details. Thank you!`
+    );
 
     const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '') || '923001234567';
     window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');
@@ -377,28 +378,27 @@ export default function StoreLayout({
   const handleCartCheckout = () => {
     if (cart.length === 0) return;
 
-    let itemsList = '';
+    let itemsClean = '';
     cart.forEach((item, index) => {
-      itemsList += `${index + 1}. ${item.product.name} (x${item.quantity}) - Rs. ${(item.product.price * item.quantity).toLocaleString()}%0A`;
+      itemsClean += `${index + 1}. ${item.product.name} (x${item.quantity}) - Rs. ${(item.product.price * item.quantity).toLocaleString()}\n`;
     });
 
-    const text = 
-`🛍️ *NEW ORDER — ${storeName.toUpperCase()}*%0A` +
-`----------------------------------------%0A` +
-`👤 *CUSTOMER DETAILS:*%0A` +
-`• *Name:* ${encodeURIComponent(customerName || 'Valued Customer')}%0A` +
-`• *Email:* ${encodeURIComponent(customerEmail || 'Not provided')}%0A` +
-`• *Phone:* ${encodeURIComponent(customerPhone || 'Not provided')}%0A` +
-`• *City:* ${encodeURIComponent(customerCity)}%0A` +
-`• *Postal / Zip Code:* ${encodeURIComponent(customerZip || 'N/A')}%0A` +
-`• *Delivery Address:* ${encodeURIComponent(customerAddress || 'Will provide in chat')}%0A%0A` +
-`📦 *ITEMS ORDERED:*%0A${itemsList}%0A` +
-`💵 *Subtotal:* Rs. ${cartTotal.toLocaleString()}%0A` +
-`🚚 *Delivery Fee:* Rs. ${deliveryFee}%0A` +
-`🏷️ *Grand Total:* Rs. ${grandTotal.toLocaleString()}%0A` +
-`💳 *Payment Method:* Cash on Delivery (COD)%0A` +
-`----------------------------------------%0A` +
-`Please confirm my order. Thank you!`;
+    const text = encodeURIComponent(
+`NEW ORDER — ${storeName.toUpperCase()}\n\n` +
+`CUSTOMER DETAILS:\n` +
+`Name: ${customerName || 'Valued Customer'}\n` +
+`Email: ${customerEmail || 'Not provided'}\n` +
+`Phone: ${customerPhone || 'Not provided'}\n` +
+`City: ${customerCity}\n` +
+`Postal Code: ${customerZip || 'N/A'}\n` +
+`Delivery Address: ${customerAddress || 'Will provide in chat'}\n\n` +
+`ITEMS ORDERED:\n${itemsClean}\n` +
+`Subtotal: Rs. ${cartTotal.toLocaleString()}\n` +
+`Delivery Fee: Rs. ${deliveryFee}\n` +
+`Grand Total: Rs. ${grandTotal.toLocaleString()}\n` +
+`Payment Method: Cash on Delivery (COD)\n\n` +
+`Please confirm my order. Thank you!`
+    );
 
     const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '') || '923001234567';
     window.open(`https://wa.me/${cleanNumber}?text=${text}`, '_blank');

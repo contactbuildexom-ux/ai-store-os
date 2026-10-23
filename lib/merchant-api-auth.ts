@@ -67,15 +67,29 @@ export async function getMerchantSessionStore(requestedId?: string) {
         const { data, error } = await fetchStoreByIdOrSlug(
           admin,
           targetLookup,
-          "id, name, slug, plan, payment_status, owner_email, whatsapp_number"
+          "id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status"
         );
-        if (!error && data) return data;
+        if (!error && data) {
+          const repoStore = await storeRepo.getStore(targetLookup);
+          const isVerified = Boolean(
+            (data as any).is_verified === true ||
+            (data as any).verification_status === "verified" ||
+            repoStore?.is_verified === true ||
+            repoStore?.verification_status === "verified"
+          );
+          return {
+            ...data,
+            is_verified: isVerified,
+            verification_status: isVerified ? "verified" : ((data as any).verification_status || repoStore?.verification_status || "pending"),
+          };
+        }
       } catch {
         // Fallback to storeRepo
       }
     }
     const repoStore = await storeRepo.getStore(targetLookup);
     if (repoStore) {
+      const isVerified = Boolean(repoStore.is_verified === true || repoStore.verification_status === "verified");
       return {
         id: repoStore.id,
         name: repoStore.name,
@@ -84,6 +98,8 @@ export async function getMerchantSessionStore(requestedId?: string) {
         payment_status: repoStore.payment_status || "active",
         owner_email: repoStore.owner_email,
         whatsapp_number: repoStore.whatsapp_number,
+        is_verified: isVerified,
+        verification_status: isVerified ? "verified" : (repoStore.verification_status || "pending"),
       };
     }
   }
@@ -91,6 +107,7 @@ export async function getMerchantSessionStore(requestedId?: string) {
   if (merchantSession) {
     const repoStore = await storeRepo.getStore(merchantSession.storeId) || await storeRepo.getStore(merchantSession.slug);
     if (repoStore) {
+      const isVerified = Boolean(repoStore.is_verified === true || repoStore.verification_status === "verified");
       return {
         id: repoStore.id,
         name: repoStore.name,
@@ -99,6 +116,8 @@ export async function getMerchantSessionStore(requestedId?: string) {
         payment_status: repoStore.payment_status || "active",
         owner_email: repoStore.owner_email,
         whatsapp_number: repoStore.whatsapp_number,
+        is_verified: isVerified,
+        verification_status: isVerified ? "verified" : (repoStore.verification_status || "pending"),
       };
     }
   }
@@ -112,11 +131,17 @@ export async function getMerchantSessionStore(requestedId?: string) {
     if (error || !user) return null;
     if (user.app_metadata?.role === "super_admin") return null;
     const { data, error: storeError } = await admin.from("stores")
-      .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number")
+      .select("id, name, slug, plan, payment_status, owner_email, whatsapp_number, is_verified, verification_status")
       .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
       .maybeSingle();
 
-    return storeError ? null : data;
+    if (storeError || !data) return null;
+    const isVerified = Boolean((data as any).is_verified === true || (data as any).verification_status === "verified");
+    return {
+      ...data,
+      is_verified: isVerified,
+      verification_status: isVerified ? "verified" : ((data as any).verification_status || "pending"),
+    };
   } catch {
     return null;
   }

@@ -419,13 +419,13 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     function handleDirectWhatsApp(product: Product) {
         const merchantPhone = whatsappPhone(liveStore.whatsapp_number || '923001234567');
         const text =
-            `🛍️ *INSTANT ORDER — ${liveStore.name.toUpperCase()}*\n` +
-            `----------------------------------------\n` +
+            `INSTANT ORDER — ${liveStore.name.toUpperCase()}\n\n` +
+
             `Hello! I would like to order:\n` +
-            `• *Product:* ${product.name}\n` +
-            `• *Price:* ${money(product.price)}\n` +
-            `• *Store Link:* https://${liveStore.slug}.buildexom.store\n\n` +
-            `Please confirm stock availability and share delivery details! Thank you!`;
+            `Product: ${product.name}\n` +
+            `Price: ${money(product.price)}\n` +
+            `Store: https://${liveStore.slug}.buildexom.store\n\n` +
+            `Please confirm stock availability and share delivery details. Thank you!`;
         window.open(`https://wa.me/${merchantPhone}?text=${encodeURIComponent(text)}`, '_blank');
     }
 
@@ -448,29 +448,29 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
                 ].filter(Boolean);
                 const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
-                return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+                return `${idx + 1}. ${item.name}${varTxt} x ${item.quantity} - ${money(Number(item.price) * item.quantity)}`;
             })
             .join('\n');
 
         const fallbackSummary = [
-            `🛍️ *NEW ORDER — ${liveStore.name.toUpperCase()}*`,
-            `----------------------------------------`,
-            `👤 *CUSTOMER DETAILS:*`,
-            `• *Name:* ${customerName}`,
-            `• *WhatsApp / Phone:* ${customerPhone}`,
-            `• *Email:* ${customerEmail || 'Not provided'}`,
-            `• *City:* ${city}`,
-            `• *Postal / Zip Code:* ${customerZip || 'N/A'}`,
-            `• *Delivery Address:* ${customerAddress}`,
+            `NEW ORDER — ${liveStore.name.toUpperCase()}`,
             ``,
-            `📦 *ITEMS ORDERED:*`,
+            `CUSTOMER DETAILS:`,
+            `Name: ${customerName}`,
+            `Phone: ${customerPhone}`,
+            `Email: ${customerEmail || 'Not provided'}`,
+            `City: ${city}`,
+            `Postal Code: ${customerZip || 'N/A'}`,
+            `Delivery Address: ${customerAddress}`,
+            ``,
+            `ITEMS ORDERED:`,
             itemLines,
             ``,
-            `💵 *Subtotal:* ${money(subtotal)}`,
-            `🚚 *Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : money(deliveryFee)}`,
-            `🏷️ *Grand Total:* ${money(finalAmount)}`,
-            `💳 *Payment Method:* ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(advanceAmount)})` : 'Cash on Delivery (COD)'}`,
-            `----------------------------------------`,
+            `Subtotal: ${money(subtotal)}`,
+            `Delivery Fee: ${deliveryFee === 0 ? 'FREE' : money(deliveryFee)}`,
+            `Grand Total: ${money(finalAmount)}`,
+            `Payment Method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% - ${money(advanceAmount)})` : 'Cash on Delivery (COD)'}`,
+            ``,
             `Please confirm my order and dispatch timeline. Thank you!`,
         ].join('\n');
 
@@ -514,31 +514,30 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         item.selectedColor && item.selectedColor !== 'Default' ? `Color: ${item.selectedColor}` : null
                     ].filter(Boolean);
                     const varTxt = variants.length > 0 ? ` (${variants.join(', ')})` : '';
-                    return `${idx + 1}. *${item.name}*${varTxt} × ${item.quantity} — ${money(Number(item.price) * item.quantity)}`;
+                    return `${idx + 1}. ${item.name}${varTxt} x ${item.quantity} - ${money(Number(item.price) * item.quantity)}`;
                 })
                 .join('\n');
 
             const fullSummary = [
-                `🛍️ *NEW ORDER — ${liveStore.name.toUpperCase()}*`,
-                `----------------------------------------`,
-                `📋 *Order ID:* #${result.order?.id?.slice(0, 8) || 'NEW'}`,
+                `NEW ORDER — ${liveStore.name.toUpperCase()}`,
+                `Order ID: #${result.order?.id?.slice(0, 8) || 'NEW'}`,
                 ``,
-                `👤 *CUSTOMER DETAILS:*`,
-                `• *Name:* ${customerName}`,
-                `• *WhatsApp / Phone:* ${customerPhone}`,
-                `• *Email:* ${customerEmail || 'Not provided'}`,
-                `• *City:* ${city}`,
-                `• *Postal / Zip Code:* ${customerZip || 'N/A'}`,
-                `• *Delivery Address:* ${customerAddress}`,
+                `CUSTOMER DETAILS:`,
+                `Name: ${customerName}`,
+                `Phone: ${customerPhone}`,
+                `Email: ${customerEmail || 'Not provided'}`,
+                `City: ${city}`,
+                `Postal Code: ${customerZip || 'N/A'}`,
+                `Delivery Address: ${customerAddress}`,
                 ``,
-                `📦 *ITEMS ORDERED:*`,
+                `ITEMS ORDERED:`,
                 confirmedLines,
                 ``,
-                `💵 *Subtotal:* ${money(result.subtotal || subtotal)}`,
-                `🚚 *Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : money(result.delivery_fee || deliveryFee)}`,
-                `🏷️ *Grand Total:* ${money(result.total_amount || finalAmount)}`,
-                `💳 *Payment Method:* ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% · ${money(result.advance_amount || advanceAmount)})` : 'Cash on Delivery (COD)'}`,
-                `----------------------------------------`,
+                `Subtotal: ${money(result.subtotal || subtotal)}`,
+                `Delivery Fee: ${deliveryFee === 0 ? 'FREE' : money(result.delivery_fee || deliveryFee)}`,
+                `Grand Total: ${money(result.total_amount || finalAmount)}`,
+                `Payment Method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% - ${money(result.advance_amount || advanceAmount)})` : 'Cash on Delivery (COD)'}`,
+                ``,
                 `Please confirm my order and dispatch timeline. Thank you!`,
             ].join('\n');
 
@@ -2163,14 +2162,14 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                                     modalSelectedColor && modalSelectedColor !== 'Default' ? `Color: ${modalSelectedColor}` : null,
                                                 ].filter(Boolean).join(', ');
                                                 const text =
-                                                    `🛍️ *INSTANT ORDER — ${liveStore.name.toUpperCase()}*\n` +
-                                                    `----------------------------------------\n` +
+                                                    `INSTANT ORDER — ${liveStore.name.toUpperCase()}\n\n` +
+                                        
                                                     `Hello! I want to order:\n` +
-                                                    `• *Product:* ${selectedProductForModal.name}${variantNotes ? ` (${variantNotes})` : ''}\n` +
-                                                    `• *Quantity:* ${modalQty}\n` +
-                                                    `• *Total Price:* ${money(totalPrice)}\n` +
-                                                    `• *Store URL:* https://${liveStore.slug}.buildexom.store\n\n` +
-                                                    `Please confirm my order and share delivery details!`;
+                                                    `Product: ${selectedProductForModal.name}${variantNotes ? ` (${variantNotes})` : ''}\n` +
+                                                    `Quantity: ${modalQty}\n` +
+                                                    `Total Price: ${money(totalPrice)}\n` +
+                                                    `Store: https://${liveStore.slug}.buildexom.store\n\n` +
+                                                    `Please confirm my order and share delivery details. Thank you!`;
                                                 window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
                                             }}
                                             className="flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 py-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100"

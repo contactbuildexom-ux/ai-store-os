@@ -85,6 +85,13 @@ export async function POST(req: Request) {
             verification_status: status,
           })
           .eq('id', store_id);
+        await supabase
+          .from('stores')
+          .update({
+            is_verified: isVerified,
+            verification_status: status,
+          })
+          .eq('slug', store_id);
       } catch (err) {
         console.warn('Supabase store verification update warning:', err);
       }
@@ -93,6 +100,12 @@ export async function POST(req: Request) {
     try {
       if (isVerified) {
         await storeRepo.verifyStore(store_id);
+      } else {
+        const s = await storeRepo.getStore(store_id);
+        if (s) {
+          s.is_verified = false;
+          s.verification_status = 'rejected';
+        }
       }
     } catch (err) {
       console.warn('Repo store verification update warning:', err);

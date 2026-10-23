@@ -197,11 +197,6 @@ export function StoreFooter({
             <p className="text-xs leading-relaxed text-slate-600">
               Welcome to our official online store. Explore our catalog of quality products with verified nationwide shipping and Cash on Delivery.
             </p>
-            {storeSlug && (
-              <p className="font-mono text-[11px] font-semibold text-emerald-700">
-                {storeSlug}.buildexom.store
-              </p>
-            )}
           </div>
 
           {/* Column 2: Quick Navigation */}

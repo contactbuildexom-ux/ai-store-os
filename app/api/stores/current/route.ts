@@ -21,7 +21,7 @@ type StoreRow = {
 };
 
 async function findStoreForUser(supabase: NonNullable<ReturnType<typeof createAdminClient>>, userId: string) {
-  const baseSelect = "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at";
+  const baseSelect = "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at, is_verified, verification_status";
   const byOwner = await supabase
     .from("stores")
     .select(baseSelect)
