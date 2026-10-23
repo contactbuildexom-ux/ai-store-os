@@ -28,6 +28,60 @@ function isShortString(value: unknown, maxLength: number): value is string {
   return typeof value === "string" && value.length <= maxLength;
 }
 
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const storeLookup = searchParams.get("store_id") || searchParams.get("slug") || "";
+
+    let pendingUpgrade: any = null;
+    let selectedPlan = "basic";
+
+    if (storeLookup) {
+      const store = await storeRepo.getStore(storeLookup);
+      if (store) {
+        selectedPlan = store.selected_plan || store.plan || "basic";
+        const details: any = store.payment_details || {};
+        if (details && typeof details === "object" && details.pending_upgrade) {
+          pendingUpgrade = details.pending_upgrade;
+        }
+      }
+    }
+
+    const paymentAccounts = {
+      jazzcash: {
+        title: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashTitle || "Buildexom Official",
+        number: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.jazzcashNumber || "03374257290",
+      },
+      easypaisa: {
+        title: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.easypaisaTitle || "Buildexom Official",
+        number: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.easypaisaNumber || "03374257290",
+      },
+      sadapay: {
+        title: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayTitle || "Buildexom Official",
+        number: SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS.sadapayNumber || "03374257290",
+      },
+    };
+
+    return NextResponse.json({
+      success: true,
+      payment_accounts: paymentAccounts,
+      pending_upgrade: pendingUpgrade,
+      selected_plan: selectedPlan,
+    });
+  } catch {
+    return NextResponse.json({
+      success: true,
+      payment_accounts: {
+        jazzcash: { title: "Buildexom Official", number: "03374257290" },
+        easypaisa: { title: "Buildexom Official", number: "03374257290" },
+        sadapay: { title: "Buildexom Official", number: "03374257290" },
+      },
+      pending_upgrade: null,
+      selected_plan: "basic",
+    });
+  }
+}
+
 export async function POST(request: Request) {
   let body: UpgradeRequestBody;
   try {

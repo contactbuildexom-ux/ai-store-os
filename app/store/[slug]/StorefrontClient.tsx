@@ -700,17 +700,17 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 >
                     <div className="flex overflow-hidden">
                         <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> FREE & FAST SHIPPING ACROSS PAKISTAN</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> 100% ORIGINAL & VERIFIED PRODUCTS</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY RETURN & EXCHANGE</span>
+                            <div className="flex shrink-0 items-center gap-24 pr-24 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
                             </div>
-                            <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold" aria-hidden="true">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> FREE & FAST SHIPPING ACROSS PAKISTAN</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> 100% ORIGINAL & VERIFIED PRODUCTS</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY RETURN & EXCHANGE</span>
+                            <div className="flex shrink-0 items-center gap-24 pr-24 text-[11px] sm:text-xs font-bold uppercase tracking-wider" aria-hidden="true">
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
                             </div>
                         </div>
                     </div>

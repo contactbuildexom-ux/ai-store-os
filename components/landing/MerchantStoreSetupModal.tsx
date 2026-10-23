@@ -833,7 +833,7 @@ export default function MerchantStoreSetupModal({
                   type="button"
                   onClick={() => {
                     onClose();
-                    router.push(successData.dashboardUrl);
+                    router.push(`/merchant/login?slug=${encodeURIComponent(successData.slug)}&email=${encodeURIComponent(email)}`);
                   }}
                   className="flex items-center justify-center gap-2 rounded-xl bg-[#1976d2] px-5 py-3.5 text-xs font-bold text-white shadow-md shadow-blue-500/25 transition hover:bg-[#1565c0]"
                 >

@@ -211,10 +211,7 @@ export default function MerchantDashboardMaster() {
     const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
     const [upgradeTrxId, setUpgradeTrxId] = useState('');
     const [upgradeReceiptFile, setUpgradeReceiptFile] = useState<File | null>(null);
-    const [subscriptionPaymentAccounts, setSubscriptionPaymentAccounts] = useState({
-        easypaisa: { title: '', number: '' },
-        jazzcash: { title: '', number: '' },
-        sadapay: { title: '', number: '' },
+    const [subscriptionPaymentAccounts, setSubscriptionPaymentAccounts] = useState({        easypaisa: { title: 'Buildexom Official', number: '03374257290' },        jazzcash: { title: 'Buildexom Official', number: '03374257290' },        sadapay: { title: 'Buildexom Official', number: '03374257290' },
     });
     const [trxRef, setTrxRef] = useState('');
     const [isUpgrading, setIsUpgrading] = useState(false);
@@ -562,14 +559,17 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 fetchMeshData(storeData.id),
                 fetch(`/api/merchant/upgrade-request?store_id=${encodeURIComponent(storeData.id)}`, { cache: 'no-store' })
                     .then(async (response) => {
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.error || 'Unable to load subscription payment instructions.');
-                        return data;
+                        if (!response.ok) return null;
+                        const text = await response.text();
+                        if (!text) return null;
+                        try {
+                            return JSON.parse(text);
+                        } catch {
+                            return null;
+                        }
                     })
                     .catch((error: unknown) => {
-                        console.error('Unable to load subscription payment instructions:', error);
-                        setMessage(error instanceof Error ? error.message : 'Unable to load subscription payment instructions.');
-                        setMessageError(true);
+                        console.warn('Unable to load subscription payment instructions:', error);
                         return null;
                     }),
             ]);
@@ -1194,16 +1194,19 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                     {/* 3-Day Free Trial Active Countdown Banner */}
                     {isTrialActive && !isTrialExpired && (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm text-slate-800">
+                        <div 
+                            className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border p-4 shadow-xs text-slate-800"
+                            style={{ 
+                                backgroundColor: `${themeColor}12`, 
+                                borderColor: `${themeColor}35` 
+                            }}
+                        >
                             <div className="flex items-center gap-3">
-                                <span className="grid size-9 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
-                                    <Sparkles size={18} />
-                                </span>
                                 <div>
-                                    <p className="text-xs font-bold text-amber-950">
+                                    <p className="text-xs font-bold text-slate-900">
                                         ⏳ 3-Day Free Trial Active: {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} remaining
                                     </p>
-                                    <p className="text-[11px] text-amber-800">
+                                    <p className="text-[11px] text-slate-600">
                                         Your store and dashboard are live! Upgrade to Pro or Business to keep your store active permanently and unlock WhatsApp ordering.
                                     </p>
                                 </div>
@@ -1211,7 +1214,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             <button
                                 type="button"
                                 onClick={() => setUpgradeModalPlan('pro')}
-                                className="shrink-0 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95"
+                                className="shrink-0 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:scale-105 active:scale-95 cursor-pointer"
                                 style={{ backgroundColor: themeColor }}
                             >
                                 Upgrade Now →
@@ -1522,8 +1525,8 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                             }}
                                                         >
                                                             {plan === 'basic' 
-                                                                ? 'Switch to Basic (Free)' 
-                                                                : `Select & Pay for ${details.title} — ${details.priceLabel}`}
+                                                                ? 'Switch to Basic' 
+                                                                : `Select ${details.title}`}
                                                         </button>
                                                     )}
                                                 </div>

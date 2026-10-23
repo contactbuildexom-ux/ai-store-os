@@ -14,7 +14,7 @@ export default async function MerchantDashboardLayout({ children, params }: Dash
   const store = await storeRepo.getStore(storeid);
 
   if (!store) notFound();
-  if (!(await canAccessStore(store.id))) redirect("/login");
+  if (!(await canAccessStore(store.id))) redirect("/merchant/login");
 
   return children;
 }

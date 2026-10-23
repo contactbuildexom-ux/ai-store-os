@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
@@ -14,6 +14,17 @@ export default function MerchantLoginPage() {
   const [storeSlug, setStoreSlug] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [targetSlug, setTargetSlug] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlEmail = params.get("email");
+      const urlSlug = params.get("slug");
+      if (urlEmail) setEmail(urlEmail);
+      if (urlSlug) setTargetSlug(urlSlug);
+    }
+  }, []);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -67,7 +78,7 @@ export default function MerchantLoginPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to sign in to this store.");
 
-      const loggedInSlug = result?.store?.slug || result?.slug;
+      const loggedInSlug = targetSlug || result?.store?.slug || result?.slug;
       router.replace(loggedInSlug ? `/merchant/${encodeURIComponent(loggedInSlug)}/dashboard` : "/dashboard");
       router.refresh();
     } catch (loginError) {
