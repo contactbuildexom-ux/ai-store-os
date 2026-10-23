@@ -28,6 +28,9 @@ export interface StoreRecord {
   password_hash?: string;
   niche?: string;
   hero_images?: string[];
+  about_title?: string;
+  about_text?: string;
+  about_image?: string;
   payment_details?: Record<string, unknown>;
   delivery?: {
     store_city?: string;

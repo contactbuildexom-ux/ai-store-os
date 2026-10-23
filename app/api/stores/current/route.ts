@@ -8,7 +8,9 @@ type StoreRow = {
   name: string | null;
   slug: string | null;
   plan: string | null;
+  selected_plan?: string | null;
   payment_status: string | null;
+  payment_details?: any;
   primary_color?: string | null;
   selected_theme?: string | null;
   whatsapp_number?: string | null;
@@ -66,7 +68,9 @@ export async function GET(request: Request) {
             name: repoStore.name,
             slug: repoStore.slug,
             plan: repoStore.plan || "basic",
+            selected_plan: repoStore.selected_plan || repoStore.plan || "basic",
             payment_status: repoStore.payment_status || "active",
+            payment_details: repoStore.payment_details || {},
             whatsapp_number: repoStore.whatsapp_number,
             primary_color: resolvedColor,
             selected_theme: repoStore.theme?.id || repoStore.selected_theme || "emerald",
@@ -105,7 +109,9 @@ export async function GET(request: Request) {
             name: dbStore.name,
             slug: dbStore.slug,
             plan: dbStore.plan || "basic",
+            selected_plan: (dbStore as any).selected_plan || dbStore.plan || "basic",
             payment_status: dbStore.payment_status || "active",
+            payment_details: (dbStore as any).payment_details || {},
             whatsapp_number: dbStore.whatsapp_number,
             primary_color: resolvedColor,
             selected_theme: dbStore.selected_theme || "ocean-blue",

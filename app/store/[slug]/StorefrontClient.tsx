@@ -20,6 +20,10 @@ import {
     Sparkles,
     ArrowRight,
     ShieldCheck,
+    Crown,
+    Star,
+    Award,
+    Store,
     Truck,
     Headphones,
     CheckCircle2,
@@ -81,7 +85,7 @@ export type Store = {
 
 export type Props = {
     store: Store;
-    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null; hero_images?: string[] | null } | null;
+    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null; hero_images?: string[] | null; about_title?: string | null; about_text?: string | null; about_image?: string | null; } | null;
     products: Product[];
     delivery: DeliverySettings | null;
     paymentDetails?: any;
@@ -177,6 +181,14 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const isBusiness = planNormalized === 'business' || planNormalized === 'unlimited';
     const hasAiChatbot = isBusiness;
     const productLimit = isBasic ? 20 : isPro ? 75 : null;
+
+    // Tier-based visual upscaling (Instantly distinguishable view across Free, Pro, and Business Flagship)
+    const displayTier: 'basic' | 'pro' | 'business' = useMemo(() => {
+        const p = ((liveStore as any)?.selected_plan || liveStore.plan || 'basic').toLowerCase();
+        if (p === 'business' || p === 'advanced' || p === 'advance') return 'business';
+        if (p === 'pro') return 'pro';
+        return 'basic';
+    }, [liveStore]);
 
     // UI state
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -654,28 +666,56 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Continuous smooth marquee ticker traveling Left to Right */}
-            <div 
-                className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs transition select-none" 
-                style={{ backgroundColor: themeColor, borderColor: `${themeColor}35` }}
-            >
-                <div className="flex overflow-hidden">
-                    <div className="animate-storefront-marquee flex shrink-0 items-center">
-                        <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-bold tracking-wide">
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-bold tracking-wide" aria-hidden="true">
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
-                            <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> Fast Nationwide Delivery on All Orders</span>
+            {/* Top Announcement Bar - Dynamic Tiered Appearance */}
+            {displayTier === 'business' ? (
+                <div className="w-full overflow-hidden py-2 text-xs font-black text-amber-200 bg-slate-950 border-b border-amber-500/30 shadow-md select-none tracking-widest uppercase">
+                    <div className="flex overflow-hidden">
+                        <div className="animate-storefront-marquee flex shrink-0 items-center">
+                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black">
+                                <span className="inline-flex items-center gap-2 shrink-0"><Crown size={14} className="text-amber-400" /> VIP FLAGSHIP BOUTIQUE • ZERO-WAIT PRIORITY DISPATCH</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} className="text-amber-400" /> COMPLIMENTARY LUXURY PACKAGING</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} className="text-amber-400" /> 100% HAND-INSPECTED AUTHENTIC QUALITY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} className="text-amber-400" /> 24/7 DEDICATED VIP CONCIERGE</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black" aria-hidden="true">
+                                <span className="inline-flex items-center gap-2 shrink-0"><Crown size={14} className="text-amber-400" /> VIP FLAGSHIP BOUTIQUE • ZERO-WAIT PRIORITY DISPATCH</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} className="text-amber-400" /> COMPLIMENTARY LUXURY PACKAGING</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} className="text-amber-400" /> 100% HAND-INSPECTED AUTHENTIC QUALITY</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} className="text-amber-400" /> 24/7 DEDICATED VIP CONCIERGE</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            ) : displayTier === 'pro' ? (
+                <div 
+                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-sm select-none tracking-wide" 
+                    style={{ backgroundColor: themeColor }}
+                >
+                    <div className="flex overflow-hidden">
+                        <div className="animate-storefront-marquee flex shrink-0 items-center">
+                            <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold">
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED STORE • 100% QUALITY INSPECTED</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS 24-48H NATIONWIDE COURIER</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY EXCHANGE GUARANTEE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold" aria-hidden="true">
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED STORE • 100% QUALITY INSPECTED</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS 24-48H NATIONWIDE COURIER</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY EXCHANGE GUARANTEE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="w-full overflow-hidden py-1.5 text-[11px] font-medium text-slate-700 bg-slate-100 border-b border-slate-200 select-none">
+                    <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1.5"><Truck size={13} className="text-slate-500" /> Standard Nationwide Courier Delivery</span>
+                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-800">Cash on Delivery (COD)</span>
+                    </div>
+                </div>
+            )}
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
@@ -700,9 +740,22 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 />
                             </div>
                             <div className="min-w-0 text-left">
-                                <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
-                                    {liveStore.name}
-                                </h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">{liveStore.name}</h1>
+                                    {displayTier === 'business' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black px-2 py-0.5 shadow-2xs border border-amber-400">
+                                            <Crown size={10} /> VIP FLAGSHIP
+                                        </span>
+                                    ) : displayTier === 'pro' ? (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 border border-blue-200">
+                                            <ShieldCheck size={10} className="text-blue-600" /> PRO
+                                        </span>
+                                    ) : (
+                                        <span className="inline-block rounded-full bg-slate-100 text-slate-500 text-[8px] font-semibold px-1.5 py-0.5">
+                                            STARTER
+                                        </span>
+                                    )}
+                                </div>
                                 {liveStore.tagline ? (
                                     <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
                                 ) : null}
@@ -1195,9 +1248,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             >
                                 <PackagePlus size={26} />
                             </div>
-                            <h4 className="text-sm font-bold text-slate-800">Catalog is being prepared</h4>
+                            <h4 className="text-base font-bold text-slate-900">No items available</h4>
                             <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                                Products added by the merchant from the dashboard will appear here in high resolution.
+                                No items available in this collection yet. Products added by the merchant from their dashboard will appear here in high resolution.
                             </p>
                         </div>
                     ) : filteredProducts.length === 0 ? (
@@ -1319,35 +1372,79 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     )}
                 </section>
 
-                {/* 4. About Store Section (Locked on Free/Basic plan) */}
-                {!isBasic && (
-                <section id="about" className="mx-2 sm:mx-3 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/90 backdrop-blur-xs p-5 sm:p-8 shadow-xs">
-                    <div className="w-full space-y-3">
-                        <div>
-                            <span
-                                className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
-                                style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
-                            >
-                                About {liveStore.name}
-                            </span>
-                            <h3 className="mt-1 text-xl sm:text-2xl font-black text-slate-900">
-                                Crafted for Quality & Seamless Shopping
-                            </h3>
+                {/* 4. About Store & Brand Story Section (Editable content with right-side box image) */}
+                <section id="about" className="mx-2 sm:mx-3 my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                        {/* Left Side: Story Text & Brand Mission */}
+                        <div className="lg:col-span-7 space-y-4">
+                            <div>
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider shadow-2xs"
+                                    style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
+                                >
+                                    <Sparkles size={12} /> Brand Story & Craft
+                                </span>
+                                <h3 className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                                    {settings?.about_title || `About ${liveStore.name}`}
+                                </h3>
+                            </div>
+
+                            <p className="text-xs sm:text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+                                {settings?.about_text || (() => {
+                                    const raw = (liveStore.tagline || liveStore.description || '').trim();
+                                    if (raw && !raw.toLowerCase().startsWith('welcome to') && !raw.toLowerCase().includes('aura kicks')) {
+                                        return `${raw}\n\nWelcome to ${liveStore.name}, where we prioritize authentic craftsmanship, transparent pricing, and fast nationwide delivery. Every product is carefully curated, packed securely, and dispatched with Cash on Delivery across Pakistan.`;
+                                    }
+                                    return `Welcome to ${liveStore.name}! We are dedicated to providing our customers with high-quality, authentic products and exceptional service. Enjoy convenient Cash on Delivery and express delivery across all cities in Pakistan.`;
+                                })()}
+                            </p>
+
+                            {/* Value Highlights */}
+                            <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-slate-100">
+                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
+                                    <span className="text-base sm:text-lg block">💎</span>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">100% Authentic</span>
+                                    <span className="text-[9px] text-slate-400 hidden sm:block">Guaranteed Quality</span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
+                                    <span className="text-base sm:text-lg block">🚚</span>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Fast Courier</span>
+                                    <span className="text-[9px] text-slate-400 hidden sm:block">Nationwide COD</span>
+                                </div>
+                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
+                                    <span className="text-base sm:text-lg block">💬</span>
+                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Direct WhatsApp</span>
+                                    <span className="text-[9px] text-slate-400 hidden sm:block">Instant Support</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <p className="text-xs sm:text-sm leading-relaxed text-slate-600">
-                            {(() => {
-                                const raw = (liveStore.tagline || '').trim();
-                                if (!raw || raw.toLowerCase().includes('aura kicks') || raw.toLowerCase().startsWith('welcome to')) {
-                                    return '';
-                                }
-                                return `${liveStore.name} — ${raw}. `;
-                            })()}
-                            Welcome to {liveStore.name}, where we prioritize authentic quality, competitive pricing, and fast nationwide delivery. Every order is handled with care and shipped with Cash on Delivery across Pakistan.
-                        </p>
+                        {/* Right Side: Box Image */}
+                        <div className="lg:col-span-5 flex justify-center">
+                            <div className="relative w-full max-w-md aspect-square rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-slate-100 shadow-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group">
+                                {settings?.about_image ? (
+                                    <img 
+                                        src={settings.about_image} 
+                                        alt={`${liveStore.name} Story Showcase`} 
+                                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <div className="size-full flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-2">
+                                        <div 
+                                            className="size-16 rounded-2xl grid place-items-center shadow-xs"
+                                            style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
+                                        >
+                                            <Store size={32} />
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-700">{liveStore.name} Atelier</p>
+                                        <p className="text-[10px] text-slate-400 max-w-[200px]">Merchant can customize this showcase box image in dashboard settings</p>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl sm:rounded-3xl pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
                 </section>
-                )}
 
                 {/* 5. Floating Ask Bexi AI Shopping Assistant in Bottom-Right Corner */}
                 {hasAiChatbot && (

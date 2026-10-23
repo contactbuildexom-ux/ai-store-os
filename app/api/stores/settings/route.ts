@@ -234,6 +234,9 @@ export async function GET(req: Request) {
       settings: settings ? {
         ...settings,
         hero_images: (settings as any)?.hero_images || (store as any)?.hero_images || [],
+        about_title: (settings as any)?.about_title || (store as any)?.about_title || "",
+        about_text: (settings as any)?.about_text || (store as any)?.about_text || (store as any)?.description || "",
+        about_image: (settings as any)?.about_image || (store as any)?.about_image || "",
         theme_color: resolvedThemeColor,
         selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
@@ -245,6 +248,9 @@ export async function GET(req: Request) {
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
         hero_images: (store as any)?.hero_images || [],
+        about_title: (store as any)?.about_title || "",
+        about_text: (store as any)?.about_text || (store as any)?.description || "",
+        about_image: (store as any)?.about_image || "",
         theme_color: resolvedThemeColor,
         selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
@@ -440,6 +446,9 @@ export async function POST(req: Request) {
     if (heroImages) {
       extendedPayload.hero_images = heroImages;
     }
+    if (typeof body?.about_title === "string") extendedPayload.about_title = body.about_title;
+    if (typeof body?.about_text === "string") extendedPayload.about_text = body.about_text;
+    if (typeof body?.about_image === "string") extendedPayload.about_image = body.about_image;
 
     if ("social_links" in body) {
       const socialLinks = parseSocialLinks(body.social_links);
@@ -502,6 +511,9 @@ export async function POST(req: Request) {
         if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
         if (body.logo_url) repoStore.logo_url = String(body.logo_url);
         if (heroImages) repoStore.hero_images = heroImages;
+        if (typeof body?.about_title === "string") repoStore.about_title = body.about_title;
+        if (typeof body?.about_text === "string") repoStore.about_text = body.about_text;
+        if (typeof body?.about_image === "string") repoStore.about_image = body.about_image;
       }
     } catch (repoErr) {
       console.warn("Could not sync storeRepo cache:", repoErr);

@@ -132,6 +132,8 @@ export default function MerchantDashboardMaster() {
     const [storeName, setStoreName] = useState<string>('');
     const [storeSlug, setStoreSlug] = useState<string>('');
     const [storePlan, setStorePlan] = useState<Plan>('basic');
+    const [selectedPlan, setSelectedPlan] = useState<Plan>('basic');
+    const [paymentStatus, setPaymentStatus] = useState<string>('active');
     const [activeTab, setActiveTab] = useState('overview');
     const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
@@ -194,6 +196,13 @@ export default function MerchantDashboardMaster() {
 
     // Hero Section Showcase Images (3 custom images)
     const [heroImages, setHeroImages] = useState<string[]>(['', '', '']);
+
+    // About Store & Brand Story (Editable content & right-side box image)
+    const [aboutTitle, setAboutTitle] = useState('');
+    const [aboutText, setAboutText] = useState('');
+    const [aboutImage, setAboutImage] = useState('');
+    const [aboutImageFile, setAboutImageFile] = useState<File | null>(null);
+    const [uploadingAboutImg, setUploadingAboutImg] = useState(false);
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
@@ -312,14 +321,29 @@ export default function MerchantDashboardMaster() {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed to switch to Basic plan.');
                 setStorePlan('basic');
+                setSelectedPlan('basic');
+                setPaymentStatus('active');
                 setUpgradeSuccess('Switched to Basic plan.');
                 setUpgradeModalPlan(null);
                 setTimeout(() => setUpgradeSuccess(''), 7000);
+                void resolveStoreAndData(sid, true);
                 return;
             }
 
-            if (!upgradeTrxId.trim()) throw new Error('Enter the transaction ID (TID) from your payment receipt.');
-            const screenshotUrl = upgradeReceiptFile ? await uploadStoreImage(upgradeReceiptFile, sid) : '';
+if (!upgradeTrxId.trim()) throw new Error('Enter the transaction ID (TID) from your payment receipt.');
+            let screenshotUrl = '';
+            if (upgradeReceiptFile) {
+                try {
+                    screenshotUrl = await uploadStoreImage(upgradeReceiptFile, sid);
+                } catch {
+                    screenshotUrl = await new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(upgradeReceiptFile!);
+                    });
+                }
+            }
 
             const res = await fetch('/api/merchant/upgrade-request', {
                 method: 'POST',
@@ -338,14 +362,18 @@ export default function MerchantDashboardMaster() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to submit upgrade proof.');
 
+setSelectedPlan(targetPlan);
+            setStorePlan(targetPlan);
+            setPaymentStatus('pending_approval');
             setPendingUpgradeStatus(targetPlan);
-            setUpgradeSuccess(`Payment submitted. Your ${PLAN_DETAILS[targetPlan].title} features will unlock after Super Admin approval.`);
+            setUpgradeSuccess(`🎉 Payment submitted! Your transaction will be verified to activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
             setUpgradeModalPlan(null);
             setUpgradeTrxId('');
             setUpgradeSenderName('');
             setUpgradeSenderNumber('');
             setUpgradeReceiptFile(null);
             setTimeout(() => setUpgradeSuccess(''), 10000);
+            void resolveStoreAndData(sid, true);
         } catch (err: any) {
             alert(err.message || 'Payment activation failed. Please try again.');
         } finally {
@@ -481,10 +509,11 @@ export default function MerchantDashboardMaster() {
             setResolvedStoreId(storeData.id);
             setStoreName(storeData.name || 'Your store');
             setStoreSlug(storeData.slug || '');
-            const rawPlan = normalizePlan(storeData.plan);
-            const isPaidVerified = hasApprovedSubscriptionPayment((storeData as any)?.payment_status);
-            const normPlan = (!isPaidVerified && rawPlan !== 'basic') ? 'basic' : rawPlan;
-            setStorePlan(normPlan);
+const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeData.plan);
+            const payStatus = (((storeData as any)?.payment_status) || 'active').toLowerCase();
+            setSelectedPlan(rawSelectedPlan);
+            setPaymentStatus(payStatus);
+            setStorePlan(rawSelectedPlan);
 
             const isVer = Boolean((storeData as any).is_verified === true || (storeData as any).verification_status === 'verified');
             setIsVerified(isVer);
@@ -503,8 +532,8 @@ export default function MerchantDashboardMaster() {
             }
 
             // 3-day Free Trial Check & Lock Enforcement
-            const isPaid = isPaidVerified;
-            const isFreeOrBasic = normPlan === 'basic' || (normPlan as any) === 'free';
+            const isPaid = payStatus === 'verified' || payStatus === 'approved' || payStatus === 'active' || payStatus === 'paid';
+            const isFreeOrBasic = rawSelectedPlan === 'basic' || (rawSelectedPlan as any) === 'free';
             const createdAtStr = (storeData as any).created_at || (storeData as any).createdAt;
             const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
             const elapsedDays = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -668,7 +697,13 @@ export default function MerchantDashboardMaster() {
                 settingsPayload.advance_percentage = Number(advancePercentage);
                 settingsPayload.payment_details = paymentDetails;
             }
-            if (activeTab === 'branding') { settingsPayload.social_links = socialLinks; settingsPayload.hero_images = heroImages.filter(Boolean); }
+            if (activeTab === 'branding') {
+                settingsPayload.social_links = socialLinks;
+                settingsPayload.hero_images = heroImages.filter(Boolean);
+                settingsPayload.about_title = aboutTitle.trim();
+                settingsPayload.about_text = aboutText.trim();
+                settingsPayload.about_image = aboutImage.trim();
+            }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1332,23 +1367,56 @@ export default function MerchantDashboardMaster() {
                                 <aside className="space-y-5">
                                     <StoreQRCode storeSlug={storeSlug || paramId} />
                                     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                                        <div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p><h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{planDetails.title} plan</h3></div><span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><Sparkles size={17} /></span></div>
-                                        <div className="mt-4 space-y-3">
-                                            <div><div className="mb-1.5 flex justify-between text-[10px]"><span className="text-slate-500">Products</span><span className="font-semibold text-slate-700">{products.length} / {planDetails.productLimit ?? '∞'}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full transition-all" style={{ backgroundColor: themeColor, width: `${planDetails.productLimit ? Math.min(100, products.length / planDetails.productLimit * 100) : products.length ? 100 : 0}%` }} /></div></div>
-                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]"><span className="text-slate-500">Categories</span><span className="font-semibold text-slate-700">{planDetails.categoryLimit === 0 ? 'Locked on Free (Upgrade to Pro)' : `${categories.length} / ${planDetails.categoryLimit ?? '∞'}`}</span></div>
-                                            <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Checkout</span><span className="text-right font-medium text-slate-700">{planDetails.checkout}</span></div>
-                                            {planDetails.perCategoryLimit && <div className="flex items-center justify-between text-[11px]"><span className="text-slate-500">Products per category</span><span className="font-medium text-slate-700">Up to {planDetails.perCategoryLimit}</span></div>}
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p>
+                                                <h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{PLAN_DETAILS[selectedPlan].title} plan</h3>
+                                                {paymentStatus === 'pending_approval' && (
+                                                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                        <Clock size={11} className="animate-spin" /> Verification in process
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="grid size-9 place-items-center rounded-lg bg-indigo-50 text-indigo-700"><Sparkles size={17} /></span>
                                         </div>
-                                        <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600"><Check size={13} className="shrink-0 text-emerald-600" />Plan features are based on the limits enabled for your store.</div>
-                                        {storePlan !== 'business' && (
+                                        <div className="mt-4 space-y-3">
+                                            <div>
+                                                <div className="mb-1.5 flex justify-between text-[10px]">
+                                                    <span className="text-slate-500">Products</span>
+                                                    <span className="font-semibold text-slate-700">{products.length} / {PLAN_DETAILS[selectedPlan].productLimit ?? '∞'}</span>
+                                                </div>
+                                                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                                    <div className="h-full rounded-full transition-all" style={{ backgroundColor: themeColor, width: `${PLAN_DETAILS[selectedPlan].productLimit ? Math.min(100, products.length / PLAN_DETAILS[selectedPlan].productLimit * 100) : products.length ? 100 : 0}%` }} />
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
+                                                <span className="text-slate-500">Categories</span>
+                                                <span className="font-semibold text-slate-700">{PLAN_DETAILS[selectedPlan].categoryLimit === 0 ? 'Locked on Free (Upgrade to Pro)' : `${categories.length} / ${PLAN_DETAILS[selectedPlan].categoryLimit ?? '∞'}`}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-[11px]">
+                                                <span className="text-slate-500">Checkout</span>
+                                                <span className="text-right font-medium text-slate-700">{PLAN_DETAILS[selectedPlan].checkout}</span>
+                                            </div>
+                                            {PLAN_DETAILS[selectedPlan].perCategoryLimit && (
+                                                <div className="flex items-center justify-between text-[11px]">
+                                                    <span className="text-slate-500">Products per category</span>
+                                                    <span className="font-medium text-slate-700">Up to {PLAN_DETAILS[selectedPlan].perCategoryLimit}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600">
+                                            <Check size={13} className="shrink-0 text-emerald-600" />
+                                            {paymentStatus === 'pending_approval' ? 'Plan selected during store creation. Under verification.' : 'Active subscription plan features.'}
+                                        </div>
+                                        {selectedPlan !== 'business' && (
                                             <button
                                                 type="button"
-                                                onClick={() => setUpgradeModalPlan(storePlan === 'basic' ? 'pro' : 'business')}
-                                                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                                                onClick={() => setUpgradeModalPlan(selectedPlan === 'basic' ? 'pro' : 'business')}
+                                                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95 cursor-pointer"
                                                 style={{ backgroundColor: themeColor }}
                                             >
                                                 <Sparkles size={14} />
-                                                Upgrade to {storePlan === 'basic' ? 'Pro Plan' : 'Business Plan'}
+                                                Upgrade to {selectedPlan === 'basic' ? 'Pro Plan' : 'Business Plan'}
                                             </button>
                                         )}
                                     </section>
@@ -1364,21 +1432,30 @@ export default function MerchantDashboardMaster() {
                                 <div className="flex flex-wrap items-end justify-between gap-3">
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p>
-                                        <h3 className="mt-1 text-base font-semibold text-slate-900">What your plan includes</h3>
-                                        <p className="mt-1 text-xs text-slate-500">Upgrade your plan to unlock WhatsApp ordering, higher catalog caps, and AI features.</p>
+                                        <h3 className="mt-1 text-base font-semibold text-slate-900">Subscription Plans & Status</h3>
+                                        <p className="mt-1 text-xs text-slate-500">Select or upgrade your plan anytime to unlock WhatsApp ordering, higher catalog caps, and AI features.</p>
                                     </div>
-                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold capitalize text-slate-600">Current: {storePlan}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold capitalize text-slate-700 border border-slate-200">
+                                            Selected: {PLAN_DETAILS[selectedPlan].title}
+                                        </span>
+                                        {paymentStatus === 'pending_approval' && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold text-amber-800 border border-amber-300">
+                                                <Clock size={11} className="animate-spin" /> Pending Verification
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     {(['basic', 'pro', 'business'] as Plan[]).map((plan) => {
                                         const details = PLAN_DETAILS[plan];
-                                        const isCurrent = plan === storePlan;
+                                        const isSelected = plan === selectedPlan;
                                         return (
                                             <article 
                                                 key={plan} 
                                                 className={`relative flex flex-col justify-between rounded-2xl border p-5 transition shadow-xs ${
-                                                    isCurrent 
-                                                        ? 'border-blue-400 bg-blue-50/40 ring-2 ring-blue-100' 
+                                                    isSelected 
+                                                        ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-200' 
                                                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                                                 }`}
                                             >
@@ -1393,9 +1470,13 @@ export default function MerchantDashboardMaster() {
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <h4 className="text-base font-extrabold capitalize text-slate-900">{details.title}</h4>
-                                                        {isCurrent && (
-                                                            <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[9px] font-bold uppercase text-blue-700">
-                                                                Active
+                                                        {isSelected && (
+                                                            <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                                                                paymentStatus === 'pending_approval'
+                                                                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                                                    : 'bg-blue-100 text-blue-700'
+                                                            }`}>
+                                                                {paymentStatus === 'pending_approval' ? 'Selected · Pending' : 'Selected · Active'}
                                                             </span>
                                                         )}
                                                     </div>
@@ -1412,22 +1493,37 @@ export default function MerchantDashboardMaster() {
                                                 </div>
 
                                                 <div className="pt-5 mt-4 border-t border-slate-100">
-                                                    {isCurrent ? (
-                                                        <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700">
-                                                            <CheckCircle2 size={14} className="text-blue-600" /> Current Active Plan
-                                                        </div>
+                                                    {isSelected ? (
+                                                        paymentStatus === 'pending_approval' ? (
+                                                            <div className="space-y-2">
+                                                                <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 py-2.5 text-xs font-bold text-amber-800">
+                                                                    <Clock size={14} className="text-amber-600" /> Selected (Under Verification)
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setUpgradeModalPlan(plan)}
+                                                                    className="w-full text-center text-[10px] font-semibold text-slate-500 hover:text-blue-600 cursor-pointer"
+                                                                >
+                                                                    Update / Re-submit Payment Proof
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 py-2.5 text-xs font-bold text-blue-700">
+                                                                <CheckCircle2 size={14} className="text-blue-600" /> Current Selected Plan
+                                                            </div>
+                                                        )
                                                     ) : (
                                                         <button
                                                             type="button"
                                                             onClick={() => setUpgradeModalPlan(plan)}
-                                                            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95"
+                                                            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer"
                                                             style={{
                                                                 backgroundColor: plan === 'business' ? '#0f172a' : themeColor,
                                                             }}
                                                         >
                                                             {plan === 'basic' 
                                                                 ? 'Switch to Basic (Free)' 
-                                                                : `Upgrade to ${details.title} — ${details.priceLabel}`}
+                                                                : `Select & Pay for ${details.title} — ${details.priceLabel}`}
                                                         </button>
                                                     )}
                                                 </div>

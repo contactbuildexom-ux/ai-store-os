@@ -12,7 +12,9 @@ type MerchantStore = {
   name: string;
   slug: string;
   plan: string;
+  selected_plan?: string;
   payment_status: string;
+  payment_details?: any;
   owner_email: string;
   whatsapp_number: string;
   is_verified: boolean;
@@ -119,7 +121,9 @@ export async function getMerchantSessionStore(requestedId?: string): Promise<Mer
       name: store.name,
       slug: store.slug,
       plan: store.plan || "basic",
+      selected_plan: store.selected_plan || store.plan || "basic",
       payment_status: store.payment_status || "active",
+      payment_details: store.payment_details || {},
       owner_email: store.owner_email,
       whatsapp_number: store.whatsapp_number,
       is_verified: store.is_verified,

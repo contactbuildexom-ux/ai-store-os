@@ -804,8 +804,8 @@ export default function MerchantStoreSetupModal({
                   ) : (
                     <div className="rounded-xl border border-dashed border-[#cfe2fa] bg-white/80 p-4 text-center">
                       <Package size={22} className="mx-auto text-[#1976d2] mb-1.5" />
-                      <p className="text-xs font-bold text-[#0b2545]">Ready for Products</p>
-                      <p className="mt-0.5 text-[11px] text-[#5b7aa3]">Categories and store branding configured. Add your real products directly from your dashboard.</p>
+                      <p className="text-xs font-bold text-[#0b2545]">No items available</p>
+                      <p className="mt-0.5 text-[11px] text-[#5b7aa3]">No items available yet. Add authentic products directly from your merchant dashboard.</p>
                     </div>
                   )}
                 </div>

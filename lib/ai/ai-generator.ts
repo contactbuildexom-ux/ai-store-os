@@ -36,6 +36,9 @@ export interface GeneratedStore {
   payment_status?: string;
   payment_details?: Record<string, unknown>;
   hero_images?: string[];
+  about_title?: string;
+  about_text?: string;
+  about_image?: string;
   niche?: string;
   is_verified?: boolean;
   verification_status?: 'pending' | 'verified' | 'rejected';
