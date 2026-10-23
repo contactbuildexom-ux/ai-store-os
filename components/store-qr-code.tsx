@@ -101,19 +101,13 @@ export function StoreQRCode({
 
   if (compact) {
     return (
-      <div 
-        className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border border-slate-200/80 shadow-xs ${className}`}
-        style={themeColor ? {
-          background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-          borderColor: `${themeColor}30`,
-        } : { backgroundColor: 'transparent' }}
-      >
+      <div className={`flex flex-col items-start ${className}`}>
         {storeUrl ? (
-          <div className="relative mx-auto w-fit rounded-xl bg-white p-2.5 shadow-sm ring-1 ring-slate-200/80">
+          <div className="relative rounded-2xl bg-white p-2 shadow-xs ring-1 ring-slate-200/60 inline-block">
             <QRCodeSVG
               id={downloadId}
               value={storeUrl}
-              size={104}
+              size={110}
               level="M"
               marginSize={1}
               title={`QR code for ${safeSlug}`}
@@ -128,7 +122,7 @@ export function StoreQRCode({
             />
           </div>
         ) : (
-          <div className="py-4 text-center">
+          <div className="py-3">
             <p className="text-[10px] text-slate-400">Loading QR…</p>
           </div>
         )}
