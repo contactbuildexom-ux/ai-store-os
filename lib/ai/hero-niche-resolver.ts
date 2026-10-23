@@ -217,7 +217,7 @@ export function detectStoreNiche(
   if (explicit) {
     if (explicit.includes('watch') || explicit.includes('timepiece') || explicit.includes('chronograph')) return 'watches';
     if (explicit.includes('home') || explicit.includes('decor') || explicit.includes('candle') || explicit.includes('furniture')) return 'home';
-    if (explicit.includes('eyewear') || explicit.includes('sunglass') || explicit.includes('glasses')) return 'eyewear';
+    if (explicit.includes('eyewear') || explicit.includes('sunglass') || explicit.includes('glasses') || explicit.includes('optic') || explicit.includes('lens')) return 'eyewear';
     if (explicit.includes('fitness') || explicit.includes('gym') || explicit.includes('yoga') || explicit.includes('workout')) return 'fitness';
     if (explicit.includes('baby') || explicit.includes('kid') || explicit.includes('toy')) return 'baby';
     if (explicit.includes('stationery') || explicit.includes('journal') || explicit.includes('planner') || explicit.includes('book')) return 'stationery';
@@ -254,7 +254,7 @@ export function detectStoreNiche(
   }
 
   // 3. Eyewear & Sunglasses
-  if (/\b(eyewear|sunglass|sunglasses|glasses|shades|spectacles|goggles|aviator|wayfarer|optical frames|anti blue light)\b/i.test(combined)) {
+  if (/\b(eyewear|sunglass|sunglasses|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|optical frames|anti blue light)\b/i.test(combined)) {
     return 'eyewear';
   }
 

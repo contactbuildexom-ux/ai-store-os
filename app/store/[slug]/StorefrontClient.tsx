@@ -92,6 +92,13 @@ export type Props = {
     socialLinks?: any;
 };
 
+const BEXI_ICON = '/bexi-ai.jpeg';
+const BEXI_ICON_STYLE: React.CSSProperties = {
+    objectPosition: '50% 30%',
+    transform: 'scale(1.8)',
+    transformOrigin: '58% 34%',
+};
+
 function money(value: number | string) {
     return `PKR ${Number(value || 0).toLocaleString()}`;
 }
@@ -686,7 +693,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
                     </div>
                 </div>
-            ) : displayTier === 'pro' ? (
+            ) : (
                 <div 
                     className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-sm select-none tracking-wide" 
                     style={{ backgroundColor: themeColor }}
@@ -694,25 +701,18 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     <div className="flex overflow-hidden">
                         <div className="animate-storefront-marquee flex shrink-0 items-center">
                             <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold">
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED STORE • 100% QUALITY INSPECTED</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS 24-48H NATIONWIDE COURIER</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY EXCHANGE GUARANTEE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> FREE & FAST SHIPPING ACROSS PAKISTAN</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> 100% ORIGINAL & VERIFIED PRODUCTS</span>
                                 <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY RETURN & EXCHANGE</span>
                             </div>
                             <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-bold" aria-hidden="true">
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED STORE • 100% QUALITY INSPECTED</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS 24-48H NATIONWIDE COURIER</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY EXCHANGE GUARANTEE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> FREE & FAST SHIPPING ACROSS PAKISTAN</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> 100% ORIGINAL & VERIFIED PRODUCTS</span>
                                 <span className="inline-flex items-center gap-2 shrink-0"><CheckCircle2 size={13} /> CASH ON DELIVERY AVAILABLE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><RefreshCw size={13} /> 7-DAY EASY RETURN & EXCHANGE</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="w-full overflow-hidden py-1.5 text-[11px] font-medium text-slate-700 bg-slate-100 border-b border-slate-200 select-none">
-                    <div className="mx-auto max-w-6xl px-4 flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5"><Truck size={13} className="text-slate-500" /> Standard Nationwide Courier Delivery</span>
-                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-800">Cash on Delivery (COD)</span>
                     </div>
                 </div>
             )}
@@ -750,11 +750,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 border border-blue-200">
                                             <ShieldCheck size={10} className="text-blue-600" /> PRO
                                         </span>
-                                    ) : (
-                                        <span className="inline-block rounded-full bg-slate-100 text-slate-500 text-[8px] font-semibold px-1.5 py-0.5">
-                                            STARTER
-                                        </span>
-                                    )}
+                                    ) : null}
                                 </div>
                                 {liveStore.tagline ? (
                                     <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
@@ -1225,7 +1221,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
                             </h3>
                             <p className="text-xs text-slate-500">
-                                {liveProducts.length > 0 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} available` : 'Explore our curated catalog'}
+                                {liveProducts.length > 0 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'item' : 'items'} available` : ''}
                             </p>
                         </div>
                         {selectedCategory !== 'All' && (
@@ -1241,17 +1237,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                     {/* Products Grid - flush card boxes */}
                     {liveProducts.length === 0 ? (
-                        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-10 sm:p-14 text-center max-w-md mx-auto my-6">
-                            <div 
-                                className="mx-auto grid size-14 place-items-center rounded-2xl mb-3 shadow-xs"
-                                style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
-                            >
-                                <PackagePlus size={26} />
-                            </div>
-                            <h4 className="text-base font-bold text-slate-900">No items available</h4>
-                            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                                No items available in this collection yet. Products added by the merchant from their dashboard will appear here in high resolution.
-                            </p>
+                        <div className="py-12 text-center text-sm font-bold text-slate-500">
+                            No items available
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center">
@@ -1373,18 +1360,13 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
 
                 {/* 4. About Store & Brand Story Section (Editable content with right-side box image) */}
-                <section id="about" className="mx-2 sm:mx-3 my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
+                {!isBasic && (
+                <section id="about" className="mx-auto max-w-4xl my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                         {/* Left Side: Story Text & Brand Mission */}
                         <div className="lg:col-span-7 space-y-4">
                             <div>
-                                <span
-                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider shadow-2xs"
-                                    style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
-                                >
-                                    <Sparkles size={12} /> Brand Story & Craft
-                                </span>
-                                <h3 className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                                     {settings?.about_title || `About ${liveStore.name}`}
                                 </h3>
                             </div>
@@ -1445,29 +1427,40 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* 5. Floating Ask Bexi AI Shopping Assistant in Bottom-Right Corner */}
-                {hasAiChatbot && (
                 <div className="fixed bottom-4 right-4 z-40">
                     <button
                         type="button"
-                        onClick={() => setIsAiOpen(true)}
-                        className="group relative flex items-center gap-2.5 overflow-hidden rounded-full bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl transition hover:bg-slate-800 hover:scale-105 active:scale-95 border border-slate-700"
-                        aria-label="Open Bexi AI Store Assistant"
+                        aria-label={isAiOpen ? "Close Bexi AI chat" : "Open Bexi AI chat"}
+                        onClick={() => setIsAiOpen(!isAiOpen)}
+                        className={`group relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-full shadow-lg shadow-[#0b2545]/25 transition hover:-translate-y-0.5 hover:brightness-110 ${
+                            isAiOpen
+                                ? "bg-gradient-to-br from-[#0b2545] to-[#1976d2] text-white"
+                                : "bg-white ring-2 ring-[#1976d2]/40"
+                        }`}
                     >
-                        <span 
-                            className="grid size-6 place-items-center rounded-full text-slate-950 font-bold"
-                            style={{ backgroundColor: themeColor || '#10b981' }}
-                        >
-                            <Sparkles size={14} />
-                        </span>
-                        <span className="font-bold text-xs tracking-wide text-white">
-                            Ask Bexi AI
-                        </span>
-                        <span className="flex size-2 rounded-full bg-emerald-400 animate-pulse" />
+                        {isAiOpen ? (
+                            <span className="text-lg font-bold">✕</span>
+                        ) : (
+                            <>
+                                <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-white">
+                                    <img
+                                        src={BEXI_ICON}
+                                        alt="Bexi AI"
+                                        aria-hidden="true"
+                                        className="h-full w-full object-cover"
+                                        style={BEXI_ICON_STYLE}
+                                    />
+                                </span>
+                                <span className="pointer-events-none absolute right-full mr-2 whitespace-nowrap rounded-full bg-[#0b2545] px-3 py-1 text-xs font-bold text-white opacity-0 shadow-md transition group-hover:opacity-100">
+                                    Ask Bexi AI
+                                </span>
+                            </>
+                        )}
                     </button>
                 </div>
-                )}
             </main>
 
             {/* Visual Separation Divider before Footer */}
@@ -1821,7 +1814,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             )}
 
             {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
-            {isAiOpen && hasAiChatbot && (
+            {isAiOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
                     <div 
                         className="fixed inset-0"
