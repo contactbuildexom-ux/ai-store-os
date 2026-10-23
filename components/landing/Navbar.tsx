@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Logo from "@/components/landing/logo";
-import { DEFAULT_PLATFORM_BRANDING, PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
+import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import AuthModal from "@/components/landing/AuthModal";
 import SearchPanel from "@/components/landing/SearchPanel";
 import GenerateStoreModal from "@/components/landing/GenerateStoreModal";
@@ -92,6 +92,7 @@ export default function Navbar() {
         }`}
       >
         <div className="relative mx-auto flex h-[72px] max-w-7xl items-center justify-between px-4 sm:px-6">
+          {/* Logo only (no title text next to it) */}
           <Link
             href="/"
             aria-label={`${settings.title} home`}
@@ -100,9 +101,6 @@ export default function Navbar() {
             <span className="block mix-blend-multiply">
               <PlatformLogo fallback={<Logo />} className="h-10 max-w-[200px] object-contain" />
             </span>
-            {(settings.logoUrl || settings.title !== DEFAULT_PLATFORM_BRANDING.title) && (
-              <span className="hidden text-sm font-semibold text-[#0b2545] sm:inline">{settings.title}</span>
-            )}
           </Link>
 
           {/* Desktop nav */}
