@@ -117,6 +117,15 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     });
   };
 
+  // 0. UNIVERSAL KNOWLEDGE / HOW TO BUILD STORE / MULTI-DOMAIN AI CHECK
+  const universalAnswer = resolveUniversalAnswer(cleanMsg);
+  if (universalAnswer.domain !== 'conversational') {
+    return {
+      reply: universalAnswer.reply,
+      languageDetected: universalAnswer.language,
+    };
+  }
+
   // 1. GREETING (Salam, Hello, Hi, Hey, Kese ho)
   if (
     /^(hi|hello|hey|salam|assalam|aoa|adab|hola|good\s*(morning|afternoon|evening)|kese ho|kaisay ho|kya hal|kia hal)/i.test(cleanMsg) ||

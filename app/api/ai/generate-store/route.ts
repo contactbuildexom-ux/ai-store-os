@@ -341,6 +341,25 @@ export async function POST(request: Request) {
       : ["business", "advanced", "advance"].includes(requestedPlan)
         ? "business"
         : "basic";
+    const isPaidPlan = selectedPlan === "pro" || selectedPlan === "business";
+    const paymentMethodInput = text(input.payment_method, 50).toLowerCase();
+    const paymentMethod = paymentMethodInput === "easypaisa" ? "easypaisa" : "jazzcash";
+    const senderName = text(input.sender_name, 120);
+    const senderNumber = text(input.sender_number, 50);
+    const transactionId = text(input.transaction_id, 200);
+    const screenshotBase64 = typeof input.screenshot_base64 === "string" ? input.screenshot_base64 : "";
+
+    const pendingUpgradeData = isPaidPlan ? {
+      target_plan: selectedPlan,
+      payment_method: paymentMethod,
+      sender_name: senderName,
+      sender_number: senderNumber,
+      transaction_id: transactionId,
+      screenshot_url: screenshotBase64 || "",
+      amount: selectedPlan === "business" ? 4999 : 2499,
+      submitted_at: new Date().toISOString(),
+      status: "pending_approval",
+    } : null;
     const rawThemeInput = text(input.theme ?? input.selected_theme ?? "", 60);
     const themeKey = rawThemeInput.toLowerCase().replace(/\s+/g, "-");
     const cookieStore = await cookies();
@@ -561,7 +580,8 @@ export async function POST(request: Request) {
             whatsapp_number: requestedWhatsapp || null,
             plan: planToStore,
             selected_plan: selectedPlanToStore,
-            payment_status: isPaidPlan ? "pending" : "active",
+            payment_status: isPaidPlan ? "pending_approval" : "active",
+            payment_details: pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {},
             is_verified: false,
             verification_status: "pending",
             primary_color: generated.theme_color,
@@ -735,7 +755,10 @@ export async function POST(request: Request) {
         tagline: generated.banner_text,
         description: generated.footer_text,
         header_title: generated.banner_text,
-        plan: (resolvedStore.plan === "pro" ? "pro" : resolvedStore.plan === "business" ? "advanced" : "free") as any,
+        plan: (selectedPlan === "pro" ? "pro" : selectedPlan === "business" ? "advanced" : "basic") as any,
+        selected_plan: selectedPlan,
+        payment_status: isPaidPlan ? "pending_approval" : "active",
+        payment_details: pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {},
         is_verified: false,
         verification_status: 'pending',
         whatsapp_number: resolvedStore.whatsapp_number || requestedWhatsapp || "923001234567",

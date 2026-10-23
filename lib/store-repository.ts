@@ -27,6 +27,8 @@ export interface StoreRecord {
   logo_url?: string;
   password_hash?: string;
   niche?: string;
+  hero_images?: string[];
+  payment_details?: Record<string, unknown>;
   delivery?: {
     store_city?: string;
     city_rate?: number;

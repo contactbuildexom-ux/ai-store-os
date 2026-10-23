@@ -233,6 +233,7 @@ export async function GET(req: Request) {
       success: true,
       settings: settings ? {
         ...settings,
+        hero_images: (settings as any)?.hero_images || (store as any)?.hero_images || [],
         theme_color: resolvedThemeColor,
         selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
@@ -243,6 +244,7 @@ export async function GET(req: Request) {
         jazzcash_number: accountNumber("jazz") || settings.jazzcash_number || "",
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
+        hero_images: (store as any)?.hero_images || [],
         theme_color: resolvedThemeColor,
         selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
@@ -424,13 +426,20 @@ export async function POST(req: Request) {
       logo_url: optionalText(body?.logo_url) ?? "",
     };
     if (selectedTheme) Object.assign(basePayload, { selected_theme: selectedTheme });
-    const extendedPayload = {
+    const heroImages = Array.isArray(body?.hero_images)
+      ? body.hero_images.filter((img: unknown) => typeof img === "string" && img.trim().length > 0).slice(0, 3)
+      : undefined;
+
+    const extendedPayload: any = {
       ...basePayload,
       footer_text: optionalText(body?.footer_text) ?? "",
       custom_domain: optionalText(body?.custom_domain),
       jazzcash_number: optionalText(body?.jazzcash_number) ?? "",
       easypaisa_number: optionalText(body?.easypaisa_number) ?? "",
     };
+    if (heroImages) {
+      extendedPayload.hero_images = heroImages;
+    }
 
     if ("social_links" in body) {
       const socialLinks = parseSocialLinks(body.social_links);
@@ -492,6 +501,7 @@ export async function POST(req: Request) {
         if (body.banner_text) repoStore.header_title = String(body.banner_text);
         if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
         if (body.logo_url) repoStore.logo_url = String(body.logo_url);
+        if (heroImages) repoStore.hero_images = heroImages;
       }
     } catch (repoErr) {
       console.warn("Could not sync storeRepo cache:", repoErr);
