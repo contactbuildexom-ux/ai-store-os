@@ -231,7 +231,7 @@ export default function MerchantDashboardMaster() {
 
     // Plan Upgrade & Payment States
     const [upgradeModalPlan, setUpgradeModalPlan] = useState<Plan | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa' | 'sadapay'>('jazzcash');
+    const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'sadapay'>('jazzcash');
     const [upgradeSenderName, setUpgradeSenderName] = useState('');
     const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
     const [upgradeTrxId, setUpgradeTrxId] = useState('');
@@ -610,6 +610,9 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 || (storeData.selected_theme && THEME_PALETTES[storeData.selected_theme])
                 || nicheColor;
             setThemeColor(resolvedColor);
+            setAboutTitle(settingsData.settings?.about_title || '');
+            setAboutText(settingsData.settings?.about_text || '');
+            setAboutImage(settingsData.settings?.about_image || '');
 
             if (settingsData.settings) {
                 setBannerText(settingsData.settings.banner_text || '');
@@ -708,6 +711,17 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
         try {
             if (!resolvedStoreId) throw new Error('Store is still loading. Please try again in a moment.');
             const savedLogoUrl = logoFile ? await uploadStoreImage(logoFile, resolvedStoreId) : logoUrl;
+            let savedAboutImageUrl = aboutImage.trim();
+            if (aboutImageFile) {
+                setUploadingAboutImg(true);
+                try {
+                    savedAboutImageUrl = await uploadStoreImage(aboutImageFile, resolvedStoreId);
+                    setAboutImage(savedAboutImageUrl);
+                    setAboutImageFile(null);
+                } finally {
+                    setUploadingAboutImg(false);
+                }
+            }
             const settingsPayload: Record<string, unknown> = {
                     store_id: resolvedStoreId,
                     theme_color: themeColor,
@@ -727,7 +741,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 settingsPayload.hero_images = heroImages.filter(Boolean);
                 settingsPayload.about_title = aboutTitle.trim();
                 settingsPayload.about_text = aboutText.trim();
-                settingsPayload.about_image = aboutImage.trim();
+                settingsPayload.about_image = savedAboutImageUrl;
             }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
@@ -736,11 +750,24 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             });
             const data = await res.json();
             if (!res.ok || !data.success) throw new Error(data.error || 'Failed to save settings.');
+            if (activeTab === 'branding') {
+                const savedHeroImages = heroImages.filter(Boolean);
+                if (
+                    !Array.isArray(data.settings?.hero_images)
+                    || data.settings.hero_images.length !== savedHeroImages.length
+                    || data.settings.hero_images.some((image: unknown, index: number) => image !== savedHeroImages[index])
+                    || data.settings.about_image !== savedAboutImageUrl
+                ) {
+                    throw new Error('Storefront images could not be confirmed as saved. Apply supabase/migrations/20_storefront_about_section.sql and save again.');
+                }
+            }
             if (savedLogoUrl && data.settings?.logo_url !== savedLogoUrl) {
                 throw new Error('Settings were submitted, but the saved logo could not be confirmed. Please save again.');
             }
             setLogoUrl(savedLogoUrl);
             setLogoFile(null);
+            setAboutImage(savedAboutImageUrl);
+            setAboutImageFile(null);
             if (data.warning) {
                 setMessage(data.warning);
                 setMessageError(false);
@@ -1733,6 +1760,63 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         })}
                                     </div>
                                 </div>
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-4">
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-slate-900">About section image</h4>
+                                        <p className="mt-1 text-[10px] text-slate-500">This image appears beside your store story on the public storefront. Upload a file or paste an image URL.</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3">
+                                        {aboutImage && (
+                                            <img
+                                                src={aboutImage}
+                                                alt={`${storeName} About section preview`}
+                                                className="size-20 rounded-lg border border-slate-200 object-cover"
+                                            />
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-xs font-medium text-slate-700">
+                                                {aboutImageFile?.name || (aboutImage ? 'Current About image' : 'No About image selected')}
+                                            </p>
+                                            <p className="mt-1 text-[10px] text-slate-500">
+                                                PNG, JPG, WebP or GIF · max 5 MB{aboutImageFile ? ' · uploads when you save branding' : ''}
+                                            </p>
+                                        </div>
+                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-within:ring-2 focus-within:ring-blue-200">
+                                            <Upload size={14} /> Choose image
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp,image/gif"
+                                                onChange={(event) => setAboutImageFile(event.target.files?.[0] || null)}
+                                                className="sr-only"
+                                            />
+                                        </label>
+                                        {aboutImage && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setAboutImage('');
+                                                    setAboutImageFile(null);
+                                                }}
+                                                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                    <label className="block text-[10px] font-medium text-slate-500">
+                                        Or use an image URL
+                                        <input
+                                            type="url"
+                                            value={aboutImage}
+                                            onChange={(event) => {
+                                                setAboutImage(event.target.value);
+                                                setAboutImageFile(null);
+                                            }}
+                                            placeholder="https://example.com/about-image.jpg"
+                                            className="mt-1 w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-700 outline-none transition-colors hover:border-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </label>
+                                </section>
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <div>
@@ -1812,7 +1896,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         {(['instagram', 'facebook', 'youtube', 'tiktok', 'x'] as const).map(platform => <label key={platform} className="block text-[10px] font-semibold capitalize text-slate-600">{platform === 'x' ? 'X / Twitter' : platform}<input type="url" value={socialLinks[platform]} onChange={event => setSocialLinks(current => ({ ...current, [platform]: event.target.value }))} placeholder={`https://${platform === 'x' ? 'x.com' : `${platform}.com`}/yourprofile`} maxLength={2048} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
                                     </div>
                                 </section>
-                                <button type="submit" disabled={savingSettings || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{savingSettings ? 'Saving…' : 'Save branding'}</button>
+                                <button type="submit" disabled={savingSettings || uploadingAboutImg || !isVerified} className="rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:opacity-60" style={{ backgroundColor: themeColor }}>{uploadingAboutImg ? 'Uploading About image…' : savingSettings ? 'Saving…' : 'Save branding'}</button>
                             </form>
                         </div>
                     )}
@@ -1849,8 +1933,6 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                             ['sadapay_title', 'SadaPay title', 'Title on SadaPay'],
                                             ['jazzcash_number', 'JazzCash number', '03XX XXXXXXX'],
                                             ['jazzcash_title', 'JazzCash title', 'Title on JazzCash'],
-                                            ['easypaisa_number', 'EasyPaisa number', '03XX XXXXXXX'],
-                                            ['easypaisa_title', 'EasyPaisa title', 'Title on EasyPaisa'],
                                         ] as const).map(([key, label, placeholder]) => <label key={key} className="block text-[10px] font-semibold text-slate-600">{label}<input type="text" value={(paymentDetails as any)[key] || ''} onChange={event => setPaymentDetails(current => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} maxLength={120} className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-normal text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" /></label>)}
                                     </div>
                                 </section>
@@ -2939,7 +3021,6 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <div className="grid grid-cols-3 gap-2">
                                         {[
                                             { id: 'jazzcash' as const, label: 'JazzCash' },
-                                            { id: 'easypaisa' as const, label: 'EasyPaisa' },
                                             { id: 'sadapay' as const, label: 'SadaPay' },
                                         ].map((method) => {
                                             const isSelected = paymentMethod === method.id;
@@ -2965,11 +3046,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
                                         <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send PKR {PLAN_DETAILS[upgradeModalPlan].pricePKR} to platform account</span>
-                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay'}</span>
+                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'SadaPay'}</span>
                                     </div>
                                     {subscriptionPaymentAccounts[paymentMethod].number ? (
                                         <>
-                                            <p className="text-slate-800 font-semibold text-xs">{subscriptionPaymentAccounts[paymentMethod].title || (paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay')}</p>
+                                            <p className="text-slate-800 font-semibold text-xs">{subscriptionPaymentAccounts[paymentMethod].title || (paymentMethod === 'jazzcash' ? 'JazzCash' : 'SadaPay')}</p>
                                             <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">{subscriptionPaymentAccounts[paymentMethod].number}</p>
                                             <p className="text-[10px] text-slate-500 pt-0.5">Transfer the exact plan amount, then enter the TID below. Your paid features unlock after Super Admin approval.</p>
                                         </>
