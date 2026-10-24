@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { GeneratedStore, GeneratedProduct, THEME_PRESETS } from './ai/ai-generator';
 import { readLocalStoreCache, writeLocalStoreCache } from './local-store-cache';
 import { fetchStoreByIdOrSlug } from './store-id-slug';
+import { getActiveSubscriptionPlan } from './subscription-plans';
 
 export interface StoreRecord {
   id: string;
@@ -489,11 +490,30 @@ class StoreRepository {
 
     // Plan Limits Validation
     const existing = await this.getProducts(storeIdOrSlug);
-    const plan = store?.plan || 'free';
-    const maxAllowed = plan === 'free' || plan === 'basic' ? 40 : plan === 'pro' ? 80 : 9999;
+    const plan = getActiveSubscriptionPlan(store?.plan, store?.payment_status);
+    const maxAllowed = plan.limits.products;
+    const category = prod.category || 'General';
+    const normalizedCategory = category.trim().toLowerCase();
+    const existingCategories = new Set(
+      existing
+        .map((product) => product.category?.trim().toLowerCase())
+        .filter((existingCategory): existingCategory is string => Boolean(existingCategory && existingCategory !== 'general'))
+    );
 
     if (existing.length >= maxAllowed) {
-      throw new Error(`Plan limit reached! ${plan.toUpperCase()} plan allows maximum ${maxAllowed} products. Please upgrade.`);
+      throw new Error(`Plan limit reached! ${plan.name} allows a maximum of ${maxAllowed} products. Please upgrade.`);
+    }
+    if (normalizedCategory !== 'general') {
+      if (plan.limits.categories === 0) {
+        throw new Error(`Categories are not available on the ${plan.name} plan.`);
+      }
+      if (!existingCategories.has(normalizedCategory) && existingCategories.size >= plan.limits.categories) {
+        throw new Error(`${plan.name} plan allows a maximum of ${plan.limits.categories} categories.`);
+      }
+      const productsInCategory = existing.filter((product) => product.category?.trim().toLowerCase() === normalizedCategory);
+      if (productsInCategory.length >= plan.limits.productsPerCategory) {
+        throw new Error(`${plan.name} plan allows a maximum of ${plan.limits.productsPerCategory} products per category.`);
+      }
     }
 
     const newProd: ProductRecord = {
@@ -502,7 +522,7 @@ class StoreRepository {
       name: prod.name || 'Untitled Product',
       description: prod.description || '',
       price: Number(prod.price) || 999,
-      category: prod.category || 'General',
+      category,
       image_url: prod.image_url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
       wholesale_cost: prod.wholesale_cost || Math.round((Number(prod.price) || 999) * 0.6),
       min_accept_price: prod.min_accept_price || Math.round((Number(prod.price) || 999) * 0.8),

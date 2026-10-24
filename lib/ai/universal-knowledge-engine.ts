@@ -11,6 +11,7 @@
  * - Health, lifestyle, productivity, recipes, and daily life
  * - Conversational dialogue in Roman Urdu, native Urdu, and English
  */
+import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
 
 export interface UniversalAnswer {
   reply: string;
@@ -207,8 +208,8 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
     patterns: [
       /\b(is\s*it\s*free|free\s*hai|free\s*me|muft|free\s*store|paise\s*lagte\s*hain)\b/i
     ],
-    en: "Yes, absolutely! 🎉 Creating a store on Buildexom is **100% Free**. Our **Basic Plan (Free Forever)** includes up to 20 products, a personal branded subdomain, automated WhatsApp checkout, and a printable QR code with zero credit card required!",
-    ur: "Haan bilkul! 🎉 Buildexom par store banana **100% Free** hai. Hamaray **Basic Plan (Free Forever)** mein aap 20 products, personal subdomain link, WhatsApp checkout, aur QR code bilkul free use kar saktay hain bina kisi credit card ke!",
+    en: `Yes, absolutely! 🎉 Creating a store on Buildexom is **100% Free**. Our **${SUBSCRIPTION_PLANS.basic.name} Plan (Free Forever)** includes up to ${SUBSCRIPTION_PLANS.basic.limits.products} products, a personal branded subdomain, automated WhatsApp checkout, and a printable QR code with zero credit card required!`,
+    ur: `Haan bilkul! 🎉 Buildexom par store banana **100% Free** hai. Hamaray **${SUBSCRIPTION_PLANS.basic.name} Plan (Free Forever)** mein aap ${SUBSCRIPTION_PLANS.basic.limits.products} products, personal subdomain link, WhatsApp checkout, aur QR code bilkul free use kar saktay hain bina kisi credit card ke!`,
     domain: "platform"
   },
   {

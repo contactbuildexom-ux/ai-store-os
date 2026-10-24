@@ -26,7 +26,9 @@ import {
 import { THEME_PRESETS } from '@/lib/ai/ai-generator';
 import type { ProductRecord, StoreRecord } from '@/lib/store-repository';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
-import { SUBSCRIPTION_PLAN_PRICES } from '@/lib/subscription-plans';
+import { normalizeSubscriptionPlan } from '@/lib/subscription-plans';
+import { formatPricingPlanPrice } from '@/lib/pricing-plan-catalog';
+import { usePricingPlans } from '@/hooks/use-pricing-plans';
 
 interface StoreAdminClientProps {
   store: StoreRecord;
@@ -34,6 +36,7 @@ interface StoreAdminClientProps {
 }
 
 export default function StoreAdminClient({ store, initialProducts }: StoreAdminClientProps) {
+  const { plans: pricingPlans, loading: pricingLoading, error: pricingError, refresh: refreshPricingPlans } = usePricingPlans();
   const [activeTab, setActiveTab] = useState<'products' | 'theme' | 'settings' | 'plans'>('products');
   const [products, setProducts] = useState<ProductRecord[]>(initialProducts);
   const [currentStore, setCurrentStore] = useState<StoreRecord>(store);
@@ -64,13 +67,12 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
 
-  // Plan limits (Basic: 20, Pro: 75, Advanced: unlimited)
-  const rawPlan = (currentStore.plan || 'basic').toLowerCase();
-  const plan = rawPlan === 'free' ? 'basic' : rawPlan;
-  const maxProducts = plan === 'basic' ? 20 : plan === 'pro' ? 75 : 9999;
-  const isLimitReached = products.length >= maxProducts;
+  const plan = normalizeSubscriptionPlan(currentStore.plan);
+  const planConfig = pricingPlans.find((pricingPlan) => pricingPlan.plan_key === plan) ?? null;
+  const maxProducts = planConfig?.limits?.products ?? null;
+  const isLimitReached = maxProducts === null || products.length >= maxProducts;
 
-  const handleUpdatePlan = async (newPlan: 'basic' | 'pro' | 'advanced') => {
+  const handleUpdatePlan = async (newPlan: 'basic' | 'pro' | 'business') => {
     if (newPlan !== 'basic') {
       showNotice('error', 'Paid plans require a manual payment request and Super Admin approval. Use the Merchant Dashboard to submit your TID.');
       return;
@@ -105,7 +107,9 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
   // Open Add Product
   const handleOpenAdd = () => {
     if (isLimitReached) {
-      showNotice('error', `Plan limit reached! ${plan.toUpperCase()} plan allows maximum ${maxProducts} products. Upgrade to add more.`);
+      showNotice('error', maxProducts === null
+        ? 'Current plan limits are unavailable. Please refresh and try again.'
+        : `Plan limit reached! ${planConfig?.name ?? plan} allows up to ${maxProducts} products. Upgrade to add more.`);
       return;
     }
     setEditingProduct(null);
@@ -370,11 +374,11 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
 
           <div className="flex items-center gap-2">
             <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-              plan === 'advanced' ? 'bg-indigo-100 text-indigo-800' :
+              plan === 'business' ? 'bg-indigo-100 text-indigo-800' :
               plan === 'pro' ? 'bg-amber-100 text-amber-800' :
               'bg-slate-100 text-slate-700'
             }`}>
-              {plan.toUpperCase()} PLAN
+              {(planConfig?.name ?? (pricingLoading ? 'LOADING' : plan)).toUpperCase()} PLAN
             </span>
 
             <Link
@@ -458,13 +462,13 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
             <div className="text-right">
               <span className="font-semibold text-slate-700">Catalog Capacity:</span>
               <span className="ml-1 font-bold text-slate-900">
-                {products.length} / {maxProducts === 9999 ? '∞' : maxProducts} items
+                {products.length} / {maxProducts ?? '—'} items
               </span>
             </div>
             <div className="h-2 w-24 rounded-full bg-slate-100 overflow-hidden">
               <div 
                 className={`h-full ${isLimitReached ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                style={{ width: `${Math.min((products.length / (maxProducts === 9999 ? 50 : maxProducts)) * 100, 100)}%` }}
+                style={{ width: `${maxProducts ? Math.min((products.length / maxProducts) * 100, 100) : 0}%` }}
               />
             </div>
           </div>
@@ -497,7 +501,7 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Plan Capacity</span>
                 <p className="mt-1 text-xl font-extrabold text-indigo-600">
-                  {maxProducts === 9999 ? 'Unlimited' : `${products.length}/${maxProducts}`}
+                  {`${products.length}/${maxProducts ?? '—'}`}
                 </p>
                 <p className="text-[10px] text-slate-500">
                   <button type="button" onClick={() => setActiveTab('plans')} className="text-blue-600 underline font-semibold">Change plan</button>
@@ -820,10 +824,10 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
                   <div>
                     <span className="text-xs font-extrabold uppercase text-slate-800">
-                      {plan.toUpperCase()} PLAN
+                      {(planConfig?.name ?? (pricingLoading ? 'LOADING' : plan)).toUpperCase()} PLAN
                     </span>
                     <p className="text-[10px] text-slate-500">
-                      {plan === 'basic' ? 'Up to 20 products, Cash on Delivery' : plan === 'pro' ? 'Up to 75 products, WhatsApp & Bexi AI bot' : 'Unlimited products, full AI Voice Store control'}
+                      {planConfig?.features.join(', ') ?? (pricingLoading ? 'Loading plan features…' : 'Plan features unavailable.')}
                     </p>
                   </div>
                   <button
@@ -852,149 +856,49 @@ export default function StoreAdminClient({ store, initialProducts }: StoreAdminC
               </Link>
             </div>
 
+            {pricingError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{pricingError}</p>}
+            {pricingLoading && <p role="status" className="text-xs text-slate-500">Loading current plans…</p>}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {/* Plan 1: Basic */}
-              <div className={`relative flex flex-col justify-between rounded-3xl border p-6 transition-all ${
-                plan === 'basic'
-                  ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
-              }`}>
-                {plan === 'basic' && (
-                  <span className="absolute -top-3 left-6 rounded-full bg-emerald-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Current Active Plan
-                  </span>
-                )}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-2xl bg-slate-100 text-slate-700">
-                      <Store size={20} />
-                    </span>
-                    <span className="text-xs font-bold text-slate-500">Starter</span>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900">Basic Plan</h3>
-                    <p className="mt-1 text-2xl font-black text-slate-900">Free</p>
-                    <p className="text-[11px] text-slate-500">Ideal for new merchants launching a storefront.</p>
-                  </div>
-                  <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Up to 20 Products</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Cash on Delivery Checkout</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Clean Responsive Web Store</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Store QR Code</li>
-                  </ul>
-                </div>
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    disabled={plan === 'basic' || isUpdatingPlan}
-                    onClick={() => handleUpdatePlan('basic')}
-                    className={`w-full rounded-xl py-2.5 text-xs font-bold transition ${
-                      plan === 'basic'
-                        ? 'bg-slate-100 text-slate-400 cursor-default'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {plan === 'basic' ? 'Active Plan' : isUpdatingPlan ? 'Updating...' : 'Switch to Basic'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Plan 2: Pro */}
-              <div className={`relative flex flex-col justify-between rounded-3xl border p-6 transition-all ${
-                plan === 'pro'
-                  ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
-              }`}>
-                <span className="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                  Most Popular
-                </span>
-                {plan === 'pro' && (
-                  <span className="absolute -top-3 left-6 rounded-full bg-emerald-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Current Active Plan
-                  </span>
-                )}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-                      <Zap size={20} />
-                    </span>
-                    <span className="text-xs font-bold text-blue-600">Growing Brand</span>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900">Pro Merchant</h3>
-                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. {SUBSCRIPTION_PLAN_PRICES.pro.toLocaleString()} <span className="text-xs font-normal text-slate-500">/mo</span></p>
-                    <p className="text-[11px] text-slate-500">Automated WhatsApp ordering & Bexi AI shopping bot.</p>
-                  </div>
-                  <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Up to 75 Products</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Direct WhatsApp Order Routing</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Bexi AI Assistant (Urdu & English)</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Full Theme Color Customization</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Social Links & Live Catalog Sync</li>
-                  </ul>
-                </div>
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    disabled={plan === 'pro' || isUpdatingPlan}
-                    onClick={() => handleUpdatePlan('pro')}
-                    className={`w-full rounded-xl py-2.5 text-xs font-bold transition ${
-                      plan === 'pro'
-                        ? 'bg-slate-100 text-slate-400 cursor-default'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-600/20'
-                    }`}
-                  >
-                    {plan === 'pro' ? 'Active Plan' : isUpdatingPlan ? 'Updating...' : 'Upgrade to Pro'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Plan 3: Advanced */}
-              <div className={`relative flex flex-col justify-between rounded-3xl border p-6 transition-all ${
-                plan === 'advanced'
-                  ? 'border-indigo-500 bg-white ring-2 ring-indigo-500/20 shadow-md'
-                  : 'border-slate-200 bg-white hover:border-slate-300'
-              }`}>
-                {plan === 'advanced' && (
-                  <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">
-                    Current Active Plan
-                  </span>
-                )}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-2xl bg-indigo-50 text-indigo-600">
-                      <Crown size={20} />
-                    </span>
-                    <span className="text-xs font-bold text-indigo-600">Enterprise VIP</span>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900">Advanced VIP</h3>
-                    <p className="mt-1 text-2xl font-black text-slate-900">Rs. {SUBSCRIPTION_PLAN_PRICES.business.toLocaleString()} <span className="text-xs font-normal text-slate-500">/mo</span></p>
-                    <p className="text-[11px] text-slate-500">Full AI Voice Control & unlimited store scaling.</p>
-                  </div>
-                  <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Unlimited Products</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Voice-to-Action AI Assistant</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Advance Partial Payment Support</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Verified Merchant Gold Badge</li>
-                    <li className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> Priority 24/7 Support Hotline</li>
-                  </ul>
-                </div>
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    disabled={plan === 'advanced' || isUpdatingPlan}
-                    onClick={() => handleUpdatePlan('advanced')}
-                    className={`w-full rounded-xl py-2.5 text-xs font-bold transition ${
-                      plan === 'advanced'
-                        ? 'bg-slate-100 text-slate-400 cursor-default'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md shadow-indigo-600/20'
-                    }`}
-                  >
-                    {plan === 'advanced' ? 'Active Plan' : isUpdatingPlan ? 'Updating...' : 'Upgrade to Advanced'}
-                  </button>
-                </div>
-              </div>
+              {pricingPlans.map((pricingPlan) => {
+                const planKey = pricingPlan.plan_key;
+                const isCurrent = planKey !== null && plan === planKey;
+                const PlanIcon = planKey === 'basic' ? Store : planKey === 'business' ? Crown : Zap;
+                return (
+                  <article key={pricingPlan.id} className={`relative flex flex-col justify-between rounded-3xl border p-6 transition-all ${
+                    isCurrent ? 'border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-md' : 'border-slate-200 bg-white hover:border-slate-300'
+                  }`}>
+                    {isCurrent && <span className="absolute -top-3 left-6 rounded-full bg-emerald-600 px-3 py-0.5 text-[10px] font-bold text-white shadow-xs">Current Active Plan</span>}
+                    <div className="space-y-4">
+                      <span className="grid size-10 place-items-center rounded-2xl bg-slate-100 text-slate-700"><PlanIcon size={20} /></span>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">{pricingPlan.name}</h3>
+                        <p className="mt-1 text-2xl font-black text-slate-900">{formatPricingPlanPrice(pricingPlan.price, pricingPlan.billing_cycle)}</p>
+                      </div>
+                      <ul className="space-y-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                        {pricingPlan.features.map((feature, index) => (
+                          <li key={`${pricingPlan.id}-${index}-${feature}`} className="flex items-center gap-2"><Check size={14} className="text-emerald-600" /> {feature}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="pt-6">
+                      {planKey ? (
+                        <button
+                          type="button"
+                          disabled={isCurrent || isUpdatingPlan || pricingLoading || Boolean(pricingError)}
+                          onClick={() => void handleUpdatePlan(planKey)}
+                          className={`w-full rounded-xl py-2.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            isCurrent ? 'bg-slate-100 text-slate-400' : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                          }`}
+                        >
+                          {isCurrent ? 'Active Plan' : isUpdatingPlan ? 'Updating...' : `Select ${pricingPlan.name}`}
+                        </button>
+                      ) : (
+                        <p className="rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-center text-xs text-slate-500">Contact support to select this plan.</p>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         )}

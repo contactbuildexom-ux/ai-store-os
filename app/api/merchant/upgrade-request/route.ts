@@ -5,7 +5,7 @@ import { createClient as createSupabaseServerClient } from "@/lib/supabase/serve
 import { ADMIN_SESSION_COOKIE, verifyAdminSession } from "@/lib/admin-session";
 import { MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
 import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
-import { SUBSCRIPTION_PLAN_PRICES, type PaidSubscriptionPlan } from "@/lib/subscription-plans";
+import type { PaidSubscriptionPlan } from "@/lib/subscription-plans";
 import { SUBSCRIPTION_PAYMENT_ACCOUNT_DEFAULTS } from "@/lib/subscription-payment-accounts";
 import { storeRepo } from "@/lib/store-repository";
 
@@ -107,7 +107,8 @@ export async function POST(request: Request) {
   if (!storeLookup || storeLookup.length > 200) {
     return NextResponse.json({ error: "A valid store ID or slug is required." }, { status: 400 });
   }
-  if (plan !== "pro" && plan !== "business") {
+  const planId: PaidSubscriptionPlan | null = plan === "pro" || plan === "business" ? plan : null;
+  if (!planId) {
     return NextResponse.json({ error: "Choose an available paid subscription plan." }, { status: 400 });
   }
   if (gateway !== "jazzcash" && gateway !== "easypaisa" && gateway !== "sadapay") {
@@ -126,6 +127,26 @@ export async function POST(request: Request) {
   try {
     const supabase = createAdminClient();
     const isSupabaseValid = supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
+    if (!isSupabaseValid || !supabase) {
+      return NextResponse.json({ error: "Live subscription pricing is unavailable. Please try again later." }, { status: 503 });
+    }
+    const { data: activePricingPlans, error: pricingError } = await supabase
+      .from("pricing_plans")
+      .select("plan_key, name, price")
+      .eq("is_active", true);
+    if (pricingError) {
+      return NextResponse.json({ error: "Unable to verify the current subscription price." }, { status: 500 });
+    }
+    const activePlanRecord = (activePricingPlans ?? []).find((pricingPlan) => {
+      const name = pricingPlan.name.trim().toLowerCase();
+      return planId === "pro"
+        ? pricingPlan.plan_key === "pro" || (!pricingPlan.plan_key && name === "pro")
+        : pricingPlan.plan_key === "business" || (!pricingPlan.plan_key && (name === "business" || name === "advanced" || name === "advance"));
+    });
+    if (!activePlanRecord || !Number.isFinite(Number(activePlanRecord.price)) || Number(activePlanRecord.price) < 0) {
+      return NextResponse.json({ error: "This paid plan is not currently available for upgrades." }, { status: 409 });
+    }
+    const planPrice = Number(activePlanRecord.price);
 
     let store: any = null;
     if (isSupabaseValid && supabase) {
@@ -184,14 +205,14 @@ export async function POST(request: Request) {
 
     const currentDetails = isRecord(store.payment_details) ? store.payment_details : {};
     const upgradeData = {
-      target_plan: plan,
+      target_plan: planId,
       payment_method: gateway,
       gateway,
       sender_name: senderName.trim(),
       sender_number: senderNumber.trim(),
       transaction_id: transactionId,
       screenshot_url: screenshotUrl,
-      amount: plan === "business" ? 4999 : 2499,
+      amount: planPrice,
       submitted_at: new Date().toISOString(),
       status: "pending_approval",
     };
@@ -199,7 +220,6 @@ export async function POST(request: Request) {
     if (isSupabaseValid && supabase) {
       try {
         // Try inserting into subscription_payment_requests
-        const planId = plan as PaidSubscriptionPlan;
         await supabase
           .from("subscription_payment_requests")
           .insert({
@@ -207,7 +227,7 @@ export async function POST(request: Request) {
             user_id: store.owner_id || store.user_id,
             plan_id: planId,
             gateway,
-            amount: SUBSCRIPTION_PLAN_PRICES[planId] || (plan === "business" ? 4999 : 2499),
+            amount: planPrice,
             transaction_id: transactionId,
             sender_name: senderName.trim(),
             sender_number: senderNumber.trim(),
@@ -221,7 +241,7 @@ export async function POST(request: Request) {
         await supabase
           .from("stores")
           .update({
-            selected_plan: plan,
+            selected_plan: planId,
             payment_status: "pending_approval",
             payment_details: { ...currentDetails, pending_upgrade: upgradeData },
           })
@@ -235,7 +255,7 @@ export async function POST(request: Request) {
     try {
       const repoStore = await storeRepo.getStore(store.id) || await storeRepo.getStore(storeLookup);
       if (repoStore) {
-        repoStore.selected_plan = plan;
+        repoStore.selected_plan = planId;
         repoStore.payment_status = "pending_approval";
         repoStore.payment_details = {
           ...(repoStore.payment_details || {}),

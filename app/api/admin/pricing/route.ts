@@ -3,6 +3,7 @@ import { isAdminRequest } from "@/lib/admin-api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type PricingPlanInput = {
+  plan_key: "basic" | "pro" | "business" | null;
   name: string;
   price: number;
   billing_cycle: string;
@@ -17,6 +18,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parsePlan(value: unknown, partial = false): Partial<PricingPlanInput> | null {
   if (!isRecord(value)) return null;
   const plan: Partial<PricingPlanInput> = {};
+  if ("plan_key" in value) {
+    if (value.plan_key !== null && value.plan_key !== "basic" && value.plan_key !== "pro" && value.plan_key !== "business") return null;
+    plan.plan_key = value.plan_key;
+  } else if (!partial) {
+    plan.plan_key = null;
+  }
   if ("name" in value) {
     if (typeof value.name !== "string" || !value.name.trim() || value.name.trim().length > 80) return null;
     plan.name = value.name.trim();
@@ -48,7 +55,7 @@ export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const supabase = createAdminClient();
   if (!supabase) return NextResponse.json({ error: "Pricing database is not configured." }, { status: 503 });
-  const { data, error } = await supabase.from("pricing_plans").select("id, name, price, billing_cycle, features, is_active, created_at").order("created_at", { ascending: true });
+  const { data, error } = await supabase.from("pricing_plans").select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").order("created_at", { ascending: true });
   if (error) return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
   return NextResponse.json({ plans: data });
 }
@@ -65,7 +72,7 @@ export async function POST(request: Request) {
   }
   const plan = parsePlan(body);
   if (!plan) return NextResponse.json({ error: "Enter a valid name, non-negative price, billing cycle, feature list, and active status." }, { status: 400 });
-  const { data, error } = await supabase.from("pricing_plans").insert(plan).select("id, name, price, billing_cycle, features, is_active, created_at").single();
+  const { data, error } = await supabase.from("pricing_plans").insert(plan).select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").single();
   if (error) return NextResponse.json({ error: "Unable to create pricing plan." }, { status: 500 });
   return NextResponse.json({ plan: data }, { status: 201 });
 }
@@ -83,7 +90,7 @@ export async function PATCH(request: Request) {
   if (!isRecord(body) || !validId(body.id)) return NextResponse.json({ error: "A valid plan ID is required." }, { status: 400 });
   const plan = parsePlan(body, true);
   if (!plan || Object.keys(plan).length === 0) return NextResponse.json({ error: "Provide at least one valid plan field to update." }, { status: 400 });
-  const { data, error } = await supabase.from("pricing_plans").update(plan).eq("id", body.id).select("id, name, price, billing_cycle, features, is_active, created_at").maybeSingle();
+  const { data, error } = await supabase.from("pricing_plans").update(plan).eq("id", body.id).select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").maybeSingle();
   if (error) return NextResponse.json({ error: "Unable to update pricing plan." }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Pricing plan not found." }, { status: 404 });
   return NextResponse.json({ plan: data });

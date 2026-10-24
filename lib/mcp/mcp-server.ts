@@ -1,5 +1,6 @@
 import { generateStoreFromPrompt, THEME_PRESETS } from '../ai/ai-generator';
 import { storeRepo } from '../store-repository';
+import { SUBSCRIPTION_PLANS, getActiveSubscriptionPlan } from '../subscription-plans';
 
 export interface McpTool {
   name: string;
@@ -235,11 +236,7 @@ export async function handleMcpRequest(request: {
               {
                 uri,
                 mimeType: 'application/json',
-                text: JSON.stringify({
-                  free: { maxProducts: 10, maxCategories: 3, whatsappCheckout: true, customTheme: false, subdomain: true },
-                  pro: { maxProducts: 25, maxCategories: 6, whatsappCheckout: true, customTheme: true, subdomain: true, analytics: true },
-                  advanced: { maxProducts: 9999, maxCategories: 999, whatsappCheckout: true, customTheme: true, subdomain: true, aiAssistant: true }
-                }, null, 2)
+                text: JSON.stringify(SUBSCRIPTION_PLANS, null, 2)
               }
             ]
           }
@@ -407,7 +404,7 @@ async function executeMcpTool(name: string, args: any): Promise<any> {
         subdomain: `${store.slug}.buildexom.store`,
         plan: store.plan || 'free',
         total_products: products.length,
-        max_allowed_products: store.plan === 'free' ? 10 : store.plan === 'pro' ? 25 : 'unlimited',
+        max_allowed_products: getActiveSubscriptionPlan(store.plan, store.payment_status).limits.products,
         whatsapp_number: store.whatsapp_number,
         theme: store.theme?.name || store.selected_theme
       };

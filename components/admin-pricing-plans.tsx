@@ -5,6 +5,7 @@ import { Pencil, Plus, Save, Trash2, X } from "lucide-react";
 
 type PricingPlan = {
   id: string;
+  plan_key: "basic" | "pro" | "business" | null;
   name: string;
   price: number | string;
   billing_cycle: string;
@@ -14,6 +15,7 @@ type PricingPlan = {
 };
 
 type PlanForm = {
+  plan_key: "basic" | "pro" | "business" | "";
   name: string;
   price: string;
   billing_cycle: string;
@@ -21,7 +23,7 @@ type PlanForm = {
   is_active: boolean;
 };
 
-const emptyForm: PlanForm = { name: "", price: "0", billing_cycle: "monthly", features: "", is_active: true };
+const emptyForm: PlanForm = { plan_key: "", name: "", price: "0", billing_cycle: "monthly", features: "", is_active: true };
 
 async function responseBody(response: Response): Promise<Record<string, unknown>> {
   const result: unknown = await response.json();
@@ -35,6 +37,7 @@ function isPricingPlan(value: unknown): value is PricingPlan {
   if (typeof value !== "object" || value === null) return false;
   const plan = value as Record<string, unknown>;
   return typeof plan.id === "string"
+    && (plan.plan_key === null || plan.plan_key === "basic" || plan.plan_key === "pro" || plan.plan_key === "business")
     && typeof plan.name === "string"
     && (typeof plan.price === "number" || typeof plan.price === "string")
     && typeof plan.billing_cycle === "string"
@@ -77,6 +80,7 @@ export function AdminPricingPlans() {
   function editPlan(plan: PricingPlan) {
     setEditingId(plan.id);
     setForm({
+      plan_key: plan.plan_key ?? "",
       name: plan.name,
       price: String(plan.price),
       billing_cycle: plan.billing_cycle,
@@ -99,6 +103,7 @@ export function AdminPricingPlans() {
       return;
     }
     const payload = {
+      plan_key: form.plan_key || null,
       name: form.name.trim(),
       price,
       billing_cycle: form.billing_cycle.trim(),
@@ -169,7 +174,17 @@ export function AdminPricingPlans() {
             <div><h3 className="text-sm font-semibold text-slate-800">{editingId ? "Edit plan" : "Create a plan"}</h3><p className="mt-1 text-xs text-slate-500">Add feature names one per line.</p></div>
             {editingId && <button type="button" onClick={resetForm} aria-label="Cancel editing" className="grid size-8 place-items-center rounded-md text-slate-500 hover:bg-slate-100"><X size={16} /></button>}
           </div>
-          <label className="block text-xs font-medium text-slate-700">Plan name<input required maxLength={80} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-700">Subscription key
+              <select value={form.plan_key} onChange={(event) => setForm({ ...form, plan_key: event.target.value as PlanForm["plan_key"] })} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500">
+                <option value="">Custom / display only</option>
+                <option value="basic">Basic entitlement</option>
+                <option value="pro">Pro entitlement</option>
+                <option value="business">Business entitlement</option>
+              </select>
+            </label>
+            <label className="block text-xs font-medium text-slate-700">Plan name<input required maxLength={80} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></label>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-xs font-medium text-slate-700">Price (PKR)<input required type="number" min="0" max="99999999.99" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></label>
             <label className="block text-xs font-medium text-slate-700">Billing cycle<input required maxLength={40} placeholder="monthly, yearly, one-time" value={form.billing_cycle} onChange={(event) => setForm({ ...form, billing_cycle: event.target.value })} className="mt-1.5 h-10 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-blue-500" /></label>

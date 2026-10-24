@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkStoreLimits } from "@/lib/planLimits";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
-import { hasApprovedSubscriptionPayment } from "@/lib/subscription-plans";
+import { getActiveSubscriptionPlan, getSubscriptionPlan } from "@/lib/subscription-plans";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -36,17 +36,11 @@ export async function GET(req: Request) {
         .maybeSingle();
       if (error) throw error;
       if (!st) return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
-      const requestedPlan = String(st.plan || 'basic').toLowerCase();
-      storePlan = ['free', 'basic'].includes(requestedPlan) || hasApprovedSubscriptionPayment(st.payment_status)
-        ? requestedPlan
-        : 'basic';
+      storePlan = getActiveSubscriptionPlan(st.plan, st.payment_status).id;
     } else {
       const st = await storeRepo.getStore(storeId);
       if (st) {
-        const requestedPlan = String(st.plan || 'basic').toLowerCase();
-        storePlan = ['free', 'basic'].includes(requestedPlan) || hasApprovedSubscriptionPayment(st.payment_status)
-          ? requestedPlan
-          : 'basic';
+        storePlan = getActiveSubscriptionPlan(st.plan, st.payment_status).id;
       }
     }
 
@@ -90,7 +84,11 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, categories: deduplicatedCategories });
+    const categoryLimit = getSubscriptionPlan(storePlan).limits.categories;
+    return NextResponse.json({
+      success: true,
+      categories: deduplicatedCategories.slice(0, categoryLimit),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load categories.";
     return NextResponse.json({ error: message }, { status: 500 });

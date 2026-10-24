@@ -3,6 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { getStoreNicheColor, THEME_PALETTES } from "@/lib/store-theme";
 import { fetchStoreByIdOrSlug, isUuid } from "@/lib/store-id-slug";
+import { getActiveSubscriptionPlan, type PaymentGateway } from "@/lib/subscription-plans";
+import { fetchActiveSubscriptionPlan } from "@/lib/subscription-plan-access";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -13,7 +15,7 @@ function optionalText(value: unknown) {
   return text.length ? text : null;
 }
 
-const PAYMENT_DETAIL_KEYS = ["bank_name", "account_title", "account_number", "iban", "jazzcash_number", "easypaisa_number"] as const;
+const PAYMENT_DETAIL_KEYS = ["bank_name", "account_title", "account_number", "iban", "jazzcash_number", "easypaisa_number", "sadapay_number"] as const;
 
 function parsePaymentDetails(value: unknown) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
@@ -25,6 +27,7 @@ function parsePaymentDetails(value: unknown) {
     iban: "",
     jazzcash_number: "",
     easypaisa_number: "",
+    sadapay_number: "",
   };
   for (const key of PAYMENT_DETAIL_KEYS) {
     const candidate = source[key];
@@ -33,6 +36,15 @@ function parsePaymentDetails(value: unknown) {
     details[key] = candidate.trim();
   }
   return details;
+}
+
+function configuredPaymentGateways(details: Record<string, string>): PaymentGateway[] {
+  const gateways: PaymentGateway[] = [];
+  if (details.account_number || details.iban) gateways.push("bank_transfer");
+  if (details.jazzcash_number) gateways.push("jazzcash");
+  if (details.easypaisa_number) gateways.push("easypaisa");
+  if (details.sadapay_number) gateways.push("sadapay");
+  return gateways;
 }
 
 const SOCIAL_KEYS = ["instagram", "facebook", "youtube", "tiktok", "x"] as const;
@@ -155,6 +167,7 @@ export async function GET(req: Request) {
     if (!supabase) {
       const { storeRepo } = await import("@/lib/store-repository");
       const repoStore = await storeRepo.getStore(storeId);
+      const activePlan = getActiveSubscriptionPlan(repoStore?.plan, repoStore?.payment_status);
       const nicheColor = getStoreNicheColor(repoStore?.name, repoStore?.slug);
       const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || (repoStore?.selected_theme && THEME_PALETTES[repoStore.selected_theme]) || nicheColor;
       return NextResponse.json({
@@ -178,7 +191,7 @@ export async function GET(req: Request) {
           id: repoStore.id,
           name: repoStore.name,
           slug: repoStore.slug,
-          plan: repoStore.plan || "basic",
+          plan: activePlan.id,
           primary_color: themeColor,
           selected_theme: repoStore?.theme?.id || repoStore?.selected_theme || "emerald",
           whatsapp_number: repoStore.whatsapp_number,
@@ -193,7 +206,7 @@ export async function GET(req: Request) {
     const storeResult = await fetchStoreByIdOrSlug(
       supabase,
       storeId,
-      "id, name, slug, plan, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details"
+      "id, name, slug, plan, payment_status, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details"
     );
     let { data: store, error: storeError } = storeResult;
     const resolvedStoreId = store?.id || storeId;
@@ -214,12 +227,16 @@ export async function GET(req: Request) {
     if (settingsError && settingsError.code !== "PGRST116") throw settingsError;
     if (isMissingStoreColumn(storeError)) {
       const fallback = await supabase.from("stores").select("id, name, slug").eq("id", storeId).maybeSingle();
-      store = fallback.data ? { ...fallback.data, plan: "basic", whatsapp_number: null, primary_color: null, selected_theme: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
+      store = fallback.data ? { ...fallback.data, plan: "basic", payment_status: "active", whatsapp_number: null, primary_color: null, selected_theme: null, accepts_cod: true, accepts_advance: false, advance_percentage: 50, payment_details: {} } : null;
       storeError = fallback.error;
     }
     if (storeError) throw storeError;
     if (paymentError && !isMissingPaymentSchema(paymentError)) throw paymentError;
 
+    const activePlan = getActiveSubscriptionPlan(store?.plan, store?.payment_status);
+    const supportsAdvance = activePlan.features.paymentGateways.some(
+      (gateway) => gateway !== "cod" && gateway !== "whatsapp"
+    );
     const accountNumber = (provider: string) => paymentMethods?.find((method) => method.provider_name.toLowerCase().includes(provider) && method.account_number)?.account_number ?? "";
 
     const nicheColor = getStoreNicheColor(store?.name, store?.slug);
@@ -233,6 +250,7 @@ export async function GET(req: Request) {
       success: true,
       settings: settings ? {
         ...settings,
+        custom_domain: activePlan.features.customDomain ? settings.custom_domain : null,
         hero_images: (settings as any)?.hero_images || (store as any)?.hero_images || [],
         about_title: (settings as any)?.about_title || (store as any)?.about_title || "",
         about_text: (settings as any)?.about_text || (store as any)?.about_text || (store as any)?.description || "",
@@ -240,13 +258,14 @@ export async function GET(req: Request) {
         theme_color: resolvedThemeColor,
         selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
-        accepts_cod: store?.accepts_cod ?? true,
-        accepts_advance: store?.accepts_advance ?? false,
+        accepts_cod: (store?.accepts_cod ?? true) && activePlan.features.paymentGateways.includes("cod"),
+        accepts_advance: (store?.accepts_advance ?? false) && supportsAdvance,
         advance_percentage: store?.advance_percentage ?? 50,
         payment_details: store?.payment_details ?? {},
         jazzcash_number: accountNumber("jazz") || settings.jazzcash_number || "",
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
+        custom_domain: null,
         hero_images: (store as any)?.hero_images || [],
         about_title: (store as any)?.about_title || "",
         about_text: (store as any)?.about_text || (store as any)?.description || "",
@@ -254,8 +273,8 @@ export async function GET(req: Request) {
         theme_color: resolvedThemeColor,
         selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
-        accepts_cod: store?.accepts_cod ?? true,
-        accepts_advance: store?.accepts_advance ?? false,
+        accepts_cod: (store?.accepts_cod ?? true) && activePlan.features.paymentGateways.includes("cod"),
+        accepts_advance: (store?.accepts_advance ?? false) && supportsAdvance,
         advance_percentage: store?.advance_percentage ?? 50,
         payment_details: store?.payment_details ?? {},
         jazzcash_number: accountNumber("jazz"),
@@ -263,6 +282,9 @@ export async function GET(req: Request) {
       },
       store: store ? {
         ...store,
+        plan: activePlan.id,
+        accepts_cod: (store.accepts_cod ?? true) && activePlan.features.paymentGateways.includes("cod"),
+        accepts_advance: (store.accepts_advance ?? false) && supportsAdvance,
         primary_color: resolvedThemeColor,
       } : null,
     });
@@ -274,6 +296,7 @@ export async function GET(req: Request) {
         const { storeRepo } = await import("@/lib/store-repository");
         const repoStore = await storeRepo.getStore(storeId);
         if (repoStore) {
+          const activePlan = getActiveSubscriptionPlan(repoStore.plan, repoStore.payment_status);
           const themeColor = repoStore?.theme?.primaryColor || repoStore?.primary_color || "#1d7555";
           return NextResponse.json({
             success: true,
@@ -296,7 +319,7 @@ export async function GET(req: Request) {
               id: repoStore.id,
               name: repoStore.name,
               slug: repoStore.slug,
-              plan: repoStore.plan || "basic",
+              plan: activePlan.id,
               whatsapp_number: repoStore.whatsapp_number,
               accepts_cod: true,
               accepts_advance: false,
@@ -318,7 +341,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const supabase = getSupabase();
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      return NextResponse.json({ error: "A valid JSON settings object is required." }, { status: 400 });
+    }
     const storeId = textValue(body?.store_id);
 
     if (!storeId) {
@@ -336,11 +362,52 @@ export async function POST(req: Request) {
         if (storeRow?.id) targetStoreId = storeRow.id;
       }
     }
+    if ("custom_domain" in body && body.custom_domain !== null && body.custom_domain !== undefined && typeof body.custom_domain !== "string") {
+      return NextResponse.json({ error: "Custom domain must be a valid domain name." }, { status: 400 });
+    }
+    const customDomain = "custom_domain" in body ? optionalText(body.custom_domain) : undefined;
+    if (customDomain && !/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(customDomain)) {
+      return NextResponse.json({ error: "Enter a valid custom domain, such as shop.example.com." }, { status: 400 });
+    }
 
     if (!supabase) {
       const { storeRepo } = await import("@/lib/store-repository");
       const repoStore = await storeRepo.getStore(storeId);
+      const downgradingToBasic = typeof body.plan === "string" && ["basic", "free"].includes(body.plan.toLowerCase());
+      const activePlan = getActiveSubscriptionPlan(
+        downgradingToBasic ? "basic" : repoStore?.plan,
+        downgradingToBasic ? "active" : repoStore?.payment_status
+      );
+      if (customDomain && !activePlan.features.customDomain) {
+        return NextResponse.json({ error: `Custom domains are not available on the ${activePlan.name} plan.` }, { status: 403 });
+      }
+      if (["payment_details", "accepts_cod", "accepts_advance", "jazzcash_number", "easypaisa_number"].some((key) => key in body)) {
+        const localPaymentDetails = "payment_details" in body
+          ? parsePaymentDetails(body.payment_details)
+          : parsePaymentDetails(repoStore?.payment_details ?? {});
+        if (!localPaymentDetails) return NextResponse.json({ error: "Payment account details are invalid." }, { status: 400 });
+        const configuredGateways = configuredPaymentGateways(localPaymentDetails);
+        const requestedGateways = [
+          ...configuredGateways,
+          ...(typeof body.jazzcash_number === "string" && body.jazzcash_number.trim() ? ["jazzcash" as const] : []),
+          ...(typeof body.easypaisa_number === "string" && body.easypaisa_number.trim() ? ["easypaisa" as const] : []),
+        ];
+        const unsupportedGateway = requestedGateways.find((gateway) => !activePlan.features.paymentGateways.includes(gateway));
+        if (unsupportedGateway) {
+          return NextResponse.json({ error: `${unsupportedGateway} payments are not available on the ${activePlan.name} plan.` }, { status: 403 });
+        }
+        if (body.accepts_cod === true && !activePlan.features.paymentGateways.includes("cod")) {
+          return NextResponse.json({ error: `Cash on Delivery is not available on the ${activePlan.name} plan.` }, { status: 403 });
+        }
+        if (body.accepts_advance === true && configuredGateways.length === 0) {
+          return NextResponse.json({ error: "Configure an available payment gateway before enabling advance payment." }, { status: 400 });
+        }
+      }
       if (repoStore) {
+        if (downgradingToBasic) {
+          repoStore.plan = "basic";
+          repoStore.payment_status = "active";
+        }
         if (body.banner_text) repoStore.header_title = String(body.banner_text);
         if (body.theme_color) {
           repoStore.primary_color = String(body.theme_color);
@@ -348,10 +415,6 @@ export async function POST(req: Request) {
         }
         if (body.whatsapp_number) repoStore.whatsapp_number = String(body.whatsapp_number);
         if (body.logo_url) repoStore.logo_url = String(body.logo_url);
-        if (typeof body.plan === "string" && ["basic", "free"].includes(body.plan.toLowerCase())) {
-          repoStore.plan = "basic";
-          repoStore.payment_status = "active";
-        }
       }
       return NextResponse.json({
         success: true,
@@ -372,6 +435,30 @@ export async function POST(req: Request) {
       });
     }
 
+    const persistedPlan = await fetchActiveSubscriptionPlan(supabase, targetStoreId);
+    if (!persistedPlan) return NextResponse.json({ error: "Store not found." }, { status: 404 });
+    const downgradingToBasic = typeof body.plan === "string" && ["basic", "free"].includes(body.plan.toLowerCase());
+    const activePlan = downgradingToBasic
+      ? getActiveSubscriptionPlan("basic", "active")
+      : persistedPlan;
+    if (customDomain && !activePlan.features.customDomain) {
+      return NextResponse.json({ error: `Custom domains are not available on the ${activePlan.name} plan.` }, { status: 403 });
+    }
+    const separatelySavedGateways: { key: string; gateway: PaymentGateway }[] = [
+      { key: "jazzcash_number", gateway: "jazzcash" },
+      { key: "easypaisa_number", gateway: "easypaisa" },
+    ];
+    const unavailableSeparateGateway = separatelySavedGateways.find(({ key, gateway }) =>
+      typeof body[key] === "string" &&
+      body[key].trim().length > 0 &&
+      !activePlan.features.paymentGateways.includes(gateway)
+    );
+    if (unavailableSeparateGateway) {
+      return NextResponse.json({
+        error: `${unavailableSeparateGateway.gateway} payments are not available on the ${activePlan.name} plan.`,
+      }, { status: 403 });
+    }
+
     let savedPaymentDetails: Record<string, string> | undefined;
     if (["accepts_cod", "accepts_advance", "advance_percentage", "payment_details"].some((key) => key in body)) {
       if (typeof body.accepts_cod !== "boolean" || typeof body.accepts_advance !== "boolean") {
@@ -383,13 +470,27 @@ export async function POST(req: Request) {
       }
       const paymentDetails = parsePaymentDetails(body.payment_details);
       if (!paymentDetails) return NextResponse.json({ error: "Payment account details are invalid." }, { status: 400 });
+      const requestedGateways = configuredPaymentGateways(paymentDetails);
+      const unavailableGateway = requestedGateways.find((gateway) => !activePlan.features.paymentGateways.includes(gateway));
+      if (unavailableGateway) {
+        return NextResponse.json({
+          error: `${unavailableGateway} payments are not available on the ${activePlan.name} plan.`,
+        }, { status: 403 });
+      }
+      if (body.accepts_cod && !activePlan.features.paymentGateways.includes("cod")) {
+        return NextResponse.json({ error: `Cash on Delivery is not available on the ${activePlan.name} plan.` }, { status: 403 });
+      }
+      if (body.accepts_advance && requestedGateways.length === 0) {
+        return NextResponse.json({ error: "Configure an available payment gateway before enabling advance payment." }, { status: 400 });
+      }
       if (body.accepts_advance && ![
         paymentDetails.account_number,
         paymentDetails.iban,
         paymentDetails.jazzcash_number,
         paymentDetails.easypaisa_number,
+        paymentDetails.sadapay_number,
       ].some(Boolean)) {
-        return NextResponse.json({ error: "Add a bank account, IBAN, JazzCash, or EasyPaisa destination before enabling advance payment." }, { status: 400 });
+        return NextResponse.json({ error: "Add an enabled bank transfer, JazzCash, EasyPaisa, or SadaPay destination before enabling advance payment." }, { status: 400 });
       }
       const { error: paymentSettingsError } = await supabase.from("stores").update({
         accepts_cod: body.accepts_cod,
@@ -436,13 +537,13 @@ export async function POST(req: Request) {
       ? body.hero_images.filter((img: unknown) => typeof img === "string" && img.trim().length > 0).slice(0, 3)
       : undefined;
 
-    const extendedPayload: any = {
+    const extendedPayload: Record<string, unknown> = {
       ...basePayload,
       footer_text: optionalText(body?.footer_text) ?? "",
-      custom_domain: optionalText(body?.custom_domain),
       jazzcash_number: optionalText(body?.jazzcash_number) ?? "",
       easypaisa_number: optionalText(body?.easypaisa_number) ?? "",
     };
+    if (customDomain !== undefined) extendedPayload.custom_domain = customDomain;
     if (heroImages) {
       extendedPayload.hero_images = heroImages;
     }

@@ -12,7 +12,7 @@ const faqs = [
   },
   {
     q: "Is the free plan really free?",
-    a: "Yes. You can list up to 20 products and take orders on WhatsApp at no cost. Buildexom branding stays on the free plan.",
+    a: "Yes. Buildexom has a free plan. Its current product limits and included features are listed in the live pricing section.",
   },
   {
     q: "Is Buildexom a no-code eCommerce platform?",
@@ -28,7 +28,7 @@ const faqs = [
   },
   {
     q: "How do WhatsApp product alerts work?",
-    a: "Customers who opt in get a WhatsApp message when you add a new product, with its image, price, a short description, and a link. On Business, you can target by category and schedule messages.",
+    a: "Customers who opt in can receive product updates by WhatsApp. Check the live pricing section for the current availability and features of each plan.",
   },
   {
     q: "What is the store QR code?",
@@ -36,11 +36,11 @@ const faqs = [
   },
   {
     q: "Is Buildexom an affordable online store builder for small businesses?",
-    a: "Yes. You can start free and upgrade to Pro or Business whenever your store grows.",
+    a: "Yes. You can start with an available free plan and review the live pricing section for current upgrade options.",
   },
   {
     q: "How do I get help?",
-    a: "Visit the Help Center and Tutorials, or message our team. Business plans get priority support.",
+    a: "Visit the Help Center and Tutorials, or message our team. Check the live pricing section for current support options.",
   },
 ];
 

@@ -33,7 +33,11 @@ import { uploadProductImage, uploadStoreImage } from '@/lib/supabaseUpload';
 import { StoreQRCode } from '@/components/store-qr-code';
 import { VoiceStoreAssistant } from '@/components/VoiceStoreAssistant';
 import { getStoreNicheColor, THEME_PALETTES, THEME_OPTIONS, darkenColor } from '@/lib/store-theme';
-import { hasApprovedSubscriptionPayment, SUBSCRIPTION_PLAN_PRICES } from '@/lib/subscription-plans';
+import {
+    normalizeSubscriptionPlan,
+} from '@/lib/subscription-plans';
+import { formatPricingPlanPrice, type PublicPricingPlan } from '@/lib/pricing-plan-catalog';
+import { usePricingPlans } from '@/hooks/use-pricing-plans';
 import { Boxes, Check, ChevronRight, CirclePlus, Clock, ExternalLink, Eye, LayoutDashboard, Package, Pencil, Search, ShoppingBag, Sparkles, Tag, Trash2, Upload, Wallet, MessageCircle, Mail, ChevronDown, ChevronUp, CheckCircle2, Truck, RefreshCw, X, Send, Lock, Plus, Mic, ShieldCheck } from 'lucide-react';
 
 type Plan = 'basic' | 'pro' | 'business';
@@ -61,82 +65,8 @@ type Order = {
 type PaymentDetails = { bank_name: string; account_title: string; account_number: string; iban: string; jazzcash_number: string; easypaisa_number: string; sadapay_number?: string; sadapay_title?: string; jazzcash_title?: string; easypaisa_title?: string; };
 type StoreSocialLinks = { instagram: string; facebook: string; youtube: string; tiktok: string; x: string };
 
-const PLAN_DETAILS: Record<Plan, { 
-    title: string; 
-    pricePKR: number;
-    priceLabel: string;
-    productLimit: number | null; 
-    categoryLimit: number | null; 
-    perCategoryLimit?: number; 
-    checkout: string;
-    badge?: string;
-    features: string[];
-}> = {
-    basic: { 
-        title: 'BASIC', 
-        pricePKR: 0,
-        priceLabel: 'Free',
-        productLimit: 20, 
-        categoryLimit: 0, 
-        checkout: 'WhatsApp Ordering',
-        badge: 'Free',
-        features: [
-            'Up to 20 Products',
-            'WhatsApp Ordering',
-            'Basic Store Customization',
-            'Product Management',
-            'Product Images & Descriptions',
-            'Basic Dashboard',
-            'Basic Order Management'
-        ]
-    },
-    pro: { 
-        title: 'PRO', 
-        pricePKR: SUBSCRIPTION_PLAN_PRICES.pro,
-        priceLabel: 'PKR 2,499 / mo',
-        productLimit: 75, 
-        categoryLimit: 5, 
-        perCategoryLimit: 15, 
-        checkout: 'WhatsApp Ordering',
-        badge: 'Advanced',
-        features: [
-            'Up to 75 Products',
-            'Up to 5 Categories',
-            'Up to 15 Products per Category',
-            'Advanced Store Customization',
-            'WhatsApp Ordering',
-            'Order Tracking',
-            'Payment Integration',
-            'Coupons & Discounts',
-            'Basic Analytics'
-        ]
-    },
-    business: { 
-        title: 'BUSINESS', 
-        pricePKR: SUBSCRIPTION_PLAN_PRICES.business,
-        priceLabel: 'PKR 4,999 / mo',
-        productLimit: null, 
-        categoryLimit: null, 
-        checkout: 'WhatsApp Ordering',
-        badge: 'Unlimited',
-        features: [
-            'Unlimited Products',
-            'Unlimited Categories',
-            'Advanced Store Customization',
-            'WhatsApp Ordering',
-            'Order Tracking',
-            'Payment Integration',
-            'AI Customer Chatbot',
-            'Advanced Analytics',
-            'Priority Support'
-        ]
-    },
-};
-
 function normalizePlan(value: string | null | undefined): Plan {
-    const plan = value?.toLowerCase();
-    if (plan === 'pro' || plan === 'business') return plan;
-    return 'basic';
+    return normalizeSubscriptionPlan(value);
 }
 
 function formatPKR(value: number | string) {
@@ -152,6 +82,7 @@ function formatDate(value?: string) {
 export default function MerchantDashboardMaster() {
     const params = useParams<{ storeid: string }>();
     const paramId = params.storeid;
+    const { plans: pricingPlans, loading: pricingLoading, error: pricingError, refresh: refreshPricingPlans } = usePricingPlans();
 
     const [resolvedStoreId, setResolvedStoreId] = useState<string>('');
     const [storeName, setStoreName] = useState<string>('');
@@ -331,21 +262,23 @@ export default function MerchantDashboardMaster() {
         setIsUpgrading(true);
         try {
             const sid = resolvedStoreId || paramId;
-            if (targetPlan === 'basic') {
+            const targetPlanDetails = pricingPlans.find((plan) => plan.plan_key === targetPlan);
+            if (!targetPlanDetails) throw new Error('This subscription plan is not currently available.');
+            if (Number(targetPlanDetails.price) === 0) {
                 const res = await fetch('/api/stores/plan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         store_id: sid,
-                        plan: 'basic',
+                        plan: targetPlan,
                     }),
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to switch to Basic plan.');
-                setStorePlan('basic');
-                setSelectedPlan('basic');
+                if (!res.ok) throw new Error(data.error || 'Failed to switch to this plan.');
+                setStorePlan(targetPlan);
+                setSelectedPlan(targetPlan);
                 setPaymentStatus('active');
-                setUpgradeSuccess('Switched to Basic plan.');
+                setUpgradeSuccess(`Switched to ${targetPlanDetails.name}.`);
                 setUpgradeModalPlan(null);
                 setTimeout(() => setUpgradeSuccess(''), 7000);
                 void resolveStoreAndData(sid, true);
@@ -378,7 +311,7 @@ if (!upgradeTrxId.trim()) throw new Error('Enter the transaction ID (TID) from y
                     sender_number: upgradeSenderNumber,
                     transaction_id: upgradeTrxId,
                     screenshot_url: screenshotUrl,
-                    amount: PLAN_DETAILS[targetPlan].pricePKR,
+                    amount: Number(targetPlanDetails.price),
                 }),
             });
             const data = await res.json();
@@ -388,7 +321,7 @@ setSelectedPlan(targetPlan);
             setStorePlan(targetPlan);
             setPaymentStatus('pending_approval');
             setPendingUpgradeStatus(targetPlan);
-            setUpgradeSuccess(`🎉 Payment submitted! Your transaction will be verified to activate the ${PLAN_DETAILS[targetPlan].title} plan.`);
+            setUpgradeSuccess(`🎉 Payment submitted! Your transaction will be verified to activate the ${targetPlanDetails.name} plan.`);
             setUpgradeModalPlan(null);
             setUpgradeTrxId('');
             setUpgradeSenderName('');
@@ -403,10 +336,21 @@ setSelectedPlan(targetPlan);
         }
     }
 
-    const planDetails = PLAN_DETAILS[storePlan];
-    const canUseWhatsapp = true;
-    const canUseBexiAi = storePlan === 'business';
-    const canUsePaymentIntegration = storePlan === 'pro' || storePlan === 'business';
+    const planDetails = pricingPlans.find((plan) => plan.plan_key === storePlan) ?? null;
+    const selectedPlanDetails = pricingPlans.find((plan) => plan.plan_key === selectedPlan) ?? null;
+    const modalPlanDetails = upgradeModalPlan ? pricingPlans.find((plan) => plan.plan_key === upgradeModalPlan) ?? null : null;
+    const planName = (plan: Plan) => pricingPlans.find((item) => item.plan_key === plan)?.name ?? plan;
+    const productLimit = planDetails?.limits?.products ?? null;
+    const categoryLimit = planDetails?.limits?.categories ?? null;
+    const productsPerCategoryLimit = planDetails?.limits?.productsPerCategory ?? null;
+    const selectedPlanProductLimit = selectedPlanDetails?.limits?.products ?? null;
+    const selectedPlanCategoryLimit = selectedPlanDetails?.limits?.categories ?? null;
+    const selectedPlanProductsPerCategory = selectedPlanDetails?.limits?.productsPerCategory ?? null;
+    const categoryPlans = pricingPlans.filter((plan) => (plan.limits?.categories ?? 0) > 0);
+    const whatsappPlans = pricingPlans.filter((plan) => plan.entitlements?.paymentGateways.includes('whatsapp'));
+    const canUseWhatsapp = planDetails?.entitlements?.paymentGateways.includes('whatsapp') ?? false;
+    const canUseBexiAi = planDetails?.entitlements?.aiCustomerChatbot ?? false;
+    const canUsePaymentIntegration = planDetails?.entitlements?.paymentIntegration ?? false;
     const filteredProducts = useMemo(() => {
         const query = productSearch.trim().toLowerCase();
         if (!query) return products;
@@ -809,8 +753,14 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             setMessageError(true);
             return;
         }
-        if (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit) {
-            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.productLimit} products has been reached. Please upgrade to add more products.`);
+        const productLimitForCurrentPlan = planDetails?.limits?.products ?? null;
+        if (!editingProdId && !planDetails?.limits) {
+            setMessage('Plan limits are currently unavailable. Please try again shortly.');
+            setMessageError(true);
+            return;
+        }
+        if (!editingProdId && productLimitForCurrentPlan !== null && products.length >= productLimitForCurrentPlan) {
+            setMessage(`Your ${planDetails?.name ?? planName(storePlan)} plan limit of ${productLimitForCurrentPlan} products has been reached. Please upgrade to add more products.`);
             setMessageError(true);
             return;
         }
@@ -989,8 +939,14 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             setMessageError(true);
             return;
         }
-        if (planDetails.productLimit !== null && products.length >= planDetails.productLimit) {
-            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.productLimit} products has been reached. Please upgrade to add more products.`);
+        const productLimitForCurrentPlan = planDetails?.limits?.products ?? null;
+        if (!planDetails?.limits) {
+            setMessage('Plan limits are currently unavailable. Please try again shortly.');
+            setMessageError(true);
+            return;
+        }
+        if (productLimitForCurrentPlan !== null && products.length >= productLimitForCurrentPlan) {
+            setMessage(`Your ${planDetails?.name ?? planName(storePlan)} plan limit of ${productLimitForCurrentPlan} products has been reached. Please upgrade to add more products.`);
             setMessageError(true);
             return;
         }
@@ -1042,13 +998,19 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             setMessageError(true);
             return;
         }
-        if (planDetails.categoryLimit === 0) {
-            setMessage('Categories are locked on the Free Starter plan. Upgrade to Pro Merchant or Advance VIP to add categories.');
+        const categoryLimitForCurrentPlan = planDetails?.limits?.categories ?? null;
+        if (!planDetails?.limits) {
+            setMessage('Plan limits are currently unavailable. Please try again shortly.');
             setMessageError(true);
             return;
         }
-        if (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit) {
-            setMessage(`Your ${planDetails.title} plan limit of ${planDetails.categoryLimit} categories has been reached. Please upgrade to Business for unlimited categories.`);
+        if (categoryLimitForCurrentPlan === 0) {
+            setMessage(`Categories are not included on the ${planDetails?.name ?? planName(storePlan)} plan. Upgrade to a plan with category support.`);
+            setMessageError(true);
+            return;
+        }
+        if (categoryLimitForCurrentPlan !== null && categories.length >= categoryLimitForCurrentPlan) {
+            setMessage(`Your ${planDetails?.name ?? planName(storePlan)} plan limit of ${categoryLimitForCurrentPlan} categories has been reached. Upgrade your plan to add more.`);
             setMessageError(true);
             return;
         }
@@ -1122,7 +1084,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                     <div>
                         <h2 className="text-sm font-semibold tracking-wide text-white">{storeName}</h2>
                         <span className="mt-1 inline-flex rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
-                            {planDetails.title} plan
+                            {planDetails?.name ?? (pricingLoading ? 'Loading plan…' : planName(storePlan))} plan
                         </span>
                     </div>
                 </div>
@@ -1132,7 +1094,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
                         { id: 'products', label: isVerified ? `Products · ${products.length}` : 'Products · 🔒 Locked', icon: Package },
                         { id: 'orders', label: isVerified ? `Orders · ${orders.length}` : 'Orders · 🔒 Locked', icon: ShoppingBag },
-                        { id: 'categories', label: !isVerified ? 'Categories · 🔒 Locked' : planDetails.categoryLimit === 0 ? 'Categories · Locked' : `Categories · ${categories.length}`, icon: Tag },
+                        { id: 'categories', label: !isVerified ? 'Categories · 🔒 Locked' : categoryLimit === 0 ? 'Categories · Locked' : `Categories · ${categories.length}`, icon: Tag },
                         { id: 'branding', label: isVerified ? 'Storefront' : 'Storefront · 🔒 Locked', icon: Eye },
                         { id: 'payments', label: isVerified ? 'Payments' : 'Payments · 🔒 Locked', icon: Wallet },
                         ...(canUseBexiAi ? [{ id: 'bexi-ai', label: isVerified ? `${storeName} Bexi AI` : `${storeName} Bexi AI · 🔒 Locked`, icon: Sparkles }] : []),
@@ -1239,10 +1201,10 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             <div className="flex items-center gap-3">
                                 <div>
                                     <p className="text-xs font-bold text-slate-900">
-                                        ⏳ Upgrade to {PLAN_DETAILS[pendingUpgradeStatus as Plan]?.title || 'Pro'} Under Review
+                                        ⏳ Upgrade to {planName(pendingUpgradeStatus as Plan)} Under Review
                                     </p>
                                     <p className="text-[11px] text-slate-600">
-                                        Your payment transaction proof has been submitted for verification. Once approved, your upgraded features (Bexi AI, Voice AI, higher product limits) will activate automatically!
+                                        Your payment transaction proof has been submitted for verification. The selected plan will activate after approval.
                                     </p>
                                 </div>
                             </div>
@@ -1337,10 +1299,10 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Store performance">
                                 {[
-                                    { title: 'Catalog products', value: products.length, note: planDetails.productLimit === null ? 'No cap on this plan' : `${Math.max(0, planDetails.productLimit - products.length)} remaining`, icon: Package, tone: 'bg-blue-50 text-blue-700' },
+                                    { title: 'Catalog products', value: products.length, note: productLimit === null ? (pricingLoading ? 'Loading plan limit…' : 'Limit unavailable') : `${Math.max(0, productLimit - products.length)} remaining`, icon: Package, tone: 'bg-blue-50 text-blue-700' },
                                     { title: 'Orders received', value: orders.length, note: `${pendingOrders} awaiting action`, icon: ShoppingBag, tone: 'bg-violet-50 text-violet-700' },
                                     { title: 'Sales recorded', value: formatPKR(totalRevenue), note: 'Total from loaded orders', icon: Wallet, tone: 'bg-emerald-50 text-emerald-700' },
-                                    { title: 'Categories', value: planDetails.categoryLimit === 0 ? 'Locked' : categories.length, note: planDetails.categoryLimit === 0 ? 'Available on Pro & VIP' : planDetails.categoryLimit === null ? 'No cap on this plan' : `${Math.max(0, planDetails.categoryLimit - categories.length)} remaining`, icon: Tag, tone: planDetails.categoryLimit === 0 ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-700' },
+                                    { title: 'Categories', value: categoryLimit === 0 ? 'Locked' : categories.length, note: categoryLimit === 0 ? `Available on ${categoryPlans.map((plan) => plan.name).join(', ')}` : categoryLimit === null ? (pricingLoading ? 'Loading plan limit…' : 'Limit unavailable') : `${Math.max(0, categoryLimit - categories.length)} remaining`, icon: Tag, tone: categoryLimit === 0 ? 'bg-slate-100 text-slate-400' : 'bg-amber-50 text-amber-700' },
                                 ].map(({ title, value, note, icon: Icon, tone }) => (
                                     <article key={title} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                                         <div className="flex items-start justify-between"><p className="text-xs font-medium text-slate-500">{title}</p><span className={`grid size-9 place-items-center rounded-lg ${tone}`}><Icon size={17} /></span></div>
@@ -1381,7 +1343,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p>
-                                                <h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{PLAN_DETAILS[selectedPlan].title} plan</h3>
+                                                <h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{selectedPlanDetails?.name ?? (pricingLoading ? 'Loading plan…' : planName(selectedPlan))} plan</h3>
                                                 {paymentStatus === 'pending_approval' && (
                                                     <span 
                                                         className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold border px-2 py-0.5 rounded-md"
@@ -1401,26 +1363,26 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                             <div>
                                                 <div className="mb-1.5 flex justify-between text-[10px]">
                                                     <span className="text-slate-500">Products</span>
-                                                    <span className="font-semibold text-slate-700">{products.length} / {PLAN_DETAILS[selectedPlan].productLimit ?? '∞'}</span>
+                                                    <span className="font-semibold text-slate-700">{products.length} / {selectedPlanDetails?.limits?.products ?? '—'}</span>
                                                 </div>
                                                 <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                                                    <div className="h-full rounded-full transition-all" style={{ backgroundColor: themeColor, width: `${PLAN_DETAILS[selectedPlan].productLimit ? Math.min(100, products.length / PLAN_DETAILS[selectedPlan].productLimit * 100) : products.length ? 100 : 0}%` }} />
+                                                    <div className="h-full rounded-full transition-all" style={{ backgroundColor: themeColor, width: `${selectedPlanProductLimit !== null && selectedPlanProductLimit > 0 ? Math.min(100, (products.length / selectedPlanProductLimit) * 100) : 0}%` }} />
                                                 </div>
                                             </div>
                                             <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
                                                 <span className="text-slate-500">Categories</span>
-                                                <span className="font-semibold text-slate-700">{PLAN_DETAILS[selectedPlan].categoryLimit === 0 ? 'Locked on Free (Upgrade to Pro)' : `${categories.length} / ${PLAN_DETAILS[selectedPlan].categoryLimit ?? '∞'}`}</span>
+                                                <span className="font-semibold text-slate-700">{selectedPlanDetails?.limits?.categories === 0 ? 'Not included' : `${categories.length} / ${selectedPlanDetails?.limits?.categories ?? '—'}`}</span>
                                             </div>
                                             <div className="flex items-center justify-between text-[11px]">
                                                 <span className="text-slate-500">Checkout</span>
-                                                <span className="text-right font-medium text-slate-700">{PLAN_DETAILS[selectedPlan].checkout}</span>
+                                                <span className="text-right font-medium text-slate-700">{selectedPlanDetails?.features.join(', ') || '—'}</span>
                                             </div>
-                                            {PLAN_DETAILS[selectedPlan].perCategoryLimit && (
+                                            {selectedPlanDetails?.limits?.productsPerCategory ? (
                                                 <div className="flex items-center justify-between text-[11px]">
                                                     <span className="text-slate-500">Products per category</span>
-                                                    <span className="font-medium text-slate-700">Up to {PLAN_DETAILS[selectedPlan].perCategoryLimit}</span>
+                                                    <span className="font-medium text-slate-700">Up to {selectedPlanProductsPerCategory ?? '—'}</span>
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
                                         <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-[10px] text-slate-600">
                                             <Check size={13} className="shrink-0 text-emerald-600" />
@@ -1451,11 +1413,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <div>
                                         <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Plan guide</p>
                                         <h3 className="mt-1 text-base font-semibold text-slate-900">Subscription Plans & Status</h3>
-                                        <p className="mt-1 text-xs text-slate-500">Select or upgrade your plan anytime to unlock WhatsApp ordering, higher catalog caps, and AI features.</p>
+                                        <p className="mt-1 text-xs text-slate-500">Review the current plan prices and included features, then choose an available subscription.</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold capitalize text-slate-700 border border-slate-200">
-                                            Selected: {PLAN_DETAILS[selectedPlan].title}
+                                            Selected: {selectedPlanDetails?.name ?? planName(selectedPlan)}
                                         </span>
                                         {paymentStatus === 'pending_approval' && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-bold text-amber-800 border border-amber-300">
@@ -1464,30 +1426,23 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         )}
                                     </div>
                                 </div>
+                                {pricingError && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pricingError}</p>}
                                 <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                    {(['basic', 'pro', 'business'] as Plan[]).map((plan) => {
-                                        const details = PLAN_DETAILS[plan];
-                                        const isSelected = plan === selectedPlan;
+                                    {pricingPlans.map((details) => {
+                                        const plan = details.plan_key;
+                                        const isSelected = plan !== null && plan === selectedPlan;
                                         return (
                                             <article 
-                                                key={plan} 
+                                                key={details.id} 
                                                 className={`relative flex flex-col justify-between rounded-2xl border p-5 transition shadow-xs ${
                                                     isSelected 
                                                         ? 'border-blue-500 bg-blue-50/40 ring-2 ring-blue-200' 
                                                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
                                                 }`}
                                             >
-                                                {details.badge && (
-                                                    <span 
-                                                        className="absolute -top-2.5 right-4 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-xs"
-                                                        style={{ backgroundColor: plan === 'pro' ? themeColor : '#0f172a' }}
-                                                    >
-                                                        {details.badge}
-                                                    </span>
-                                                )}
                                                 <div>
                                                     <div className="flex items-center justify-between">
-                                                        <h4 className="text-base font-extrabold capitalize text-slate-900">{details.title}</h4>
+                                                        <h4 className="text-base font-extrabold capitalize text-slate-900">{details.name}</h4>
                                                         {isSelected && (
                                                             <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
                                                                 paymentStatus === 'pending_approval'
@@ -1498,11 +1453,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="mt-1 text-xs font-bold text-slate-700">{details.priceLabel}</p>
+                                                    <p className="mt-1 text-xs font-bold text-slate-700">{formatPricingPlanPrice(details.price, details.billing_cycle)}</p>
 
                                                     <ul className="mt-4 space-y-2.5 text-[11px] text-slate-600">
-                                                        {details.features.map((feat) => (
-                                                            <li key={feat} className="flex items-start gap-2">
+                                                        {details.features.map((feat, featureIndex) => (
+                                                            <li key={`${details.id}-${featureIndex}-${feat}`} className="flex items-start gap-2">
                                                                 <Check size={13} className="mt-0.5 shrink-0 text-emerald-600" />
                                                                 <span>{feat}</span>
                                                             </li>
@@ -1519,7 +1474,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                                 </div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setUpgradeModalPlan(plan)}
+                                                                    onClick={() => { if (plan) { setUpgradeModalPlan(plan); refreshPricingPlans(); } }}
                                                                     className="w-full text-center text-[10px] font-semibold text-slate-500 hover:text-blue-600 cursor-pointer"
                                                                 >
                                                                     Update / Re-submit Payment Proof
@@ -1530,19 +1485,21 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                                 <CheckCircle2 size={14} className="text-blue-600" /> Current Selected Plan
                                                             </div>
                                                         )
-                                                    ) : (
+                                                    ) : plan ? (
                                                         <button
                                                             type="button"
-                                                            onClick={() => setUpgradeModalPlan(plan)}
+                                                            onClick={() => { setUpgradeModalPlan(plan); refreshPricingPlans(); }}
                                                             className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold text-white shadow-sm transition hover:opacity-90 active:scale-95 cursor-pointer"
                                                             style={{
                                                                 backgroundColor: plan === 'business' ? '#0f172a' : themeColor,
                                                             }}
                                                         >
-                                                            {plan === 'basic' 
-                                                                ? 'Switch to Basic' 
-                                                                : `Select ${details.title}`}
+                                                            {plan === 'basic' ? 'Switch to Basic' : `Select ${details.name}`}
                                                         </button>
+                                                    ) : (
+                                                        <p className="rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-center text-xs font-medium text-slate-500">
+                                                            Contact support to select this plan.
+                                                        </p>
                                                     )}
                                                 </div>
                                             </article>
@@ -1859,13 +1816,13 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 <div className="pt-3 border-t">
                                     <label className="block text-[11px] font-bold mb-1 flex items-center justify-between">
                                         <span>WhatsApp Direct Integration</span>
-                                        {!canUseWhatsapp && <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded font-bold">Pro and Business</span>}
+                                        {!canUseWhatsapp && <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded font-bold">{whatsappPlans.map((candidatePlan) => candidatePlan.name).join(', ')}</span>}
                                     </label>
                                     {canUseWhatsapp ? (
                                         <input type="text" value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} placeholder="03001234567" className="w-full p-2.5 border rounded-lg text-xs" />
                                     ) : (
                                         <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 space-y-2">
-                                            <p>WhatsApp ordering is available on Pro and Business plans. Your Basic plan continues to support standard checkout.</p>
+                                            <p>WhatsApp ordering is available on {whatsappPlans.map((candidatePlan) => candidatePlan.name).join(', ')} plans.</p>
                                         </div>
                                     )}
                                 </div>
@@ -1883,28 +1840,30 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog organization</p>
                                     <h3 className="mt-1 text-base font-semibold text-slate-900">Product categories</h3>
                                     <p className="mt-1 text-xs text-slate-500">
-                                        {planDetails.categoryLimit === 0 
-                                            ? 'Categories are locked on the Free Starter plan. Upgrade to Pro Merchant or Advance VIP to add and organize categories.'
-                                            : planDetails.categoryLimit === null 
-                                                ? 'Your Business plan has no category cap configured.' 
-                                                : `${categories.length} of ${planDetails.categoryLimit} categories used on your ${planDetails.title} plan.`}
+                                        {categoryLimit === 0
+                                            ? `Categories are not included on the ${planDetails?.name ?? planName(storePlan)} plan. Upgrade to a plan with category support.`
+                                            : categoryLimit === null
+                                                ? pricingLoading ? 'Loading your current category allowance…' : 'Your category allowance is currently unavailable.'
+                                                : `${categories.length} of ${categoryLimit} categories used on your ${planDetails?.name ?? planName(storePlan)} plan.`}
                                     </p>
                                 </div>
-                                {planDetails.categoryLimit === 0 && (
+                                {categoryLimit === 0 && (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 border border-amber-200">
                                         <Lock size={12} /> Locked on Free
                                     </span>
                                 )}
                             </div>
 
-                            {planDetails.categoryLimit === 0 ? (
+                            {categoryLimit === 0 ? (
                                 <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-5 text-center">
                                     <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-100 text-amber-700 mb-3 shadow-xs">
                                         <Lock size={22} />
                                     </div>
-                                    <h4 className="text-sm font-bold text-slate-900">Categories are a Pro & VIP Feature</h4>
+                                    <h4 className="text-sm font-bold text-slate-900">
+                                        Categories are available on {categoryPlans.map((candidatePlan) => candidatePlan.name).join(', ')}
+                                    </h4>
                                     <p className="mt-1 text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-                                        On the Free Starter plan, all your products are displayed directly in your storefront collection. Upgrade to <strong className="text-slate-800">Pro Merchant</strong> to unlock up to 5 categories, or <strong className="text-slate-800">Advance VIP</strong> for unlimited categories.
+                                        Your current plan displays products directly in your storefront collection. Upgrade to a plan with category support to organize your catalog.
                                     </p>
                                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                                         <button
@@ -1926,12 +1885,12 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                             onChange={e => setCatName(e.target.value)} 
                                             placeholder="Category name (e.g. Footwear, Perfumes, Summer Lawn)" 
                                             required 
-                                            disabled={planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit} 
+                                            disabled={!planDetails?.limits || (categoryLimit !== null && categories.length >= categoryLimit)} 
                                             className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-blue-400 disabled:bg-slate-100" 
                                         />
                                         <button 
                                             type="submit" 
-                                            disabled={uploadingCatLogo || !isVerified || (planDetails.categoryLimit !== null && categories.length >= planDetails.categoryLimit)} 
+                                            disabled={uploadingCatLogo || !isVerified || !planDetails?.limits || (categoryLimit !== null && categories.length >= categoryLimit)} 
                                             className="rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:opacity-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" 
                                             style={{ backgroundColor: themeColor }}
                                         >
@@ -1992,7 +1951,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             <div className="h-fit rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Catalog management</p>
                                 <h3 className="mt-1 text-base font-semibold text-slate-900">{editingProdId ? 'Edit product' : 'Add a product'}</h3>
-                                <p className="mb-4 mt-1 text-xs text-slate-500">{products.length} / {planDetails.productLimit ?? '∞'} products used on {planDetails.title}.</p>
+                                <p className="mb-4 mt-1 text-xs text-slate-500">{products.length} / {productLimit ?? '—'} products used on {planDetails?.name ?? (pricingLoading ? 'loading plan limits' : planName(storePlan))}.</p>
                                 <form onSubmit={handleSaveProduct} className="space-y-4">
                                     <div>
                                         <label className="mb-1 block text-[11px] font-semibold text-slate-700">Product name</label>
@@ -2005,11 +1964,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <div>
                                         <div className="flex items-center justify-between mb-1">
                                             <label className="block text-[11px] font-semibold text-slate-700">Category</label>
-                                            {planDetails.categoryLimit === 0 ? (
+                                            {categoryLimit === 0 ? (
                                                 <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700">
-                                                    <Lock size={10} /> Locked on Free (Pro/VIP feature)
+                                                    <Lock size={10} /> Not included on {planDetails?.name ?? planName(storePlan)}
                                                 </span>
-                                            ) : (
+                                            ) : planDetails?.limits ? (
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -2022,13 +1981,15 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                 >
                                                     {isAddingNewCategory ? '← Choose existing category' : '+ Type new category'}
                                                 </button>
+                                            ) : (
+                                                <span className="text-[10px] text-slate-500">Loading plan features…</span>
                                             )}
                                         </div>
-                                        {planDetails.categoryLimit === 0 ? (
+                                        {categoryLimit === 0 ? (
                                             <input
                                                 type="text"
                                                 disabled
-                                                value="All Products (Categories locked on Free plan)"
+                                                value={`All Products (Categories unavailable on ${planDetails?.name ?? planName(storePlan)} plan)`}
                                                 className="w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-500 cursor-not-allowed"
                                             />
                                         ) : isAddingNewCategory ? (
@@ -2208,11 +2169,16 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
 
 
-                                    <button type="submit" disabled={uploadingImage || !isVerified || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
+                                    <button type="submit" disabled={uploadingImage || !isVerified || !planDetails?.limits || (!editingProdId && productLimit !== null && products.length >= productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                                         {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
                                     </button>
+<<<<<<< HEAD
                                     {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdSizes(''); setProdColors(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
                                     {!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails.title} product limit. Upgrade your plan to add more.</p>}
+=======
+                                    {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
+                                    {!editingProdId && productLimit !== null && products.length >= productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails?.name ?? planName(storePlan)} product limit. Upgrade your plan to add more.</p>}
+>>>>>>> 5c7779b (Fetch dynamic subscription plans and pricing from backend database)
                                 </form>
                             </div>
 
@@ -2846,37 +2812,26 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 Upgrade to Keep {storeName} Active
                             </h3>
                             <p className="text-xs text-slate-600 leading-relaxed max-w-md mx-auto">
-                                Your free trial period has concluded. Activate a Pro or Business subscription to unlock all features, keep your live storefront accessible, and process orders.
+                                Your free trial period has concluded. Select an available paid subscription to continue.
                             </p>
                         </div>
 
-                        <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200 text-left space-y-2 text-xs">
-                            <p className="font-bold text-slate-800">What unlocks immediately after payment:</p>
-                            <ul className="space-y-1.5 text-[11px] text-slate-600">
-                                <li className="flex items-center gap-2">✓ Instant reactivation of dashboard & live storefront</li>
-                                <li className="flex items-center gap-2">✓ Direct 1-Click WhatsApp customer ordering unlocked</li>
-                                <li className="flex items-center gap-2">✓ Full catalog access with higher product & category caps</li>
-                                <li className="flex items-center gap-2">✓ Bexi AI Store Assistant & marketing automation</li>
-                            </ul>
+                        {pricingError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pricingError}</p>}
+                        <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+                            {pricingPlans.filter((plan) => plan.plan_key && plan.plan_key !== 'basic' && Number(plan.price) > 0).map((plan) => (
+                                <button
+                                    key={plan.id}
+                                    type="button"
+                                    disabled={pricingLoading}
+                                    onClick={() => { if (plan.plan_key) { setUpgradeModalPlan(plan.plan_key); refreshPricingPlans(); } }}
+                                    className="flex-1 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95 disabled:opacity-50"
+                                    style={{ backgroundColor: plan.plan_key === 'business' ? '#0f172a' : themeColor }}
+                                >
+                                    {`Activate ${plan.name} · ${formatPricingPlanPrice(plan.price, plan.billing_cycle)}`}
+                                </button>
+                            ))}
                         </div>
-
-                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setUpgradeModalPlan('pro')}
-                                className="flex-1 rounded-xl py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                Activate Pro
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setUpgradeModalPlan('business')}
-                                className="flex-1 rounded-xl bg-slate-900 py-3 text-xs font-bold text-white shadow-md transition hover:scale-105 active:scale-95"
-                            >
-                                Activate Business
-                            </button>
-                        </div>
+                        {pricingLoading && <p role="status" className="text-xs text-slate-500">Refreshing available plans…</p>}
                     </div>
                 </div>
             )}
@@ -2895,10 +2850,12 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     Upgrade Plan
                                 </span>
                                 <h3 className="mt-1.5 text-lg sm:text-xl font-extrabold text-slate-900">
-                                    {PLAN_DETAILS[upgradeModalPlan].title} Plan Subscription
+                                    {modalPlanDetails?.name ?? (pricingLoading ? 'Loading plan…' : planName(upgradeModalPlan))} Plan Subscription
                                 </h3>
                                 <p className="text-xs text-slate-500 font-medium">
-                                    {upgradeModalPlan === 'basic' ? 'No payment required for Basic plan.' : `Billed monthly at ${PLAN_DETAILS[upgradeModalPlan].priceLabel}. Cancel or switch anytime.`}
+                                    {modalPlanDetails
+                                        ? `${formatPricingPlanPrice(modalPlanDetails.price, modalPlanDetails.billing_cycle)}${Number(modalPlanDetails.price) > 0 ? ` · Billed ${modalPlanDetails.billing_cycle}.` : ''}`
+                                        : pricingError ?? 'Loading current plan pricing…'}
                                 </p>
                             </div>
                             <button
@@ -2910,6 +2867,8 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             </button>
                         </div>
 
+                        {pricingError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pricingError}</p>}
+
                         {/* Plan Features Preview */}
                         <div 
                             className="rounded-2xl p-4 border space-y-2 text-xs"
@@ -2917,11 +2876,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         >
                             <p className="font-bold text-slate-900 flex items-center gap-1.5">
                                 <CheckCircle2 size={15} style={{ color: themeColor }} />
-                                Features unlocked on {PLAN_DETAILS[upgradeModalPlan].title}:
+                                Features available on {modalPlanDetails?.name ?? planName(upgradeModalPlan)}:
                             </p>
                             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
-                                {PLAN_DETAILS[upgradeModalPlan].features.map((feat) => (
-                                    <li key={feat} className="flex items-center gap-1.5">
+                                {(modalPlanDetails?.features ?? []).map((feat, featureIndex) => (
+                                    <li key={`${modalPlanDetails?.id}-${featureIndex}-${feat}`} className="flex items-center gap-1.5">
                                         <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: themeColor }} />
                                         <span>{feat}</span>
                                     </li>
@@ -2964,7 +2923,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send PKR {PLAN_DETAILS[upgradeModalPlan].pricePKR} to platform account</span>
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send {formatPricingPlanPrice(modalPlanDetails?.price ?? 0, modalPlanDetails?.billing_cycle ?? '')} to platform account</span>
                                         <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay'}</span>
                                     </div>
                                     {subscriptionPaymentAccounts[paymentMethod].number ? (
@@ -3044,7 +3003,9 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             </div>
                         ) : (
                             <div className="rounded-2xl bg-slate-50 p-4 text-center text-xs text-slate-600 border border-slate-200">
-                                Switching to the Basic plan is free of charge. Your product limit will be 20 items.
+                                {modalPlanDetails
+                                    ? `Switching to ${modalPlanDetails.name} costs ${formatPricingPlanPrice(modalPlanDetails.price, modalPlanDetails.billing_cycle)}.`
+                                    : 'Plan details are unavailable.'}
                             </div>
                         )}
 
@@ -3053,7 +3014,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             <div className="text-left w-full sm:w-auto">
                                 <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Due</span>
                                 <span className="text-base sm:text-lg font-black text-slate-900">
-                                    {PLAN_DETAILS[upgradeModalPlan].priceLabel}
+                                    {modalPlanDetails ? formatPricingPlanPrice(modalPlanDetails.price, modalPlanDetails.billing_cycle) : 'Unavailable'}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2.5 w-full sm:w-auto">
@@ -3066,7 +3027,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 </button>
                                 <button
                                     type="button"
-                                    disabled={isUpgrading}
+                                    disabled={isUpgrading || pricingLoading || Boolean(pricingError) || !modalPlanDetails || (upgradeModalPlan === 'basic' && Number(modalPlanDetails.price) !== 0)}
                                     onClick={() => handleActivatePlan(upgradeModalPlan)}
                                     className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:opacity-95 active:scale-95 disabled:opacity-50"
                                     style={{

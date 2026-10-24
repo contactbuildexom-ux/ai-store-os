@@ -10,6 +10,8 @@ import { NICHE_HERO_ASSETS } from "@/lib/ai/hero-niche-resolver";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
 import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
 import { getStoreUrl, isReservedSlug } from "@/lib/store-url";
+import { getActiveSubscriptionPlan, getSubscriptionPlan } from "@/lib/subscription-plans";
+import { fetchActiveSubscriptionPlan } from "@/lib/subscription-plan-access";
 
 type GeneratedProduct = { name: string; price: number; description: string; category_name: string; image_url?: string | null };
 type SocialLinks = Partial<Record<"instagram" | "facebook" | "youtube" | "tiktok" | "x", string>>;
@@ -249,13 +251,6 @@ function normalizeSocialLinks(value: unknown): SocialLinks {
   return links;
 }
 
-function planLimits(planValue: unknown) {
-  const plan = text(planValue, 20).toLowerCase();
-  if (plan === "pro") return { plan: "pro", categories: 5, products: 75 };
-  if (plan === "business" || plan === "advanced" || plan === "advance") return { plan: "business", categories: 20, products: 100 };
-  return { plan: "basic", categories: 0, products: 20 };
-}
-
 function isConfiguredSupabase(client: ReturnType<typeof createAdminClient>): client is NonNullable<ReturnType<typeof createAdminClient>> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!client || !url || url.includes("placeholder-project") || url.includes("your-project")) {
@@ -348,6 +343,26 @@ export async function POST(request: Request) {
         ? "business"
         : "basic";
     const isPaidPlan = selectedPlan === "pro" || selectedPlan === "business";
+    let selectedPlanPrice = 0;
+    if (isPaidPlan) {
+      if (!supabase) {
+        return NextResponse.json({ error: "Live subscription pricing is unavailable. Please try again later." }, { status: 503 });
+      }
+      const { data: pricingPlan, error: pricingError } = await supabase
+        .from("pricing_plans")
+        .select("plan_key, price")
+        .eq("plan_key", selectedPlan)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (pricingError) {
+        return NextResponse.json({ error: "Unable to verify the current subscription price." }, { status: 500 });
+      }
+      if (!pricingPlan || !Number.isFinite(Number(pricingPlan.price)) || Number(pricingPlan.price) < 0) {
+        return NextResponse.json({ error: "This paid plan is not currently available for store creation." }, { status: 409 });
+      }
+      selectedPlanPrice = Number(pricingPlan.price);
+    }
+    const requiresPayment = isPaidPlan && selectedPlanPrice > 0;
     const paymentMethodInput = text(input.payment_method, 50).toLowerCase();
     const paymentMethod = paymentMethodInput === "easypaisa" ? "easypaisa" : "jazzcash";
     const senderName = text(input.sender_name, 120);
@@ -357,7 +372,7 @@ export async function POST(request: Request) {
 
     // A new merchant signing up for a paid plan must send complete payment details.
     // (The modal checks this too, but the server must never trust the browser.)
-    if (isPaidPlan && isMerchantRegistration) {
+    if (requiresPayment && isMerchantRegistration) {
       const senderDigits = senderNumber.replace(/\D/g, "");
       if (senderName.length < 3) {
         return NextResponse.json({ error: "Enter the account title (name) of the account you paid from." }, { status: 400 });
@@ -393,14 +408,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const pendingUpgradeData = isPaidPlan ? {
+    const pendingUpgradeData = requiresPayment ? {
       target_plan: selectedPlan,
       payment_method: paymentMethod,
       sender_name: senderName,
       sender_number: senderNumber,
       transaction_id: transactionId,
       screenshot_url: screenshotBase64 || "",
-      amount: selectedPlan === "business" ? 4999 : 2499,
+      amount: selectedPlanPrice,
       submitted_at: new Date().toISOString(),
       status: "pending_approval",
     } : null;
@@ -409,13 +424,13 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
     let user = null;
-    let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; whatsapp_number?: string | null } | null = null;
+    let targetStore: { id: string; name: string; slug: string; owner_email: string | null; plan: string | null; payment_status?: string | null; whatsapp_number?: string | null } | null = null;
     // Only bind to targetStore if requestedStoreId is explicitly passed and this is NOT a new store registration
     if (requestedStoreId && !isMerchantRegistration) {
       if (merchantSession && supabase) {
         try {
           const { data, error } = await supabase.from("stores")
-            .select("id, name, slug, owner_email, plan, whatsapp_number")
+            .select("id, name, slug, owner_email, plan, payment_status, whatsapp_number")
             .eq("id", requestedStoreId)
             .maybeSingle();
           if (!error && data) {
@@ -434,6 +449,7 @@ export async function POST(request: Request) {
             slug: repoStore.slug,
             owner_email: repoStore.owner_email,
             plan: repoStore.plan,
+            payment_status: repoStore.payment_status,
             whatsapp_number: repoStore.whatsapp_number,
           };
         }
@@ -494,7 +510,7 @@ export async function POST(request: Request) {
         if (supabase) {
           try {
             const { data } = await supabase.from("stores")
-              .select("id, name, slug, owner_email, plan, whatsapp_number")
+              .select("id, name, slug, owner_email, plan, payment_status, whatsapp_number")
               .or(`owner_id.eq.${user.id},user_id.eq.${user.id}`)
               .maybeSingle();
             targetStore = data;
@@ -508,6 +524,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The requested store does not match the authenticated account." }, { status: 403 });
     }
     targetStoreId = targetStore?.id ?? null;
+    const activePlan = targetStore && supabase
+      ? await fetchActiveSubscriptionPlan(supabase, targetStore.id)
+      : getActiveSubscriptionPlan(targetStore?.plan, targetStore?.payment_status);
+    if (targetStore && !activePlan) {
+      return NextResponse.json({ error: "The requested store could not be found." }, { status: 404 });
+    }
+    const generationPlan = activePlan ?? getSubscriptionPlan("basic");
 
     if (targetStore && supabase) {
       const [productsResult, categoriesResult] = await Promise.all([
@@ -583,10 +606,14 @@ export async function POST(request: Request) {
       };
     }
 
-    // For new stores, initial generation limits follow basic plan (0 categories, 20 products) until payment approval
-    const effectivePlanForCatalog = targetStore ? (targetStore.plan || "basic") : "basic";
-    const limits = planLimits(effectivePlanForCatalog);
-    const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName, targetNiche, requestedThemeColor);
+    const generated = normalizeGeneratedStore(
+      rawGenerated,
+      themeKey || requestedTheme,
+      Math.min(generationPlan.limits.categories, generationPlan.limits.aiGeneratedCategories),
+      Math.min(generationPlan.limits.products, generationPlan.limits.aiGeneratedProducts),
+      requestedStoreName,
+      targetNiche
+    );
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
     let store = targetStore;
@@ -841,7 +868,7 @@ export async function POST(request: Request) {
         hero_images: resolvedHeroImagesForRepo,
         plan: activeRepoPlan as any,
         selected_plan: selectedPlan,
-        payment_status: isPaidPlan ? "pending_approval" : "active",
+        payment_status: requiresPayment ? "pending_approval" : "active",
         payment_details: pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {},
         is_verified: false,
         verification_status: 'pending',
@@ -890,7 +917,7 @@ export async function POST(request: Request) {
         name: resolvedStore.name,
         slug: resolvedStore.slug,
         niche: targetNiche,
-        plan: limits.plan,
+        plan: generationPlan.id,
         selected_plan: selectedPlan,
         payment_status: createdStoreId ? "pending" : undefined,
         whatsapp_number: resolvedStore.whatsapp_number,
