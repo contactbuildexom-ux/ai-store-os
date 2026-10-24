@@ -601,7 +601,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
   }
 
   // Eyewear, Sunglasses & Optical Frames
-  if (/\b(sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies)\b/i.test(combined)) {
+  if (/\b(sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|chashma|chashmay|chashme|dhup|dhoop)\b/i.test(combined)) {
     return 'eyewear';
   }
 

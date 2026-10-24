@@ -23,7 +23,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
       const { data: dbStore } = await fetchStoreByIdOrSlug(
         supabase,
         slug,
-        'id, name, slug, plan, selected_plan, payment_status, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details'
+        'id, name, slug, plan, selected_plan, payment_status, whatsapp_number, primary_color, selected_theme, accepts_cod, accepts_advance, advance_percentage, payment_details, tagline, description'
       );
       store = dbStore;
     } catch (e) {
@@ -164,7 +164,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     advance_percentage: store.advance_percentage ?? 50,
     tagline: (store as Record<string, unknown>).tagline as string ?? repoStoreFallback?.tagline ?? null,
     description: (store as Record<string, unknown>).description as string ?? repoStoreFallback?.description ?? null,
-    niche: (store as Record<string, unknown>).niche as string ?? (repoStoreFallback as any)?.niche ?? null,
+    niche: store.payment_details?.niche || (store as Record<string, unknown>).niche as string ?? (repoStoreFallback as any)?.niche ?? null,
     primary_color: resolvedThemeColor,
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
@@ -174,7 +174,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     ...settingsData,
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
-    hero_images: settingsData.hero_images || repoStoreFallback?.hero_images || [],
+    hero_images: (Array.isArray(settingsData.hero_images) && settingsData.hero_images.length > 0) ? settingsData.hero_images : (Array.isArray(store.payment_details?.hero_images) && store.payment_details.hero_images.length > 0) ? store.payment_details.hero_images : repoStoreFallback?.hero_images || [],
     about_title: settingsData.about_title || (repoStoreFallback as any)?.about_title || "",
     about_text: settingsData.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
     about_image: settingsData.about_image || (repoStoreFallback as any)?.about_image || "",

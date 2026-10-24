@@ -32,7 +32,7 @@ export interface StoreHeroInfo {
   altText: string;
 }
 
-const NICHE_HERO_ASSETS: Record<
+export const NICHE_HERO_ASSETS: Record<
   StoreNiche,
   {
     image: string;
@@ -254,7 +254,7 @@ export function detectStoreNiche(
   }
 
   // 3. Eyewear & Sunglasses
-  if (/\b(eyewear|sunglass|sunglasses|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|optical frames|anti blue light)\b/i.test(combined)) {
+  if (/\b(eyewear|sunglass|sunglasses|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|chashma|chashmay|chashme|dhup|dhoop|optical frames|anti blue light)\b/i.test(combined)) {
     return 'eyewear';
   }
 

@@ -121,6 +121,27 @@ const CAPITALS_MAP: Record<string, { country: string; capital: string; urNote?: 
   'netherlands': { country: 'Netherlands', capital: 'Amsterdam' },
   'sweden': { country: 'Sweden', capital: 'Stockholm' },
   'norway': { country: 'Norway', capital: 'Oslo' },
+  'kuwait': { country: 'Kuwait', capital: 'Kuwait City' },
+  'bahrain': { country: 'Bahrain', capital: 'Manama' },
+  'sri lanka': { country: 'Sri Lanka', capital: 'Sri Jayawardenepura Kotte (commercial: Colombo)' },
+  'nepal': { country: 'Nepal', capital: 'Kathmandu' },
+  'singapore': { country: 'Singapore', capital: 'Singapore' },
+  'thailand': { country: 'Thailand', capital: 'Bangkok' },
+  'vietnam': { country: 'Vietnam', capital: 'Hanoi' },
+  'new zealand': { country: 'New Zealand', capital: 'Wellington' },
+  'south africa': { country: 'South Africa', capital: 'Pretoria (executive), Cape Town (legislative), Bloemfontein (judicial)' },
+  'nigeria': { country: 'Nigeria', capital: 'Abuja' },
+  'kenya': { country: 'Kenya', capital: 'Nairobi' },
+  'morocco': { country: 'Morocco', capital: 'Rabat' },
+  'mexico': { country: 'Mexico', capital: 'Mexico City' },
+  'portugal': { country: 'Portugal', capital: 'Lisbon' },
+  'greece': { country: 'Greece', capital: 'Athens' },
+  'ireland': { country: 'Ireland', capital: 'Dublin' },
+  'belgium': { country: 'Belgium', capital: 'Brussels' },
+  'austria': { country: 'Austria', capital: 'Vienna' },
+  'poland': { country: 'Poland', capital: 'Warsaw' },
+  'denmark': { country: 'Denmark', capital: 'Copenhagen' },
+  'finland': { country: 'Finland', capital: 'Helsinki' },
 };
 
 function tryLookupCapital(query: string, isUrdu: boolean): string | null {
@@ -399,6 +420,182 @@ const KNOWLEDGE_BASE: KnowledgeItem[] = [
     patterns: [/\b(biryani)\b/i],
     en: "Pakistani Biryani is made by:\n1. Marinating chicken or mutton with yogurt, ginger-garlic paste, spices (biryani masala, cloves, cardamom, chili).\n2. Cooking onions until golden brown, adding meat to make a rich aromatic korma.\n3. Parboiling basmati rice with whole spices until 70% cooked.\n4. Layering the rice and korma, topping with mint, coriander, fried onions, and saffron milk, then simmering on low heat (Dum) for 15-20 minutes.",
     ur: "Biryani bananay ka mukhtasir tareeqa:\n1. Gosht ko dahi, adrak-lehsan paste aur biryani masalay mein marinate karein.\n2. Pyaaz brown kar ke korma tayyar karein.\n3. Basmati chawal 70% ubaal lein.\n4. Korma aur chawal ki teh (layer) lagayein, ooper podina, zarda rang aur tali hui pyaaz daal kar 15 minute Dum dein.",
+    domain: "lifestyle"
+  },
+
+  // --- MOON LANDING & SPACE ---
+  {
+    patterns: [/\b(moon\s*landing|first\s*man\s*on\s*the\s*moon|chand\s*par\s*pehla\s*insan|neil\s*armstrong|apollo\s*11)\b/i],
+    en: "The first human to walk on the Moon was **Neil Armstrong** on **July 20, 1969**, during NASA's Apollo 11 mission alongside Buzz Aldrin, famously declaring: *'That's one small step for man, one giant leap for mankind.'*",
+    ur: "Chaand par qadam rakhnay wala pehla insaan **Neil Armstrong** tha, jis ne **20 July 1969** ko NASA ke Apollo 11 mission ke tehat chaand par qadam rakha tha.",
+    domain: "science"
+  },
+  // --- COMPUTER & INTERNET INVENTIONS ---
+  {
+    patterns: [/\b(who\s*invented\s*computer|father\s*of\s*computer|computer\s*kis\s*ne\s*banaya|charles\s*babbage)\b/i],
+    en: "**Charles Babbage** is widely considered the 'Father of the Computer' for conceptualizing and inventing the first mechanical computer (the Analytical Engine) in the 1830s. Alan Turing later established the theoretical foundation of modern digital computing.",
+    ur: "Computer ka baani **Charles Babbage** ko mana jata hai, jinho ne 1830 ki dahai mein pehla mechanical computer (Analytical Engine) banaya tha. Modern digital computing ke baani Alan Turing hain.",
+    domain: "technology"
+  },
+  {
+    patterns: [/\b(who\s*invented\s*internet|internet\s*kis\s*ne\s*banaya|origin\s*of\s*internet|tim\s*berners[- ]lee)\b/i],
+    en: "The Internet was developed through the US Department of Defense's **ARPANET** project in the late 1960s with TCP/IP protocols designed by Vint Cerf and Bob Kahn. Later in 1989, **Sir Tim Berners-Lee** invented the **World Wide Web (WWW)**, enabling universal public access.",
+    ur: "Internet ki bunyad 1960s mein US Defense ke **ARPANET** project aur Vint Cerf ke TCP/IP protocols se hui. 1989 mein **Sir Tim Berners-Lee** ne World Wide Web (WWW) banaya jis se internet aam public ke liye accessible hua.",
+    domain: "technology"
+  },
+  // --- WORLD RECORDS & LANDMARKS ---
+  {
+    patterns: [/\b(tallest\s*building|highest\s*building|burj\s*khalifa|sab\s*se\s*oonchi\s*building|sab\s*se\s*oonchi\s*imarat)\b/i],
+    en: "The tallest building in the world is the **Burj Khalifa** in Dubai, United Arab Emirates, standing at **828 meters** (2,717 ft) with 163 floors, officially opened on January 4, 2010.",
+    ur: "Dunya ki sab se oonchi imarat **Burj Khalifa** hai, jo Dubai (UAE) mein waqay hai. Is ki bulandi **828 meters** (2,717 feet) hai aur is ki 163 manzilein hain.",
+    domain: "general_knowledge"
+  },
+  {
+    patterns: [/\b(largest\s*desert|sab\s*se\s*bara\s*sehra|biggest\s*desert|sahara\s*desert)\b/i],
+    en: "The largest desert on Earth overall is the **Antarctic Polar Desert** (approx. 14.2 million sq km). Among hot/subtropical deserts, the **Sahara Desert** in Northern Africa is the largest, spanning over **9.2 million square kilometers**.",
+    ur: "Majmooee tor par dunya ka sab se bara sehra **Antarctica** (polar desert) hai. Garam sehraon mein Northern Africa ka **Sahara Sehra** sab se bara hai (9.2 million square kilometers).",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(deepest\s*point|deepest\s*trench|mariana\s*trench|challenger\s*deep|sab\s*se\s*gehra\s*muqam)\b/i],
+    en: "The deepest point on Earth is **Challenger Deep** in the **Mariana Trench** in the western Pacific Ocean, descending approximately **10,994 meters** (nearly 36,000 feet / 11 km) beneath sea level.",
+    ur: "Dunya ka sab se gehra muqam Pacific Ocean mein waqay **Mariana Trench (Challenger Deep)** hai, jis ki gehraai taqreeban **11,000 meters** (11 kilometer) hai.",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(speed\s*of\s*sound|awaaz\s*ki\s*raftaar|sound\s*ki\s*speed)\b/i],
+    en: "The speed of sound in dry air at 20°C (68°F) is approximately **343 meters per second** (1,235 km/h or 767 mph), known as **Mach 1**.",
+    ur: "Aam darja-e-hararat (20°C) par hawa mein awaaz ki raftaar taqreeban **343 meters per second** (1,235 km/h) hoti hai, jisy Mach 1 bhi kehte hain.",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(age\s*of\s*earth|how\s*old\s*is\s*earth|zameen\s*ki\s*umar|zameen\s*kitni\s*purani)\b/i],
+    en: "Scientists estimate the Earth to be approximately **4.54 billion years old** (± 50 million years), determined through radiometric dating of meteorite and rock samples.",
+    ur: "Radiometric dating aur scientific tehqeeq ke mutabiq zameen ki umar taqreeban **4.54 arab saal** (4.54 billion years) hai.",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(chemical\s*formula\s*of\s*water|formula\s*of\s*water|paani\s*ka\s*formula)\b/i],
+    en: "The chemical formula for water is **H₂O**, consisting of two hydrogen atoms bonded covalently to one oxygen atom.",
+    ur: "Paani ka chemical formula **H₂O** hai, jis mein do hydrogen ke atoms aik oxygen ke atom ke sath jurey hotay hain.",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(periodic\s*table|how\s*many\s*elements|elements\s*in\s*periodic\s*table|periodic\s*table.*elements)\b/i],
+    en: "The modern periodic table contains **118 confirmed chemical elements**, starting from Hydrogen (1) to Oganesson (118). It was first formulated in 1869 by Russian chemist **Dmitri Mendeleev**.",
+    ur: "Modern Periodic Table mein kul **118 chemical elements** hain (Hydrogen se Oganesson tak), jisy 1869 mein Russian chemist **Dmitri Mendeleev** ne murattab kiya tha.",
+    domain: "science"
+  },
+  {
+    patterns: [/\b(what\s*is\s*bitcoin|bitcoin\s*kya\s*hai|cryptocurrency\s*kya\s*hai|crypto\s*kya\s*hai|blockchain)\b/i],
+    en: "**Bitcoin (BTC)** is the world's first decentralized digital cryptocurrency, created in 2009 by the pseudonymous **Satoshi Nakamoto**. It operates on a public distributed ledger called **Blockchain**, enabling peer-to-peer payments without central banking intermediaries.",
+    ur: "**Bitcoin** dunya ki pehli decentralized digital currency hai jo 2009 mein **Satoshi Nakamoto** ne banayi. Ye **Blockchain** technology par kaam karti hai aur kisi central bank ke baghair direct transfer hoti hai.",
+    domain: "technology"
+  },
+  {
+    patterns: [/\b(what\s*is\s*next\.?js|nextjs\s*kya\s*hai|what\s*is\s*react|react\s*kya\s*hai)\b/i],
+    en: "**React** is Meta's declarative JavaScript library for crafting user interfaces. **Next.js** (by Vercel) is the production-grade React framework powering Buildexom, featuring server-side rendering (SSR), App Router, server actions, and instant SEO performance.",
+    ur: "**React** modern user interfaces bananay ki JavaScript library hai, jabkay **Next.js** Vercel ka powerful full-stack framework hai jis par Buildexom bani hai (SSR, fast routing aur SEO ke sath).",
+    domain: "technology"
+  },
+  {
+    patterns: [/\b(currency\s*of|ki\s*currency\s*kya\s*hai|currency\s*kya\s*hai)\b/i],
+    en: `Major world currencies include:
+• **Pakistan**: Pakistani Rupee (PKR / Rs.)
+• **USA**: US Dollar ($ / USD)
+• **UK**: British Pound (£ / GBP)
+• **European Union**: Euro (€ / EUR)
+• **Saudi Arabia**: Saudi Riyal (SAR)
+• **UAE**: UAE Dirham (AED)
+• **Japan**: Japanese Yen (¥ / JPY)
+• **Turkey**: Turkish Lira (TRY)`,
+    ur: `Dunya ki ahem currencies:
+• **Pakistan**: Pakistani Rupee (PKR / Rs.)
+• **Saudi Arabia**: Saudi Riyal (SAR)
+• **UAE**: UAE Dirham (AED)
+• **UK**: British Pound (£ / GBP)
+• **USA**: US Dollar ($ / USD)
+• **Europe**: Euro (€ / EUR)
+• **Japan**: Japanese Yen (¥ / JPY)
+• **Turkey**: Turkish Lira (TRY)`,
+    domain: "general_knowledge"
+  },
+  // --- SUNGLASSES & EYEWEAR SPECIFIC ---
+  {
+    patterns: [/\b(sunglass|sunglasses|polarized|polarization|uv400|blue\s*light|chashma|chashmay|chashme|eyewear|shades)\b/i],
+    en: `🕶️ **Eyewear & Sunglasses Guide**:
+• **Polarized Lenses**: Block blinding reflected glare from roads, water, and car hoods using a specialized horizontal filter for razor-sharp visual clarity.
+• **UV400 Defense**: Shields retinas from 99-100% of harmful UVA and UVB radiation up to 400nm.
+• **Anti-Blue Light**: Neutralizes high-energy visible (HEV) blue rays from digital screens to prevent eye fatigue, dryness, and headaches.`,
+    ur: `🕶️ **Sunglasses aur Eyewear Guide**:
+• **Polarized Lenses**: Zameen, car hoods aur paani se anay wali tez chamak (glare) ko block karti hain taake dhoop mein saaf aur wazeh nazar aaye.
+• **UV400 Protection**: Sooraj ki nuqsandeha UVA aur UVB shuwaon se 100% hifazat faraham karti hai.
+• **Anti-Blue Light**: Mobile aur computer screen ki tez blue light ko rokti hain taake aankhon ki thakan aur dard na ho.`,
+    domain: "lifestyle"
+  },
+  // --- STOREFRONT CUSTOMIZATION & DASHBOARD FEATURES ---
+  {
+    patterns: [/\b(edit\s*about|about\s*section|about\s*image|about\s*kaise\s*change|about\s*us)\b/i],
+    en: `To customize your store's 'About Us' section:
+1. Open your Merchant Dashboard and go to the **'Storefront Settings'** tab.
+2. Scroll down to the **'About Us Story & Media'** section.
+3. Customize your About Title and Brand Story text.
+4. Upload or change the right-side showcase image box directly with your workshop or product picture, then click **'Save Store Settings'**!`,
+    ur: `Store ka 'About Us' section aur right side image edit karne ka tareeqa:
+1. Merchant Dashboard mein **'Storefront Settings'** tab par jayein.
+2. Niche scroll kar ke **'About Us Story & Media'** section par ayein.
+3. Apni marzi ka heading title aur dukan ki story likhein.
+4. Right side wale box mein apni marzi ki picture upload ya change karein aur **'Save Store Settings'** daba dein!`,
+    domain: "platform"
+  },
+  {
+    patterns: [/\b(hero\s*image|hero\s*banner|hero\s*section|slider\s*image|banner\s*image|hero\s*kaise\s*change)\b/i],
+    en: `To manage your Hero Section Carousel images:
+1. Open Merchant Dashboard > **'Storefront Settings'** tab.
+2. In the **'Hero Section Carousel'** panel, you can add, edit, or delete all 3 high-resolution hero images.
+3. Recommended resolution is approximately **1000x500px** (16:9 ratio). Saving updates the live storefront carousel instantly!`,
+    ur: `Hero section ki 3 images change aur manage karne ka tareeqa:
+1. Merchant Dashboard mein **'Storefront Settings'** tab par jayein.
+2. **'Hero Section Carousel'** mein aap teeno (3) images ko add, edit ya delete kar saktay hain.
+3. Recommended resolution taqreeban **1000x500px** (16:9 ratio) hai. Save settings dabate hi storefront par new images live ho jati hain!`,
+    domain: "platform"
+  },
+  {
+    patterns: [/\b(category\s*logo|logo\s*category|category\s*kaise\s*banayein|add\s*category|categories\s*tab)\b/i],
+    en: `To add a category with its logo:
+1. Go to your Merchant Dashboard > **'Categories'** tab.
+2. Click **'+ Add Category'**.
+3. Type your category name (e.g., 'Sunglasses', 'Chronographs', 'Frames') and attach a category logo image.
+4. Once saved, this exact category and its logo will appear in your dashboard and seamlessly across your storefront category filter bar with zero duplicates!`,
+    ur: `Category aur uska logo add karne ka tareeqa:
+1. Merchant Dashboard mein **'Categories'** tab par jayein.
+2. **'+ Add Category'** par click karein.
+3. Category ka name likhein aur sath logo image attach karein.
+4. Save karne par yehi category aap ke dashboard aur storefront par single accurate item ke tor par show hogi, koi duplicate nahi hoga!`,
+    domain: "platform"
+  },
+  {
+    patterns: [/\b(verification|verify|check\s*status|account\s*status|review\s*in\s*progress|reviewing\s*store)\b/i],
+    en: `Your store verification process:
+• Newly generated stores undergo a quick review by the Super Admin to guarantee catalog safety and payment compliance.
+• In your Merchant Dashboard Overview tab, you can view your real-time estimation review timer.
+• Simply click **'Check Verification Status'** to refresh live status. As soon as approved, all tabs, WhatsApp checkout, and AI features unlock permanently!`,
+    ur: `Store verification ka amal:
+• Store create hotay hi Super Admin safety aur payment verification ke liye store review karta hai.
+• Dashboard Overview tab par aap ko review timer nazar ata hai.
+• **'Check Verification Status'** button dabane se live status refresh ho jata hai. Jaise hi approve hota hai, tamam features aur tabs foran unlock ho jatay hain!`,
+    domain: "platform"
+  },
+  {
+    patterns: [/\b(return\s*policy|exchange\s*policy|wapsi|tabdeeli|refund\s*policy)\b/i],
+    en: `For customer trust, stores typically provide a **7-day easy replacement or return policy** for defective, broken, or mismatched items. Customers simply contact your WhatsApp with their order invoice and parcel unboxing photo to initiate replacement.`,
+    ur: `E-commerce stores aam tor par 7 days ki aasan replacement ya exchange policy faraham karti hain. Agar parcel mein koi cheez kharab ya galat nikle to customer WhatsApp par invoice aur photo bhej kar foran replace karwa sakta hai.`,
+    domain: "business"
+  },
+  {
+    patterns: [/\b(ramadan|ramzan|eid|quran|hazrat\s*muhammad|prophet\s*muhammad)\b/i],
+    en: `Prophet Muhammad (PBUH) is the final Messenger of Allah in Islam, to whom the Holy Quran was revealed. Ramadan is the sacred ninth Islamic month of fasting (Sawm) and self-purification, followed by the festive celebration of Eid-ul-Fitr.`,
+    ur: `Hazrat Muhammad (SAW) Allah ke aakhri Rasool hain jin par Quran Majeed nazil hua. Ramadan ul Mubarak Islami saal ka muqaddas maheena hai jis mein Musalman rozay rakhte hain, aur is ke baad Eid-ul-Fitr manayi jati hai.`,
     domain: "lifestyle"
   },
 

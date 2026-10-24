@@ -1153,8 +1153,15 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 <CheckCircle2 size={13} className="text-emerald-600" /> Verified Account
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-300 shadow-2xs">
-                                <Clock size={13} className="text-amber-600 animate-pulse" /> Verification Pending
+                            <span 
+                                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border shadow-2xs"
+                                style={{ 
+                                    backgroundColor: `${themeColor}12`, 
+                                    borderColor: `${themeColor}35`, 
+                                    color: themeColor 
+                                }}
+                            >
+                                <Clock size={13} className="animate-pulse" style={{ color: themeColor }} /> Verification Pending
                             </span>
                         )}
                     </div>
@@ -1172,21 +1179,27 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                     {/* Pending Plan Upgrade Approval Banner */}
                     {pendingUpgradeStatus && (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm text-slate-800">
+                        <div 
+                            className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border p-4 shadow-xs text-slate-800"
+                            style={{ 
+                                backgroundColor: `${themeColor}12`, 
+                                borderColor: `${themeColor}35` 
+                            }}
+                        >
                             <div className="flex items-center gap-3">
-                                <span className="grid size-9 place-items-center rounded-xl bg-amber-500 text-white font-bold shrink-0 shadow-xs">
-                                    <Sparkles size={18} />
-                                </span>
                                 <div>
-                                    <p className="text-xs font-bold text-amber-950">
+                                    <p className="text-xs font-bold text-slate-900">
                                         ⏳ Upgrade to {PLAN_DETAILS[pendingUpgradeStatus as Plan]?.title || 'Pro'} Under Review
                                     </p>
-                                    <p className="text-[11px] text-amber-800">
+                                    <p className="text-[11px] text-slate-600">
                                         Your payment transaction proof has been submitted for verification. Once approved, your upgraded features (Bexi AI, Voice AI, higher product limits) will activate automatically!
                                     </p>
                                 </div>
                             </div>
-                            <span className="rounded-full bg-amber-200/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-900 shrink-0">
+                            <span 
+                                className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shrink-0"
+                                style={{ backgroundColor: themeColor }}
+                            >
                                 Under Review
                             </span>
                         </div>
@@ -1224,24 +1237,26 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                     {/* Verification in Process Timer Banner for Overview */}
                     {!isVerified && (
-                        <div className="relative overflow-hidden rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 p-4 sm:p-5 shadow-sm text-slate-800">
+                        <div 
+                            className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 shadow-xs text-slate-800"
+                            style={{ 
+                                backgroundColor: `${themeColor}12`, 
+                                borderColor: `${themeColor}35` 
+                            }}
+                        >
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div className="flex items-start sm:items-center gap-3.5">
-                                    <div className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-500 text-white shadow-md">
+                                    <div 
+                                        className="relative grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-sm"
+                                        style={{ backgroundColor: themeColor }}
+                                    >
                                         <Clock size={22} className="animate-spin" style={{ animationDuration: '8s' }} />
-                                        <span className="absolute -top-1 -right-1 flex size-3">
-                                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                                            <span className="relative inline-flex size-3 rounded-full bg-amber-600"></span>
-                                        </span>
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <h4 className="text-sm font-bold text-slate-900">
                                                 Verification in process
                                             </h4>
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-950">
-                                                <span className="size-1.5 rounded-full bg-amber-600 animate-pulse" /> Reviewing Store
-                                            </span>
                                         </div>
                                         <p className="mt-1 text-xs text-slate-600 max-w-xl">
                                             Super Admin is reviewing your store. As soon as approved, all tabs, WhatsApp orders, and AI features will automatically unlock.
@@ -1255,22 +1270,25 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                 </div>
 
                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-                                    <div className="flex items-center justify-center gap-2.5 rounded-xl bg-white/90 border border-amber-200 px-4 py-2 shadow-xs">
-                                        <Clock size={16} className="text-amber-600" />
+                                    <div 
+                                        className="flex items-center justify-center gap-2.5 rounded-xl bg-white/95 border px-4 py-2 shadow-xs"
+                                        style={{ borderColor: `${themeColor}30` }}
+                                    >
+                                        <Clock size={16} style={{ color: themeColor }} />
                                         <div className="text-left">
                                             <p className="text-[9px] uppercase tracking-wider font-bold text-slate-500">Est. Review Time</p>
-                                            <p className="text-sm font-black font-mono text-amber-700">{formatTimer(verificationTimerSeconds)}</p>
+                                            <p className="text-sm font-black font-mono" style={{ color: themeColor }}>{formatTimer(verificationTimerSeconds)}</p>
                                         </div>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleCheckVerification}
                                         disabled={checkingVerification}
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
                                         style={{ backgroundColor: themeColor }}
                                     >
                                         <RefreshCw size={14} className={checkingVerification ? "animate-spin" : ""} />
-                                        {checkingVerification ? 'Checking Status…' : 'Check Verification Status'}
+                                        <span>{checkingVerification ? 'Checking Status…' : 'Check Verification Status'}</span>
                                     </button>
                                 </div>
                             </div>
@@ -1375,7 +1393,14 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Your subscription</p>
                                                 <h3 className="mt-1 text-lg font-semibold capitalize text-slate-900">{PLAN_DETAILS[selectedPlan].title} plan</h3>
                                                 {paymentStatus === 'pending_approval' && (
-                                                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                                    <span 
+                                                        className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold border px-2 py-0.5 rounded-md"
+                                                        style={{ 
+                                                            backgroundColor: `${themeColor}12`,
+                                                            borderColor: `${themeColor}35`,
+                                                            color: themeColor
+                                                        }}
+                                                    >
                                                         <Clock size={11} className="animate-spin" /> Verification in process
                                                     </span>
                                                 )}
@@ -1540,17 +1565,29 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
 {/* When unverified, non-overview tabs are locked */}
                     {!isVerified && activeTab !== 'overview' ? (
-                        <div className="rounded-3xl border-2 border-amber-300 bg-gradient-to-b from-white via-amber-50/20 to-white p-8 sm:p-12 text-center shadow-lg space-y-5 max-w-xl mx-auto my-8 animate-in zoom-in-95 duration-200">
-                            <div className="relative mx-auto grid size-20 place-items-center rounded-3xl bg-gradient-to-tr from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-200">
+                        <div 
+                            className="rounded-3xl border-2 p-8 sm:p-12 text-center shadow-lg space-y-5 max-w-xl mx-auto my-8 animate-in zoom-in-95 duration-200 bg-white"
+                            style={{ 
+                                borderColor: `${themeColor}35`,
+                                boxShadow: `0 10px 30px -10px ${themeColor}20`
+                            }}
+                        >
+                            <div 
+                                className="relative mx-auto grid size-20 place-items-center rounded-3xl text-white shadow-lg"
+                                style={{ backgroundColor: themeColor }}
+                            >
                                 <Lock size={36} />
-                                <span className="absolute -top-1 -right-1 flex size-4">
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75"></span>
-                                    <span className="relative inline-flex size-4 rounded-full bg-amber-600 border-2 border-white"></span>
-                                </span>
                             </div>
                             
                             <div className="space-y-1">
-                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 px-3.5 py-1 text-xs font-bold tracking-wide">
+                                <span 
+                                    className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1 text-xs font-bold tracking-wide"
+                                    style={{ 
+                                        backgroundColor: `${themeColor}12`,
+                                        borderColor: `${themeColor}35`,
+                                        color: themeColor
+                                    }}
+                                >
                                     <Clock size={13} className="animate-spin" style={{ animationDuration: '8s' }} /> Verification in Process
                                 </span>
                                 <h3 className="text-xl font-bold text-slate-900 pt-2">
@@ -1562,11 +1599,14 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                             </div>
 
                             {/* Verification in Process Timer Card */}
-                            <div className="rounded-2xl border border-amber-200 bg-white p-4 max-w-md mx-auto shadow-xs flex items-center justify-between gap-4">
+                            <div 
+                                className="rounded-2xl border bg-white p-4 max-w-md mx-auto shadow-xs flex items-center justify-between gap-4"
+                                style={{ borderColor: `${themeColor}30` }}
+                            >
                                 <div className="text-left">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Status</p>
-                                    <p className="text-xs font-bold text-amber-700 flex items-center gap-1.5">
-                                        <span className="size-2 rounded-full bg-amber-500 animate-pulse" /> Review in Progress
+                                    <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: themeColor }}>
+                                        <span className="size-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor }} /> Review in Progress
                                     </p>
                                     {lastVerifiedCheckTime && (
                                         <p className="text-[10px] text-slate-400 mt-0.5">Last checked: {lastVerifiedCheckTime}</p>

@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createMerchantSession, MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
 import { generateStoreFromPrompt, detectNiche, NICHE_IMAGES } from "@/lib/ai/ai-generator";
 import { storeRepo } from "@/lib/store-repository";
+import { NICHE_HERO_ASSETS } from "@/lib/ai/hero-niche-resolver";
 import { verifyEmailVerificationToken } from "@/lib/email-otp";
 import { EMAIL_OTP_REQUIRED } from "@/lib/email-otp-config";
 import { getStoreUrl, isReservedSlug } from "@/lib/store-url";
@@ -489,6 +490,8 @@ export async function POST(request: Request) {
 
     const socialLinks = normalizeSocialLinks(input.social_links);
     const targetNiche = detectNiche(prompt, requestedNiche, requestedStoreName);
+    const heroAssetForRepo = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
+    const resolvedHeroImagesForRepo = [heroAssetForRepo.image, heroAssetForRepo.secondaryImage, heroAssetForRepo.tertiaryImage];
     const generationPrompt = [
       requestedStoreName ? `Use this exact store name: "${requestedStoreName}".` : "",
       targetNiche ? `Store Niche: "${targetNiche}". The store must specialize STRICTLY in this niche. All product names, descriptions, categories, banner text, and footer text must be exclusively for "${targetNiche}". Do not generate products outside of this niche.` : "",
@@ -566,6 +569,9 @@ export async function POST(request: Request) {
       const planToStore = "basic";
       const selectedPlanToStore = normalizedPlan;
 
+      const heroAssetForRepo = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
+      const resolvedHeroImagesForRepo = [heroAssetForRepo.image, heroAssetForRepo.secondaryImage, heroAssetForRepo.tertiaryImage];
+
       if (supabase) {
         // Supabase is configured: attempt robust insertion with automatic fallback
         let insertData: any = null;
@@ -581,7 +587,7 @@ export async function POST(request: Request) {
             plan: planToStore,
             selected_plan: selectedPlanToStore,
             payment_status: isPaidPlan ? "pending_approval" : "active",
-            payment_details: pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {},
+            payment_details: { ...(pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {}), niche: targetNiche, hero_images: resolvedHeroImagesForRepo },
             is_verified: false,
             verification_status: "pending",
             primary_color: generated.theme_color,
@@ -718,12 +724,16 @@ export async function POST(request: Request) {
           } catch {}
         }
 
+        const heroAsset = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
+        const resolvedHeroImages = [heroAsset.image, heroAsset.secondaryImage, heroAsset.tertiaryImage];
+
         await supabase.from("store_settings").upsert([{
           store_id: resolvedStore.id,
           theme_color: generated.theme_color,
           selected_theme: generated.selected_theme,
           banner_text: generated.banner_text,
           footer_text: generated.footer_text,
+          hero_images: resolvedHeroImages,
           social_links: socialLinks,
           updated_at: new Date().toISOString(),
         }], { onConflict: "store_id" });
@@ -755,6 +765,7 @@ export async function POST(request: Request) {
         tagline: generated.banner_text,
         description: generated.footer_text,
         header_title: generated.banner_text,
+        hero_images: resolvedHeroImagesForRepo,
         plan: (selectedPlan === "pro" ? "pro" : selectedPlan === "business" ? "advanced" : "basic") as any,
         selected_plan: selectedPlan,
         payment_status: isPaidPlan ? "pending_approval" : "active",
@@ -833,16 +844,14 @@ export async function POST(request: Request) {
       dashboard_url: `/merchant/${resolvedStore.slug}/dashboard`,
     }, { status: 201 });
 
-    if (resolvedStore.owner_email) {
-      const { token, maxAge } = createMerchantSession(String(resolvedStore.id), String(resolvedStore.slug), String(resolvedStore.owner_email));
-      response.cookies.set(MERCHANT_SESSION_COOKIE, token, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge,
-      });
-    }
+    // Merchant must sign in with email and password to access dashboard
+    response.cookies.set(MERCHANT_SESSION_COOKIE, "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
+    });
 
     return response;
   } catch (error) {
@@ -900,16 +909,13 @@ export async function POST(request: Request) {
         dashboard_url: `/merchant/${saved.slug}/dashboard`,
       }, { status: 201 });
 
-      if (saved.owner_email) {
-        const { token, maxAge } = createMerchantSession(String(saved.id), String(saved.slug), String(saved.owner_email));
-        response.cookies.set(MERCHANT_SESSION_COOKIE, token, {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          maxAge,
-        });
-      }
+      response.cookies.set(MERCHANT_SESSION_COOKIE, "", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: 0,
+      });
 
       return response;
     } catch (fatalErr) {
