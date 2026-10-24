@@ -1235,66 +1235,6 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         </div>
                     )}
 
-                    {/* Verification in Process Timer Banner for Overview */}
-                    {!isVerified && (
-                        <div 
-                            className="relative overflow-hidden rounded-2xl border p-4 sm:p-5 shadow-xs text-slate-800"
-                            style={{ 
-                                backgroundColor: `${themeColor}12`, 
-                                borderColor: `${themeColor}35` 
-                            }}
-                        >
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex items-start sm:items-center gap-3.5">
-                                    <div 
-                                        className="relative grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-sm"
-                                        style={{ backgroundColor: themeColor }}
-                                    >
-                                        <Clock size={22} className="animate-spin" style={{ animationDuration: '8s' }} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <h4 className="text-sm font-bold text-slate-900">
-                                                Verification in process
-                                            </h4>
-                                        </div>
-                                        <p className="mt-1 text-xs text-slate-600 max-w-xl">
-                                            Super Admin is reviewing your store. As soon as approved, all tabs, WhatsApp orders, and AI features will automatically unlock.
-                                        </p>
-                                        {lastVerifiedCheckTime && (
-                                            <p className="mt-1 text-[11px] text-slate-500">
-                                                Last checked: {lastVerifiedCheckTime}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-                                    <div 
-                                        className="flex items-center justify-center gap-2.5 rounded-xl bg-white/95 border px-4 py-2 shadow-xs"
-                                        style={{ borderColor: `${themeColor}30` }}
-                                    >
-                                        <Clock size={16} style={{ color: themeColor }} />
-                                        <div className="text-left">
-                                            <p className="text-[9px] uppercase tracking-wider font-bold text-slate-500">Est. Review Time</p>
-                                            <p className="text-sm font-black font-mono" style={{ color: themeColor }}>{formatTimer(verificationTimerSeconds)}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleCheckVerification}
-                                        disabled={checkingVerification}
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
-                                        style={{ backgroundColor: themeColor }}
-                                    >
-                                        <RefreshCw size={14} className={checkingVerification ? "animate-spin" : ""} />
-                                        <span>{checkingVerification ? 'Checking Status…' : 'Check Verification Status'}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* OVERVIEW */}
                     {activeTab === 'overview' && (
                         <>
