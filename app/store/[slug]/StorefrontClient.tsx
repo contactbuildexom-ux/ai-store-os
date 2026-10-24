@@ -218,8 +218,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
         setModalQty(1);
         setModalActiveImgIdx(0);
         setIsImageZoomed(false);
-        setModalSelectedSize('Standard');
-        setModalSelectedColor('Default');
+        const variants = parseProductVariants(product);
+        setModalSelectedSize(variants.sizes[0] || 'Standard');
+        setModalSelectedColor(variants.colors[0]?.name || 'Default');
     };
 
     // Cart and checkout states
@@ -492,7 +493,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             `Subtotal: ${money(subtotal)}`,
             `Delivery Fee: ${deliveryFee === 0 ? 'FREE' : money(deliveryFee)}`,
             `Grand Total: ${money(finalAmount)}`,
-            `Payment Method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% - ${money(advanceAmount)})` : 'Cash on Delivery (COD)'}`,
+            `Order Confirmation: Direct WhatsApp Order`,
             ``,
             `Please confirm my order and dispatch timeline. Thank you!`,
         ].join('\n');
@@ -559,7 +560,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 `Subtotal: ${money(result.subtotal || subtotal)}`,
                 `Delivery Fee: ${deliveryFee === 0 ? 'FREE' : money(result.delivery_fee || deliveryFee)}`,
                 `Grand Total: ${money(result.total_amount || finalAmount)}`,
-                `Payment Method: ${paymentMethod === 'advance' ? `Advance payment (${store.advance_percentage}% - ${money(result.advance_amount || advanceAmount)})` : 'Cash on Delivery (COD)'}`,
+                `Order Confirmation: Direct WhatsApp Order`,
                 ``,
                 `Please confirm my order and dispatch timeline. Thank you!`,
             ].join('\n');
@@ -1044,7 +1045,11 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 >
                                     <div className="relative aspect-square w-full overflow-hidden bg-slate-50">
                                         <img
-                                            src={item.image_url || 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=800&q=80'}
+                                            src={(() => {
+                                                const rawUrl = (item.image_url || '').split(',')[0]?.trim();
+                                                if (!rawUrl) return 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&w=1000&q=85';
+                                                return rawUrl.includes('unsplash.com') ? rawUrl.replace(/q=\d+/, 'q=85').replace(/w=\d+/, 'w=1000') : rawUrl;
+                                            })()}
                                             alt={item.name}
                                             loading="lazy"
                                             decoding="async"
@@ -1375,9 +1380,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 {settings?.about_text || (() => {
                                     const raw = (liveStore.tagline || liveStore.description || '').trim();
                                     if (raw && !raw.toLowerCase().startsWith('welcome to') && !raw.toLowerCase().includes('aura kicks')) {
-                                        return `${raw}\n\nWelcome to ${liveStore.name}, where we prioritize authentic craftsmanship, transparent pricing, and fast nationwide delivery. Every product is carefully curated, packed securely, and dispatched with Cash on Delivery across Pakistan.`;
+                                        return `${raw}\n\nWelcome to ${liveStore.name}, where we prioritize authentic craftsmanship, transparent pricing, and fast nationwide delivery. Every product is carefully curated, packed securely, and dispatched with express nationwide delivery across Pakistan.`;
                                     }
-                                    return `Welcome to ${liveStore.name}! We are dedicated to providing our customers with high-quality, authentic products and exceptional service. Enjoy convenient Cash on Delivery and express delivery across all cities in Pakistan.`;
+                                    return `Welcome to ${liveStore.name}! We are dedicated to providing our customers with high-quality, authentic products and exceptional service. Enjoy direct WhatsApp ordering and express delivery across all cities in Pakistan.`;
                                 })()}
                             </p>
 
@@ -1391,7 +1396,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                 <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
                                     <span className="text-base sm:text-lg block">🚚</span>
                                     <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Fast Courier</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Nationwide COD</span>
+                                    <span className="text-[9px] text-slate-400 hidden sm:block">Nationwide Delivery</span>
                                 </div>
                                 <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
                                     <span className="text-base sm:text-lg block">💬</span>
@@ -1626,12 +1631,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         <span>Total Amount:</span>
                                         <span style={{ color: themeColor }}>{money(finalAmount)}</span>
                                     </div>
-                                    {paymentMethod === 'advance' && (
-                                        <div className="flex justify-between text-[11px] text-blue-700 font-semibold pt-1">
-                                            <span>Advance Required ({store.advance_percentage}%):</span>
-                                            <span>{money(advanceAmount)}</span>
-                                        </div>
-                                    )}
+                                    
                                 </div>
                             )}
 
@@ -1714,48 +1714,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         />
                                     </div>
 
-                                    {/* Payment Method Selector */}
-                                    <div className="space-y-2 pt-2">
-                                        <label className="text-[10px] font-bold uppercase text-slate-500">Payment Option</label>
-                                        {store.accepts_cod && (
-                                            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-3 text-xs transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
-                                                <div className="flex items-center gap-2.5">
-                                                    <input
-                                                        type="radio"
-                                                        name="payment_method"
-                                                        value="cod"
-                                                        checked={paymentMethod === 'cod'}
-                                                        onChange={() => setPaymentMethod('cod')}
-                                                        className="size-4 accent-emerald-600"
-                                                    />
-                                                    <div>
-                                                        <span className="block font-bold text-slate-800">Cash on Delivery</span>
-                                                        <span className="block text-[10px] text-slate-500">Pay when order arrives</span>
-                                                    </div>
-                                                </div>
-                                                <span className="font-bold text-slate-800">{money(finalAmount)}</span>
-                                            </label>
-                                        )}
-                                        {store.accepts_advance && (
-                                            <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-3 text-xs transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
-                                                <div className="flex items-center gap-2.5">
-                                                    <input
-                                                        type="radio"
-                                                        name="payment_method"
-                                                        value="advance"
-                                                        checked={paymentMethod === 'advance'}
-                                                        onChange={() => setPaymentMethod('advance')}
-                                                        className="size-4 accent-emerald-600"
-                                                    />
-                                                    <div>
-                                                        <span className="block font-bold text-slate-800">Advance Transfer</span>
-                                                        <span className="block text-[10px] text-slate-500">{store.advance_percentage}% advance</span>
-                                                    </div>
-                                                </div>
-                                                <span className="font-bold text-slate-800">{money(advanceAmount)}</span>
-                                            </label>
-                                        )}
-                                    </div>
+                                    
 
                                     {/* Submit Action */}
                                     <button
@@ -1794,9 +1753,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* COMPACT CART FLOATING BAR (NO ARROW, APPEARS ONLY WHEN ITEMS IN CART) */}
-            {totalCartCount > 0 && (
-                <div className="fixed bottom-4 right-4 sm:right-6 z-40 animate-in fade-in slide-in-from-bottom-2">
+            {/* COMPACT CART FLOATING BAR (STACKED ABOVE BEXI AI BUTTON) */}
+            {totalCartCount > 0 && !isAiOpen && (
+                <div className="fixed bottom-20 right-4 sm:right-6 z-40 animate-in fade-in slide-in-from-bottom-2">
                     <button
                         type="button"
                         onClick={() => setIsCartOpen(true)}
@@ -2083,72 +2042,87 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                             </div>
                                         </div>
                                     ) : (
-                                        /* For Apparel, Shoes, Handbags, Accessories: Show Size & Color */
-                                        <>
-                                            {/* Size Selector */}
-                                            <div className="space-y-1.5">
-                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                                    <span>Select Size</span>
-                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize}</span>
-                                                </div>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {(() => {
-                                                        const isFootwear = /\b(shoe|shoes|sneaker|sneakers|kicks|boot|boots|jogger|joggers|footwear)\b/i.test(
-                                                            `${liveStore.name} ${(selectedProductForModal as any).category || ''} ${selectedProductForModal.name}`
-                                                        );
-                                                        const sizes = isFootwear
-                                                            ? ['EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44']
-                                                            : ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'];
-                                                        return sizes.map((size) => (
-                                                            <button
-                                                                key={size}
-                                                                type="button"
-                                                                onClick={() => setModalSelectedSize(size)}
-                                                                className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
-                                                                    modalSelectedSize === size
-                                                                        ? 'text-white border-transparent shadow-xs'
-                                                                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                                }`}
-                                                                style={modalSelectedSize === size ? { backgroundColor: themeColor } : {}}
-                                                            >
-                                                                {size}
-                                                            </button>
-                                                        ));
-                                                    })()}
-                                                </div>
-                                            </div>
-
-                                            {/* Color Selector */}
-                                            <div className="space-y-1.5">
-                                                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                                    <span>Select Color</span>
-                                                    <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor}</span>
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    {[
+                                        (() => {
+                                            const variants = parseProductVariants(selectedProductForModal);
+                                            const isFootwear = /\b(shoe|shoes|sneaker|sneakers|kicks|boot|boots|jogger|joggers|footwear)\b/i.test(
+                                                `${liveStore.name} ${(selectedProductForModal as any).category || ''} ${selectedProductForModal.name}`
+                                            );
+                                            const isApparel = /\b(cloth|clothes|clothing|shirt|pant|kurti|kurta|dress|hoodie|jacket|suit|trouser|jeans|top|apparel|lawn|pret)\b/i.test(
+                                                `${liveStore.name} ${(selectedProductForModal as any).category || ''} ${selectedProductForModal.name}`
+                                            );
+                                            const productSizes = variants.sizes.length > 0
+                                                ? variants.sizes
+                                                : (variants.hasSizes || isFootwear || isApparel)
+                                                    ? (isFootwear ? ['EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44'] : ['Standard', 'Small (S)', 'Medium (M)', 'Large (L)', 'XL'])
+                                                    : [];
+                                            const productColors = variants.colors.length > 0
+                                                ? variants.colors
+                                                : (variants.hasColors || isFootwear || isApparel)
+                                                    ? [
                                                         { name: 'Default', hex: '#0f172a' },
                                                         { name: 'Emerald', hex: '#059669' },
                                                         { name: 'Navy', hex: '#1d4ed8' },
                                                         { name: 'Maroon', hex: '#9f1239' },
                                                         { name: 'Gold', hex: '#d97706' },
-                                                    ].map((c) => (
-                                                        <button
-                                                            key={c.name}
-                                                            type="button"
-                                                            onClick={() => setModalSelectedColor(c.name)}
-                                                            className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
-                                                                modalSelectedColor === c.name
-                                                                    ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
-                                                                    : 'border-slate-200 bg-white hover:border-slate-300'
-                                                            }`}
-                                                        >
-                                                            <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
-                                                            <span>{c.name}</span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </>
+                                                      ]
+                                                    : [];
+
+                                            return (
+                                                <>
+                                                    {productSizes.length > 0 && (
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                                <span>Select Size</span>
+                                                                <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedSize || productSizes[0]}</span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {productSizes.map((size) => (
+                                                                    <button
+                                                                        key={size}
+                                                                        type="button"
+                                                                        onClick={() => setModalSelectedSize(size)}
+                                                                        className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition border ${
+                                                                            (modalSelectedSize === size || (!modalSelectedSize && size === productSizes[0]))
+                                                                                ? 'text-white border-transparent shadow-xs'
+                                                                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                                        }`}
+                                                                        style={(modalSelectedSize === size || (!modalSelectedSize && size === productSizes[0])) ? { backgroundColor: themeColor } : {}}
+                                                                    >
+                                                                        {size}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {productColors.length > 0 && (
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                                                                <span>Select Color</span>
+                                                                <span className="text-[10px] text-slate-500 font-normal">Selected: {modalSelectedColor || productColors[0].name}</span>
+                                                            </div>
+                                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                                {productColors.map((c) => (
+                                                                    <button
+                                                                        key={c.name}
+                                                                        type="button"
+                                                                        onClick={() => setModalSelectedColor(c.name)}
+                                                                        className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition ${
+                                                                            (modalSelectedColor === c.name || (!modalSelectedColor && c.name === productColors[0].name))
+                                                                                ? 'border-slate-900 bg-slate-100 ring-2 ring-slate-900/20 shadow-xs'
+                                                                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                                                        }`}
+                                                                    >
+                                                                        <span className="size-2.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} />
+                                                                        <span>{c.name}</span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            );
+                                        })()
                                     )}
 
                                     {/* Quantity Selector */}

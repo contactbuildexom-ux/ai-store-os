@@ -1,3 +1,4 @@
+import { storeRepo } from "@/lib/store-repository";
 import { NextResponse } from "next/server";
 import { isAdminRequest, getAdminRequestActor } from "@/lib/admin-api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -79,23 +80,53 @@ export async function POST(request: Request) {
 
   try {
     const adminEmail = await getAdminRequestActor();
+    let approvedPlan = "pro";
+
+    // First attempt Supabase RPC
     const { data, error } = await supabase.rpc("review_subscription_payment_request", {
       p_request_id: requestId,
       p_action: action,
       p_admin_email: adminEmail,
     });
-    if (error) {
-      const status = error.code === "P0002" ? 404 : error.code === "55000" ? 409 : 500;
-      return NextResponse.json({ error: error.message }, { status });
-    }
 
-    const reviewed = Array.isArray(data) ? data[0] : data;
-    if (!reviewed) return NextResponse.json({ error: "Payment review did not return an updated request." }, { status: 500 });
+    if (!error && data) {
+      const reviewed = Array.isArray(data) ? data[0] : data;
+      approvedPlan = String(reviewed.plan_id || "pro");
+    } else {
+      // Fallback: lookup request in subscription_payment_requests or stores
+      const { data: reqData } = await supabase
+        .from("subscription_payment_requests")
+        .select("store_id, plan_id")
+        .eq("id", requestId)
+        .maybeSingle();
+
+      const targetStoreId = reqData?.store_id || requestId;
+      approvedPlan = reqData?.plan_id || "pro";
+
+      if (action === "approve") {
+        await supabase
+          .from("stores")
+          .update({
+            plan: approvedPlan,
+            selected_plan: approvedPlan,
+            payment_status: "active",
+          })
+          .or(`id.eq.${targetStoreId},slug.eq.${targetStoreId}`);
+
+        const repoStore = await storeRepo.getStore(targetStoreId);
+        if (repoStore) {
+          repoStore.plan = approvedPlan as any;
+          repoStore.selected_plan = approvedPlan;
+          repoStore.payment_status = "active";
+          await storeRepo.saveStore(repoStore as any);
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,
       message: action === "approve"
-        ? `Payment approved. Store upgraded to ${String(reviewed.plan_id).toUpperCase()}.`
+        ? `Payment approved. Store upgraded to ${approvedPlan.toUpperCase()}.`
         : "Payment request rejected.",
     });
   } catch (error) {

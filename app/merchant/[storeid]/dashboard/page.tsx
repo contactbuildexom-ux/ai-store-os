@@ -1,5 +1,30 @@
 'use client';
 
+function parseProductVariants(product: any) {
+    let hasSizes = Boolean(product?.has_sizes);
+    let hasColors = Boolean(product?.has_colors);
+    let sizes: string[] = Array.isArray(product?.sizes) ? product.sizes : [];
+    let colors: Array<{ name: string; hex: string }> = Array.isArray(product?.colors) 
+        ? product.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c)
+        : [];
+
+    if (typeof product?.description === 'string' && product.description.includes('<!--variants:')) {
+        try {
+            const match = product.description.match(/<!--variants:(.*?)-->/);
+            if (match && match[1]) {
+                const meta = JSON.parse(match[1]);
+                if (meta.has_sizes !== undefined) hasSizes = Boolean(meta.has_sizes);
+                if (meta.has_colors !== undefined) hasColors = Boolean(meta.has_colors);
+                if (Array.isArray(meta.sizes) && meta.sizes.length > 0) sizes = meta.sizes;
+                if (Array.isArray(meta.colors) && meta.colors.length > 0) {
+                    colors = meta.colors.map((c: any) => typeof c === 'string' ? { name: c, hex: '#0f172a' } : c);
+                }
+            }
+        } catch {}
+    }
+    return { hasSizes, hasColors, sizes, colors };
+}
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
@@ -824,13 +849,30 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 }
             }
 
+            const sizesArray = prodSizes.split(',').map(s => s.trim()).filter(Boolean);
+            const colorsArray = prodColors.split(',').map(c => c.trim()).filter(Boolean);
+            const hasSizes = sizesArray.length > 0;
+            const hasColors = colorsArray.length > 0;
+
+            const variantMeta = (hasSizes || hasColors) ? `\n<!--variants:${JSON.stringify({
+                has_sizes: hasSizes,
+                has_colors: hasColors,
+                sizes: sizesArray,
+                colors: colorsArray
+            })}-->` : '';
+            const finalDescription = (prodDesc || '') + variantMeta;
+
             const method = editingProdId ? 'PUT' : 'POST';
             const bodyData: Record<string, unknown> = {
                 store_id: resolvedStoreId,
                 name: prodName,
                 price: Number(prodPrice),
-                description: prodDesc || '',
+                description: finalDescription,
                 category_id: finalCategoryId,
+                has_sizes: hasSizes,
+                has_colors: hasColors,
+                sizes: sizesArray,
+                colors: colorsArray,
             };
             if (imageUrl) bodyData.image_url = imageUrl;
             if (editingProdId) bodyData.id = editingProdId;
@@ -851,6 +893,8 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 setProdCategory('');
                 setNewCategoryInput('');
                 setIsAddingNewCategory(false);
+                setProdSizes('');
+                setProdColors('');
                 setProdImageFiles([]);
                 setEditingProdId(null);
                 setActiveTab('products');
@@ -1106,19 +1150,25 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         </button>
                     ))}
 
-                    {/* Dedicated Voice AI Button - Placed right under [StoreName] Bexi AI, only available on Business plan */}
+                    {/* Dedicated Voice AI Button - Perfectly aligned with other nav buttons, with live audio pulse animation */}
                     {canUseBexiAi && (
                         <button
                             type="button"
                             onClick={() => setIsVoiceAssistantOpen(true)}
-                            className="group relative flex min-h-10 items-center justify-between gap-2 rounded-xl px-2.5 text-left font-semibold transition col-span-2 sm:col-span-4 md:col-span-1 md:w-full md:px-3 bg-linear-to-r from-emerald-600/95 to-teal-600/95 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md active:scale-95 border border-emerald-400/30"
+                            className="group relative flex min-h-10 items-center justify-between gap-2 rounded-xl px-2.5 text-left font-semibold transition md:w-full md:px-3 text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md active:scale-95 border border-emerald-400/40 overflow-hidden"
                             title="Speak and manage your store via Voice AI in Urdu and English"
                         >
-                            <div className="flex items-center gap-2 min-w-0">
-                                <Mic size={15} className="text-emerald-200 animate-pulse shrink-0" />
-                                <span className="text-xs truncate font-bold">Voice AI Assistant</span>
+                            <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="flex items-center gap-2 min-w-0 z-10">
+                                <span className="relative flex size-5 items-center justify-center">
+                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-60" />
+                                    <Mic size={15} className="relative text-white shrink-0" />
+                                </span>
+                                <span className="truncate font-bold">Voice AI</span>
                             </div>
-                            <span className="rounded bg-white/20 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-tight shrink-0">ENG • UR</span>
+                            <span className="rounded bg-black/25 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-tight text-emerald-200 z-10 shrink-0 border border-white/10 animate-pulse">
+                                LIVE
+                            </span>
                         </button>
                     )}
                     <div className="hidden flex-1 md:block" />
@@ -1859,7 +1909,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setActiveTab('subscription')}
+                                            onClick={() => setUpgradeModalPlan('pro')}
                                             className="rounded-lg px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-95"
                                             style={{ backgroundColor: themeColor }}
                                         >
@@ -2086,12 +2136,82 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
                                     </div>
 
+                                    {/* Product Variants (Sizes & Colors) */}
+                                    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-[11px] font-bold text-slate-800">
+                                                Sizes & Colors (Optional Variants)
+                                            </label>
+                                            <span className="text-[10px] text-slate-500">Merchant choice</span>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[10px] font-semibold text-slate-600">Sizes (Comma separated)</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdSizes(prev => prev ? `${prev}, S, M, L, XL` : 'S, M, L, XL')}
+                                                        className="text-[9.5px] font-bold text-blue-600 hover:underline"
+                                                    >
+                                                        + S,M,L,XL
+                                                    </button>
+                                                    <span className="text-slate-300">|</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdSizes(prev => prev ? `${prev}, 39, 40, 41, 42, 43, 44` : '39, 40, 41, 42, 43, 44')}
+                                                        className="text-[9.5px] font-bold text-blue-600 hover:underline"
+                                                    >
+                                                        + Shoes (39-44)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={prodSizes}
+                                                onChange={(e) => setProdSizes(e.target.value)}
+                                                placeholder="e.g. S, M, L, XL or 39, 40, 41, 42"
+                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[10px] font-semibold text-slate-600">Colors (Comma separated)</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdColors(prev => prev ? `${prev}, Black, White, Navy Blue` : 'Black, White, Navy Blue')}
+                                                        className="text-[9.5px] font-bold text-blue-600 hover:underline"
+                                                    >
+                                                        + Black,White,Navy
+                                                    </button>
+                                                    <span className="text-slate-300">|</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProdColors(prev => prev ? `${prev}, Maroon, Olive, Beige` : 'Maroon, Olive, Beige')}
+                                                        className="text-[9.5px] font-bold text-blue-600 hover:underline"
+                                                    >
+                                                        + Maroon,Olive
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={prodColors}
+                                                onChange={(e) => setProdColors(e.target.value)}
+                                                placeholder="e.g. Black, White, Navy Blue, Maroon, Beige"
+                                                className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                            />
+                                        </div>
+                                    </div>
+
 
 
                                     <button type="submit" disabled={uploadingImage || !isVerified || (!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit)} className="w-full rounded-lg px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-50" style={{ backgroundColor: themeColor }}>
                                         {uploadingImage ? 'Uploading Images & Saving...' : editingProdId ? 'Update Product' : 'Publish Product'}
                                     </button>
-                                    {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
+                                    {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdSizes(''); setProdColors(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
                                     {!editingProdId && planDetails.productLimit !== null && products.length >= planDetails.productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails.title} product limit. Upgrade your plan to add more.</p>}
                                 </form>
                             </div>
@@ -2199,6 +2319,9 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                             setProdPrice(String(product.price));
                                                             setProdDesc(product.description || '');
                                                             setProdCategory(product.category_id || '');
+                                                            const existingV = parseProductVariants(product);
+                                                            setProdSizes(existingV.sizes.join(', '));
+                                                            setProdColors(existingV.colors.map((c: any) => c.name || c).join(', '));
                                                             setProdImageFiles([]);
                                                         }}
                                                         className="grid size-8 place-items-center rounded-md text-slate-400 hover:bg-blue-50 hover:text-blue-700 transition"
