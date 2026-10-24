@@ -97,8 +97,8 @@ export function AdminPlanUpgradeApprovals() {
     <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-800">
         <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-            <Clock size={12} /> Pending Approvals
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase leading-none tracking-wider text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+            <Clock size={12} className="shrink-0" /> Pending Approvals
           </span>
           <h3 className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100">Merchant Plan Upgrade Requests</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
