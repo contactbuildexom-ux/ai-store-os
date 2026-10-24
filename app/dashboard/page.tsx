@@ -68,7 +68,7 @@ export default async function DashboardPage() {
         </div>
         <Link href="/dashboard/analytics" prefetch className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50">Platform report <ArrowRight size={14} /></Link>
       </div>
-      {dataError && <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><AlertCircle size={17} className="mt-0.5 shrink-0" />{dataError}</p>}
+      {dataError && <p role="alert" className="flex items-start gap-2 rounded-lg border border-amber-500 bg-amber-100 px-4 py-3 text-sm font-semibold text-amber-950"><AlertCircle size={17} className="mt-0.5 shrink-0" />{dataError}</p>}
       <section className="rise-in grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3" aria-label="Platform metrics">
         {metrics.map(({ label, value, note, icon: Icon, accent }) => (
           <article key={label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

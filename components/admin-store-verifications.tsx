@@ -106,9 +106,9 @@ export function AdminStoreVerifications() {
       </div>
 
       {notice && (
-        <div role={noticeIsError ? "alert" : "status"} className={`flex items-center justify-between gap-3 rounded-lg border p-3 text-xs font-medium ${noticeIsError ? "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200" : "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"}`}>
+        <div role={noticeIsError ? "alert" : "status"} className={`flex items-center justify-between gap-3 rounded-lg border p-3 text-xs font-semibold ${noticeIsError ? "border-rose-500 bg-rose-100 text-rose-950 dark:border-rose-700 dark:bg-rose-950 dark:text-rose-100" : "border-emerald-500 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100"}`}>
           <span>{notice}</span>
-          <button type="button" onClick={() => setNotice(null)} className="shrink-0 underline underline-offset-2">Dismiss</button>
+          <button type="button" onClick={() => setNotice(null)} className="shrink-0 font-bold underline underline-offset-2">Dismiss</button>
         </div>
       )}
 
