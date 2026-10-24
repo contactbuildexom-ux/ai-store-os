@@ -79,9 +79,9 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      {/* New Store Verifications & Plan Upgrade Approvals */}
-      <AdminStoreVerifications />
+      {/* Merchant plan approvals appear before new store verifications. */}
       <AdminPlanUpgradeApprovals />
+      <AdminStoreVerifications />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(270px,0.8fr)]">
         <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
