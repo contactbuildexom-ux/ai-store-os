@@ -164,7 +164,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     advance_percentage: store.advance_percentage ?? 50,
     tagline: (store as Record<string, unknown>).tagline as string ?? repoStoreFallback?.tagline ?? null,
     description: (store as Record<string, unknown>).description as string ?? repoStoreFallback?.description ?? null,
-    niche: store.payment_details?.niche || (store as Record<string, unknown>).niche as string ?? (repoStoreFallback as any)?.niche ?? null,
+    niche: (store.payment_details?.niche || ((store as Record<string, unknown>).niche as string)) ?? (repoStoreFallback as any)?.niche ?? null,
     primary_color: resolvedThemeColor,
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
