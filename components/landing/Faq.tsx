@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { MouseEvent } from "react";
-import JsonLd from "@/components/seo/JsonLd"
+import JsonLd from "@/components/seo/JsonLd";
 
 const faqs = [
   {
@@ -62,7 +62,7 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .faq-in { animation: none; } }
 `;
 
-/* "Talk to our team" -> Footer ke social icons tak scroll + blink */
+/* "Contact us" scrolls to the footer social icons and blinks them */
 function goToSocials(e: MouseEvent<HTMLAnchorElement>) {
   const box = document.getElementById("contact-socials");
   if (!box) return;
@@ -99,7 +99,7 @@ export default function Faq() {
         <div className="text-center lg:sticky lg:top-28 lg:self-start">
           <span>FAQ</span>
           <h2 className="text-brand-navy">
-                        Online store builder questions,{" "}
+            Online store builder questions,{" "}
             <span className="text-gradient">answered</span>
           </h2>
           <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-slate-600">
@@ -159,7 +159,7 @@ export default function Faq() {
                     onClick={() => setOpen(isOpen ? null : i)}
                     className="flex w-full cursor-pointer items-center gap-4 p-5 text-left"
                   >
-                    {/* ? icon */}
+                    {/* Question mark icon */}
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-300 ${
                         isOpen
@@ -188,25 +188,34 @@ export default function Faq() {
                       {item.q}
                     </span>
 
+                    {/* Plus / close indicator: two bars centered with absolute positioning,
+                        so it stays exactly in the middle of the circle */}
                     <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                      className={`relative block h-8 w-8 shrink-0 rounded-full border transition-colors duration-300 ${
                         isOpen
-                          ? "rotate-45 border-[#1976d2] bg-[#1976d2] text-white"
-                          : "border-blue-200 text-[#1976d2]"
+                          ? "border-[#1976d2] bg-[#1976d2]"
+                          : "border-blue-200 bg-white"
                       }`}
                       aria-hidden="true"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
+                      <span
+                        className={`absolute left-1/2 top-1/2 block h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 transition-transform duration-300 ${
+                          isOpen ? "rotate-45" : "rotate-0"
+                        }`}
                       >
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
+                        {/* Horizontal bar */}
+                        <span
+                          className={`absolute left-0 top-1/2 block h-[2px] w-full -translate-y-1/2 rounded-full ${
+                            isOpen ? "bg-white" : "bg-[#1976d2]"
+                          }`}
+                        />
+                        {/* Vertical bar */}
+                        <span
+                          className={`absolute left-1/2 top-0 block h-full w-[2px] -translate-x-1/2 rounded-full ${
+                            isOpen ? "bg-white" : "bg-[#1976d2]"
+                          }`}
+                        />
+                      </span>
                     </span>
                   </button>
 

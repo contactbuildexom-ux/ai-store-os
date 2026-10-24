@@ -28,6 +28,9 @@ type GeneratedStore = {
 // so base slugs stop at 54 and a suffix such as "-2" or "-12" is added only if needed.
 const MAX_BASE_SLUG_LENGTH = 54;
 
+// Payment screenshot arrives as a base64 data URL (a 2 MB image is about 2.8M characters).
+const MAX_SCREENSHOT_CHARS = 3_000_000;
+
 function text(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
@@ -350,6 +353,44 @@ export async function POST(request: Request) {
     const transactionId = text(input.transaction_id, 200);
     const screenshotBase64 = typeof input.screenshot_base64 === "string" ? input.screenshot_base64 : "";
 
+    // A new merchant signing up for a paid plan must send complete payment details.
+    // (The modal checks this too, but the server must never trust the browser.)
+    if (isPaidPlan && isMerchantRegistration) {
+      const senderDigits = senderNumber.replace(/\D/g, "");
+      if (senderName.length < 3) {
+        return NextResponse.json({ error: "Enter the account title (name) of the account you paid from." }, { status: 400 });
+      }
+      if (senderDigits.length < 10 || senderDigits.length > 13) {
+        return NextResponse.json({ error: "Enter a valid sender mobile / account number." }, { status: 400 });
+      }
+      if (!/^[A-Za-z0-9]{6,40}$/.test(transactionId)) {
+        return NextResponse.json({ error: "Enter the Transaction ID from your payment message (letters and numbers only, at least 6 characters)." }, { status: 400 });
+      }
+      if (screenshotBase64) {
+        if (!/^data:image\/(jpeg|png|webp|gif);base64,/i.test(screenshotBase64)) {
+          return NextResponse.json({ error: "The payment screenshot must be a JPG, PNG, WEBP or GIF image." }, { status: 400 });
+        }
+        if (screenshotBase64.length > MAX_SCREENSHOT_CHARS) {
+          return NextResponse.json({ error: "The payment screenshot is too large. Please upload an image smaller than 2 MB." }, { status: 400 });
+        }
+      }
+      // The same Transaction ID must not be used for two different stores (best-effort check).
+      if (supabase) {
+        try {
+          const { data: duplicatePayments, error: duplicateError } = await supabase
+            .from("stores")
+            .select("id")
+            .filter("payment_details->pending_upgrade->>transaction_id", "eq", transactionId)
+            .limit(1);
+          if (!duplicateError && duplicatePayments && duplicatePayments.length > 0) {
+            return NextResponse.json({ error: "This Transaction ID has already been used. Please enter the Transaction ID of your own payment." }, { status: 409 });
+          }
+        } catch {
+          // Ignore: the duplicate check is best-effort
+        }
+      }
+    }
+
     const pendingUpgradeData = isPaidPlan ? {
       target_plan: selectedPlan,
       payment_method: paymentMethod,
@@ -598,6 +639,11 @@ export async function POST(request: Request) {
             insertData = attempt1.data;
           } else {
             console.warn("Full stores insert returned error, trying minimal columns:", attempt1.error);
+            // A paid signup must never fall back to the minimal insert: it would create the
+            // store but silently drop the payment details the merchant just submitted.
+            if (isPaidPlan) {
+              throw attempt1.error ?? new Error("Unable to save the store and payment details.");
+            }
             const attempt2 = await supabase.from("stores").insert([{
               name: requestedStoreName || generated.store_name,
               slug,
@@ -616,6 +662,8 @@ export async function POST(request: Request) {
           }
         } catch (dbErr: any) {
           if (dbErr && String(dbErr.code) === '23505') throw dbErr;
+          // Paid signup: do not fall back to a local-only store, report the failure instead
+          if (isPaidPlan) throw dbErr;
           console.warn("Supabase store insertion fallback to local repo:", dbErr);
         }
 
@@ -756,6 +804,15 @@ export async function POST(request: Request) {
       }
     }
 
+    // The active plan stays on the store's real plan (basic for a new paid signup) until the
+    // admin approves the payment. The plan the merchant asked for is kept in selected_plan.
+    const activeRepoPlan = (() => {
+      const activePlan = text(resolvedStore.plan, 20).toLowerCase();
+      if (activePlan === "pro") return "pro";
+      if (activePlan === "business" || activePlan === "advanced" || activePlan === "advance") return "advanced";
+      return "basic";
+    })();
+
     try {
       await storeRepo.saveStore({
         id: resolvedStore.id,
@@ -766,7 +823,7 @@ export async function POST(request: Request) {
         description: generated.footer_text,
         header_title: generated.banner_text,
         hero_images: resolvedHeroImagesForRepo,
-        plan: (selectedPlan === "pro" ? "pro" : selectedPlan === "business" ? "advanced" : "basic") as any,
+        plan: activeRepoPlan as any,
         selected_plan: selectedPlan,
         payment_status: isPaidPlan ? "pending_approval" : "active",
         payment_details: pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {},
@@ -856,6 +913,17 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error("AI store generation encountered error, initiating bulletproof auto-recovery:", error);
+
+    // A new merchant who submitted a paid-plan payment must not get a "recovered" local store:
+    // that store would not carry the payment details and could end up on a paid plan for free.
+    const failedPlan = text(input?.plan ?? input?.selected_plan, 20).toLowerCase();
+    if (input?.registration === "merchant" && ["pro", "business", "advanced", "advance"].includes(failedPlan)) {
+      return NextResponse.json(
+        { error: "We could not save your store and payment details. Please try again. If you already sent the payment, keep your Transaction ID and contact support." },
+        { status: 500 }
+      );
+    }
+
     try {
       const rawPrompt = typeof input?.prompt === "string" ? input.prompt.trim() : "";
       const requestedStoreName = text(input?.name ?? input?.store_name, 100) || "My Online Store";

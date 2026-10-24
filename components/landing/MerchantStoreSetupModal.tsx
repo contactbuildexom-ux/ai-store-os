@@ -25,6 +25,23 @@ import { StoreQRCode } from '@/components/store-qr-code';
 import EmailVerifyField from '@/components/auth/EmailVerifyField';
 import { EMAIL_OTP_REQUIRED } from '@/lib/email-otp-config';
 
+type PlanId = 'basic' | 'pro' | 'business' | 'advanced';
+
+/* ---------- Manual payment settings (JazzCash / EasyPaisa) ---------- */
+// Company ke JazzCash aur EasyPaisa account ki detail yahan likhein.
+// Jab tak number khali hai, paid plan ka Submit button band rehta hai,
+// taa ke merchant kisi ghalat ya khali account par paise na bhejay.
+const PAYMENT_ACCOUNTS: Record<'jazzcash' | 'easypaisa', { title: string; number: string }> = {
+  jazzcash: { title: '', number: '' },   // e.g. { title: 'Buildexom', number: '0300 1234567' }
+  easypaisa: { title: '', number: '' },  // e.g. { title: 'Buildexom', number: '0345 1234567' }
+};
+
+// true karne par payment screenshot bhi zaroori ho jayega
+const REQUIRE_SCREENSHOT = false;
+
+// Vercel request body limit (~4.5 MB) ki wajah se screenshot ko chhota rakha hai
+const MAX_SCREENSHOT_BYTES = 2 * 1024 * 1024;
+
 type GeneratedPreview = {
   store_name: string;
   theme_color: string;
@@ -519,7 +536,7 @@ export default function MerchantStoreSetupModal({
   const [selectedIdeaId, setSelectedIdeaId] = useState('');
   const [storeName, setStoreName] = useState(initialStoreName);
   const [prompt, setPrompt] = useState(initialPrompt);
-  const [plan, setPlan] = useState<'basic' | 'pro' | 'business' | 'advanced'>(initialPlan);
+  const [plan, setPlan] = useState<PlanId>(initialPlan);
   const [selectedTheme, setSelectedTheme] = useState(initialTheme);
   const [customHexColor, setCustomHexColor] = useState<string>('#1976d2');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -536,6 +553,7 @@ export default function MerchantStoreSetupModal({
   const [upgradeReceiptBase64, setUpgradeReceiptBase64] = useState<string>('');
   const [upgradeReceiptFileName, setUpgradeReceiptFileName] = useState<string>('');
   const [paidPlanConfirmed, setPaidPlanConfirmed] = useState<boolean>(false);
+  const [paymentError, setPaymentError] = useState('');
   useEffect(() => {
     const matched = THEME_OPTIONS.find(t => t.id === selectedTheme);
     if (matched) setCustomHexColor(matched.color);
@@ -595,15 +613,97 @@ export default function MerchantStoreSetupModal({
       if (initialStoreName) setStoreName(initialStoreName);
       if (initialPrompt) setPrompt(initialPrompt);
       if (initialTheme) setSelectedTheme(initialTheme);
+      // Plan chosen outside the modal (e.g. a Pricing button) is applied on open;
+      // a paid plan always needs its payment details to be entered again.
+      setPlan(initialPlan);
+      setPaidPlanConfirmed(false);
+      setPaymentError('');
       setCurrentStep(1);
     }
-  }, [isOpen, initialStoreName, initialPrompt, initialTheme]);
+  }, [isOpen, initialStoreName, initialPrompt, initialTheme, initialPlan]);
 
   if (!isOpen) return null;
+
+  const isPaidPlan = plan !== 'basic';
+  const activeAccount = PAYMENT_ACCOUNTS[paymentMethod];
+  const accountReady = activeAccount.number.trim() !== '';
+
+  const openPlanPopup = (id: string) => {
+    setPaymentError('');
+    setPlanPopupTarget(id);
+  };
+
+  const closePlanPopup = () => {
+    setPaymentError('');
+    setPlanPopupTarget(null);
+  };
+
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      setPaymentError('Screenshot must be a JPG, PNG, WEBP or GIF image.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SCREENSHOT_BYTES) {
+      setPaymentError('Screenshot is too large. Please upload an image smaller than 2 MB.');
+      e.target.value = '';
+      return;
+    }
+    setPaymentError('');
+    setUpgradeReceiptFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setUpgradeReceiptBase64(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Validates the payment form; only then the paid plan is locked in.
+  const confirmPaymentDetails = () => {
+    if (!planPopupTarget || planPopupTarget === 'basic') return;
+
+    if (!accountReady) {
+      setPaymentError('Payments for this plan are temporarily unavailable. Please choose the Free Starter plan or try again later.');
+      return;
+    }
+    if (upgradeSenderName.trim().length < 3) {
+      setPaymentError('Enter the account title (name) of the account you paid from.');
+      return;
+    }
+    const senderDigits = upgradeSenderNumber.replace(/\D/g, '');
+    if (senderDigits.length < 10 || senderDigits.length > 13) {
+      setPaymentError('Enter a valid sender mobile / account number (e.g. 03XX XXXXXXX).');
+      return;
+    }
+    if (!/^[A-Za-z0-9]{6,40}$/.test(upgradeTrxId.trim())) {
+      setPaymentError('Enter the Transaction ID from your payment message (letters and numbers only, at least 6 characters).');
+      return;
+    }
+    if (REQUIRE_SCREENSHOT && !upgradeReceiptBase64) {
+      setPaymentError('Please upload a screenshot of your payment.');
+      return;
+    }
+
+    setPaymentError('');
+    setPlan(planPopupTarget as PlanId);
+    setPaidPlanConfirmed(true);
+    setPlanPopupTarget(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+
+    // Paid plan: payment details must be added before the store is created
+    if (isPaidPlan && !paidPlanConfirmed) {
+      setErrorMessage('Please add your payment details for the selected plan before creating the store.');
+      openPlanPopup(plan);
+      return;
+    }
 
     const effectiveName = storeName.trim() || 'My Online Store';
     const effectivePrompt = prompt.trim() || `A modern e-commerce storefront for ${effectiveName} offering premium items with nationwide delivery and Cash on Delivery.`;
@@ -661,11 +761,11 @@ export default function MerchantStoreSetupModal({
           owner_phone: contactPhone.trim() || undefined,
           verification_token: verificationToken || undefined,
           social_links: socialLinks,
-          payment_method: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? paymentMethod : undefined,
-          sender_name: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeSenderName.trim() || undefined) : undefined,
-          sender_number: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeSenderNumber.trim() || undefined) : undefined,
-          transaction_id: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeTrxId.trim() || undefined) : undefined,
-          screenshot_base64: (plan === 'pro' || plan === 'business' || plan === 'advanced') ? (upgradeReceiptBase64 || undefined) : undefined,
+          payment_method: isPaidPlan ? paymentMethod : undefined,
+          sender_name: isPaidPlan ? (upgradeSenderName.trim() || undefined) : undefined,
+          sender_number: isPaidPlan ? (upgradeSenderNumber.trim() || undefined) : undefined,
+          transaction_id: isPaidPlan ? (upgradeTrxId.trim() || undefined) : undefined,
+          screenshot_base64: isPaidPlan ? (upgradeReceiptBase64 || undefined) : undefined,
         }),
       });
 
@@ -1049,6 +1149,10 @@ export default function MerchantStoreSetupModal({
                         }
                         setErrorMessage('');
                         setCurrentStep(2);
+                        // A paid plan is already chosen but not paid for yet: show the payment form first
+                        if (isPaidPlan && !paidPlanConfirmed) {
+                          openPlanPopup(plan);
+                        }
                       }}
                       className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3.5 text-xs sm:text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:brightness-110 active:scale-95"
                     >
@@ -1095,13 +1199,12 @@ export default function MerchantStoreSetupModal({
                       ].map((p) => {
                         const isSelected = plan === p.id;
                         const Icon = p.icon;
+                        const needsPayment = p.id !== 'basic';
                         return (
                           <button
                             key={p.id}
                             type="button"
-                            onClick={() => {
-                              setPlanPopupTarget(p.id);
-                            }}
+                            onClick={() => openPlanPopup(p.id)}
                             className={`relative rounded-2xl border p-3 text-left transition-all cursor-pointer ${
                               isSelected
                                 ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25 shadow-xs'
@@ -1111,9 +1214,15 @@ export default function MerchantStoreSetupModal({
                             <div className="mb-1.5 flex items-center justify-between">
                               <Icon size={16} className={isSelected ? 'text-[#1976d2]' : 'text-[#5b7aa3]'} />
                               {isSelected ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
-                                  <CheckCircle2 size={11} /> Selected
-                                </span>
+                                needsPayment && !paidPlanConfirmed ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-800">
+                                    Payment needed
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800">
+                                    <CheckCircle2 size={11} /> {needsPayment ? 'Payment added' : 'Selected'}
+                                  </span>
+                                )
                               ) : (
                                 <span className="text-[10px] font-bold text-[#1976d2] hover:underline">
                                   Details →
@@ -1127,6 +1236,18 @@ export default function MerchantStoreSetupModal({
                         );
                       })}
                     </div>
+
+                    {isPaidPlan && (
+                      paidPlanConfirmed ? (
+                        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
+                          Payment details added for {PLAN_INFO[plan]?.name}. Tap the plan card to edit them.
+                        </p>
+                      ) : (
+                        <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
+                          Payment details are required for this plan. Tap the plan card to add them.
+                        </p>
+                      )
+                    )}
                   </div>
 
               {/* 3. WhatsApp Integration (Auto-Linked for Pro & Advance) */}
@@ -1261,13 +1382,15 @@ export default function MerchantStoreSetupModal({
                       ) : (
                         <>
                           <Store size={17} />
-                          <span>Create My Online Store</span>
+                          <span>{isPaidPlan ? 'Create Store & Submit Payment' : 'Create My Online Store'}</span>
                         </>
                       )}
                     </button>
                   </div>
                   <p className="mt-1 text-center text-[10px] text-[#5b7aa3]">
-                    Instant storefront generation · Dedicated WhatsApp order routing · 100% Free Starter included
+                    {isPaidPlan
+                      ? 'Our team will verify your payment and activate your plan · Dedicated WhatsApp order routing'
+                      : 'Instant storefront generation · Dedicated WhatsApp order routing · 100% Free Starter included'}
                   </p>
                 </div>
               )}
@@ -1295,7 +1418,7 @@ export default function MerchantStoreSetupModal({
               </div>
               <button
                 type="button"
-                onClick={() => setPlanPopupTarget(null)}
+                onClick={closePlanPopup}
                 className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
               >
                 <X size={18} />
@@ -1335,7 +1458,10 @@ export default function MerchantStoreSetupModal({
                         <button
                           key={method.id}
                           type="button"
-                          onClick={() => setPaymentMethod(method.id)}
+                          onClick={() => {
+                            setPaymentMethod(method.id);
+                            setPaymentError('');
+                          }}
                           className={`flex flex-col items-center justify-center gap-1 rounded-xl border p-2.5 text-center transition cursor-pointer ${
                             isSelected
                               ? 'border-blue-600 bg-blue-50/70 font-bold text-blue-700 shadow-xs ring-1 ring-blue-600'
@@ -1350,17 +1476,32 @@ export default function MerchantStoreSetupModal({
                   </div>
                 </div>
 
-                {/* Gateway Instructions */}
+                {/* Where to send the payment */}
                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-xs space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Payment gateway</span>
+                    <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send payment to</span>
                     <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}</span>
                   </div>
-                  <p className="text-slate-800 font-semibold text-[11px]">Merchant account: Not configured yet</p>
-                  <p className="font-mono text-[11px] font-bold text-slate-900 bg-white/80 px-2 py-0.5 rounded border border-blue-100 inline-block">Account details will be published here</p>
-                  <p className="text-[10px] text-slate-500 pt-0.5 leading-relaxed">
-                    Gateway instructions are placeholders until payment credentials are configured. Submit a screenshot for manual verification; do not send funds to an unverified account.
-                  </p>
+                  {accountReady ? (
+                    <>
+                      {activeAccount.title.trim() && (
+                        <p className="text-slate-800 font-semibold text-[11px]">Account title: {activeAccount.title}</p>
+                      )}
+                      <p className="font-mono text-[12px] font-bold text-slate-900 bg-white/80 px-2 py-0.5 rounded border border-blue-100 inline-block">
+                        {activeAccount.number}
+                      </p>
+                      <p className="text-slate-900 font-bold text-[11px] pt-0.5">
+                        Amount to send: {PLAN_INFO[planPopupTarget].price}
+                      </p>
+                      <p className="text-[10px] text-slate-500 pt-0.5 leading-relaxed">
+                        Send the amount from your JazzCash / EasyPaisa app, then enter your sender details and the Transaction ID below. Our team will verify your payment; until then your store runs with Basic limits.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="rounded-lg bg-amber-50 px-2.5 py-2 text-[11px] font-semibold text-amber-700">
+                      Payments for this plan are temporarily unavailable. Please choose the Free Starter plan or try again later.
+                    </p>
+                  )}
                 </div>
 
                 {/* Sender & Transaction Details */}
@@ -1400,23 +1541,13 @@ export default function MerchantStoreSetupModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-600 uppercase">Payment Screenshot Proof</label>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase">
+                        Payment Screenshot Proof{REQUIRE_SCREENSHOT ? '' : ' (optional)'}
+                      </label>
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setUpgradeReceiptFileName(file.name);
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              if (typeof reader.result === 'string') {
-                                setUpgradeReceiptBase64(reader.result);
-                              }
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
+                        onChange={handleReceiptChange}
                         className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none file:mr-2 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                       />
                       {upgradeReceiptFileName && (
@@ -1426,22 +1557,25 @@ export default function MerchantStoreSetupModal({
                   </div>
                 </div>
 
+                {paymentError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">
+                    {paymentError}
+                  </div>
+                )}
+
                 {/* Action Buttons: Clean Submit without stars, tags, or price */}
                 <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => {
-                      setPlan(planPopupTarget as any);
-                      setPaidPlanConfirmed(true);
-                      setPlanPopupTarget(null);
-                    }}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer text-center"
+                    disabled={!accountReady}
+                    onClick={confirmPaymentDetails}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer text-center disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Submit
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPlanPopupTarget(null)}
+                    onClick={closePlanPopup}
                     className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
                   >
                     Close
@@ -1456,7 +1590,7 @@ export default function MerchantStoreSetupModal({
                   onClick={() => {
                     setPlan('basic');
                     setPaidPlanConfirmed(false);
-                    setPlanPopupTarget(null);
+                    closePlanPopup();
                   }}
                   className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer"
                 >
@@ -1464,7 +1598,7 @@ export default function MerchantStoreSetupModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPlanPopupTarget(null)}
+                  onClick={closePlanPopup}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition cursor-pointer"
                 >
                   Close

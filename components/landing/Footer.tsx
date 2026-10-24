@@ -6,9 +6,16 @@ import Logo from "@/components/landing/logo";
 import { PlatformLogo, usePlatformBranding } from "@/components/platform-branding";
 import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/platform-settings-defaults";
 
+/* ---------- Buildexom fallback links (used when admin settings are empty) ---------- */
+const BUILDEXOM_INSTAGRAM = "https://www.instagram.com/buildexom";
+const BUILDEXOM_EMAIL = "buildexom.pixel2page@gmail.com";
+
 /* ---------- Pixel2Page (Powered by) ---------- */
-const P2P_URL = "https://yahan-pixel2page-ki-website.com";
 const P2P_LOGO = "/logo-p2p.jpg";
+const P2P_INSTAGRAM = "https://www.instagram.com/pixel2page";
+// Put the Pixel2Page website URL here (e.g. "https://pixel2page.com").
+// While empty, the website icon and the logo link fall back gracefully.
+const P2P_WEBSITE = "https://l.instagram.com/?u=https%3A%2F%2Fpixel2page.netlify.app%2F%3Futm_source%3Dig%26utm_medium%3Dsocial%26utm_content%3Dlink_in_bio%26fbclid%3DPAZXh0bgNhZW0CMTEAcGRvZgJzcnRjBmFwcF9pZA85MzY2MTk3NDMzOTI0NTkAAaf-JvZOvz53-wMxBNz6Sa5fACtC2npcJTKI3MMSq5iav2xmGiDzAQs3TUxdiA_aem_2JPJCUKA5h0cjEaZfLu_sw&e=AUB6P57CrJ_UqQuqR1WkHcdG-SWDHkgZbLMZn9dXpdAQOyG3uK3oYj8jI4x-wO-bv0G53NKbBU7BMUWE9KG8Eib4IATmZgikupliUucSOk1YPBz9Mr6B5xxke1ekkV6hka5KC3s";
 
 const columns = [
   {
@@ -35,14 +42,6 @@ const columns = [
     ],
   },
   {
-    title: "Company",
-    links: [
-      { name: "About Us", href: "/about" },
-      { name: "Contact", href: "/contact" },
-      { name: "Careers", href: "/careers" },
-    ],
-  },
-  {
     title: "Legal",
     links: [
       { name: "Privacy Policy", href: "/privacy" },
@@ -52,17 +51,28 @@ const columns = [
   },
 ];
 
+/* Icon paths shared by the Buildexom socials and the Pixel2Page icons */
+const INSTAGRAM_ICON = (
+  <>
+    <path d="M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z" />
+    <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
+    <path d="M16.5 7.5v.01" />
+  </>
+);
+
+const WEBSITE_ICON = (
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M2 12h20" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </>
+);
+
 const socials = [
   {
     name: "Instagram",
     href: "#",
-    icon: (
-      <>
-        <path d="M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4h-8a4 4 0 0 1-4-4z" />
-        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
-        <path d="M16.5 7.5v.01" />
-      </>
-    ),
+    icon: INSTAGRAM_ICON,
   },
   {
     name: "Facebook",
@@ -81,7 +91,7 @@ const socials = [
   },
   {
     name: "Email",
-    href: "mailto:support@yourdomain.com",
+    href: `mailto:${BUILDEXOM_EMAIL}`,
     icon: (
       <>
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -101,26 +111,30 @@ const socials = [
   {
     name: "Website",
     href: "https://www.buildexom.com",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M2 12h20" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-      </>
-    ),
+    icon: WEBSITE_ICON,
   },
 ];
 
+/* Names that open in a new tab (mailto: and tel: stay in the same tab) */
+const EXTERNAL = ["Instagram", "Facebook", "WhatsApp", "Website"];
+
 export default function Footer() {
   const { settings } = usePlatformBranding();
+
+  // Admin platform settings win; otherwise fall back to the defaults below
   const socialHrefs: Record<string, string> = {
-    Instagram: settings.instagram || "#",
+    Instagram: settings.instagram || BUILDEXOM_INSTAGRAM,
     Facebook: settings.facebook || "#",
-    WhatsApp: settings.whatsapp ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}` : `https://wa.me/${DEFAULT_PLATFORM_SETTINGS.whatsapp}`,
-    Email: settings.email ? `mailto:${settings.email}` : `mailto:${DEFAULT_PLATFORM_SETTINGS.email}`,
+    WhatsApp: settings.whatsapp
+      ? `https://wa.me/${settings.whatsapp.replace(/\D/g, "")}`
+      : `https://wa.me/${DEFAULT_PLATFORM_SETTINGS.whatsapp}`,
+    Email: `mailto:${BUILDEXOM_EMAIL}`,
     Phone: `tel:${settings.phone || DEFAULT_PLATFORM_SETTINGS.phone}`,
     Website: settings.website || DEFAULT_PLATFORM_SETTINGS.website,
   };
+
+  // Pixel2Page logo opens the website if set, otherwise its Instagram
+  const p2pLogoHref = P2P_WEBSITE || P2P_INSTAGRAM;
 
   return (
     <footer className="relative overflow-hidden bg-gradient-to-br from-[#071a33] via-[#0b2545] to-[#1556a8] text-white">
@@ -131,7 +145,8 @@ export default function Footer() {
       />
 
       <div className="relative mx-auto max-w-[1200px] px-5 pb-8 pt-16 sm:px-6 lg:px-8">
-        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]">
+        {/* 4 columns now (Brand + Product + Resources + Legal), with equal, wider gaps */}
+        <div className="grid gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-x-16">
           {/* Brand */}
           <div>
             <Link
@@ -150,14 +165,14 @@ export default function Footer() {
               {settings.description}
             </p>
 
-            {/* Social icons: 2 upar, 2 neeche */}
-            <div id="contact-socials" className="mt-6 grid w-fit grid-cols-2 gap-3">
+            {/* Social icons (3 columns, 2 rows) */}
+            <div id="contact-socials" className="mt-6 grid w-fit grid-cols-3 gap-3">
               {socials.map((s) => (
                 <a
                   key={s.name}
                   href={socialHrefs[s.name] ?? s.href}
-                  target={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "_blank" : undefined}
-                  rel={["Instagram", "Facebook", "WhatsApp", "Website"].includes(s.name) ? "noreferrer" : undefined}
+                  target={EXTERNAL.includes(s.name) ? "_blank" : undefined}
+                  rel={EXTERNAL.includes(s.name) ? "noreferrer" : undefined}
                   aria-label={s.name}
                   className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
                 >
@@ -197,18 +212,18 @@ export default function Footer() {
                 ))}
               </ul>
 
-              {/* Powered by Pixel2Page: Legal column ke neeche (size Buildexom logo box jitna) */}
+              {/* Powered by Pixel2Page: below the Legal links, with extra spacing (mt-12) */}
               {col.title === "Legal" && (
-                <div className="mt-8">
+                <div className="mt-12">
                   <span className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-200">
                     Powered by
                   </span>
                   <a
-                    href={P2P_URL}
+                    href={p2pLogoHref}
                     target="_blank"
                     rel="noreferrer"
                     aria-label="Pixel2Page"
-                    className="mt-2 flex h-20 w-[211px] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-3 py-2 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
+                    className="mt-3 flex h-20 w-[211px] max-w-full items-center justify-center overflow-hidden rounded-2xl bg-white px-3 py-2 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-0.5"
                   >
                     <Image
                       src={P2P_LOGO}
@@ -218,6 +233,53 @@ export default function Footer() {
                       className="h-full w-full object-contain"
                     />
                   </a>
+
+                  {/* Pixel2Page social icons */}
+                  <div className="mt-4 flex items-center gap-3">
+                    <a
+                      href={P2P_INSTAGRAM}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Pixel2Page on Instagram"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        {INSTAGRAM_ICON}
+                      </svg>
+                    </a>
+
+                    {P2P_WEBSITE && (
+                      <a
+                        href={P2P_WEBSITE}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Pixel2Page website"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-transparent hover:bg-gradient-to-br hover:from-[#1976d2] hover:to-[#4a9bf0] hover:shadow-lg hover:shadow-blue-500/40"
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          {WEBSITE_ICON}
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
