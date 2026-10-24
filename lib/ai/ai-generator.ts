@@ -562,7 +562,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
     if (rawN.includes('home') || rawN.includes('decor') || rawN.includes('candle') || rawN.includes('pottery') || rawN.includes('bedding') || rawN.includes('cushion') || rawN.includes('furniture')) return 'home';
     if (rawN.includes('perfume') || rawN.includes('oud') || rawN.includes('attar') || rawN.includes('fragrance') || rawN.includes('scent')) return 'perfume';
     if (rawN.includes('watch') || rawN.includes('timepiece') || rawN.includes('chronograph')) return 'watches';
-    if (rawN.includes('eyewear') || rawN.includes('sunglass') || rawN.includes('optic') || rawN.includes('lens')) return 'eyewear';
+    if (rawN.includes('eyewear') || rawN.includes('sunglass') || rawN.includes('optic') || rawN.includes('lens') || rawN.includes('glass') || rawN.includes('shade') || rawN.includes('chashm') || rawN.includes('spectacle') || rawN.includes('goggle')) return 'eyewear';
     if (rawN.includes('hair')) return 'haircare';
     if (rawN.includes('makeup') || rawN.includes('cosmetic')) return 'makeup';
     if (rawN.includes('baby') || rawN.includes('kid')) return 'baby';
@@ -601,7 +601,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
   }
 
   // Eyewear, Sunglasses & Optical Frames
-  if (/\b(sunglass|sunglasses|eyewear|glasses|shades|spectacles|goggles|aviator|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|chashma|chashmay|chashme|dhup|dhoop)\b/i.test(combined)) {
+  if (/\b(sunglass|sunglasses|sunglases|eyewear|glasses|glases|shades|spectacles|specs|goggle|goggles|aviator|aviators|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|chashma|chashmay|chashme|chasma|chasme|dhup|dhoop)\b/i.test(combined)) {
     return 'eyewear';
   }
 

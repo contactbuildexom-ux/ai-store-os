@@ -229,7 +229,7 @@ export const STORE_IDEA_PRESETS = [
         name: 'Chronograph Watches & Timepieces',
         sampleName: 'Aero Chrono Atelier',
         theme: 'midnight-minimal',
-        prompt: 'A luxury timepieces and designer sunglasses brand featuring sapphire crystal chronograph watches, polarized acetate sunglasses, and Italian leather watch rolls.'
+        prompt: 'A luxury timepieces and horology brand featuring sapphire crystal chronograph watches, automatic wristwatches, mechanical movements, and Italian leather watch rolls.'
       },
       {
         id: 'sunglasses',
@@ -742,6 +742,30 @@ export default function MerchantStoreSetupModal({
       const selectedThemeObj = THEME_OPTIONS.find((t) => t.id === selectedTheme);
       const themeColor = selectedThemeObj?.color || '#1976d2';
 
+      let effectiveNiche = (selectedIdeaId && selectedIdeaId !== 'custom') ? selectedIdeaId : '';
+      if (!effectiveNiche || effectiveNiche === 'custom') {
+        const pool = `${effectiveName} ${effectivePrompt}`.toLowerCase();
+        if (/\b(sunglass|sunglasses|sunglases|eyewear|glasses|glases|shades|spectacles|specs|goggle|goggles|aviator|aviators|wayfarer|optic|optics|optical|lens|lenses|frame|frames|sunnies|chashma|chashmay|chashme|chasma|chasme|dhup|dhoop)\b/i.test(pool)) {
+          effectiveNiche = 'eyewear';
+        } else if (/\b(watch|watches|wristwatch|wristwatches|timepiece|timepieces|chronograph|chronometer|horology|automatic watch|quartz watch|rolex|casio|rado|seiko|ghari|ghariyan|ghadi)\b/i.test(pool)) {
+          effectiveNiche = 'watches';
+        } else if (/\b(perfume|perfumes|fragrance|fragrances|scent|scents|oud|attar|itr|khushbu|khushboo|cologne)\b/i.test(pool)) {
+          effectiveNiche = 'perfume';
+        } else if (/\b(shoe|shoes|footwear|sneaker|sneakers|jogger|joggers|kicks|boot|boots|trainer|trainers|loafer|loafers|oxford|oxfords|heels|sandals|jootay|joota|chappal)\b/i.test(pool)) {
+          effectiveNiche = 'footwear';
+        } else if (/\b(handbag|handbags|bag|bags|purse|purses|clutch|clutches|tote|crossbody|backpack|wallet|wallets)\b/i.test(pool)) {
+          effectiveNiche = 'handbags';
+        } else if (/\b(jewel|jewelry|jewellery|ring|rings|necklace|necklaces|earring|earrings|gold|silver|bracelet|bracelets|bangles|jhumka|pendant)\b/i.test(pool)) {
+          effectiveNiche = 'jewelry';
+        } else if (/\b(home|decor|candle|candles|furniture|pottery|ceramic|bedding|cushion|cushions|quilt|rug|rugs|sofa|kitchen)\b/i.test(pool)) {
+          effectiveNiche = 'home';
+        } else if (/\b(plant|plants|nature|botanical|indoor plants?|green|succulent|herbal)\b/i.test(pool)) {
+          effectiveNiche = 'nature';
+        } else if (/\b(cloth|clothes|clothing|pret|lawn|kurta|kurtas|suit|suits|dress|dresses|apparel|fashion|hoodie|streetwear|kapray|kapra)\b/i.test(pool)) {
+          effectiveNiche = 'clothing';
+        }
+      }
+
       const response = await fetch('/api/ai/generate-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -750,11 +774,11 @@ export default function MerchantStoreSetupModal({
           store_name: effectiveName,
           name: effectiveName,
           prompt: effectivePrompt,
-          niche: selectedIdeaId || undefined,
+          niche: effectiveNiche || undefined,
           plan,
           theme: selectedTheme,
           selected_theme: selectedTheme,
-          theme_color: customHexColor,
+          theme_color: customHexColor || themeColor,
           whatsapp_number: whatsappNumber.trim() || '923001234567',
           owner_email: effectiveEmail,
           password: effectivePassword,

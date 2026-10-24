@@ -158,7 +158,8 @@ function normalizeGeneratedStore(
   categoryLimit = 20,
   productLimit = 50,
   requestedName = "",
-  niche = "clothing"
+  niche = "clothing",
+  requestedThemeColor = ""
 ): GeneratedStore {
   if (!value || typeof value !== "object") throw new Error("The AI returned invalid store data.");
   const source = value as Record<string, unknown>;
@@ -212,7 +213,7 @@ function normalizeGeneratedStore(
   const requestedColor = /^#[0-9a-f]{6}$/i.test(requestedTheme)
     ? requestedTheme
     : themePresets[themeKey] || themePresets[requestedTheme.toLowerCase()];
-  const themeColor = requestedColor || text(source.theme_color, 20);
+  const themeColor = /^#[0-9a-f]{6}$/i.test(requestedThemeColor) ? requestedThemeColor : (requestedColor || text(source.theme_color, 20) || "#1976d2");
   const selectedThemeCandidate = (Object.prototype.hasOwnProperty.call(themePresets, themeKey) ? themeKey : requestedTheme) || text(source.selected_theme, 40) || "ocean-blue";
   const selectedTheme = /^#[0-9a-f]{6}$/i.test(selectedThemeCandidate) ||
     Object.prototype.hasOwnProperty.call(themePresets, themeKey) ||
@@ -332,6 +333,7 @@ export async function POST(request: Request) {
     const requestedUserId = text(input.user_id, 100);
     const requestedStoreId = text(input.store_id, 100);
     const requestedTheme = text(input.theme ?? input.selected_theme ?? "", 40);
+    const requestedThemeColor = text(input.theme_color ?? input.primary_color ?? "", 20);
     const requestedNiche = text(input.niche, 40).toLowerCase();
     const requestedPlan = text(input.plan, 20).toLowerCase();
     const isMerchantRegistration =
@@ -584,7 +586,7 @@ export async function POST(request: Request) {
     // For new stores, initial generation limits follow basic plan (0 categories, 20 products) until payment approval
     const effectivePlanForCatalog = targetStore ? (targetStore.plan || "basic") : "basic";
     const limits = planLimits(effectivePlanForCatalog);
-    const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName, targetNiche);
+    const generated = normalizeGeneratedStore(rawGenerated, themeKey || requestedTheme, limits.categories, limits.products, requestedStoreName, targetNiche, requestedThemeColor);
     const requestedWhatsapp = text(input.whatsapp_number, 50);
 
     let store = targetStore;
@@ -609,9 +611,6 @@ export async function POST(request: Request) {
       // Active plan must be "basic" until payment is approved by superadmin
       const planToStore = "basic";
       const selectedPlanToStore = normalizedPlan;
-
-      const heroAssetForRepo = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
-      const resolvedHeroImagesForRepo = [heroAssetForRepo.image, heroAssetForRepo.secondaryImage, heroAssetForRepo.tertiaryImage];
 
       if (supabase) {
         // Supabase is configured: attempt robust insertion with automatic fallback
@@ -775,16 +774,25 @@ export async function POST(request: Request) {
         const heroAsset = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
         const resolvedHeroImages = [heroAsset.image, heroAsset.secondaryImage, heroAsset.tertiaryImage];
 
-        await supabase.from("store_settings").upsert([{
+        const baseSettingsPayload = {
           store_id: resolvedStore.id,
           theme_color: generated.theme_color,
           selected_theme: generated.selected_theme,
           banner_text: generated.banner_text,
           footer_text: generated.footer_text,
-          hero_images: resolvedHeroImages,
           social_links: socialLinks,
           updated_at: new Date().toISOString(),
+        };
+
+        const { error: upsertSettingsErr } = await supabase.from("store_settings").upsert([{
+          ...baseSettingsPayload,
+          hero_images: resolvedHeroImages,
         }], { onConflict: "store_id" });
+
+        if (upsertSettingsErr) {
+          console.warn("Could not upsert store_settings with hero_images, saving core settings:", upsertSettingsErr);
+          await supabase.from("store_settings").upsert([baseSettingsPayload], { onConflict: "store_id" });
+        }
 
         await supabase.from("stores").update({
           tagline: generated.banner_text,
@@ -794,6 +802,14 @@ export async function POST(request: Request) {
         const storeSyncPayload: Record<string, any> = {
           primary_color: generated.theme_color,
           selected_theme: generated.selected_theme,
+          tagline: generated.banner_text,
+          description: generated.footer_text,
+          payment_details: {
+            ...(typeof (resolvedStore as any).payment_details === 'object' && (resolvedStore as any).payment_details ? (resolvedStore as any).payment_details : {}),
+            ...(pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {}),
+            niche: targetNiche,
+            hero_images: resolvedHeroImagesForRepo,
+          },
         };
         if (targetStore && targetStore.name !== generated.store_name) {
           storeSyncPayload.name = generated.store_name;
