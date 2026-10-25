@@ -3,20 +3,114 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import JsonLd from "@/components/seo/JsonLd";
-import { formatPricingPlanPrice, type PublicPricingPlan } from "@/lib/pricing-plan-catalog";
-import { usePricingPlans } from "@/hooks/use-pricing-plans";
+
+type Feature = {
+  label: string;
+  isNew?: boolean;
+  locked?: boolean; // true = disabled until the customer upgrades to a higher plan
+};
+
+type Plan = {
+  id: string;
+  name: string;
+  isFree: boolean;
+  amountText: string; // formatted number, e.g. "400"
+  tag?: string; // extra label from the DB, e.g. "Advanced" / "Unlimited"
+  amount?: number;
+  description: string;
+  features: Feature[];
+  cta: string;
+  href: string;
+  popular?: boolean;
+};
 
 const VISIBLE_COUNT = 6;
-function PlanCard({ plan, index, featuredIndex }: { plan: PublicPricingPlan; index: number; featuredIndex: number }) {
+
+type ApiPlan = {
+  id: string;
+  name: string;
+  price: number | string;
+  billing_cycle: string;
+  features: string[];
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isApiPlan(value: unknown): value is ApiPlan {
+  if (!isRecord(value)) return false;
+  if (typeof value.price !== "number" && typeof value.price !== "string") return false;
+  if (typeof value.price === "string" && !value.price.trim()) return false;
+  const price = typeof value.price === "number" ? value.price : Number(value.price);
+  return typeof value.id === "string"
+    && value.id.length > 0
+    && typeof value.name === "string"
+    && value.name.trim().length > 0
+    && (typeof value.price === "number" || typeof value.price === "string")
+    && Number.isFinite(price)
+    && price >= 0
+    && typeof value.billing_cycle === "string"
+    && value.billing_cycle.trim().length > 0
+    && Array.isArray(value.features)
+    && value.features.every((feature) => typeof feature === "string" && feature.trim().length > 0);
+}
+
+/* The DB billing_cycle field may hold a real period ("month") or a label ("Advanced").
+   Real periods are shown as "/ month"; anything else becomes a small tag. */
+const PERIOD_WORDS = ["month", "monthly", "mo"];
+
+function toPlan(record: ApiPlan): Plan {
+  const planName = record.name.trim();
+  const normalizedName = planName.toLowerCase();
+  const amount = Number(record.price);
+  const cycle = record.billing_cycle.trim();
+  const isPeriod = PERIOD_WORDS.includes(cycle.toLowerCase());
+  const presentation = {
+    basic: {
+      description: "Perfect for starting your online store.",
+      cta: "Get Started Free",
+      href: "/user/signup",
+    },
+    pro: {
+      description: "For growing stores that need more flexibility.",
+      cta: "Upgrade to Pro",
+      href: "/user/signup?plan=pro",
+      popular: true,
+    },
+    business: {
+      description: "For businesses ready to scale their online store.",
+      cta: "Go Business",
+      href: "/user/signup?plan=business",
+    },
+  }[normalizedName];
+
+  return {
+    id: record.id,
+    name: planName,
+    amount,
+    isFree: amount === 0,
+    amountText: amount.toLocaleString("en-PK", { maximumFractionDigits: 2 }),
+    tag: amount === 0 || isPeriod ? undefined : cycle,
+    description: presentation?.description ?? "A flexible plan for your online store.",
+    features: record.features.map((label) => ({ label })),
+    cta: presentation?.cta ?? "Get Started",
+    href: presentation?.href ?? "/user/signup",
+    popular: presentation?.popular,
+  };
+}
+
+function PlanCard({ plan, index }: { plan: Plan; index: number }) {
   const [open, setOpen] = useState(false);
   const [show, setShow] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const dark = index === featuredIndex;
+  const dark = Boolean(plan.popular);
   const visible = open ? plan.features : plan.features.slice(0, VISIBLE_COUNT);
   const hiddenCount = plan.features.length - VISIBLE_COUNT;
+  const hasLocked = plan.features.some((f) => f.locked);
 
-  // Scroll par fade-up animation
+  // Fade-up animation when the card scrolls into view
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -48,7 +142,7 @@ function PlanCard({ plan, index, featuredIndex }: { plan: PublicPricingPlan; ind
             : "border border-slate-200 bg-white text-slate-900 shadow-sm hover:-translate-y-2 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100"
         }`}
       >
-        {dark && (
+        {plan.popular && (
           <span className="absolute right-4 top-4 animate-pulse rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur sm:right-5 sm:top-5">
             Most popular
           </span>
@@ -63,21 +157,65 @@ function PlanCard({ plan, index, featuredIndex }: { plan: PublicPricingPlan; ind
           >
             {plan.name}
           </p>
-          <p className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {formatPricingPlanPrice(plan.price, plan.billing_cycle)}
+
+          {/* Price: small currency, large light-weight amount, small period */}
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+            {plan.isFree ? (
+              <span className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                Free
+              </span>
+            ) : (
+              <>
+                <span
+                  className={`text-base font-medium ${
+                    dark ? "text-blue-100" : "text-slate-500"
+                  }`}
+                >
+                  PKR
+                </span>
+                <span className="text-4xl font-semibold tracking-tight sm:text-5xl">
+                  {plan.amountText}
+                </span>
+                <span
+                  className={`text-sm font-normal ${
+                    dark ? "text-blue-200/80" : "text-slate-400"
+                  }`}
+                >
+                  / month
+                </span>
+              </>
+            )}
+          </div>
+
+          {plan.tag && (
+            <span
+              className={`mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                dark ? "bg-white/15 text-blue-50" : "bg-blue-50 text-blue-700"
+              }`}
+            >
+              {plan.tag}
+            </span>
+          )}
+
+          <p
+            className={`mt-3 text-sm leading-6 ${
+              dark ? "text-blue-100" : "text-slate-500"
+            }`}
+          >
+            {plan.description}
           </p>
         </div>
 
         {/* Button */}
         <Link
-          href={plan.plan_key ? `/user/signup?plan=${encodeURIComponent(plan.plan_key)}` : "/user/signup"}
+          href={plan.href}
           className={`group/btn mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition duration-300 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
             dark
               ? "bg-white text-[#0b2545] hover:bg-blue-50 hover:shadow-white/30"
               : "bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white hover:shadow-blue-300/50"
           }`}
         >
-          {`Get started${Number(plan.price) === 0 ? " free" : ""}`}
+          {plan.cta}
           <svg
             className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-1"
             viewBox="0 0 16 16"
@@ -100,19 +238,102 @@ function PlanCard({ plan, index, featuredIndex }: { plan: PublicPricingPlan; ind
         <ul className="space-y-3">
           {visible.map((feature, featureIndex) => (
             <li
-              key={`${plan.id}-${featureIndex}-${feature}`}
-              className={`flex items-start gap-3 text-sm transition duration-200 hover:translate-x-1 ${
-                dark ? "text-blue-50" : "text-slate-600"
+              key={`${plan.id}-${featureIndex}-${feature.label}`}
+              title={
+                feature.locked ? "Unlocks after payment" : undefined
+              }
+              className={`flex items-start gap-3 text-sm transition duration-200 ${
+                feature.locked
+                  ? "cursor-not-allowed opacity-60"
+                  : "hover:translate-x-1"
               }`}
             >
-              <span className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full ${
-                dark ? "bg-white/15 text-white" : "bg-blue-50 text-blue-600"
-              }`}>
-                <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M3 8.5l3.2 3.2L13 4.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+              <span
+                className={`mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full transition duration-200 ${
+                  feature.locked
+                    ? dark
+                      ? "bg-white/10 text-white/70"
+                      : "bg-slate-100 text-slate-400"
+                    : dark
+                    ? "bg-white/15 text-white"
+                    : "bg-blue-50 text-blue-600"
+                }`}
+              >
+                {feature.locked ? (
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="3.5"
+                      y="7"
+                      width="9"
+                      height="6.5"
+                      rx="1.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    <path
+                      d="M5.5 7V5a2.5 2.5 0 015 0v2"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3 8.5l3.2 3.2L13 4.8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
               </span>
-              <span>{feature}</span>
+              <span
+                className={`${
+                  feature.locked
+                    ? dark
+                      ? "text-blue-100/80 line-through decoration-white/30"
+                      : "text-slate-400 line-through decoration-slate-300"
+                    : dark
+                    ? "text-blue-50"
+                    : "text-slate-600"
+                }`}
+              >
+                {feature.label}
+                {feature.isNew && (
+                  <span
+                    className={`ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-[10px] font-bold ${
+                      dark
+                        ? "bg-white/20 text-white"
+                        : "bg-emerald-50 text-emerald-600"
+                    }`}
+                  >
+                    NEW
+                  </span>
+                )}
+                {feature.locked && (
+                  <span
+                    className={`ml-2 inline-block rounded-full px-2 py-0.5 align-middle text-[10px] font-bold no-underline ${
+                      dark
+                        ? "bg-amber-300/20 text-amber-200"
+                        : "bg-amber-50 text-amber-600"
+                    }`}
+                  >
+                    LOCKED
+                  </span>
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -149,13 +370,59 @@ function PlanCard({ plan, index, featuredIndex }: { plan: PublicPricingPlan; ind
           </button>
         )}
 
+        {/* Locked note */}
+        {hasLocked && open && (
+          <p
+            className={`mt-4 rounded-lg px-3 py-2 text-xs ${
+              dark ? "bg-white/10 text-blue-100" : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            Locked features will automatically get unlocked once you upgrade your plan.
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
 export default function Pricing() {
-  const { plans, loading, error } = usePricingPlans();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPlans() {
+      try {
+        const response = await fetch("/api/pricing", { cache: "no-store", signal: controller.signal });
+        let body: unknown;
+        try {
+          body = await response.json();
+        } catch {
+          throw new Error("The pricing service returned an invalid response.");
+        }
+        if (!response.ok) {
+          const message = isRecord(body) && typeof body.error === "string"
+            ? body.error
+            : "Unable to load pricing plans.";
+          throw new Error(message);
+        }
+        if (!isRecord(body) || !Array.isArray(body.plans) || !body.plans.every(isApiPlan)) {
+          throw new Error("The pricing service returned invalid plan data.");
+        }
+        setPlans(body.plans.map(toPlan));
+      } catch (reason) {
+        if (controller.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : "Unable to load pricing plans.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+
+    void loadPlans();
+    return () => controller.abort();
+  }, []);
 
   return (
     <section
@@ -177,9 +444,9 @@ export default function Pricing() {
             offers: plans.map((p) => ({
               "@type": "Offer",
               name: p.name,
-              price: Number(p.price),
+              price: p.amount ?? 0,
               priceCurrency: "PKR",
-              description: p.features.join(", "),
+              description: p.description,
             })),
           }}
         />
@@ -204,7 +471,7 @@ export default function Pricing() {
         {/* Cards */}
         <div className="mt-8 grid items-stretch gap-6 sm:mt-10 md:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} index={i} featuredIndex={Math.floor(plans.length / 2)} />
+            <PlanCard key={plan.id} plan={plan} index={i} />
           ))}
         </div>
         {loading && <p role="status" className="mt-8 text-center text-sm text-slate-500">Loading pricing plans…</p>}
