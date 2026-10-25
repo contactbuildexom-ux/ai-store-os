@@ -182,6 +182,22 @@ export async function PUT(req: Request) {
         if (categoryError) throw categoryError;
         if (!category) return NextResponse.json({ error: "The selected category does not belong to this store." }, { status: 400 });
       }
+      if (categoryId && supabase) {
+        const { data: existingProduct, error: existingProductError } = await supabase
+          .from("store_products")
+          .select("category_id")
+          .eq("id", id)
+          .eq("store_id", storeId)
+          .maybeSingle();
+        if (existingProductError) throw existingProductError;
+        if (!existingProduct) return NextResponse.json({ error: "Product not found." }, { status: 404 });
+        if (existingProduct.category_id !== categoryId) {
+          const limitCheck = await checkStoreLimits(storeId, "product", categoryId, { checkProductCount: false });
+          if (!limitCheck.allowed) {
+            return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+          }
+        }
+      }
       updates.category_id = categoryId;
     }
     if ("has_sizes" in body) updates.has_sizes = Boolean(body.has_sizes);

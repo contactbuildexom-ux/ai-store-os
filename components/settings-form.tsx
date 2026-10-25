@@ -211,10 +211,8 @@ export function SettingsForm() {
         </section>
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <h3 className="text-sm font-semibold text-slate-800">Subscription payment accounts</h3>
-          <p className="mt-1 text-xs text-slate-500">These platform-owned EasyPaisa, JazzCash, and SadaPay details are shown to merchants when they submit a paid plan upgrade.</p>
+          <p className="mt-1 text-xs text-slate-500">These platform-owned JazzCash and SadaPay details are shown to merchants when they submit a paid plan upgrade.</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {field("easypaisaTitle", "EasyPaisa account title")}
-            {field("easypaisaNumber", "EasyPaisa mobile/account number", "tel")}
             {field("jazzcashTitle", "JazzCash account title")}
             {field("jazzcashNumber", "JazzCash mobile/account number", "tel")}
             {field("sadapayTitle", "SadaPay account title")}

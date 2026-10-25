@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { storeRepo } from "@/lib/store-repository";
 import { THEME_PALETTES } from "@/lib/store-theme";
 import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
+import { getActiveSubscriptionPlan } from "@/lib/subscription-plans";
 import type {
   PublicStore,
   PublicStoreProduct,
@@ -87,6 +88,7 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         }
 
         const products = [...productsById.values()];
+        const activePlan = getActiveSubscriptionPlan(store.plan ?? store.plan_type, store.payment_status);
 
         const resolvedThemeColor = settingsResult.data?.theme_color
           || store.primary_color
@@ -99,7 +101,7 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
           id: String(store.id),
           name: String(store.name ?? store.store_name ?? ""),
           slug: String(store.slug),
-          plan: String(store.plan ?? store.plan_type ?? "free"),
+          plan: activePlan.id,
           tagline: String(store.tagline ?? store.header_title ?? "Welcome to our store."),
           description: String(store.description ?? ""),
           whatsapp_number: String(store.whatsapp_number ?? ""),
@@ -108,14 +110,17 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
           secondary_color: String(store.secondary_color ?? "#0f172a"),
         };
 
-        const isBasicPlan = ["basic", "free"].includes(String(store.plan ?? store.plan_type ?? "free").toLowerCase());
-        const resolvedCategories = isBasicPlan 
-          ? [] 
+        const resolvedCategories = activePlan.limits.categories === 0
+          ? []
           : (categoryResult.data && categoryResult.data.length > 0)
-            ? categoryResult.data.map((category) => category.name)
-            : [...new Set(products.map((product) => product.category).filter((c) => c && c !== "General"))];
+            ? categoryResult.data.slice(0, activePlan.limits.categories).map((category) => category.name)
+            : [...new Set(products.map((product) => product.category).filter((c) => c && c !== "General"))]
+                .slice(0, activePlan.limits.categories);
 
-        const cleanProducts = isBasicPlan ? products.map(p => ({ ...p, category: "" })) : products;
+        const planProducts = products.slice(0, activePlan.limits.products);
+        const cleanProducts = activePlan.limits.categories === 0
+          ? planProducts.map((product) => ({ ...product, category: "" }))
+          : planProducts;
 
         return {
           success: true,
@@ -148,11 +153,15 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
       || "#1d7555";
     const repoSelectedTheme = repoStore.theme?.id || repoStore.selected_theme || "emerald";
 
-    const isBasicRepo = ["basic", "free"].includes(String(repoStore.plan || "free").toLowerCase());
-    const resolvedRepoCategories = isBasicRepo 
+    const activePlan = getActiveSubscriptionPlan(repoStore.plan, repoStore.payment_status);
+    const resolvedRepoCategories = activePlan.limits.categories === 0
       ? [] 
-      : [...new Set(publicProducts.map((p) => p.category).filter((c) => c && c !== "General"))];
-    const cleanRepoProducts = isBasicRepo ? publicProducts.map(p => ({ ...p, category: "" })) : publicProducts;
+      : [...new Set(publicProducts.map((p) => p.category).filter((c) => c && c !== "General"))]
+          .slice(0, activePlan.limits.categories);
+    const planProducts = publicProducts.slice(0, activePlan.limits.products);
+    const cleanRepoProducts = activePlan.limits.categories === 0
+      ? planProducts.map((product) => ({ ...product, category: "" }))
+      : planProducts;
 
     return {
       success: true,
@@ -160,7 +169,7 @@ export async function getPublicStorefront(slug: string): Promise<PublicStorefron
         id: repoStore.id,
         name: repoStore.name,
         slug: repoStore.slug,
-        plan: repoStore.plan || "free",
+        plan: activePlan.id,
         tagline: repoStore.tagline || "Welcome to our store.",
         description: repoStore.description || "",
         whatsapp_number: repoStore.whatsapp_number || "",

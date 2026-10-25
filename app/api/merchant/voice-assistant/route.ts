@@ -3,6 +3,7 @@ import { storeRepo, type ProductRecord } from '@/lib/store-repository';
 import { parseVoiceCommand, type ParsedVoiceAction } from '@/lib/ai/voice-intent-parser';
 import { resolveUniversalAnswer, sanitizeForVoiceSpeech } from '@/lib/ai/universal-knowledge-engine';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { checkStoreLimits } from '@/lib/planLimits';
 
 export async function POST(req: Request) {
   try {
@@ -65,6 +66,12 @@ export async function POST(req: Request) {
 
       // Execute ADD_PRODUCT
       if (intent === 'ADD_PRODUCT' && data) {
+        if (supabase && store) {
+          const limitCheck = await checkStoreLimits(store.id, 'product');
+          if (!limitCheck.allowed) {
+            return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+          }
+        }
         const newProduct = await storeRepo.addProduct(identifier, {
           name: data.name,
           price: Number(data.price),
@@ -172,6 +179,10 @@ export async function POST(req: Request) {
       // Execute CREATE_CATEGORY
       if (intent === 'CREATE_CATEGORY' && data) {
         if (supabase && store) {
+          const limitCheck = await checkStoreLimits(store.id, 'category');
+          if (!limitCheck.allowed) {
+            return NextResponse.json({ error: limitCheck.message }, { status: 403 });
+          }
           try {
             await supabase.from('store_categories').insert([{
               store_id: store.id,

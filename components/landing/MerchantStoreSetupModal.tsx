@@ -24,8 +24,16 @@ import {
 import { StoreQRCode } from '@/components/store-qr-code';
 import EmailVerifyField from '@/components/auth/EmailVerifyField';
 import { EMAIL_OTP_REQUIRED } from '@/lib/email-otp-config';
+import { formatPricingPlanPrice } from '@/lib/pricing-plan-catalog';
+import { usePricingPlans } from '@/hooks/use-pricing-plans';
+import type { SubscriptionPlanId } from '@/lib/subscription-plans';
 
-type PlanId = 'basic' | 'pro' | 'business' | 'advanced';
+type PlanId = SubscriptionPlanId;
+
+function normalizeRequestedPlan(value: string): PlanId {
+  if (value === 'advanced') return 'business';
+  return value === 'pro' || value === 'business' ? value : 'basic';
+}
 
 /* ---------- Manual payment settings (JazzCash / EasyPaisa) ---------- */
 // Company ke JazzCash aur EasyPaisa account ki detail yahan likhein.
@@ -120,7 +128,7 @@ interface MerchantStoreSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPrompt?: string;
-  initialPlan?: 'basic' | 'pro' | 'advanced';
+  initialPlan?: 'basic' | 'pro' | 'business' | 'advanced';
   initialStoreName?: string;
   initialTheme?: string;
 }
@@ -454,68 +462,6 @@ export const STORE_IDEA_PRESETS = [
   }
 ];
 
-const PLAN_INFO: Record<string, {
-  name: string;
-  badge: string;
-  price: string;
-  billing: string;
-  tagline: string;
-  features: string[];
-}> = {
-  basic: {
-    name: 'BASIC (Free Starter)',
-    badge: 'Free',
-    price: 'Free',
-    billing: 'forever',
-    tagline: 'Perfect for starting your online store.',
-    features: [
-      'Up to 20 Products',
-      'WhatsApp Ordering',
-      'Basic Store Customization',
-      'Product Management',
-      'Product Images & Descriptions',
-      'Basic Dashboard',
-      'Basic Order Management',
-    ],
-  },
-  pro: {
-    name: 'PRO (Pro Merchant)',
-    badge: 'Advanced',
-    price: 'PKR 2,499',
-    billing: 'per month',
-    tagline: 'For growing stores that need more flexibility.',
-    features: [
-      'Up to 75 Products',
-      'Up to 5 Categories',
-      'Up to 15 Products per Category',
-      'Advanced Store Customization',
-      'WhatsApp Ordering',
-      'Order Tracking',
-      'Payment Integration',
-      'Coupons & Discounts',
-      'Basic Analytics',
-    ],
-  },
-  advanced: {
-    name: 'BUSINESS (Advance VIP)',
-    badge: 'Unlimited',
-    price: 'PKR 4,999',
-    billing: 'per month',
-    tagline: 'For businesses ready to scale their online store.',
-    features: [
-      'Unlimited Products',
-      'Unlimited Categories',
-      'Advanced Store Customization',
-      'WhatsApp Ordering',
-      'Order Tracking',
-      'Payment Integration',
-      'AI Customer Chatbot',
-      'Advanced Analytics',
-      'Priority Support',
-    ],
-  },
-};
-
 /* Shared light-theme classes */
 const INPUT =
   'w-full rounded-xl border border-[#bfdcff] bg-[#f3f8ff] px-3.5 py-2.5 text-sm text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-[#1976d2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1976d2]/20';
@@ -531,12 +477,13 @@ export default function MerchantStoreSetupModal({
   initialTheme = 'royal-gold',
 }: MerchantStoreSetupModalProps) {
   const router = useRouter();
+  const { plans: pricingPlans, loading: pricingLoading, error: pricingError, refresh: refreshPricingPlans } = usePricingPlans();
 
   // Form states
   const [selectedIdeaId, setSelectedIdeaId] = useState('');
   const [storeName, setStoreName] = useState(initialStoreName);
   const [prompt, setPrompt] = useState(initialPrompt);
-  const [plan, setPlan] = useState<PlanId>(initialPlan);
+  const [plan, setPlan] = useState<PlanId>(normalizeRequestedPlan(initialPlan));
   const [selectedTheme, setSelectedTheme] = useState(initialTheme);
   const [customHexColor, setCustomHexColor] = useState<string>('#1976d2');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -545,7 +492,7 @@ export default function MerchantStoreSetupModal({
   const [contactPhone, setContactPhone] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [ideaSearch, setIdeaSearch] = useState('');
-  const [planPopupTarget, setPlanPopupTarget] = useState<string | null>(null);
+  const [planPopupTarget, setPlanPopupTarget] = useState<PlanId | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'jazzcash' | 'easypaisa'>('jazzcash');
   const [upgradeSenderName, setUpgradeSenderName] = useState('');
   const [upgradeSenderNumber, setUpgradeSenderNumber] = useState('');
@@ -615,7 +562,7 @@ export default function MerchantStoreSetupModal({
       if (initialTheme) setSelectedTheme(initialTheme);
       // Plan chosen outside the modal (e.g. a Pricing button) is applied on open;
       // a paid plan always needs its payment details to be entered again.
-      setPlan(initialPlan);
+      setPlan(normalizeRequestedPlan(initialPlan));
       setPaidPlanConfirmed(false);
       setPaymentError('');
       setCurrentStep(1);
@@ -624,13 +571,18 @@ export default function MerchantStoreSetupModal({
 
   if (!isOpen) return null;
 
-  const isPaidPlan = plan !== 'basic';
+  const selectedPlanDetails = pricingPlans.find((item) => item.plan_key === plan) ?? null;
+  const planPopupDetails = planPopupTarget
+    ? pricingPlans.find((item) => item.plan_key === planPopupTarget) ?? null
+    : null;
+  const isPaidPlan = selectedPlanDetails ? Number(selectedPlanDetails.price) > 0 : true;
   const activeAccount = PAYMENT_ACCOUNTS[paymentMethod];
   const accountReady = activeAccount.number.trim() !== '';
 
-  const openPlanPopup = (id: string) => {
+  const openPlanPopup = (id: PlanId) => {
     setPaymentError('');
     setPlanPopupTarget(id);
+    refreshPricingPlans();
   };
 
   const closePlanPopup = () => {
@@ -664,10 +616,10 @@ export default function MerchantStoreSetupModal({
 
   // Validates the payment form; only then the paid plan is locked in.
   const confirmPaymentDetails = () => {
-    if (!planPopupTarget || planPopupTarget === 'basic') return;
+    if (!planPopupTarget || !planPopupDetails || Number(planPopupDetails.price) <= 0) return;
 
     if (!accountReady) {
-      setPaymentError('Payments for this plan are temporarily unavailable. Please choose the Free Starter plan or try again later.');
+      setPaymentError('Payments for this plan are temporarily unavailable. Please choose a free plan or try again later.');
       return;
     }
     if (upgradeSenderName.trim().length < 3) {
@@ -689,7 +641,7 @@ export default function MerchantStoreSetupModal({
     }
 
     setPaymentError('');
-    setPlan(planPopupTarget as PlanId);
+    setPlan(planPopupTarget);
     setPaidPlanConfirmed(true);
     setPlanPopupTarget(null);
   };
@@ -697,6 +649,16 @@ export default function MerchantStoreSetupModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (!selectedPlanDetails || pricingLoading || pricingError) {
+      setErrorMessage(pricingError ?? 'Current plan details are unavailable. Please try again.');
+      refreshPricingPlans();
+      return;
+    }
+    if (plan === 'basic' && Number(selectedPlanDetails.price) > 0) {
+      setErrorMessage('This plan cannot be selected for store creation at its current price. Contact support.');
+      return;
+    }
 
     // Paid plan: payment details must be added before the store is created
     if (isPaidPlan && !paidPlanConfirmed) {
@@ -886,9 +848,9 @@ export default function MerchantStoreSetupModal({
                     {successData.storeUrl.replace(/^https?:\/\//i, '')}
                   </p>
                 )}
-                {plan !== 'basic' && (
+                {isPaidPlan && (
                   <p className="mx-auto mt-3 max-w-md rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                    Your {plan === 'advanced' ? 'Advanced' : 'Pro'} plan selection is pending payment approval; the store starts with Basic limits until it is approved.
+                    Your {selectedPlanDetails?.name ?? 'Selected'} plan selection is pending payment approval; the store starts with its active plan until approval.
                   </p>
                 )}
               </div>
@@ -1197,42 +1159,26 @@ export default function MerchantStoreSetupModal({
                       </label>
                     </div>
 
+                    {pricingError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-700">{pricingError}</p>}
+                    {pricingLoading && <p role="status" className="text-[11px] text-[#5b7aa3]">Loading current plans…</p>}
+                    {pricingPlans.length === 0 && !pricingLoading && <p role="status" className="text-[11px] text-[#5b7aa3]">No plans are currently available.</p>}
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                      {[
-                        { 
-                          id: 'basic', 
-                          name: 'Free Starter', 
-                          price: 'Free',
-                          desc: 'Up to 20 Products • Free Forever', 
-                          icon: Store 
-                        },
-                        { 
-                          id: 'pro', 
-                          name: 'Pro Merchant', 
-                          price: 'PKR 2,499 / mo',
-                          desc: 'Up to 75 Prods • 5 Categories', 
-                          icon: MessageCircle 
-                        },
-                        { 
-                          id: 'advanced', 
-                          name: 'Advance VIP', 
-                          price: 'PKR 4,999 / mo',
-                          desc: 'Unlimited Prods • AI Chatbot', 
-                          icon: Crown 
-                        },
-                      ].map((p) => {
-                        const isSelected = plan === p.id;
-                        const Icon = p.icon;
-                        const needsPayment = p.id !== 'basic';
+                      {pricingPlans.filter((pricingPlan) => pricingPlan.plan_key !== null).map((pricingPlan) => {
+                        const planKey = pricingPlan.plan_key;
+                        if (!planKey) return null;
+                        const isSelected = plan === planKey;
+                        const Icon = planKey === 'basic' ? Store : planKey === 'pro' ? MessageCircle : Crown;
+                        const needsPayment = Number(pricingPlan.price) > 0;
                         return (
                           <button
-                            key={p.id}
+                            key={pricingPlan.id}
                             type="button"
-                            onClick={() => openPlanPopup(p.id)}
+                            onClick={() => openPlanPopup(planKey)}
+                            disabled={pricingLoading || (planKey === 'basic' && needsPayment)}
                             className={`relative rounded-2xl border p-3 text-left transition-all cursor-pointer ${
                               isSelected
                                 ? 'border-[#1976d2] bg-[#e6f4ff] ring-2 ring-[#1976d2]/25 shadow-xs'
-                                : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff]'
+                                : 'border-[#cfe2fa] bg-white hover:border-[#1976d2]/60 hover:bg-[#f3f8ff] disabled:cursor-not-allowed disabled:opacity-60'
                             }`}
                           >
                             <div className="mb-1.5 flex items-center justify-between">
@@ -1253,9 +1199,9 @@ export default function MerchantStoreSetupModal({
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs font-bold text-[#0b2545]">{p.name}</p>
-                            <p className="text-[10px] font-bold text-[#1976d2]">{p.price}</p>
-                            <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{p.desc}</p>
+                            <p className="text-xs font-bold text-[#0b2545]">{pricingPlan.name}</p>
+                            <p className="text-[10px] font-bold text-[#1976d2]">{formatPricingPlanPrice(pricingPlan.price, pricingPlan.billing_cycle)}</p>
+                            <p className="mt-0.5 text-[10px] leading-snug text-[#5b7aa3]">{pricingPlan.features.slice(0, 2).join(' · ')}</p>
                           </button>
                         );
                       })}
@@ -1264,7 +1210,7 @@ export default function MerchantStoreSetupModal({
                     {isPaidPlan && (
                       paidPlanConfirmed ? (
                         <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] font-semibold text-emerald-700">
-                          Payment details added for {PLAN_INFO[plan]?.name}. Tap the plan card to edit them.
+                          Payment details added for {selectedPlanDetails?.name}. Tap the plan card to edit them.
                         </p>
                       ) : (
                         <p className="rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700">
@@ -1274,15 +1220,17 @@ export default function MerchantStoreSetupModal({
                     )}
                   </div>
 
-              {/* 3. WhatsApp Integration (Auto-Linked for Pro & Advance) */}
+              {/* 3. WhatsApp Integration */}
               <div className="space-y-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
                     <MessageCircle size={15} className="text-emerald-600" /> Dedicated WhatsApp Number
                   </label>
-                  <span className="rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    WhatsApp Ordering Included
-                  </span>
+                  {selectedPlanDetails?.entitlements?.paymentGateways.includes('whatsapp') && (
+                    <span className="rounded-full border border-emerald-300 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      Included in this plan
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] leading-relaxed text-[#2c4a73]">
                   When customers checkout on your storefront, their complete order details (Customer Name, Email, Phone, Address, Zip & Items) will be dispatched directly to this WhatsApp number.
@@ -1293,7 +1241,7 @@ export default function MerchantStoreSetupModal({
                     placeholder="e.g. 923001234567 or +92 300 1234567"
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
-                    required={plan !== 'basic'}
+                    required={Boolean(selectedPlanDetails?.entitlements?.paymentGateways.includes('whatsapp'))}
                     className="w-full rounded-xl border border-emerald-200 bg-white px-3.5 py-2.5 text-sm text-[#0b2545] placeholder:text-[#7c93b3] transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                   />
                 </div>
@@ -1424,20 +1372,20 @@ export default function MerchantStoreSetupModal({
       </div>
 
       {/* Plan Details & Payment Popup Modal (Matching Merchant Dashboard Flow) */}
-      {planPopupTarget && PLAN_INFO[planPopupTarget] && (
+      {planPopupTarget && planPopupDetails && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
           <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl space-y-4 my-8 max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <span className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                  {planPopupTarget === 'basic' ? 'Free Starter' : 'Subscription Plan'}
+                  Subscription Plan
                 </span>
                 <h3 className="mt-1.5 text-lg font-black text-slate-900">
-                  {PLAN_INFO[planPopupTarget].name}
+                  {planPopupDetails.name}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  {planPopupTarget === 'basic' ? 'No payment required for Basic plan.' : `Billed monthly at ${PLAN_INFO[planPopupTarget].price}. Cancel or switch anytime.`}
+                  {`${formatPricingPlanPrice(planPopupDetails.price, planPopupDetails.billing_cycle)}${Number(planPopupDetails.price) > 0 ? ` · Billed ${planPopupDetails.billing_cycle}.` : ''}`}
                 </p>
               </div>
               <button
@@ -1453,10 +1401,10 @@ export default function MerchantStoreSetupModal({
             <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2">
               <p className="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
                 <CheckCircle2 size={14} className="text-blue-600" />
-                Features included on {PLAN_INFO[planPopupTarget].name}:
+                Features included on {planPopupDetails.name}:
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-slate-700">
-                {PLAN_INFO[planPopupTarget].features.map((feature, idx) => (
+                {planPopupDetails.features.map((feature, idx) => (
                   <li key={idx} className="flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-blue-600 shrink-0" />
                     <span>{feature}</span>
@@ -1466,7 +1414,7 @@ export default function MerchantStoreSetupModal({
             </div>
 
             {/* Payment Section for Paid Plans (Pro / Business) */}
-            {planPopupTarget !== 'basic' ? (
+            {Number(planPopupDetails.price) > 0 ? (
               <div className="space-y-3.5 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
@@ -1515,7 +1463,7 @@ export default function MerchantStoreSetupModal({
                         {activeAccount.number}
                       </p>
                       <p className="text-slate-900 font-bold text-[11px] pt-0.5">
-                        Amount to send: {PLAN_INFO[planPopupTarget].price}
+                        Amount to send: {formatPricingPlanPrice(planPopupDetails.price, planPopupDetails.billing_cycle)}
                       </p>
                       <p className="text-[10px] text-slate-500 pt-0.5 leading-relaxed">
                         Send the amount from your JazzCash / EasyPaisa app, then enter your sender details and the Transaction ID below. Our team will verify your payment; until then your store runs with Basic limits.
@@ -1591,7 +1539,7 @@ export default function MerchantStoreSetupModal({
                 <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
-                    disabled={!accountReady}
+                    disabled={!accountReady || pricingLoading || Boolean(pricingError) || !planPopupDetails}
                     onClick={confirmPaymentDetails}
                     className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-2.5 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer text-center disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -1607,18 +1555,18 @@ export default function MerchantStoreSetupModal({
                 </div>
               </div>
             ) : (
-              /* Basic Plan Action Buttons */
+              /* Zero-priced plan action buttons */
               <div className="flex flex-col sm:flex-row gap-2.5 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
-                    setPlan('basic');
+                    setPlan(planPopupTarget);
                     setPaidPlanConfirmed(false);
                     closePlanPopup();
                   }}
                   className="flex-1 rounded-xl bg-gradient-to-r from-[#0b2545] to-[#1976d2] py-3 text-xs font-bold text-white shadow-md hover:brightness-110 active:scale-95 transition cursor-pointer"
                 >
-                  Select Free Starter Plan
+                  Select {planPopupDetails.name}
                 </button>
                 <button
                   type="button"

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveUniversalAnswer } from "@/lib/ai/universal-knowledge-engine";
+import { getSubscriptionPlanSummary } from "@/lib/subscription-plans";
 import type {
   PlatformAssistantRequest,
   PlatformAssistantResponse,
@@ -32,9 +33,7 @@ Core Capabilities:
    You are also the co-pilot for Buildexom AI Store OS:
    - Over 10,000+ stores created across Pakistan and internationally with 99.8% uptime.
    - Plans:
-     * Basic / Free Starter (Rs. 0 forever): Up to 20 products, 0 categories, standard WhatsApp checkout, personal subdomain, store QR code.
-     * Pro Merchant (PKR 2,499/mo): Up to 75 products, up to 5 categories, WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.
-     * Advance VIP / Business (PKR 4,999/mo): Unlimited products & categories, WhatsApp ordering, order tracking, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.
+     ${getSubscriptionPlanSummary()}
    - Orders flow directly into the merchant's WhatsApp with full itemization, Cash on Delivery, or advance bank transfer.
 
 STRICT INSTRUCTIONS:
@@ -212,10 +211,8 @@ function platformReply(question: string, conversationHistory: PlatformAssistantR
 
   // 7. PRICING & PLANS (Free vs Pro vs Advanced)
   if (/(price|pricing|plan|plans|cost|charges|fee|fees|kitne\s*paise|free\s*plan|pro\s*plan|advance\s*plan|subscription)/i.test(q)) {
-    return "We offer 3 straightforward plans:\n\n" +
-      "• 🟢 **Basic / Free Starter (Rs. 0 / forever)**: Up to 20 products, 0 categories, standard checkout, personal subdomain, store QR code.\n" +
-      "• 🔵 **Pro Merchant (PKR 2,499 / month)**: Up to 75 products, up to 5 categories, direct WhatsApp ordering, order tracking, payment integration, coupons & discounts, basic analytics.\n" +
-      "• 🟣 **Advance VIP / Business (PKR 4,999 / month)**: Unlimited products & categories, WhatsApp ordering, payment integration, Bexi AI customer chatbot, advanced analytics, priority support.\n\n" +
+    return "We offer these subscription plans:\n\n" +
+      `${getSubscriptionPlanSummary()}\n\n` +
       "You can start 100% free with no credit card required!";
   }
 

@@ -3,9 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
 import { updateStoreByIdOrSlug } from "@/lib/store-id-slug";
+import type { SubscriptionPlanId } from "@/lib/subscription-plans";
 
-const VALID_PLANS = ["basic"] as const;
-type PlanType = (typeof VALID_PLANS)[number];
+const VALID_PLANS: readonly SubscriptionPlanId[] = ["basic", "pro", "business"];
 
 export async function POST(req: Request) {
   try {
@@ -19,13 +19,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
 
-    if (requestedPlan === "pro" || requestedPlan === "business") {
-      return NextResponse.json({ error: "Paid plans require a manual payment request and Super Admin approval." }, { status: 409 });
-    }
-
-    if (!VALID_PLANS.includes(requestedPlan as PlanType)) {
+    if (!VALID_PLANS.includes(requestedPlan as SubscriptionPlanId)) {
       return NextResponse.json(
-        { error: "Only the Basic plan can be activated directly." },
+        { error: "Choose a supported subscription plan." },
         { status: 400 }
       );
     }
@@ -38,11 +34,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const plan = requestedPlan as PlanType;
+    const plan = requestedPlan as SubscriptionPlanId;
+    const admin = createAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: "Live subscription pricing is unavailable." }, { status: 503 });
+    }
+    const { data: pricingPlan, error: pricingError } = await admin
+      .from("pricing_plans")
+      .select("plan_key, price")
+      .eq("plan_key", plan)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (pricingError) {
+      return NextResponse.json({ error: "Unable to verify the current subscription price." }, { status: 500 });
+    }
+    if (!pricingPlan || Number(pricingPlan.price) !== 0) {
+      return NextResponse.json({ error: "Only a currently free plan can be activated without payment." }, { status: 409 });
+    }
     let updatedInDb = false;
 
     // 1. Update in Supabase if configured
-    const admin = createAdminClient();
     const isSupabaseValid =
       admin &&
       process.env.NEXT_PUBLIC_SUPABASE_URL &&

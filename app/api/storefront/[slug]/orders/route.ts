@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveSubscriptionPlan } from "@/lib/subscription-plans";
 
 type RequestedItem = { product_id?: unknown; id?: unknown; quantity?: unknown };
 type CatalogProduct = { id: string; name: string; price: number };
@@ -44,15 +45,20 @@ export async function POST(
 
     const { data: store, error: storeError } = await supabase
       .from("stores")
-      .select("id, name, slug, plan, whatsapp_number, accepts_cod, accepts_advance, advance_percentage")
+      .select("id, name, slug, plan, payment_status, whatsapp_number, accepts_cod, accepts_advance, advance_percentage")
       .eq("slug", slug)
       .maybeSingle();
 
     if (storeError) throw storeError;
     if (!store) return NextResponse.json({ error: "Store not found." }, { status: 404 });
 
-    const acceptsCod = store.accepts_cod ?? true;
-    const acceptsAdvance = store.accepts_advance ?? false;
+    const activePlan = getActiveSubscriptionPlan(store.plan, store.payment_status);
+    const acceptsCod = (store.accepts_cod ?? true) &&
+      activePlan.features.paymentGateways.includes("cod");
+    const supportsAdvance = activePlan.features.paymentGateways.some(
+      (gateway) => gateway !== "cod" && gateway !== "whatsapp"
+    );
+    const acceptsAdvance = (store.accepts_advance ?? false) && supportsAdvance;
     const advancePercentage = Number(store.advance_percentage ?? 50);
     if (!acceptsCod && !acceptsAdvance) {
       return NextResponse.json({ error: "This store has not enabled a checkout payment method." }, { status: 409 });
@@ -142,7 +148,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       order,
-      plan: store.plan || 'basic',
+      plan: activePlan.id,
       whatsapp_number: safeWhatsapp,
       items,
       subtotal,
