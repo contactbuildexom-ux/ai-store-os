@@ -55,9 +55,17 @@ export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const supabase = createAdminClient();
   if (!supabase) return NextResponse.json({ error: "Pricing database is not configured." }, { status: 503 });
-  const { data, error } = await supabase.from("pricing_plans").select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").order("created_at", { ascending: true });
-  if (error) return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
-  return NextResponse.json({ plans: data });
+  try {
+    const { data, error } = await supabase.from("pricing_plans").select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").order("created_at", { ascending: true });
+    if (error) {
+      console.error("GET /api/admin/pricing Supabase query failed for pricing_plans:", error);
+      return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
+    }
+    return NextResponse.json({ plans: data });
+  } catch (error) {
+    console.error("GET /api/admin/pricing Supabase query threw for pricing_plans:", error);
+    return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
@@ -72,9 +80,17 @@ export async function POST(request: Request) {
   }
   const plan = parsePlan(body);
   if (!plan) return NextResponse.json({ error: "Enter a valid name, non-negative price, billing cycle, feature list, and active status." }, { status: 400 });
-  const { data, error } = await supabase.from("pricing_plans").insert(plan).select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").single();
-  if (error) return NextResponse.json({ error: "Unable to create pricing plan." }, { status: 500 });
-  return NextResponse.json({ plan: data }, { status: 201 });
+  try {
+    const { data, error } = await supabase.from("pricing_plans").insert(plan).select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").single();
+    if (error) {
+      console.error("POST /api/admin/pricing Supabase insert failed:", error);
+      return NextResponse.json({ error: "Unable to create pricing plan." }, { status: 500 });
+    }
+    return NextResponse.json({ plan: data }, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/admin/pricing Supabase insert threw:", error);
+    return NextResponse.json({ error: "Unable to create pricing plan." }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request) {

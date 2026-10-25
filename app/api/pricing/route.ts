@@ -4,8 +4,9 @@ import { SUBSCRIPTION_PLANS } from "@/lib/subscription-plans";
 
 export const dynamic = "force-dynamic";
 
-function resolvePlanKey(name: string): keyof typeof SUBSCRIPTION_PLANS | null {
-  switch (name.trim().toLowerCase()) {
+function resolvePlanKey(value: unknown): keyof typeof SUBSCRIPTION_PLANS | null {
+  if (typeof value !== "string") return null;
+  switch (value.trim().toLowerCase()) {
     case "free":
     case "basic":
     case "free starter":
@@ -31,10 +32,9 @@ export async function GET() {
     .order("created_at", { ascending: true });
   if (error) return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
   const plans = (data ?? []).map((plan) => {
-    const planKey = plan.plan_key === "basic" || plan.plan_key === "pro" || plan.plan_key === "business"
-      ? plan.plan_key
-      : resolvePlanKey(plan.name);
-    const configured = planKey ? SUBSCRIPTION_PLANS[planKey as keyof typeof SUBSCRIPTION_PLANS] : null;
+    const storedPlanKey: unknown = plan.plan_key;
+    const planKey = resolvePlanKey(storedPlanKey) ?? resolvePlanKey(plan.name);
+    const configured = planKey ? SUBSCRIPTION_PLANS[planKey] : null;
     return {
       ...plan,
       plan_key: planKey,

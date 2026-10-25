@@ -2368,6 +2368,10 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     </button>
                                     {!editingProdId && productLimit !== null && products.length >= productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails?.name ?? planName(storePlan)} product limit. Upgrade your plan to add more.</p>}
                                     {editingProdId && <button type="button" onClick={() => { setEditingProdId(null); setProdName(''); setProdPrice(''); setProdDesc(''); setProdSizes(''); setProdColors(''); setProdCategory(''); setProdImageFiles([]); }} className="w-full rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">Cancel edit</button>}
+<<<<<<< HEAD
+                                    {!editingProdId && productLimit !== null && products.length >= productLimit && <p className="text-[10px] leading-4 text-amber-700">You reached your {planDetails?.name ?? planName(storePlan)} product limit. Upgrade your plan to add more.</p>}
+=======
+>>>>>>> 5ac62d0ecfe477b5be4b1064b23b7968209ec4a9
                                 </form>
                             </div>
 
@@ -3112,8 +3116,13 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
+<<<<<<< HEAD
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send {modalPlanDetails ? formatPricingPlanPrice(modalPlanDetails.price, modalPlanDetails.billing_cycle) : pricingLoading ? 'Loading plan price…' : 'Price unavailable'} to platform account</span>
+                                        <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : 'SadaPay'}</span>
+=======
                                         <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send {formatPricingPlanPrice(modalPlanDetails?.price ?? 0, modalPlanDetails?.billing_cycle ?? '')} to platform account</span>
                                         <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay'}</span>
+>>>>>>> 5ac62d0ecfe477b5be4b1064b23b7968209ec4a9
                                     </div>
                                     {subscriptionPaymentAccounts[paymentMethod].number ? (
                                         <>
