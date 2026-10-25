@@ -64,6 +64,7 @@ export function AdminPricingPlans() {
       if (!Array.isArray(body.plans) || !body.plans.every(isPricingPlan)) throw new Error("The pricing service returned invalid plan data.");
       setPlans(body.plans);
     } catch (reason) {
+      console.error("Failed to load pricing plans from /api/admin/pricing:", reason);
       setError(reason instanceof Error ? reason.message : "Unable to load pricing plans.");
     } finally {
       setLoading(false);

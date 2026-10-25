@@ -3112,12 +3112,12 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                                 <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send {formatPricingPlanPrice(modalPlanDetails?.price ?? 0, modalPlanDetails?.billing_cycle ?? '')} to platform account</span>
+                                        <span className="font-bold text-blue-950 uppercase text-[10px] tracking-wider">Send {modalPlanDetails ? formatPricingPlanPrice(modalPlanDetails.price, modalPlanDetails.billing_cycle) : pricingLoading ? 'Loading plan price…' : 'Price unavailable'} to platform account</span>
                                         <span className="font-mono font-bold text-blue-700 text-[11px]">{paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay'}</span>
                                     </div>
                                     {subscriptionPaymentAccounts[paymentMethod].number ? (
                                         <>
-                                            <p className="text-slate-800 font-semibold text-xs">{subscriptionPaymentAccounts[paymentMethod].title || (paymentMethod === 'jazzcash' ? 'JazzCash' : 'SadaPay')}</p>
+                                            <p className="text-slate-800 font-semibold text-xs">{subscriptionPaymentAccounts[paymentMethod].title || (paymentMethod === 'jazzcash' ? 'JazzCash' : paymentMethod === 'easypaisa' ? 'EasyPaisa' : 'SadaPay')}</p>
                                             <p className="font-mono text-xs font-bold text-slate-900 bg-white/80 px-2 py-1 rounded border border-blue-100 inline-block">{subscriptionPaymentAccounts[paymentMethod].number}</p>
                                             <p className="text-[10px] text-slate-500 pt-0.5">Transfer the exact plan amount, then enter the TID below. Your paid features unlock after Super Admin approval.</p>
                                         </>
