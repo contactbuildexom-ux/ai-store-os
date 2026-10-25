@@ -231,7 +231,7 @@ export function detectStoreNiche(
     if (explicit.includes('gaming') || explicit.includes('esports')) return 'gaming';
     if (explicit.includes('food') || explicit.includes('coffee') || explicit.includes('tea') || explicit.includes('bakery')) return 'food';
     if (explicit.includes('wedding') || explicit.includes('bridal')) return 'wedding';
-    if (explicit.includes('nature') || explicit.includes('plant')) return 'nature';
+    if (explicit.includes('nature') || explicit.includes('plant') || explicit.includes('organic') || explicit.includes('herbal') || explicit.includes('botanical') || explicit.includes('ayurvedic')) return 'nature';
     if (explicit.includes('tech') || explicit.includes('gadget') || explicit.includes('electronics')) return 'tech';
     if (explicit.includes('cloth') || explicit.includes('fashion') || explicit.includes('apparel') || explicit.includes('pret')) return 'clothing';
   }
@@ -289,7 +289,7 @@ export function detectStoreNiche(
   }
 
   // 10. Nature / Plants / Organic Greens
-  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|botanical|organic tea|nursery|lawn)\b/i.test(combined)) {
+  if (/\b(organic|organics|natural|pure earth|ayurvedic|herbs|botanical|botanicals|nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|indoor plants|herbal|succulent|succulents|organic tea|nursery|lawn|greenery)\b/i.test(combined)) {
     return 'nature';
   }
 

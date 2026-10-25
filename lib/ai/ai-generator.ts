@@ -573,7 +573,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
     if (rawN.includes('jewel') || rawN.includes('silver') || rawN.includes('gold')) return 'jewelry';
     if (rawN.includes('gaming') || rawN.includes('gamer')) return 'gaming';
     if (rawN.includes('coffee') || rawN.includes('tea') || rawN.includes('food') || rawN.includes('bakery') || rawN.includes('chocolate')) return 'food';
-    if (rawN.includes('plant') || rawN.includes('nature')) return 'nature';
+    if (rawN.includes('plant') || rawN.includes('nature') || rawN.includes('organic') || rawN.includes('herbal') || rawN.includes('botanical')) return 'nature';
     if (rawN.includes('wedding') || rawN.includes('bridal')) return 'wedding';
     if (rawN.includes('tech') || rawN.includes('audio') || rawN.includes('phone') || rawN.includes('gadget')) return 'tech';
     if (rawN.includes('cloth') || rawN.includes('pret') || rawN.includes('apparel') || rawN.includes('fashion') || rawN.includes('streetwear') || rawN.includes('hoodie')) return 'clothing';
@@ -666,7 +666,7 @@ export function detectNiche(prompt: string, explicitNiche?: string, customStoreN
   }
 
   // Nature, Plants & Gardening
-  if (/\b(nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|herbal|succulent|succulents|botanical|turf|greenery)\b/i.test(combined)) {
+  if (/\b(organic|organics|natural|pure earth|ayurvedic|herbs|botanical|botanicals|nature|grass|plant|plants|flora|green|greens|garden|gardening|indoor plant|indoor plants|herbal|succulent|succulents|turf|greenery)\b/i.test(combined)) {
     return 'nature';
   }
 

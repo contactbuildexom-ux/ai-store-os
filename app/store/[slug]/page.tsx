@@ -194,17 +194,17 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
     hero_images: resolvedHeroImages,
-    about_title: settingsData.about_title || (repoStoreFallback as any)?.about_title || "",
-    about_text: settingsData.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
-    about_image: settingsData.about_image || (repoStoreFallback as any)?.about_image || "",
+    about_title: settingsData.about_title || (store.payment_details as any)?.about_title || (repoStoreFallback as any)?.about_title || "",
+    about_text: settingsData.about_text || (store.payment_details as any)?.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
+    about_image: settingsData.about_image || (store.payment_details as any)?.about_image || (repoStoreFallback as any)?.about_image || "",
   } : {
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
     banner_text: safeStore.tagline || 'Free delivery nationwide on orders above Rs. 3,000!',
     hero_images: resolvedHeroImages,
-    about_title: (repoStoreFallback as any)?.about_title || "",
-    about_text: (repoStoreFallback as any)?.about_text || safeStore.description || "",
-    about_image: (repoStoreFallback as any)?.about_image || "",
+    about_title: (store.payment_details as any)?.about_title || (repoStoreFallback as any)?.about_title || "",
+    about_text: (store.payment_details as any)?.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
+    about_image: (store.payment_details as any)?.about_image || (repoStoreFallback as any)?.about_image || "",
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)

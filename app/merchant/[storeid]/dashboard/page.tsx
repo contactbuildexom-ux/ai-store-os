@@ -134,8 +134,10 @@ const PLAN_DETAILS: Record<Plan, {
 };
 
 function normalizePlan(value: string | null | undefined): Plan {
-    const plan = value?.toLowerCase();
-    if (plan === 'pro' || plan === 'business') return plan;
+    if (!value) return 'basic';
+    const plan = value.toLowerCase().trim();
+    if (plan === 'pro') return 'pro';
+    if (plan === 'business' || plan === 'advanced' || plan === 'advance' || plan === 'unlimited') return 'business';
     return 'basic';
 }
 
@@ -600,7 +602,11 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             ]);
             if (paymentInstructions) {
                 setSubscriptionPaymentAccounts(paymentInstructions.payment_accounts);
-                setPendingUpgradeStatus(paymentInstructions.pending_upgrade?.plan ?? null);
+                const pendingTarget = paymentInstructions.pending_upgrade?.target_plan || paymentInstructions.pending_upgrade?.plan || null;
+                setPendingUpgradeStatus(pendingTarget);
+                if (pendingTarget) {
+                    setSelectedPlan(normalizePlan(pendingTarget));
+                }
             }
 
             const nicheColor = getStoreNicheColor(storeData.name, storeData.slug);
@@ -614,6 +620,9 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             if (settingsData.settings) {
                 setBannerText(settingsData.settings.banner_text || '');
                 setLogoUrl(settingsData.settings.logo_url || '');
+                setAboutTitle(settingsData.settings.about_title || (storeData as any)?.payment_details?.about_title || '');
+                setAboutText(settingsData.settings.about_text || (storeData as any)?.payment_details?.about_text || (storeData as any)?.description || '');
+                setAboutImage(settingsData.settings.about_image || (storeData as any)?.payment_details?.about_image || '');
                 if (Array.isArray(settingsData.settings.hero_images)) {
                     setHeroImages([
                         settingsData.settings.hero_images[0] || '',
@@ -708,6 +717,16 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
         try {
             if (!resolvedStoreId) throw new Error('Store is still loading. Please try again in a moment.');
             const savedLogoUrl = logoFile ? await uploadStoreImage(logoFile, resolvedStoreId) : logoUrl;
+            let savedAboutImageUrl = aboutImage;
+            if (aboutImageFile) {
+                try {
+                    savedAboutImageUrl = await uploadStoreImage(aboutImageFile, resolvedStoreId);
+                    setAboutImage(savedAboutImageUrl);
+                    setAboutImageFile(null);
+                } catch (imgErr) {
+                    console.warn('Could not upload about image:', imgErr);
+                }
+            }
             const settingsPayload: Record<string, unknown> = {
                     store_id: resolvedStoreId,
                     theme_color: themeColor,
@@ -727,7 +746,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 settingsPayload.hero_images = heroImages.filter(Boolean);
                 settingsPayload.about_title = aboutTitle.trim();
                 settingsPayload.about_text = aboutText.trim();
-                settingsPayload.about_image = aboutImage.trim();
+                settingsPayload.about_image = savedAboutImageUrl.trim();
             }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
@@ -1806,6 +1825,109 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         </label>
                                     </div>
                                 </div>
+
+                                {/* About Section Customization */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="text-xs font-bold text-slate-900">About Store & Story Section</h4>
+                                            <p className="mt-0.5 text-[11px] text-slate-500">
+                                                Customize your brand story and showcase image displayed on your public storefront.
+                                            </p>
+                                        </div>
+                                        <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200">
+                                            Storefront About Box
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                            About Section Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={aboutTitle}
+                                            onChange={(e) => setAboutTitle(e.target.value)}
+                                            placeholder={`About ${storeName || 'Our Boutique'}`}
+                                            className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                            Brand Story & Mission
+                                        </label>
+                                        <textarea
+                                            rows={4}
+                                            value={aboutText}
+                                            onChange={(e) => setAboutText(e.target.value)}
+                                            placeholder="Share your boutique's story, craftsmanship, product quality, and dedication to fast nationwide delivery..."
+                                            className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 leading-relaxed"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                            About Showcase Box Image
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-3.5">
+                                            <div className="relative size-24 shrink-0 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                                                {aboutImage ? (
+                                                    <>
+                                                        <img
+                                                            src={aboutImage}
+                                                            alt="About Showcase Preview"
+                                                            className="size-full object-cover"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setAboutImage('')}
+                                                            className="absolute top-1 right-1 rounded-md bg-rose-600 p-1 text-white shadow-xs hover:bg-rose-700"
+                                                            title="Remove image"
+                                                        >
+                                                            <Trash2 size={11} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-[10px] font-medium text-slate-400 text-center px-1">
+                                                        No Image
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex-1 w-full space-y-2">
+                                                <label className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs">
+                                                    <Upload size={13} /> Upload Showcase Image
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={async (e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file && resolvedStoreId) {
+                                                                try {
+                                                                    const uploadedUrl = await uploadStoreImage(file, resolvedStoreId);
+                                                                    setAboutImage(uploadedUrl);
+                                                                    setAboutImageFile(null);
+                                                                } catch (err) {
+                                                                    console.warn('About image upload error:', err);
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="sr-only"
+                                                    />
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    value={aboutImage}
+                                                    onChange={(e) => setAboutImage(e.target.value)}
+                                                    placeholder="Or paste image URL (https://...)"
+                                                    className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-700 outline-none focus:border-blue-400"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <section className="space-y-3 rounded-xl border border-slate-200 p-4">
                                     <div><h4 className="text-xs font-semibold text-slate-900">Social profiles</h4><p className="mt-1 text-[10px] text-slate-500">Valid profile URLs are shown as linked icons in your public storefront footer.</p></div>
                                     <div className="grid gap-3 sm:grid-cols-2">

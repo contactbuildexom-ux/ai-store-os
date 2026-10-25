@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       const { data: dbStore } = await fetchStoreByIdOrSlug<StoreRow>(
         supabase,
         requestedId,
-        "id, name, slug, plan, payment_status, primary_color, selected_theme, whatsapp_number, created_at, is_verified, verification_status"
+        "id, name, slug, plan, selected_plan, payment_status, payment_details, primary_color, selected_theme, whatsapp_number, created_at, is_verified, verification_status"
       );
 
 
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
             name: dbStore.name,
             slug: dbStore.slug,
             plan: dbStore.plan || "basic",
-            selected_plan: (dbStore as any).selected_plan || dbStore.plan || "basic",
+            selected_plan: (dbStore as any).selected_plan || (dbStore as any).payment_details?.pending_upgrade?.target_plan || (dbStore as any).payment_details?.pending_upgrade?.plan || dbStore.plan || "basic",
             payment_status: dbStore.payment_status || "active",
             payment_details: (dbStore as any).payment_details || {},
             whatsapp_number: dbStore.whatsapp_number,

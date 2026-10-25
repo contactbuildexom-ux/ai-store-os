@@ -37,12 +37,35 @@ export async function GET(request: Request) {
     let selectedPlan = "basic";
 
     if (storeLookup) {
-      const store = await storeRepo.getStore(storeLookup);
-      if (store) {
-        selectedPlan = store.selected_plan || store.plan || "basic";
-        const details: any = store.payment_details || {};
-        if (details && typeof details === "object" && details.pending_upgrade) {
-          pendingUpgrade = details.pending_upgrade;
+      const supabase = createAdminClient();
+      const isSupabaseValid = supabase && process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder-project") && !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-project");
+      if (isSupabaseValid && supabase) {
+        try {
+          const { data: dbStore } = await fetchStoreByIdOrSlug(
+            supabase,
+            storeLookup,
+            "id, slug, plan, selected_plan, payment_status, payment_details"
+          );
+          if (dbStore) {
+            const details: any = dbStore.payment_details || {};
+            if (details && typeof details === "object" && details.pending_upgrade) {
+              pendingUpgrade = details.pending_upgrade;
+            }
+            selectedPlan = pendingUpgrade?.target_plan || pendingUpgrade?.plan || dbStore.selected_plan || dbStore.plan || "basic";
+          }
+        } catch {
+          // Fall through to storeRepo
+        }
+      }
+
+      if (!pendingUpgrade) {
+        const store = await storeRepo.getStore(storeLookup);
+        if (store) {
+          const details: any = store.payment_details || {};
+          if (details && typeof details === "object" && details.pending_upgrade) {
+            pendingUpgrade = details.pending_upgrade;
+          }
+          selectedPlan = pendingUpgrade?.target_plan || pendingUpgrade?.plan || store.selected_plan || store.plan || "basic";
         }
       }
     }
@@ -185,6 +208,7 @@ export async function POST(request: Request) {
     const currentDetails = isRecord(store.payment_details) ? store.payment_details : {};
     const upgradeData = {
       target_plan: plan,
+      plan: plan,
       payment_method: gateway,
       gateway,
       sender_name: senderName.trim(),
@@ -241,6 +265,7 @@ export async function POST(request: Request) {
           ...(repoStore.payment_details || {}),
           pending_upgrade: upgradeData,
         };
+        await storeRepo.saveStore(repoStore as any);
       }
     } catch (repoErr) {
       console.warn("storeRepo upgrade sync warning:", repoErr);

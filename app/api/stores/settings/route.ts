@@ -234,9 +234,9 @@ export async function GET(req: Request) {
       settings: settings ? {
         ...settings,
         hero_images: (settings as any)?.hero_images || (store as any)?.hero_images || [],
-        about_title: (settings as any)?.about_title || (store as any)?.about_title || "",
-        about_text: (settings as any)?.about_text || (store as any)?.about_text || (store as any)?.description || "",
-        about_image: (settings as any)?.about_image || (store as any)?.about_image || "",
+        about_title: (settings as any)?.about_title || (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
+        about_text: (settings as any)?.about_text || (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
+        about_image: (settings as any)?.about_image || (store as any)?.payment_details?.about_image || (store as any)?.about_image || "",
         theme_color: resolvedThemeColor,
         selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
@@ -248,9 +248,9 @@ export async function GET(req: Request) {
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
         hero_images: (store as any)?.hero_images || [],
-        about_title: (store as any)?.about_title || "",
-        about_text: (store as any)?.about_text || (store as any)?.description || "",
-        about_image: (store as any)?.about_image || "",
+        about_title: (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
+        about_text: (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
+        about_image: (store as any)?.payment_details?.about_image || (store as any)?.about_image || "",
         theme_color: resolvedThemeColor,
         selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
@@ -487,6 +487,15 @@ export async function POST(req: Request) {
       if (basePayload.theme_color) storeUpdates.primary_color = basePayload.theme_color;
       if (selectedTheme) storeUpdates.selected_theme = selectedTheme;
       if (body.banner_text) storeUpdates.header_title = String(body.banner_text);
+      const { data: currentStore } = await supabase.from("stores").select("payment_details").eq("id", targetStoreId).maybeSingle();
+      const existingDetails = (currentStore?.payment_details && typeof currentStore.payment_details === "object") ? currentStore.payment_details : {};
+      const updatedDetails = {
+        ...existingDetails,
+        ...(typeof body?.about_title === "string" ? { about_title: body.about_title } : {}),
+        ...(typeof body?.about_text === "string" ? { about_text: body.about_text } : {}),
+        ...(typeof body?.about_image === "string" ? { about_image: body.about_image } : {}),
+      };
+      storeUpdates.payment_details = updatedDetails;
       if (Object.keys(storeUpdates).length > 0) {
         await supabase.from("stores").update(storeUpdates).eq("id", targetStoreId);
       }
@@ -514,6 +523,7 @@ export async function POST(req: Request) {
         if (typeof body?.about_title === "string") repoStore.about_title = body.about_title;
         if (typeof body?.about_text === "string") repoStore.about_text = body.about_text;
         if (typeof body?.about_image === "string") repoStore.about_image = body.about_image;
+        await storeRepo.saveStore(repoStore as any);
       }
     } catch (repoErr) {
       console.warn("Could not sync storeRepo cache:", repoErr);

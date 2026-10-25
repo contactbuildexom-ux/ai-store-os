@@ -197,6 +197,9 @@ export default function StorefrontClient({ store, settings, products, delivery, 
         return 'basic';
     }, [liveStore]);
 
+    const hasCustomAbout = Boolean(settings?.about_title || settings?.about_text || settings?.about_image);
+    const showAboutSection = !isBasic || displayTier !== 'basic' || hasCustomAbout;
+
     // UI state
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -694,9 +697,31 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
                     </div>
                 </div>
-            ) : (
+            ) : displayTier === 'pro' ? (
                 <div 
                     className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-sm select-none tracking-wide" 
+                    style={{ background: `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}dd 50%, ${themeColor} 100%)` }}
+                >
+                    <div className="flex overflow-hidden">
+                        <div className="animate-storefront-marquee flex shrink-0 items-center">
+                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider">
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED BOUTIQUE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS NATIONWIDE DISPATCH</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} /> 100% QUALITY GUARANTEED</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} /> DIRECT WHATSAPP ORDERING</span>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider" aria-hidden="true">
+                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED BOUTIQUE</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS NATIONWIDE DISPATCH</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} /> 100% QUALITY GUARANTEED</span>
+                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} /> DIRECT WHATSAPP ORDERING</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div 
+                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-xs select-none tracking-wide" 
                     style={{ backgroundColor: themeColor }}
                 >
                     <div className="flex overflow-hidden">
@@ -749,9 +774,13 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         </span>
                                     ) : displayTier === 'pro' ? (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 border border-blue-200">
-                                            <ShieldCheck size={10} className="text-blue-600" /> PRO
+                                            <ShieldCheck size={10} className="text-blue-600" /> PRO VERIFIED
                                         </span>
-                                    ) : null}
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 text-[9px] font-semibold px-2 py-0.5 border border-slate-200">
+                                            <CheckCircle2 size={10} className="text-slate-500" /> VERIFIED
+                                        </span>
+                                    )}
                                 </div>
                                 {liveStore.tagline ? (
                                     <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
@@ -767,7 +796,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             { name: 'Shop', href: '#featured' },
                             ...(!isBasic && categories.filter((c) => c !== 'All').length > 0 ? [{ name: 'Categories', href: '#categories' }] : []),
                             { name: 'All Products', href: '#products' },
-                            ...(!isBasic ? [{ name: 'About', href: '#about' }] : []),
+                            ...(showAboutSection ? [{ name: 'About', href: '#about' }] : []),
                         ].map((link) => (
                             <a
                                 key={link.name}
@@ -883,6 +912,17 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </div>
                             )}
 
+                            {showAboutSection && (
+                                <a
+                                    href="#about"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                                >
+                                    <span>About Boutique</span>
+                                    <ChevronRight size={14} className="opacity-50" />
+                                </a>
+                            )}
+
                             {/* WhatsApp Direct Help */}
                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 space-y-2">
                                 <div className="flex items-center gap-2 text-emerald-800">
@@ -927,6 +967,19 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
                     {/* Left Column: Polished, Balanced Text & CTAs */}
                     <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
+                        {displayTier === 'business' ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-500/30 px-3.5 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
+                                <Crown size={12} className="text-amber-400" /> Exclusive Flagship Collection
+                            </span>
+                        ) : displayTier === 'pro' ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider border shadow-xs" style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}40`, color: themeColor }}>
+                                <Sparkles size={12} /> Pro Verified Boutique Atelier
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-slate-200 px-3 py-1 text-[10px] font-bold text-slate-700 uppercase tracking-wider shadow-2xs">
+                                <Truck size={12} className="text-emerald-600" /> Fast Nationwide Delivery
+                            </span>
+                        )}
                         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
                             {heroInfo.headlineMain}{' '}
                             {heroInfo.headlineHighlight && (
@@ -1296,6 +1349,16 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                             </span>
                                         )}
 
+                                        {displayTier === 'business' ? (
+                                            <span className="absolute top-2 left-2 rounded-full bg-slate-950/85 backdrop-blur-xs text-amber-300 border border-amber-500/30 text-[8px] sm:text-[9px] font-black px-2 py-0.5 flex items-center gap-1 shadow-xs">
+                                                <Crown size={9} className="text-amber-400" /> VIP
+                                            </span>
+                                        ) : displayTier === 'pro' ? (
+                                            <span className="absolute top-2 left-2 rounded-full bg-white/90 backdrop-blur-xs text-blue-700 border border-blue-200 text-[8px] sm:text-[9px] font-bold px-2 py-0.5 flex items-center gap-1 shadow-2xs">
+                                                <ShieldCheck size={9} /> PRO
+                                            </span>
+                                        ) : null}
+
 
                                     </div>
 
@@ -1365,7 +1428,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
 
                 {/* 4. About Store & Brand Story Section (Editable content with right-side box image) */}
-                {!isBasic && (
+                {showAboutSection && (
                 <section id="about" className="mx-auto max-w-4xl my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                         {/* Left Side: Story Text & Brand Mission */}

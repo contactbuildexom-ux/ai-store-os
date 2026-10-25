@@ -759,7 +759,7 @@ export default function MerchantStoreSetupModal({
           effectiveNiche = 'jewelry';
         } else if (/\b(home|decor|candle|candles|furniture|pottery|ceramic|bedding|cushion|cushions|quilt|rug|rugs|sofa|kitchen)\b/i.test(pool)) {
           effectiveNiche = 'home';
-        } else if (/\b(plant|plants|nature|botanical|indoor plants?|green|succulent|herbal)\b/i.test(pool)) {
+        } else if (/\b(organic|organics|natural|pure earth|ayurvedic|herbs|botanical|plant|plants|nature|indoor plants?|green|succulent|herbal)\b/i.test(pool)) {
           effectiveNiche = 'nature';
         } else if (/\b(cloth|clothes|clothing|pret|lawn|kurta|kurtas|suit|suits|dress|dresses|apparel|fashion|hoodie|streetwear|kapray|kapra)\b/i.test(pool)) {
           effectiveNiche = 'clothing';
