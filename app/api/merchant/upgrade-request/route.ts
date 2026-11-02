@@ -228,12 +228,8 @@ export async function POST(request: Request) {
 
     const currentDetails = isRecord(store.payment_details) ? store.payment_details : {};
     const upgradeData = {
-<<<<<<< HEAD
       target_plan: planId,
-=======
-      target_plan: plan,
-      plan: plan,
->>>>>>> 5ac62d0ecfe477b5be4b1064b23b7968209ec4a9
+      plan: planId,
       payment_method: gateway,
       gateway,
       sender_name: senderName.trim(),

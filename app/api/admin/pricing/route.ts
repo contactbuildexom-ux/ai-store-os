@@ -52,19 +52,21 @@ function validId(value: unknown): value is string {
 }
 
 export async function GET() {
-  if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const supabase = createAdminClient();
-  if (!supabase) return NextResponse.json({ error: "Pricing database is not configured." }, { status: 503 });
   try {
+    if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    const supabase = createAdminClient();
+    if (!supabase) return NextResponse.json({ error: "Pricing database is not configured." }, { status: 503 });
     const { data, error } = await supabase.from("pricing_plans").select("id, plan_key, name, price, billing_cycle, features, is_active, created_at").order("created_at", { ascending: true });
-    if (error) {
-      console.error("GET /api/admin/pricing Supabase query failed for pricing_plans:", error);
-      return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
-    }
+    if (error) throw error;
     return NextResponse.json({ plans: data });
   } catch (error) {
-    console.error("GET /api/admin/pricing Supabase query threw for pricing_plans:", error);
-    return NextResponse.json({ error: "Unable to load pricing plans." }, { status: 500 });
+    console.error("API Pricing Error:", error);
+    const message = error instanceof Error
+      ? error.message
+      : isRecord(error) && typeof error.message === "string"
+        ? error.message
+        : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
