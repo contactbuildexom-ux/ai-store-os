@@ -15,7 +15,7 @@ const BUILDEXOM_EMAIL_LINK = `https://mail.google.com/mail/?view=cm&fs=1&to=${BU
 /* ---------- Pixel2Page (Powered by) ---------- */
 const P2P_LOGO = "/logo-p2p.jpg";
 const P2P_INSTAGRAM = "https://www.instagram.com/pixel2page";
-const P2P_WEBSITE = "https://pixel2page.netlify.app";
+const P2P_WEBSITE = "https://pixel2page.vercel.app/";
 
 const columns = [
   {
