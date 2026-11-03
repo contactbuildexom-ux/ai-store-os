@@ -1011,26 +1011,40 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* 1. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
+            {/* 1. Full-Width Edge-to-Edge Hero Banner with Atmospheric Blurred Background */}
             <section
                 id="hero"
                 className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
                 style={{
-                    background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
                     borderColor: `${themeColor}28`,
                 }}
             >
-                <div
-                    className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
-                    style={{ backgroundColor: themeColor }}
-                />
-                <div
-                    className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-15 pointer-events-none"
-                    style={{ backgroundColor: themeColor }}
-                />
+                {/* Background Blurred Hero Image Overlay */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 select-none">
+                    <img
+                        src={heroImage1}
+                        alt=""
+                        aria-hidden="true"
+                        className="size-full object-cover scale-125 blur-3xl opacity-20 sm:opacity-25"
+                    />
+                    <div 
+                        className="absolute inset-0 backdrop-blur-xl"
+                        style={{
+                            background: `linear-gradient(135deg, ${themeColor}25 0%, #ffffff85 50%, ${themeColor}1a 100%)`,
+                        }}
+                    />
+                    <div
+                        className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-35 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+                    <div
+                        className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+                </div>
 
-                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
-                    {/* Left Column: Polished, Balanced Text & CTAs */}
+                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
+                    {/* Left Column: Humanized, Aesthetic Headline & CTAs */}
                     <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
                         {displayTier === 'business' ? (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-500/30 px-3.5 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
@@ -1074,53 +1088,41 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
                     </div>
 
-                    {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
-                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-2 pb-2">
+                    {/* Right Column: Single High-Impact Studio Hero Showcase Card */}
+                    <div className="relative w-full lg:w-auto flex items-center justify-center shrink-0 pt-2 pb-2">
                         {/* Background Theme Ambient Glow */}
                         <div
-                            className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
+                            className="absolute -inset-4 rounded-3xl blur-2xl opacity-40 pointer-events-none"
                             style={{ backgroundColor: themeColor }}
                         />
 
-                        {/* 3-Image Merging Container */}
-                        <div className="relative flex items-center justify-center">
-                            {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
-                            <div
-                                className="relative w-36 sm:w-44 md:w-52 lg:w-56 h-48 sm:h-58 md:h-66 lg:h-74 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
-                                style={{ borderColor: `${themeColor}35` }}
-                            >
-                                <img
-                                    src={heroImage1}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
-                            </div>
-
-                            {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
-                            <div
-                                className="relative -ml-12 sm:-ml-16 md:-ml-18 mt-8 sm:mt-12 w-28 sm:w-34 md:w-38 lg:w-42 h-36 sm:h-44 md:h-48 lg:h-52 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
-                                style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
-                            >
-                                <img
-                                    src={heroImage2}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
-                            </div>
-
-                            {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
-                            <div
-                                className="relative -ml-7 sm:-ml-9 md:-ml-11 -mt-8 sm:-mt-12 w-24 sm:w-30 md:w-34 lg:w-38 h-32 sm:h-40 md:h-44 lg:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
-                                style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
-                            >
-                                <img
-                                    src={heroImage3}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
+                        {/* Single Hero Showcase Image */}
+                        <div
+                            className="relative w-full max-w-sm sm:max-w-md lg:w-[440px] aspect-[4/3] sm:aspect-[14/10] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 bg-white/80 backdrop-blur-sm z-10 transition duration-500 hover:scale-[1.01]"
+                            style={{ borderColor: `${themeColor}40`, boxShadow: `0 25px 50px -12px ${themeColor}35` }}
+                        >
+                            <img
+                                src={heroImage1}
+                                alt={heroInfo.altText || liveStore.name}
+                                className="size-full object-cover transition duration-700 hover:scale-105"
+                                loading="eager"
+                            />
+                            {/* Subtle bottom gradient vignette with store badge */}
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/75 via-slate-950/25 to-transparent p-4 sm:p-5 flex items-end justify-between">
+                                <div>
+                                    <span className="text-[10px] sm:text-xs font-bold text-white/90 uppercase tracking-wider block">
+                                        Featured Collection
+                                    </span>
+                                    <p className="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow-sm">
+                                        {liveStore.name}
+                                    </p>
+                                </div>
+                                <span 
+                                    className="rounded-full px-2.5 py-1 text-[10px] sm:text-[11px] font-black text-white shadow-xs"
+                                    style={{ backgroundColor: themeColor }}
+                                >
+                                    100% Authentic
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1128,15 +1130,15 @@ export default function StorefrontClient({ store, settings, products, delivery, 
             </section>
 
             {/* Main Page Body - Edge-to-edge with zero bottom gap before footer */}
-            <main className="w-full px-0 sm:px-2 lg:px-3 pt-4 pb-0 space-y-6 sm:space-y-8">
+            <main className="w-full px-0 pt-4 pb-0 space-y-6 sm:space-y-8">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
                     <section 
                         id="featured" 
-                        className="w-full space-y-3 sm:space-y-4"
+                        className="w-full space-y-3 sm:space-y-4 px-3 sm:px-6 lg:px-8"
                     >
-                        <div className="flex items-center justify-between px-2 sm:px-3">
+                        <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
                                     Featured Products
@@ -1205,7 +1207,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                 {/* 3. Professional E-Commerce Category Showcase */}
                 {!isBasic && categories.filter((c) => c !== 'All').length > 0 && (
-                <section id="categories" className="w-full px-2 sm:px-3 pt-2 space-y-3.5">
+                <section id="categories" className="w-full px-3 sm:px-6 lg:px-8 pt-2 space-y-3.5">
                     <div className="flex items-center justify-between pb-0.5">
                         <div>
                             <h4 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900">
@@ -1305,7 +1307,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 )}
 
                 {/* 2. Compact Search & Filter Toolbar (Compact Search Button - No bulky wide input) */}
-                <section className="w-full px-2 sm:px-3 pt-1">
+                <section className="w-full px-3 sm:px-6 lg:px-8 pt-1">
                     <div className="flex flex-wrap items-center justify-between gap-2.5">
                         {/* Scrollable Category Filter Pills */}
                         {!isBasic && categories.length > 1 && (
@@ -1360,7 +1362,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
                 <section 
                     id="products" 
-                    className="w-full space-y-3 sm:space-y-4"
+                    className="w-full space-y-3 sm:space-y-4 px-3 sm:px-6 lg:px-8"
                 >
                     <div className="flex items-center justify-between px-2 sm:px-3">
                         <div>
@@ -1516,19 +1518,42 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     )}
                 </section>
 
-                {/* 4. About Store & Brand Story Section (Editable content with right-side box image) */}
+                {/* 4. Full-Width Edge-to-Edge About Store & Brand Story Section (Left and Right No Space) */}
                 {showAboutSection && (
-                <section id="about" className="mx-auto max-w-4xl my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <section 
+                    id="about" 
+                    className="w-full my-8 sm:my-12 border-y py-12 sm:py-16 px-4 sm:px-8 lg:px-14 shadow-xs relative overflow-hidden"
+                    style={{
+                        background: `linear-gradient(135deg, ${themeColor}12 0%, #ffffff 50%, ${themeColor}0a 100%)`,
+                        borderColor: `${themeColor}25`,
+                    }}
+                >
+                    {/* Atmospheric Glow */}
+                    <div
+                        className="absolute -right-20 -top-20 size-80 rounded-full blur-3xl opacity-25 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+                    <div
+                        className="absolute -left-20 -bottom-20 size-80 rounded-full blur-3xl opacity-20 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+
+                    <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center relative z-10">
                         {/* Left Side: Story Text & Brand Mission */}
-                        <div className="lg:col-span-7 space-y-4">
-                            <div>
-                                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        <div className="lg:col-span-7 space-y-5">
+                            <div className="space-y-2">
+                                <span 
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider border shadow-2xs"
+                                    style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}35`, color: themeColor }}
+                                >
+                                    <Sparkles size={12} /> Official Brand Atelier
+                                </span>
+                                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                                     {settings?.about_title || `About ${liveStore.name}`}
                                 </h3>
                             </div>
 
-                            <p className="text-xs sm:text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+                            <p className="text-xs sm:text-sm lg:text-base leading-relaxed text-slate-600 whitespace-pre-line font-medium">
                                 {settings?.about_text || (() => {
                                     const raw = (liveStore.tagline || liveStore.description || '').trim();
                                     if (raw && !raw.toLowerCase().startsWith('welcome to') && !raw.toLowerCase().includes('aura kicks')) {
@@ -1539,44 +1564,44 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </p>
 
                             {/* Value Highlights */}
-                            <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-slate-100">
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">💎</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">100% Authentic</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Guaranteed Quality</span>
+                            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200/80">
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">💎</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">100% Authentic</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Guaranteed Quality</span>
                                 </div>
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">🚚</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Fast Courier</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Nationwide Delivery</span>
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">🚚</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">Fast Courier</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Nationwide Delivery</span>
                                 </div>
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">💬</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Direct WhatsApp</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Instant Support</span>
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">💬</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">Direct WhatsApp</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Instant Support</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Right Side: Box Image */}
-                        <div className="lg:col-span-5 flex justify-center">
-                            <div className="relative w-full max-w-md aspect-square rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-slate-100 shadow-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group">
+                        <div className="lg:col-span-5 flex justify-center w-full">
+                            <div className="relative w-full max-w-md aspect-[4/3] sm:aspect-square rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-slate-200/90 shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group">
                                 {settings?.about_image ? (
                                     <img 
                                         src={settings.about_image} 
                                         alt={`${liveStore.name} Story Showcase`} 
-                                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
                                 ) : (
-                                    <div className="size-full flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-2">
+                                    <div className="size-full flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-2.5">
                                         <div 
                                             className="size-16 rounded-2xl grid place-items-center shadow-xs"
                                             style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
                                         >
                                             <Store size={32} />
                                         </div>
-                                        <p className="text-xs font-bold text-slate-700">{liveStore.name} Atelier</p>
-                                        <p className="text-[10px] text-slate-400 max-w-[200px]">Merchant can customize this showcase box image in dashboard settings</p>
+                                        <p className="text-sm font-bold text-slate-800">{liveStore.name} Atelier</p>
+                                        <p className="text-[11px] text-slate-500 max-w-[220px]">Merchant can customize this showcase box image in dashboard settings</p>
                                     </div>
                                 )}
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl sm:rounded-3xl pointer-events-none" />
