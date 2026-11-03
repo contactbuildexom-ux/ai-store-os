@@ -255,6 +255,7 @@ export async function GET(req: Request) {
         about_title: (settings as any)?.about_title || (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
         about_text: (settings as any)?.about_text || (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
         about_image: (settings as any)?.about_image || (store as any)?.payment_details?.about_image || (store as any)?.about_image || "",
+        announcement_tags: (settings as any)?.announcement_tags || (store as any)?.payment_details?.announcement_tags || [],
         theme_color: resolvedThemeColor,
         selected_theme: settings.selected_theme || (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? settings.whatsapp_number ?? "",
@@ -270,6 +271,7 @@ export async function GET(req: Request) {
         about_title: (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
         about_text: (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
         about_image: (store as any)?.payment_details?.about_image || (store as any)?.about_image || "",
+        announcement_tags: (store as any)?.payment_details?.announcement_tags || [],
         theme_color: resolvedThemeColor,
         selected_theme: (store as any)?.selected_theme || "emerald",
         whatsapp_number: store?.whatsapp_number ?? "",
@@ -409,6 +411,7 @@ export async function POST(req: Request) {
           repoStore.payment_status = "active";
         }
         if (body.banner_text) repoStore.header_title = String(body.banner_text);
+        if (Array.isArray(body.announcement_tags)) (repoStore as any).announcement_tags = body.announcement_tags;
         if (body.theme_color) {
           repoStore.primary_color = String(body.theme_color);
           if (repoStore.theme) repoStore.theme.primaryColor = String(body.theme_color);
@@ -422,6 +425,7 @@ export async function POST(req: Request) {
           store_id: storeId,
           theme_color: body?.theme_color || repoStore?.primary_color || "#1d7555",
           banner_text: body?.banner_text || repoStore?.header_title || "",
+          announcement_tags: body?.announcement_tags || (repoStore as any)?.announcement_tags || [],
           logo_url: body?.logo_url || repoStore?.logo_url || "",
           whatsapp_number: body?.whatsapp_number || repoStore?.whatsapp_number || "",
           accepts_cod: body?.accepts_cod ?? true,
@@ -550,6 +554,18 @@ export async function POST(req: Request) {
     if (typeof body?.about_title === "string") extendedPayload.about_title = body.about_title;
     if (typeof body?.about_text === "string") extendedPayload.about_text = body.about_text;
     if (typeof body?.about_image === "string") extendedPayload.about_image = body.about_image;
+    if (Array.isArray(body?.announcement_tags)) {
+      extendedPayload.announcement_tags = body.announcement_tags.filter((t: unknown) => typeof t === "string" && t.trim().length > 0);
+      try {
+        const { data: stRow } = await supabase.from("stores").select("payment_details").eq("id", targetStoreId).maybeSingle();
+        const existingDetails = (stRow?.payment_details && typeof stRow.payment_details === "object") ? stRow.payment_details : {};
+        await supabase.from("stores").update({
+          payment_details: { ...existingDetails, announcement_tags: extendedPayload.announcement_tags }
+        }).eq("id", targetStoreId);
+      } catch (e) {
+        console.warn("Could not save announcement_tags to stores table:", e);
+      }
+    }
 
     if ("social_links" in body) {
       const socialLinks = parseSocialLinks(body.social_links);

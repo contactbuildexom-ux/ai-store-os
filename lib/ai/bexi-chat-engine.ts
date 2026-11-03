@@ -453,6 +453,48 @@ export function generateBexiReply(input: BexiChatInput): BexiChatOutput {
     };
   }
 
+  // 15B. SUNGLASSES, EYEWEAR, UV & LENS SPECS
+  if (/\b(sunglass|sunglasses|shades|chashma|goggles|glasses|eyewear|polarize|polarized|uv|uv400|lens|lenses|frame|frames)\b/i.test(cleanMsg)) {
+    if (style === 'ur-script') {
+      return {
+        reply: `🕶️ **${storeName} سن گلاسز کی خصوصیات**:\n• 100٪ UV400 پروٹیکشن (آنکھوں کو نقصان دہ الٹرا وائلٹ شعاعوں سے محفوظ رکھتا ہے)\n• پولرائزڈ اینٹی گلیر اور سکریچ ریزسٹنٹ لینسز\n• ہلکا پھلکا، آرام دہ اور مضبوط میٹل / ایسیٹیٹ فریم\n• ہر گلاس کے ساتھ ہارڈ پروٹیکٹیو باکس اور مائیکرو فائبر کلیننگ کلاتھ مفت دیا جاتا ہے!\nکیش آن ڈیلیوری پر ابھی آرڈر کریں۔`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `🕶️ **${storeName} Sunglasses Features**:\n• **100% UV400 Protection**: Dhoop aur harmful UV rays se ankhon ko complete protection deta hai\n• **Polarized Anti-Glare Lenses**: Clear vision aur anti-scratch coating ke sath\n• **Durable Premium Frame**: Lightweight, comfortable aur flexible metal/acetate hinges\n• Har pair ke sath **Hard Luxury Case + Microfiber Cleaning Pouch bilkul FREE** milta hai!\nCash on Delivery available hai, kisi bhi frame par tap karke WhatsApp order karein!`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `🕶️ **${storeName} Sunglasses Specifications**:\n• **100% UV400 Protection**: Maximum defense against harmful UVA & UVB radiation\n• **Polarized Anti-Glare Lenses**: High-contrast, scratch-resistant clarity\n• **Premium Frame Build**: Lightweight, ergonomic fit with reinforced metal hinges\n• Comes with a **Complimentary Protective Hard Case & Microfiber Cleaning Cloth**!\n100% Cash on Delivery available nationwide.`,
+      languageDetected: 'en',
+    };
+  }
+
+  // 15C. SPECIFIC CITIES DELIVERY (Lahore, Karachi, Islamabad, etc.)
+  if (/\b(lahore|karachi|islamabad|rawalpindi|faisalabad|multan|peshawar|quetta|sialkot|gujranwala|hyderabad|sukkur)\b/i.test(cleanMsg)) {
+    const cityMatch = cleanMsg.match(/\b(lahore|karachi|islamabad|rawalpindi|faisalabad|multan|peshawar|quetta|sialkot|gujranwala|hyderabad|sukkur)\b/i)?.[0] || 'Aap ke shehar';
+    const capitalizedCity = cityMatch.charAt(0).toUpperCase() + cityMatch.slice(1);
+    if (style === 'ur-script') {
+      return {
+        reply: `🚚 **${capitalizedCity} میں ڈیلیوری (${storeName})**:\n• **ڈیلیوری کا وقت**: 2 سے 3 کاروباری دن\n• **کیش آن ڈیلیوری**: 100٪ دستیاب ہے (پارسل ملنے پر رقم ادا کریں)\n• پارسل ڈسپیچ ہوتے ہی آپ کو واٹس ایپ پر کوریئر ٹریکنگ کوڈ مل جائے گا!`,
+        languageDetected: 'ur',
+      };
+    }
+    if (style === 'ur-roman') {
+      return {
+        reply: `🚚 **${capitalizedCity} Delivery (${storeName})**:\n• **Delivery Timeline**: ${capitalizedCity.toLowerCase() === 'lahore' ? '1 se 2 business days' : '2 se 4 business days'}\n• **Cash on Delivery (COD)**: 100% available hai — parcel hath mein aane par courier rider ko pay karein!\n• Parcel dispatch hotay hi TCS/Leopard ka live tracking ID WhatsApp par send kar diya jata hai.`,
+        languageDetected: 'ur',
+      };
+    }
+    return {
+      reply: `🚚 **Delivery to ${capitalizedCity} (${storeName})**:\n• **Timeline**: ${capitalizedCity.toLowerCase() === 'lahore' ? '1 to 2 business days' : '2 to 4 business days'}\n• **Cash on Delivery**: 100% supported at your doorstep\n• You will receive a direct courier tracking number via WhatsApp upon dispatch!`,
+      languageDetected: 'en',
+    };
+  }
+
   // 16. MATERIAL / FABRIC / LEATHER / QUALITY SPECS
   if (/\b(kapra|kapray|stuff|fabric|material|leather|washable|pure hai|mix hai|color fade|silai|stitching|durable)\b/i.test(cleanMsg)) {
     if (style === 'ur-script') {

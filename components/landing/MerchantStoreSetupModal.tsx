@@ -1048,25 +1048,29 @@ export default function MerchantStoreSetupModal({
                     )}
                   </div>
 
-                  {/* Interactive Cursor Color Palette Picker */}
-                  <div className="rounded-2xl border border-[#cfe2fa] bg-[#f8fbff] p-4 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="block text-xs font-bold text-[#0b2545]">
-                        Choose Store Theme & Color Palette:
-                      </label>
-                      
-                      {/* Native OS/Browser Cursor Color Picker Badge */}
+                  {/* Minimalist & Attractive Theme Palette Selector */}
+                  <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 p-4 space-y-3.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0b2545]">
+                          Store Theme Palette
+                        </label>
+                        <p className="text-[11px] text-slate-500">
+                          Select an attractive color palette for your brand:
+                        </p>
+                      </div>
+
+                      {/* Custom Hex Color Picker Pill */}
                       <label
                         htmlFor="cursor-color-input"
-                        className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-[#bfdcff] bg-white px-3 py-1.5 text-xs font-bold text-[#0b2545] shadow-xs hover:border-[#1976d2] hover:bg-blue-50 transition active:scale-95"
-                        title="Click with your cursor to pick any custom shade from color palette"
+                        className="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-[#0b2545] shadow-2xs hover:border-[#1976d2] hover:bg-blue-50/50 transition active:scale-95"
+                        title="Click to pick custom hex color"
                       >
                         <span
-                          className="size-4 rounded-full border border-white shadow-xs"
+                          className="size-3.5 rounded-full border border-black/10 shadow-2xs"
                           style={{ backgroundColor: customHexColor }}
                         />
-                        <span className="font-mono text-[11px] uppercase tracking-wide">{customHexColor}</span>
-                        <span className="text-[10px] text-[#1976d2] font-semibold">Cursor Picker</span>
+                        <span className="font-mono text-[11px] uppercase tracking-wider">{customHexColor}</span>
                         <input
                           id="cursor-color-input"
                           type="color"
@@ -1082,12 +1086,8 @@ export default function MerchantStoreSetupModal({
                       </label>
                     </div>
 
-                    <p className="text-[11px] text-[#5b7aa3]">
-                      Click any theme palette below, or click the <strong>Cursor Picker</strong> to select your exact custom brand color with your cursor.
-                    </p>
-
-                    {/* Quick Selection Swatches Grid */}
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                    {/* Minimalist Palettes Strip */}
+                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 pt-1">
                       {THEME_OPTIONS.map((theme) => {
                         const isSelected = selectedTheme === theme.id || customHexColor.toLowerCase() === theme.color.toLowerCase();
                         return (
@@ -1098,26 +1098,26 @@ export default function MerchantStoreSetupModal({
                               setSelectedTheme(theme.id);
                               setCustomHexColor(theme.color);
                             }}
-                            className={`flex items-center gap-2 rounded-xl border p-2 text-left transition-all active:scale-95 cursor-pointer ${
-                              isSelected
-                                ? 'border-[#1976d2] bg-white ring-2 ring-[#1976d2]/35 shadow-xs'
-                                : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-slate-50'
-                            }`}
+                            title={`${theme.name} (${theme.color})`}
+                            className="group flex flex-col items-center gap-1.5 focus:outline-none"
                           >
                             <span
-                              className="relative grid size-6 shrink-0 place-items-center rounded-full shadow-xs border border-white"
+                              className={`relative grid size-8 sm:size-9 place-items-center rounded-full transition-all duration-200 shadow-xs cursor-pointer group-hover:scale-110 ${
+                                isSelected
+                                  ? 'ring-2 ring-offset-2 ring-slate-900 scale-105'
+                                  : 'hover:shadow-md opacity-90 hover:opacity-100'
+                              }`}
                               style={{ backgroundColor: theme.color }}
                             >
-                              {isSelected && <span className="size-2 rounded-full bg-white shadow-xs" />}
+                              {isSelected ? (
+                                <svg className="size-4 text-white drop-shadow-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : null}
                             </span>
-                            <div className="min-w-0 flex-1 truncate">
-                              <p className="truncate text-[11px] font-bold text-slate-800 leading-tight">
-                                {theme.name.split(' ')[0]}
-                              </p>
-                              <p className="text-[9px] text-slate-400 font-mono">
-                                {theme.color}
-                              </p>
-                            </div>
+                            <span className="text-[10px] font-medium text-slate-600 truncate max-w-[50px] leading-tight">
+                              {theme.name.split(' ')[0]}
+                            </span>
                           </button>
                         );
                       })}

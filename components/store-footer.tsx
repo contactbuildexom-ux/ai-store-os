@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Landmark, Smartphone, ShieldCheck, Truck, Headphones, RotateCcw, MessageCircle, MapPin, Phone, Mail } from 'lucide-react';
+import { Landmark, Smartphone, ShieldCheck, Truck, RotateCcw, MessageCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { StoreSocialLinks } from './store-social-links';
-import { StoreQRCode, BUILDEXOM_ICON_DATA_URL } from './store-qr-code';
-import { THEME_PALETTES, darkenColor } from '@/lib/store-theme';
+import { BUILDEXOM_ICON_DATA_URL } from './store-qr-code';
+import { THEME_PALETTES } from '@/lib/store-theme';
 
 type StorePaymentDetails = {
   bank_name: string;
@@ -100,9 +100,9 @@ export function StoreFooter({
         borderColor: `${resolvedThemeColor}28`,
       }}
     >
-      {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid Separator) */}
+      {/* 1. Value Proposition & Trust Badges Strip (Responsive Sleek Grid) */}
       <div 
-        className="border-b px-4 py-3.5 sm:px-8"
+        className="border-b px-4 py-4 sm:px-8"
         style={{
           backgroundColor: `${resolvedThemeColor}14`,
           borderColor: `${resolvedThemeColor}22`,
@@ -173,36 +173,54 @@ export function StoreFooter({
             </span>
             <div>
               <h4 className="text-xs font-extrabold tracking-tight text-slate-900">Easy Exchanges</h4>
-              <p className="text-[11px] font-medium text-slate-600">Hassle-Free Policy</p>
+              <p className="text-[11px] font-medium text-slate-600">Hassle-Free 7-Day Policy</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Main Footer Body (Desktop 4-Column Aligned & Mobile Responsive) */}
+      {/* 2. Main Footer Body (Modern 4-Column E-Commerce Layout - No QR Code) */}
       <div className="w-full px-4 py-10 sm:px-8 lg:px-12">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 items-start">
-          {/* Column 1: Brand Info */}
-          <div className="space-y-3">
+          {/* Column 1: Store Brand & Identity */}
+          <div className="space-y-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="grid size-8 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden">
+              <div className="grid size-9 place-items-center rounded-xl bg-white p-1 shadow-xs ring-1 ring-slate-200 overflow-hidden shrink-0">
                 <img
                   src={BUILDEXOM_ICON_DATA_URL}
                   alt={storeName}
                   className="size-full object-contain"
                 />
               </div>
-              <h3 className="text-base font-extrabold tracking-tight text-slate-900">{storeName}</h3>
+              <div>
+                <h3 className="text-base font-extrabold tracking-tight text-slate-900 leading-tight">{storeName}</h3>
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
+                  <CheckCircle2 size={11} className="text-emerald-600" /> Verified Store
+                </span>
+              </div>
             </div>
             <p className="text-xs leading-relaxed text-slate-600">
-              Welcome to our official online store. Explore our catalog of quality products with verified nationwide shipping and Cash on Delivery.
+              Welcome to our official online store. Explore authentic handcrafted collections, seamless ordering on WhatsApp, and express nationwide delivery.
             </p>
+            <div className="pt-1">
+              <span 
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
+                style={{ backgroundColor: `${resolvedThemeColor}15`, color: resolvedThemeColor }}
+              >
+                100% Customer Satisfaction Guarantee
+              </span>
+            </div>
           </div>
 
           {/* Column 2: Quick Navigation */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Quick Navigation</h4>
             <ul className="space-y-2 text-xs text-slate-600">
+              <li>
+                <a href="#hero" className="transition hover:text-slate-950 hover:underline">
+                  Home & Overview
+                </a>
+              </li>
               <li>
                 <a href="#featured" className="transition hover:text-slate-950 hover:underline">
                   Featured Products
@@ -215,43 +233,59 @@ export function StoreFooter({
               </li>
               <li>
                 <a href="#products" className="transition hover:text-slate-950 hover:underline">
-                  Full Catalog
+                  All Products Catalog
                 </a>
               </li>
               <li>
-                <span className="text-slate-500">Order Tracking via WhatsApp</span>
+                <a href="#about" className="transition hover:text-slate-950 hover:underline">
+                  About Boutique
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Column 3: Connect With Us */}
+          {/* Column 3: Customer Care & Policies */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Connect With Us</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Customer Care</h4>
+            <ul className="space-y-2 text-xs text-slate-600">
+              <li className="flex items-center gap-1.5">
+                <Truck size={13} className="text-slate-400 shrink-0" />
+                <span>Nationwide Express Dispatch</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-slate-400 shrink-0" />
+                <span>Cash on Delivery (COD) Available</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <RotateCcw size={13} className="text-slate-400 shrink-0" />
+                <span>7-Day Return & Exchange Support</span>
+              </li>
+              <li className="flex items-center gap-1.5">
+                <Clock size={13} className="text-slate-400 shrink-0" />
+                <span>Order Tracking via WhatsApp</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: WhatsApp Support & Social Presence */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Connect & Support</h4>
             <p className="text-xs text-slate-600">
-              Follow our official social profiles for special discounts and new product drops.
+              Have questions or need assistance? Chat with our team directly on WhatsApp or connect on social media.
             </p>
             <div className="pt-1">
               <StoreSocialLinks links={socialLinks} />
             </div>
-          </div>
-
-          {/* Column 4: Scan & Shop QR Code (Compact & Aligned cleanly with columns) */}
-          {storeSlug && (
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">Scan & Shop</h4>
-              <p className="text-xs text-slate-600">
-                Scan this QR code with any smartphone camera to open and share this store.
-              </p>
-              <div className="pt-1">
-                <StoreQRCode 
-                  storeSlug={storeSlug} 
-                  storePath={`/store/${encodeURIComponent(storeSlug)}`} 
-                  compact={true}
-                  hideButtons={true}
-                />
-              </div>
+            <div className="pt-2">
+              <a
+                href="#products"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                style={{ backgroundColor: resolvedThemeColor }}
+              >
+                <MessageCircle size={14} /> Start WhatsApp Chat
+              </a>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Advance Payment Details Section (if configured) */}

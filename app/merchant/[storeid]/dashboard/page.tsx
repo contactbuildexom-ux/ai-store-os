@@ -98,6 +98,8 @@ export default function MerchantDashboardMaster() {
     // Branding & Settings
     const [themeColor, setThemeColor] = useState('#1d7555');
     const [bannerText, setBannerText] = useState('');
+    const [announcementTags, setAnnouncementTags] = useState<string[]>([]);
+    const [newTagInput, setNewTagInput] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -564,6 +566,16 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
             if (settingsData.settings) {
                 setBannerText(settingsData.settings.banner_text || '');
+                if (Array.isArray(settingsData.settings.announcement_tags)) {
+                    setAnnouncementTags(settingsData.settings.announcement_tags);
+                } else {
+                    setAnnouncementTags([
+                        'FAST NATIONWIDE DELIVERY',
+                        '100% QUALITY GUARANTEED',
+                        'FREE DELIVERY ABOVE RS. 3,000',
+                        'DIRECT WHATSAPP ORDERING',
+                    ]);
+                }
                 setLogoUrl(settingsData.settings.logo_url || '');
                 setAboutTitle(settingsData.settings.about_title || (storeData as any)?.payment_details?.about_title || '');
                 setAboutText(settingsData.settings.about_text || (storeData as any)?.payment_details?.about_text || (storeData as any)?.description || '');
@@ -695,6 +707,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 settingsPayload.about_title = aboutTitle.trim();
                 settingsPayload.about_text = aboutText.trim();
                 settingsPayload.about_image = savedAboutImageUrl;
+                settingsPayload.announcement_tags = announcementTags;
             }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
@@ -1628,9 +1641,160 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         <div className="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="mb-5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Storefront appearance</p><h3 className="mt-1 text-base font-semibold text-slate-900">Branding and theme</h3><p className="mt-1 text-xs text-slate-500">Changes are reflected on your public storefront.</p></div>
                             <form onSubmit={handleSaveSettings} className="space-y-4">
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">Banner Announcement</label>
-                                    <input type="text" value={bannerText} onChange={e => setBannerText(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
+                                {/* Travelling Announcement Bar & Custom Marquee Tags */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3.5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-900">
+                                                Travelling Announcement Bar (Marquee Tags)
+                                            </label>
+                                            <p className="text-[11px] text-slate-500">
+                                                Text and tags that travel across the top header of your storefront.
+                                            </p>
+                                        </div>
+                                        {storePlan === 'basic' ? (
+                                            <span className="rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold px-2.5 py-0.5">
+                                                Pro / Business Feature
+                                            </span>
+                                        ) : (
+                                            <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
+                                                Editable Active
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {storePlan === 'basic' ? (
+                                        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900 space-y-2">
+                                            <p className="text-[11px] font-semibold">
+                                                🔒 On the Free plan, your store displays default nationwide delivery announcements.
+                                            </p>
+                                            <p className="text-[10px] text-amber-700">
+                                                Upgrade to <strong>Pro</strong> or <strong>Business</strong> to freely add, update, and delete custom travelling announcement tags (e.g. sales, special offers, dispatch info).
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab('plans')}
+                                                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs hover:bg-amber-500 transition"
+                                            >
+                                                Upgrade Plan to Customize
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                                    Static Announcement Headline (Fallback)
+                                                </label>
+                                                <input 
+                                                    type="text" 
+                                                    value={bannerText} 
+                                                    onChange={e => setBannerText(e.target.value)} 
+                                                    placeholder="e.g. Free delivery nationwide on orders above Rs. 3,000!"
+                                                    className="w-full p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none" 
+                                                />
+                                            </div>
+
+                                            {/* Live Tags List */}
+                                            <div>
+                                                <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">
+                                                    Active Travelling Announcement Tags ({announcementTags.length})
+                                                </label>
+                                                <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-slate-200 bg-white min-h-[46px] items-center">
+                                                    {announcementTags.length === 0 ? (
+                                                        <span className="text-[11px] text-slate-400 italic">No custom tags added yet. Default tiered tags will show.</span>
+                                                    ) : (
+                                                        announcementTags.map((tag, idx) => (
+                                                            <span 
+                                                                key={idx}
+                                                                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-3 py-1 shadow-2xs"
+                                                            >
+                                                                <span>{tag}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setAnnouncementTags(prev => prev.filter((_, i) => i !== idx))}
+                                                                    className="grid size-4 place-items-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-800 transition"
+                                                                    title="Delete tag"
+                                                                >
+                                                                    ✕
+                                                                </button>
+                                                            </span>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Add New Tag Input */}
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newTagInput}
+                                                    onChange={e => setNewTagInput(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            const trimmed = newTagInput.trim();
+                                                            if (trimmed && !announcementTags.includes(trimmed)) {
+                                                                setAnnouncementTags(prev => [...prev, trimmed]);
+                                                                setNewTagInput('');
+                                                            }
+                                                        }
+                                                    }}
+                                                    placeholder="Enter new marquee announcement tag (e.g. FLAT 20% OFF TODAY)"
+                                                    className="flex-1 p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const trimmed = newTagInput.trim();
+                                                        if (trimmed && !announcementTags.includes(trimmed)) {
+                                                            setAnnouncementTags(prev => [...prev, trimmed]);
+                                                            setNewTagInput('');
+                                                        }
+                                                    }}
+                                                    disabled={!newTagInput.trim()}
+                                                    className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition disabled:opacity-40"
+                                                >
+                                                    + Add Tag
+                                                </button>
+                                            </div>
+
+                                            {/* Quick Suggestions */}
+                                            <div>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                                                    Quick Preset Tags (Click to add):
+                                                </span>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {[
+                                                        'FAST NATIONWIDE DELIVERY',
+                                                        '100% QUALITY GUARANTEED',
+                                                        'COMPLIMENTARY LUXURY PACKAGING',
+                                                        'DIRECT WHATSAPP ORDERING',
+                                                        'NEW COLLECTION NOW LIVE',
+                                                        'CASH ON DELIVERY (COD) AVAILABLE',
+                                                        '7-DAY HASSLE-FREE EXCHANGE',
+                                                    ].map((preset) => (
+                                                        <button
+                                                            key={preset}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!announcementTags.includes(preset)) {
+                                                                    setAnnouncementTags(prev => [...prev, preset]);
+                                                                }
+                                                            }}
+                                                            disabled={announcementTags.includes(preset)}
+                                                            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition ${
+                                                                announcementTags.includes(preset)
+                                                                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                                                    : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-700'
+                                                            }`}
+                                                        >
+                                                            + {preset}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-[11px] font-semibold text-slate-700">Store logo</label>
@@ -1783,20 +1947,43 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         />
                                     </label>
                                 </section>
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                                <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 p-4 space-y-3.5 shadow-2xs">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-900">Store Theme & Accent Color</label>
-                                            <p className="text-[11px] text-slate-500">Pick a professional niche preset or select custom brand hex:</p>
+                                            <label className="block text-xs font-bold text-slate-900">Store Theme Palette</label>
+                                            <p className="text-[11px] text-slate-500">Pick a minimalist color palette for your store:</p>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
-                                            <span className="size-3.5 rounded-full" style={{ backgroundColor: themeColor }} />
-                                            <span className="font-mono text-xs font-bold uppercase text-slate-800">{themeColor}</span>
-                                        </div>
+                                        <label
+                                            htmlFor="merchant-theme-picker"
+                                            className="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 shadow-2xs hover:border-blue-400 transition"
+                                        >
+                                            <span className="size-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: themeColor }} />
+                                            <span className="font-mono text-[11px] uppercase tracking-wider">{themeColor}</span>
+                                            <input 
+                                                id="merchant-theme-picker"
+                                                type="color" 
+                                                value={themeColor} 
+                                                onChange={e => {
+                                                    const newColor = e.target.value;
+                                                    setThemeColor(newColor);
+                                                    if (resolvedStoreId && /^#[0-9a-f]{6}$/i.test(newColor)) {
+                                                        fetch('/api/stores/settings', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                store_id: resolvedStoreId,
+                                                                theme_color: newColor,
+                                                            })
+                                                        }).catch(console.warn);
+                                                    }
+                                                }}
+                                                className="sr-only cursor-pointer"
+                                            />
+                                        </label>
                                     </div>
 
-                                    {/* Quick Preset Chips */}
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 pt-1">
+                                    {/* Minimalist Palettes Strip */}
+                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 pt-1">
                                         {THEME_OPTIONS.map((opt) => {
                                             const isSelected = themeColor.toLowerCase() === opt.color.toLowerCase();
                                             return (
@@ -1817,14 +2004,26 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                             }).catch(console.warn);
                                                         }
                                                     }}
-                                                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
-                                                        isSelected
-                                                            ? 'border-slate-900 bg-white shadow-xs ring-2 ring-slate-900'
-                                                            : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'
-                                                    }`}
+                                                    title={`${opt.name} (${opt.color})`}
+                                                    className="group flex flex-col items-center gap-1.5 focus:outline-none"
                                                 >
-                                                    <span className="size-4 shrink-0 rounded-full shadow-2xs" style={{ backgroundColor: opt.color }} />
-                                                    <span className="truncate text-[11px] font-semibold text-slate-800">{opt.name.split(' ')[0]}</span>
+                                                    <span
+                                                        className={`relative grid size-8 sm:size-9 place-items-center rounded-full transition-all duration-200 shadow-xs cursor-pointer group-hover:scale-110 ${
+                                                            isSelected
+                                                                ? 'ring-2 ring-offset-2 ring-slate-900 scale-105'
+                                                                : 'hover:shadow-md opacity-90 hover:opacity-100'
+                                                        }`}
+                                                        style={{ backgroundColor: opt.color }}
+                                                    >
+                                                        {isSelected && (
+                                                            <svg className="size-4 text-white drop-shadow-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                    <span className="text-[10px] font-medium text-slate-600 truncate max-w-[50px] leading-tight">
+                                                        {opt.name.split(' ')[0]}
+                                                    </span>
                                                 </button>
                                             );
                                         })}
