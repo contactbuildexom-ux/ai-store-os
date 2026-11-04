@@ -194,8 +194,8 @@ export function StoreFooter({
               </div>
               <div>
                 <h3 className="text-base font-extrabold tracking-tight text-slate-900 leading-tight">{storeName}</h3>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
-                  <CheckCircle2 size={11} className="text-emerald-600" /> Verified Store
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500">
+                  Official Store
                 </span>
               </div>
             </div>

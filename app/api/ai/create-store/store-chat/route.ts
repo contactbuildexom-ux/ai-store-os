@@ -7,7 +7,12 @@ import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { store_id, message, store_name, whatsapp_number, tagline, products: clientProducts } = body;
+    const store_id = body.store_id || body.storeSlug || body.store_slug || body.storeId || body.slug;
+    const message = body.message;
+    const store_name = body.store_name || body.storeName;
+    const whatsapp_number = body.whatsapp_number || body.whatsapp;
+    const tagline = body.tagline;
+    const clientProducts = body.products || body.clientProducts;
 
     if (!store_id || !message) {
       return NextResponse.json({ error: 'Store ID/slug and message are required.' }, { status: 400 });
@@ -164,32 +169,34 @@ Strict Rules:
     const geminiKey = process.env.GEMINI_API_KEY || process.env.AI_GATEWAY_API_KEY;
     if (geminiKey) {
       try {
-        const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-          method: 'POST',
-          signal: AbortSignal.timeout(8000),
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': geminiKey,
-          },
-          body: JSON.stringify({
-            contents: [
-              { role: 'user', parts: [{ text: `${systemPrompt}\n\nCustomer message: "${message}"` }] }
-            ],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 300 }
-          })
-        });
+        const candidateModels = Array.from(new Set([process.env.GEMINI_MODEL, 'gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash'].filter(Boolean) as string[]));
+        for (const model of candidateModels) {
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+            method: 'POST',
+            signal: AbortSignal.timeout(8000),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': geminiKey,
+            },
+            body: JSON.stringify({
+              contents: [
+                { role: 'user', parts: [{ text: `${systemPrompt}\n\nCustomer message: "${message}"` }] }
+              ],
+              generationConfig: { temperature: 0.4, maxOutputTokens: 300 }
+            })
+          });
 
-        if (resp.ok) {
-          const geminiData = await resp.json();
-          const cand = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (typeof cand === 'string' && cand.trim()) {
-            return NextResponse.json({
-              success: true,
-              reply: cand.trim(),
-              store_name: storeInfo.name,
-              engine: 'gemini',
-            });
+          if (resp.ok) {
+            const geminiData = await resp.json();
+            const cand = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (typeof cand === 'string' && cand.trim()) {
+              return NextResponse.json({
+                success: true,
+                reply: cand.trim(),
+                store_name: storeInfo.name,
+                engine: `gemini-${model}`,
+              });
+            }
           }
         }
       } catch (gemErr) {

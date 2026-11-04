@@ -218,35 +218,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [toastMessage, setToastMessage] = useState('');
 
-    // Dynamic Travelling Announcement Marquee Tags (Merchant-editable on Pro & Business)
-    const marqueeTags = useMemo<string[]>(() => {
-        if (!isBasic && Array.isArray(settings?.announcement_tags) && settings.announcement_tags.length > 0) {
-            return settings.announcement_tags;
-        }
-        if (displayTier === 'business') {
-            return [
-                'VERIFIED BOUTIQUE • ZERO-WAIT PRIORITY DISPATCH',
-                'COMPLIMENTARY LUXURY PACKAGING',
-                '100% HAND-INSPECTED AUTHENTIC QUALITY',
-                '24/7 DEDICATED CONCIERGE SUPPORT',
-            ];
-        }
-        if (displayTier === 'pro') {
-            return [
-                'PRO VERIFIED BOUTIQUE',
-                'EXPRESS NATIONWIDE DISPATCH',
-                '100% QUALITY GUARANTEED',
-                'DIRECT WHATSAPP ORDERING',
-            ];
-        }
-        return [
-            'FAST NATIONWIDE DELIVERY',
-            '100% QUALITY GUARANTEED',
-            'CASH ON DELIVERY AVAILABLE',
-            'DIRECT WHATSAPP ORDERING',
-        ];
-    }, [isBasic, settings?.announcement_tags, displayTier]);
-
     // Product detail modal state (supports multiple images carousel, zoom, sizes & colors)
     const [selectedProductForModal, setSelectedProductForModal] = useState<Product | null>(null);
     const [modalQty, setModalQty] = useState(1);
@@ -721,77 +692,32 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Dynamic Tiered & Merchant-Editable Marquee */}
-            {displayTier === 'business' ? (
-                <div className="w-full overflow-hidden py-2 text-xs font-black text-amber-200 bg-slate-950 border-b border-amber-500/30 shadow-md select-none tracking-widest uppercase">
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={i} className="inline-flex items-center gap-2 shrink-0">
-                                        <CheckCircle2 size={13} className="text-amber-400" /> {tag}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black" aria-hidden="true">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={`dup-${i}`} className="inline-flex items-center gap-2 shrink-0">
-                                        <CheckCircle2 size={13} className="text-amber-400" /> {tag}
-                                    </span>
-                                ))}
-                            </div>
+            {/* Top Announcement Bar - Continuous Travelling Marquee (Merchant Editable, No Tags, No Truck Icon) */}
+            <div 
+                className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs select-none tracking-wide" 
+                style={{ backgroundColor: themeColor || '#0f172a' }}
+            >
+                <div className="flex overflow-hidden">
+                    <div className="animate-storefront-marquee flex shrink-0 items-center">
+                        <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-medium">
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-medium" aria-hidden="true">
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
                         </div>
                     </div>
                 </div>
-            ) : displayTier === 'pro' ? (
-                <div 
-                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-sm select-none tracking-wide" 
-                    style={{ background: `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}dd 50%, ${themeColor} 100%)` }}
-                >
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-14 pr-14 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={i} className="inline-flex items-center gap-2 shrink-0">
-                                        <ShieldCheck size={13} /> {tag}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex shrink-0 items-center gap-14 pr-14 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider" aria-hidden="true">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={`dup-${i}`} className="inline-flex items-center gap-2 shrink-0">
-                                        <ShieldCheck size={13} /> {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div 
-                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-xs select-none tracking-wide" 
-                    style={{ backgroundColor: themeColor }}
-                >
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={i} className="inline-flex items-center gap-2 shrink-0">
-                                        <Truck size={13} /> {tag}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-bold uppercase tracking-wider" aria-hidden="true">
-                                {marqueeTags.map((tag, i) => (
-                                    <span key={`dup-${i}`} className="inline-flex items-center gap-2 shrink-0">
-                                        <Truck size={13} /> {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
@@ -818,19 +744,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             <div className="min-w-0 text-left">
                                 <div className="flex items-center gap-2">
                                     <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">{liveStore.name}</h1>
-                                    {displayTier === 'business' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black px-2 py-0.5 shadow-2xs border border-amber-400">
-                                            <CheckCircle2 size={11} className="text-white" /> VERIFIED
-                                        </span>
-                                    ) : displayTier === 'pro' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 border border-blue-200">
-                                            <ShieldCheck size={10} className="text-blue-600" /> PRO VERIFIED
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 text-[9px] font-semibold px-2 py-0.5 border border-slate-200">
-                                            <CheckCircle2 size={10} className="text-slate-500" /> VERIFIED
-                                        </span>
-                                    )}
                                 </div>
                                 {liveStore.tagline ? (
                                     <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
@@ -1011,120 +924,55 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* 1. Full-Width Edge-to-Edge Hero Banner with Atmospheric Blurred Background */}
+            {/* 1. Full-Width Panoramic Hero Banner (Exact Boutique Reference Layout) */}
             <section
                 id="hero"
-                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
-                style={{
-                    borderColor: `${themeColor}28`,
-                }}
+                className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] lg:h-[500px] overflow-hidden border-b border-slate-200/80 bg-slate-100 shadow-xs"
             >
-                {/* Background Blurred Hero Image Overlay */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 select-none">
-                    <img
-                        src={heroImage1}
-                        alt=""
-                        aria-hidden="true"
-                        className="size-full object-cover scale-125 blur-3xl opacity-20 sm:opacity-25"
-                    />
-                    <div 
-                        className="absolute inset-0 backdrop-blur-xl"
-                        style={{
-                            background: `linear-gradient(135deg, ${themeColor}25 0%, #ffffff85 50%, ${themeColor}1a 100%)`,
-                        }}
-                    />
-                    <div
-                        className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-35 pointer-events-none"
-                        style={{ backgroundColor: themeColor }}
-                    />
-                    <div
-                        className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
-                        style={{ backgroundColor: themeColor }}
-                    />
-                </div>
+                {/* 1. Full-bleed Background Store Image (Sharp, Relatable to Niche/Idea) */}
+                <img
+                    src={heroImage1}
+                    alt={heroInfo.altText || liveStore.name}
+                    className="absolute inset-0 size-full object-cover object-center"
+                    loading="eager"
+                />
 
-                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-14 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
-                    {/* Left Column: Humanized, Aesthetic Headline & CTAs */}
-                    <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
-                        {displayTier === 'business' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-500/30 px-3.5 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
-                                <CheckCircle2 size={12} className="text-amber-400" /> Exclusive Verified Collection
-                            </span>
-                        ) : displayTier === 'pro' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider border shadow-xs" style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}40`, color: themeColor }}>
-                                <Sparkles size={12} /> Pro Verified Boutique Atelier
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-slate-200 px-3 py-1 text-[10px] font-bold text-slate-700 uppercase tracking-wider shadow-2xs">
-                                <Truck size={12} className="text-emerald-600" /> Fast Nationwide Delivery
-                            </span>
-                        )}
-                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
-                            {heroInfo.headlineMain}{' '}
-                            {heroInfo.headlineHighlight && (
-                                <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
-                            )}
-                        </h2>
-                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
-                            {liveStore.tagline || heroInfo.subtext}
-                        </p>
+                {/* 2. Soft Ambient Gradient Overlay for Contrast */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none" />
 
-                        <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
-                            <a
-                                href="#products"
-                                className="rounded-full px-6 py-3 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                Shop Collection →
-                            </a>
-                            <a
-                                href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
-                            >
-                                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
-                            </a>
-                        </div>
-                    </div>
+                {/* 3. Curved Frosted Glass Backdrop on Left (Matching Reference Image) */}
+                <div 
+                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[70%] md:w-[58%] lg:w-[48%] rounded-r-[130px] sm:rounded-r-[260px] md:rounded-r-[340px] lg:rounded-r-[420px] backdrop-blur-md sm:backdrop-blur-xl bg-white/55 sm:bg-white/50 border-r border-white/60 shadow-2xl flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8 z-10"
+                    style={{
+                        boxShadow: '15px 0 35px -10px rgba(0, 0, 0, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.4)'
+                    }}
+                >
+                    {/* Main Title: Big, Bold, Clean (e.g. Store Name / "123") */}
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-1 sm:mb-2 line-clamp-2">
+                        {liveStore.name}
+                    </h1>
 
-                    {/* Right Column: Single High-Impact Studio Hero Showcase Card */}
-                    <div className="relative w-full lg:w-auto flex items-center justify-center shrink-0 pt-2 pb-2">
-                        {/* Background Theme Ambient Glow */}
-                        <div
-                            className="absolute -inset-4 rounded-3xl blur-2xl opacity-40 pointer-events-none"
-                            style={{ backgroundColor: themeColor }}
-                        />
+                    {/* Subtitle / Tagline: e.g. "Welcome to 123" */}
+                    <p className="text-sm sm:text-base md:text-lg text-slate-700 font-medium tracking-normal mb-5 sm:mb-7 max-w-md line-clamp-2">
+                        {liveStore.tagline ? liveStore.tagline : `Welcome to ${liveStore.name}`}
+                    </p>
 
-                        {/* Single Hero Showcase Image */}
-                        <div
-                            className="relative w-full max-w-sm sm:max-w-md lg:w-[440px] aspect-[4/3] sm:aspect-[14/10] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 bg-white/80 backdrop-blur-sm z-10 transition duration-500 hover:scale-[1.01]"
-                            style={{ borderColor: `${themeColor}40`, boxShadow: `0 25px 50px -12px ${themeColor}35` }}
+                    {/* Side-by-Side Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
+                        <a
+                            href="#products"
+                            className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-white shadow-md hover:bg-slate-800 transition active:scale-95"
                         >
-                            <img
-                                src={heroImage1}
-                                alt={heroInfo.altText || liveStore.name}
-                                className="size-full object-cover transition duration-700 hover:scale-105"
-                                loading="eager"
-                            />
-                            {/* Subtle bottom gradient vignette with store badge */}
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/75 via-slate-950/25 to-transparent p-4 sm:p-5 flex items-end justify-between">
-                                <div>
-                                    <span className="text-[10px] sm:text-xs font-bold text-white/90 uppercase tracking-wider block">
-                                        Featured Collection
-                                    </span>
-                                    <p className="text-xs sm:text-sm font-extrabold text-white tracking-tight drop-shadow-sm">
-                                        {liveStore.name}
-                                    </p>
-                                </div>
-                                <span 
-                                    className="rounded-full px-2.5 py-1 text-[10px] sm:text-[11px] font-black text-white shadow-xs"
-                                    style={{ backgroundColor: themeColor }}
-                                >
-                                    100% Authentic
-                                </span>
-                            </div>
-                        </div>
+                            Shop Collection →
+                        </a>
+                        <a
+                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/80 bg-white/45 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-xs hover:bg-white/70 transition active:scale-95"
+                        >
+                            <MessageCircle size={16} className="text-emerald-600 fill-emerald-600" /> WhatsApp Support
+                        </a>
                     </div>
                 </div>
             </section>
@@ -1439,18 +1287,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                                 +{product.image_url.split(',').length - 1} photos
                                             </span>
                                         )}
-
-                                        {displayTier === 'business' ? (
-                                            <span className="absolute top-2 left-2 rounded-full bg-slate-950/85 backdrop-blur-xs text-amber-300 border border-amber-500/30 text-[8px] sm:text-[9px] font-black px-2 py-0.5 flex items-center gap-1 shadow-xs">
-                                                <CheckCircle2 size={10} className="text-amber-400" /> VERIFIED
-                                            </span>
-                                        ) : displayTier === 'pro' ? (
-                                            <span className="absolute top-2 left-2 rounded-full bg-white/90 backdrop-blur-xs text-blue-700 border border-blue-200 text-[8px] sm:text-[9px] font-bold px-2 py-0.5 flex items-center gap-1 shadow-2xs">
-                                                <ShieldCheck size={9} /> PRO
-                                            </span>
-                                        ) : null}
-
-
                                     </div>
 
                                     {/* Product Details & Price */}

@@ -1646,155 +1646,58 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-900">
-                                                Travelling Announcement Bar (Marquee Tags)
+                                                Travelling Announcement Bar (Marquee Text)
                                             </label>
                                             <p className="text-[11px] text-slate-500">
-                                                Text and tags that travel across the top header of your storefront.
+                                                Continuous text that travels smoothly across the top header of your storefront.
                                             </p>
                                         </div>
-                                        {storePlan === 'basic' ? (
-                                            <span className="rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold px-2.5 py-0.5">
-                                                Pro / Business Feature
-                                            </span>
-                                        ) : (
-                                            <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
-                                                Editable Active
-                                            </span>
-                                        )}
+                                        <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
+                                            Editable
+                                        </span>
                                     </div>
 
-                                    {storePlan === 'basic' ? (
-                                        <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900 space-y-2">
-                                            <p className="text-[11px] font-semibold">
-                                                🔒 On the Free plan, your store displays default nationwide delivery announcements.
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                                Announcement Text / Message
+                                            </label>
+                                            <textarea 
+                                                rows={2}
+                                                value={bannerText} 
+                                                onChange={e => setBannerText(e.target.value)} 
+                                                placeholder="e.g. Free delivery nationwide on orders above Rs. 3,000! • Direct WhatsApp Ordering • 100% Quality Guaranteed"
+                                                className="w-full p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none resize-none leading-relaxed" 
+                                            />
+                                            <p className="mt-1 text-[10px] text-slate-400">
+                                                This continuous text will travel seamlessly across the top of your store. Merchant can edit, update, or clear it anytime.
                                             </p>
-                                            <p className="text-[10px] text-amber-700">
-                                                Upgrade to <strong>Pro</strong> or <strong>Business</strong> to freely add, update, and delete custom travelling announcement tags (e.g. sales, special offers, dispatch info).
-                                            </p>
-                                            <button
-                                                type="button"
-                                                onClick={() => setActiveTab('plans')}
-                                                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs hover:bg-amber-500 transition"
-                                            >
-                                                Upgrade Plan to Customize
-                                            </button>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            <div>
-                                                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                                                    Static Announcement Headline (Fallback)
-                                                </label>
-                                                <input 
-                                                    type="text" 
-                                                    value={bannerText} 
-                                                    onChange={e => setBannerText(e.target.value)} 
-                                                    placeholder="e.g. Free delivery nationwide on orders above Rs. 3,000!"
-                                                    className="w-full p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none" 
-                                                />
-                                            </div>
 
-                                            {/* Live Tags List */}
-                                            <div>
-                                                <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">
-                                                    Active Travelling Announcement Tags ({announcementTags.length})
-                                                </label>
-                                                <div className="flex flex-wrap gap-1.5 p-2 rounded-xl border border-slate-200 bg-white min-h-[46px] items-center">
-                                                    {announcementTags.length === 0 ? (
-                                                        <span className="text-[11px] text-slate-400 italic">No custom tags added yet. Default tiered tags will show.</span>
-                                                    ) : (
-                                                        announcementTags.map((tag, idx) => (
-                                                            <span 
-                                                                key={idx}
-                                                                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 border border-slate-300 text-slate-800 text-[11px] font-bold px-3 py-1 shadow-2xs"
-                                                            >
-                                                                <span>{tag}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setAnnouncementTags(prev => prev.filter((_, i) => i !== idx))}
-                                                                    className="grid size-4 place-items-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-800 transition"
-                                                                    title="Delete tag"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </span>
-                                                        ))
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Add New Tag Input */}
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={newTagInput}
-                                                    onChange={e => setNewTagInput(e.target.value)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            const trimmed = newTagInput.trim();
-                                                            if (trimmed && !announcementTags.includes(trimmed)) {
-                                                                setAnnouncementTags(prev => [...prev, trimmed]);
-                                                                setNewTagInput('');
-                                                            }
-                                                        }
-                                                    }}
-                                                    placeholder="Enter new marquee announcement tag (e.g. FLAT 20% OFF TODAY)"
-                                                    className="flex-1 p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const trimmed = newTagInput.trim();
-                                                        if (trimmed && !announcementTags.includes(trimmed)) {
-                                                            setAnnouncementTags(prev => [...prev, trimmed]);
-                                                            setNewTagInput('');
-                                                        }
-                                                    }}
-                                                    disabled={!newTagInput.trim()}
-                                                    className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition disabled:opacity-40"
-                                                >
-                                                    + Add Tag
-                                                </button>
-                                            </div>
-
-                                            {/* Quick Suggestions */}
-                                            <div>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                                                    Quick Preset Tags (Click to add):
-                                                </span>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {[
-                                                        'FAST NATIONWIDE DELIVERY',
-                                                        '100% QUALITY GUARANTEED',
-                                                        'COMPLIMENTARY LUXURY PACKAGING',
-                                                        'DIRECT WHATSAPP ORDERING',
-                                                        'NEW COLLECTION NOW LIVE',
-                                                        'CASH ON DELIVERY (COD) AVAILABLE',
-                                                        '7-DAY HASSLE-FREE EXCHANGE',
-                                                    ].map((preset) => (
-                                                        <button
-                                                            key={preset}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (!announcementTags.includes(preset)) {
-                                                                    setAnnouncementTags(prev => [...prev, preset]);
-                                                                }
-                                                            }}
-                                                            disabled={announcementTags.includes(preset)}
-                                                            className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition ${
-                                                                announcementTags.includes(preset)
-                                                                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                                                                    : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400 hover:text-blue-700'
-                                                            }`}
-                                                        >
-                                                            + {preset}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                        {/* Quick Suggestions (Click to apply) */}
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                                                Quick Preset Suggestions (Click to apply):
+                                            </span>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[
+                                                    'Free delivery nationwide on orders above Rs. 3,000! • Cash on Delivery Available',
+                                                    '🔥 Mega Weekend Special Sale • Up to 25% Off • Instant WhatsApp Dispatch',
+                                                    'New Season Arrivals Now In Stock • Express Nationwide Delivery • 100% Authentic Quality',
+                                                    'Curated Collection • Direct WhatsApp Support • 7-Day Hassle-Free Exchange',
+                                                ].map((preset, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => setBannerText(preset)}
+                                                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-700 hover:border-blue-400 hover:text-blue-700 hover:bg-slate-50 transition text-left"
+                                                    >
+                                                        {preset.split('•')[0].trim()}...
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-[11px] font-semibold text-slate-700">Store logo</label>
