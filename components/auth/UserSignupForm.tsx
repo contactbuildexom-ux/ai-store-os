@@ -18,7 +18,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const highlights = [
   "Your AI-built store, ready in minutes",
   "WhatsApp ordering and QR code included",
-  "Start free, upgrade when you grow",
+  "7 days free, then choose the plan that fits",
 ];
 
 type Plan = "basic" | "pro" | "business";
@@ -246,7 +246,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
 
         <div>
           <p className="text-4xl font-extrabold leading-tight tracking-tight xl:text-5xl">
-            Create your free online store.
+            Try Buildexom free for 7 days.
           </p>
           <ul className="mt-8 space-y-4">
             {highlights.map((item) => (
@@ -274,7 +274,7 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
 
           <div className="rounded-3xl bg-white p-6 shadow-[0_30px_60px_-30px_rgba(25,118,210,0.45)] sm:p-8">
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#1976d2]">
-              {plan === "basic" ? "Free account" : `${plan === "pro" ? "Pro" : "Business"} plan`}
+              {plan === "basic" ? "7-day free trial" : `${plan === "pro" ? "Pro" : "Business"} plan`}
             </p>
             <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-[#0b2545]">Create your account</h1>
             <p className="mt-1 text-sm text-[#2c4a73]">
@@ -488,7 +488,11 @@ export default function UserSignupForm({ plan = "basic" }: { plan?: Plan }) {
                     <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                 )}
-                {loading ? "Creating your store & account..." : "Create my store"}
+                {loading
+                  ? "Creating your store & account..."
+                  : plan === "basic"
+                    ? "Start my free trial"
+                    : "Create my store"}
               </button>
             </form>
 
