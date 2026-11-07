@@ -6,7 +6,8 @@ export const SITE_URL = (
 
 export const SITE_NAME = "Buildexom";
 
-export const DEFAULT_OG_IMAGE = "/og-image.png"; // 1200x630 image public/ folder me rakhein
+// 1200x630 image; keep the file in the public/ folder
+export const DEFAULT_OG_IMAGE = "/og-image.png";
 
 type PageSeo = {
   title: string; // 50-60 characters
@@ -14,7 +15,7 @@ type PageSeo = {
   path: string;
 };
 
-// Har important page ka unique title + description
+// Unique title + description for every important page
 export const PAGE_SEO: Record<string, PageSeo> = {
   home: {
     title: "AI-Powered Online Store Builder | Buildexom",
@@ -66,7 +67,7 @@ export const ROUTES_FOR_SITEMAP: { path: string; priority: number }[] = [
 export function buildMetadata(page: PageSeo): Metadata {
   const url = `${SITE_URL}${page.path}`;
   return {
-    // absolute: layout ka "%s | ..." template won't apply again
+    // absolute: the layout's "%s | ..." title template will not be applied again
     title: { absolute: page.title },
     description: page.description,
     alternates: { canonical: url },

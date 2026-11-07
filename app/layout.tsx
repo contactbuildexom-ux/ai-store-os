@@ -15,13 +15,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const googleVerification = process.env.NEXT_PUBLIC_GSC_VERIFICATION;
 
   return {
-    // Relative canonical/OG URLs ko absolute banane ke liye zaroori
+    // Required so relative canonical/OG URLs resolve to absolute URLs
     metadataBase: new URL(SITE_URL),
     title: { default: title, template: "%s" },
     description,
     applicationName: SITE_NAME,
     ...(keywords.length > 0 ? { keywords } : {}),
-    // "./" har page ka apna canonical URL ban jata hai (duplicate URLs se bachata hai)
+    // "./" makes every page use its own canonical URL (avoids duplicate URLs)
     alternates: { canonical: "./" },
     robots: {
       index: true,
