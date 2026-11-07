@@ -85,7 +85,16 @@ export type Store = {
 
 export type Props = {
     store: Store;
-    settings: { theme_color?: string | null; banner_text?: string | null; logo_url?: string | null; hero_images?: string[] | null; about_title?: string | null; about_text?: string | null; about_image?: string | null; } | null;
+    settings: { 
+        theme_color?: string | null; 
+        banner_text?: string | null; 
+        announcement_tags?: string[] | null;
+        logo_url?: string | null; 
+        hero_images?: string[] | null; 
+        about_title?: string | null; 
+        about_text?: string | null; 
+        about_image?: string | null; 
+    } | null;
     products: Product[];
     delivery: DeliverySettings | null;
     paymentDetails?: any;
@@ -204,6 +213,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAiOpen, setIsAiOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [toastMessage, setToastMessage] = useState('');
@@ -618,6 +628,10 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     store_name: liveStore.name,
                     whatsapp_number: liveStore.whatsapp_number,
                     tagline: liveStore.tagline,
+                    description: liveStore.description,
+                    about_text: settings?.about_text,
+                    niche: liveStore.niche,
+                    theme_color: themeColor,
                     products: liveProducts.map((p) => ({
                         id: p.id,
                         name: p.name,
@@ -641,6 +655,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     slug: liveStore.slug,
                     whatsapp_number: liveStore.whatsapp_number,
                     tagline: liveStore.tagline || undefined,
+                    description: (settings?.about_text || liveStore.description) || undefined,
                 },
                 products: liveProducts.map((p) => ({
                     id: p.id,
@@ -677,71 +692,32 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* Top Announcement Bar - Dynamic Tiered Appearance */}
-            {displayTier === 'business' ? (
-                <div className="w-full overflow-hidden py-2 text-xs font-black text-amber-200 bg-slate-950 border-b border-amber-500/30 shadow-md select-none tracking-widest uppercase">
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Crown size={14} className="text-amber-400" /> VIP FLAGSHIP BOUTIQUE • ZERO-WAIT PRIORITY DISPATCH</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} className="text-amber-400" /> COMPLIMENTARY LUXURY PACKAGING</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} className="text-amber-400" /> 100% HAND-INSPECTED AUTHENTIC QUALITY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} className="text-amber-400" /> 24/7 DEDICATED VIP CONCIERGE</span>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-12 pr-12 text-[11px] sm:text-xs font-black" aria-hidden="true">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Crown size={14} className="text-amber-400" /> VIP FLAGSHIP BOUTIQUE • ZERO-WAIT PRIORITY DISPATCH</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} className="text-amber-400" /> COMPLIMENTARY LUXURY PACKAGING</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} className="text-amber-400" /> 100% HAND-INSPECTED AUTHENTIC QUALITY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} className="text-amber-400" /> 24/7 DEDICATED VIP CONCIERGE</span>
-                            </div>
+            {/* Top Announcement Bar - Continuous Travelling Marquee (Merchant Editable, No Tags, No Truck Icon) */}
+            <div 
+                className="w-full overflow-hidden py-2 text-xs font-semibold text-white shadow-xs select-none tracking-wide" 
+                style={{ backgroundColor: themeColor || '#0f172a' }}
+            >
+                <div className="flex overflow-hidden">
+                    <div className="animate-storefront-marquee flex shrink-0 items-center">
+                        <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-medium">
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-10 pr-10 text-[11px] sm:text-xs font-medium" aria-hidden="true">
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
+                            <span>{bannerText}</span>
+                            <span className="opacity-50">•</span>
                         </div>
                     </div>
                 </div>
-            ) : displayTier === 'pro' ? (
-                <div 
-                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-sm select-none tracking-wide" 
-                    style={{ background: `linear-gradient(90deg, ${themeColor} 0%, ${themeColor}dd 50%, ${themeColor} 100%)` }}
-                >
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider">
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED BOUTIQUE</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS NATIONWIDE DISPATCH</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} /> 100% QUALITY GUARANTEED</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} /> DIRECT WHATSAPP ORDERING</span>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-16 pr-16 text-[11px] sm:text-xs font-extrabold uppercase tracking-wider" aria-hidden="true">
-                                <span className="inline-flex items-center gap-2 shrink-0"><ShieldCheck size={14} /> PRO VERIFIED BOUTIQUE</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={14} /> EXPRESS NATIONWIDE DISPATCH</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Sparkles size={14} /> 100% QUALITY GUARANTEED</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><MessageCircle size={14} /> DIRECT WHATSAPP ORDERING</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div 
-                    className="w-full overflow-hidden py-2 text-xs font-extrabold text-white shadow-xs select-none tracking-wide" 
-                    style={{ backgroundColor: themeColor }}
-                >
-                    <div className="flex overflow-hidden">
-                        <div className="animate-storefront-marquee flex shrink-0 items-center">
-                            <div className="flex shrink-0 items-center gap-24 pr-24 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-24 pr-24 text-[11px] sm:text-xs font-bold uppercase tracking-wider" aria-hidden="true">
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                                <span className="inline-flex items-center gap-2 shrink-0"><Truck size={15} /> FAST NATIONWIDE DELIVERY</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            </div>
 
             {/* Main Header (Matching Laptop Screen in Instagram Post) */}
             <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md transition-shadow">
@@ -768,19 +744,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             <div className="min-w-0 text-left">
                                 <div className="flex items-center gap-2">
                                     <h1 className="truncate text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">{liveStore.name}</h1>
-                                    {displayTier === 'business' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black px-2 py-0.5 shadow-2xs border border-amber-400">
-                                            <Crown size={10} /> VIP FLAGSHIP
-                                        </span>
-                                    ) : displayTier === 'pro' ? (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold px-2 py-0.5 border border-blue-200">
-                                            <ShieldCheck size={10} className="text-blue-600" /> PRO VERIFIED
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 text-slate-600 text-[9px] font-semibold px-2 py-0.5 border border-slate-200">
-                                            <CheckCircle2 size={10} className="text-slate-500" /> VERIFIED
-                                        </span>
-                                    )}
                                 </div>
                                 {liveStore.tagline ? (
                                     <p className="hidden text-[10px] text-slate-400 sm:block truncate max-w-[200px]">{liveStore.tagline}</p>
@@ -813,8 +776,23 @@ export default function StorefrontClient({ store, settings, products, delivery, 
 
                     </nav>
 
-                    {/* Right: Cart Icon Button */}
+                    {/* Right: Search & Cart Icon Buttons */}
                     <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsSearchOpen(true)}
+                            aria-label="Search catalog"
+                            className="relative grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-800 transition hover:bg-slate-100 active:scale-95 shadow-xs"
+                            title="Search products"
+                        >
+                            <Search size={18} />
+                            {searchQuery.trim() && (
+                                <span 
+                                    className="absolute -top-1 -right-1 size-2.5 rounded-full" 
+                                    style={{ backgroundColor: themeColor }}
+                                />
+                            )}
+                        </button>
 
                         <button
                             type="button"
@@ -946,132 +924,69 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* 1. Full-Width Edge-to-Edge Hero Banner with Crisp Top and Bottom Borders */}
+            {/* 1. Full-Width Panoramic Hero Banner (Exact Boutique Reference Layout) */}
             <section
                 id="hero"
-                className="relative w-full overflow-hidden border-b transition duration-500 shadow-xs"
-                style={{
-                    background: `linear-gradient(135deg, ${themeColor}18 0%, ${themeColor}2e 50%, ${themeColor}10 100%)`,
-                    borderColor: `${themeColor}28`,
-                }}
+                className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] lg:h-[500px] overflow-hidden border-b border-slate-200/80 bg-slate-100 shadow-xs"
             >
-                <div
-                    className="absolute -right-20 -top-20 size-96 rounded-full blur-3xl opacity-25 pointer-events-none"
-                    style={{ backgroundColor: themeColor }}
+                {/* 1. Full-bleed Background Store Image (Sharp, Relatable to Niche/Idea) */}
+                <img
+                    src={heroImage1}
+                    alt={heroInfo.altText || liveStore.name}
+                    className="absolute inset-0 size-full object-cover object-center"
+                    loading="eager"
                 />
-                <div
-                    className="absolute -left-20 -bottom-20 size-96 rounded-full blur-3xl opacity-15 pointer-events-none"
-                    style={{ backgroundColor: themeColor }}
-                />
 
-                <div className="mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 flex flex-col-reverse lg:flex-row items-center justify-between gap-8 lg:gap-12 relative z-10">
-                    {/* Left Column: Polished, Balanced Text & CTAs */}
-                    <div className="w-full lg:max-w-xl text-center lg:text-left flex flex-col items-center lg:items-start space-y-4">
-                        {displayTier === 'business' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-500/30 px-3.5 py-1 text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
-                                <Crown size={12} className="text-amber-400" /> Exclusive Flagship Collection
-                            </span>
-                        ) : displayTier === 'pro' ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider border shadow-xs" style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}40`, color: themeColor }}>
-                                <Sparkles size={12} /> Pro Verified Boutique Atelier
-                            </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-slate-200 px-3 py-1 text-[10px] font-bold text-slate-700 uppercase tracking-wider shadow-2xs">
-                                <Truck size={12} className="text-emerald-600" /> Fast Nationwide Delivery
-                            </span>
-                        )}
-                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-[1.14]">
-                            {heroInfo.headlineMain}{' '}
-                            {heroInfo.headlineHighlight && (
-                                <span style={{ color: themeColor }}>{heroInfo.headlineHighlight}</span>
-                            )}
-                        </h2>
-                        <p className="text-sm sm:text-base text-slate-700 max-w-lg leading-relaxed font-medium">
-                            {liveStore.tagline || heroInfo.subtext}
-                        </p>
+                {/* 2. Soft Ambient Gradient Overlay for Contrast */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none" />
 
-                        <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3.5">
-                            <a
-                                href="#products"
-                                className="rounded-full px-6 py-3 text-xs sm:text-sm font-extrabold text-white shadow-md transition hover:scale-105 active:scale-95"
-                                style={{ backgroundColor: themeColor }}
-                            >
-                                Shop Collection →
-                            </a>
-                            <a
-                                href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white/95 px-5 py-3 text-xs sm:text-sm font-bold text-slate-800 shadow-xs transition hover:bg-white hover:border-slate-400"
-                            >
-                                <MessageCircle size={15} className="text-emerald-600" /> WhatsApp Support
-                            </a>
-                        </div>
-                    </div>
+                {/* 3. Curved Frosted Glass Backdrop on Left (Matching Reference Image) */}
+                <div 
+                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[70%] md:w-[58%] lg:w-[48%] rounded-r-[130px] sm:rounded-r-[260px] md:rounded-r-[340px] lg:rounded-r-[420px] backdrop-blur-md sm:backdrop-blur-xl bg-white/55 sm:bg-white/50 border-r border-white/60 shadow-2xl flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8 z-10"
+                    style={{
+                        boxShadow: '15px 0 35px -10px rgba(0, 0, 0, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.4)'
+                    }}
+                >
+                    {/* Main Title: Big, Bold, Clean (e.g. Store Name / "123") */}
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-1 sm:mb-2 line-clamp-2">
+                        {liveStore.name}
+                    </h1>
 
-                    {/* Right Column: Triple Merged Studio Showcase Images (3 Images) */}
-                    <div className="relative w-full lg:w-auto flex items-center justify-center lg:justify-end shrink-0 pt-2 pb-2">
-                        {/* Background Theme Ambient Glow */}
-                        <div
-                            className="absolute -inset-4 rounded-3xl blur-3xl opacity-30 pointer-events-none"
-                            style={{ backgroundColor: themeColor }}
-                        />
+                    {/* Subtitle / Tagline: e.g. "Welcome to 123" */}
+                    <p className="text-sm sm:text-base md:text-lg text-slate-700 font-medium tracking-normal mb-5 sm:mb-7 max-w-md line-clamp-2">
+                        {liveStore.tagline ? liveStore.tagline : `Welcome to ${liveStore.name}`}
+                    </p>
 
-                        {/* 3-Image Merging Container */}
-                        <div className="relative flex items-center justify-center">
-                            {/* Card 1: Primary Featured Showcase Card (Center / Main) */}
-                            <div
-                                className="relative w-36 sm:w-44 md:w-52 lg:w-56 h-48 sm:h-58 md:h-66 lg:h-74 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl border bg-white/70 backdrop-blur-xs z-10 transition duration-500 hover:scale-[1.02]"
-                                style={{ borderColor: `${themeColor}35` }}
-                            >
-                                <img
-                                    src={heroImage1}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
-                            </div>
-
-                            {/* Card 2: Secondary Overlapping Showcase Card (Front / Left towards text, bridging gap seamlessly) */}
-                            <div
-                                className="relative -ml-12 sm:-ml-16 md:-ml-18 mt-8 sm:mt-12 w-28 sm:w-34 md:w-38 lg:w-42 h-36 sm:h-44 md:h-48 lg:h-52 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-20 transition duration-500 hover:scale-105 hover:z-30"
-                                style={{ boxShadow: `0 20px 35px -10px ${themeColor}40` }}
-                            >
-                                <img
-                                    src={heroImage2}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
-                            </div>
-
-                            {/* Card 3: Tertiary Overlapping Showcase Card (Top / Right Accent) */}
-                            <div
-                                className="relative -ml-7 sm:-ml-9 md:-ml-11 -mt-8 sm:-mt-12 w-24 sm:w-30 md:w-34 lg:w-38 h-32 sm:h-40 md:h-44 lg:h-48 rounded-xl sm:rounded-2xl overflow-hidden shadow-xl border-2 border-white/90 bg-white/90 backdrop-blur-md z-15 transition duration-500 hover:scale-105 hover:z-30"
-                                style={{ boxShadow: `0 15px 30px -10px ${themeColor}30` }}
-                            >
-                                <img
-                                    src={heroImage3}
-                                    alt={heroInfo.altText}
-                                    className="size-full object-cover transition duration-500 hover:scale-105"
-                                    loading="eager"
-                                />
-                            </div>
-                        </div>
+                    {/* Side-by-Side Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
+                        <a
+                            href="#products"
+                            className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-white shadow-md hover:bg-slate-800 transition active:scale-95"
+                        >
+                            Shop Collection →
+                        </a>
+                        <a
+                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/80 bg-white/45 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-xs hover:bg-white/70 transition active:scale-95"
+                        >
+                            <MessageCircle size={16} className="text-emerald-600 fill-emerald-600" /> WhatsApp Support
+                        </a>
                     </div>
                 </div>
             </section>
 
             {/* Main Page Body - Edge-to-edge with zero bottom gap before footer */}
-            <main className="w-full px-0 sm:px-2 lg:px-3 pt-4 pb-0 space-y-6 sm:space-y-8">
+            <main className="w-full px-0 pt-4 pb-0 space-y-6 sm:space-y-8">
 
                 {/* 2. Featured Products Section (Only rendered when real products exist) */}
                 {featuredItems.length > 0 && (
                     <section 
                         id="featured" 
-                        className="w-full space-y-3 sm:space-y-4"
+                        className="w-full space-y-3 sm:space-y-4 px-3 sm:px-6 lg:px-8"
                     >
-                        <div className="flex items-center justify-between px-2 sm:px-3">
+                        <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-xl">
                                     Featured Products
@@ -1138,27 +1053,38 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     </section>
                 )}
 
-                {/* 3. Category Icons Strip (Only available when not Basic plan and categories exist) */}
+                {/* 3. Professional E-Commerce Category Showcase */}
                 {!isBasic && categories.filter((c) => c !== 'All').length > 0 && (
-                <section id="categories" className="w-full px-2 sm:px-3 pt-1 space-y-3">
-                    <div className="flex items-center justify-between pb-1">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                            Explore Categories
-                        </h4>
+                <section id="categories" className="w-full px-3 sm:px-6 lg:px-8 pt-2 space-y-3.5">
+                    <div className="flex items-center justify-between pb-0.5">
+                        <div>
+                            <h4 className="text-sm sm:text-base font-extrabold tracking-tight text-slate-900">
+                                Shop by Category
+                            </h4>
+                            <p className="text-[11px] text-slate-500">Explore our curated collections</p>
+                        </div>
                         {selectedCategory !== 'All' && (
                             <button
                                 type="button"
                                 onClick={() => setSelectedCategory('All')}
-                                className="text-xs font-bold text-blue-600 hover:underline"
+                                className="text-xs font-bold hover:underline transition"
+                                style={{ color: themeColor }}
                             >
-                                Reset to All
+                                Reset to All Categories
                             </button>
                         )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4 w-full">
+
+                    {/* Professional E-Commerce Category Cards Grid */}
+                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-3.5 w-full">
                         {categories.filter((c) => c !== 'All').map((cat) => {
                             const isSelected = selectedCategory.toLowerCase() === cat.toLowerCase();
                             const productCount = catalogProducts.filter(p => ((p as any).category || '').toLowerCase() === cat.toLowerCase()).length;
+                            const matchingCatObj = Array.isArray((liveStore as any).categories) 
+                                ? (liveStore as any).categories.find((c: any) => (typeof c === 'object' ? c?.name?.toLowerCase() === cat.toLowerCase() : c?.toLowerCase() === cat.toLowerCase()))
+                                : null;
+                            const catImageUrl = matchingCatObj && typeof matchingCatObj === 'object' ? matchingCatObj.image_url : null;
+
                             return (
                                 <button
                                     key={cat}
@@ -1168,50 +1094,58 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                         const el = document.getElementById('products');
                                         el?.scrollIntoView({ behavior: 'smooth' });
                                     }}
-                                    className={`flex items-center gap-2.5 sm:gap-3 rounded-2xl border p-3 sm:p-3.5 text-left transition hover:shadow-md active:scale-95 w-full ${
+                                    className={`group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border p-3.5 sm:p-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:scale-95 w-full cursor-pointer overflow-hidden ${
                                         isSelected
-                                            ? 'shadow-xs font-bold'
-                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                            ? 'shadow-xs ring-2 ring-offset-2'
+                                            : 'border-slate-200 bg-white hover:border-slate-300'
                                     }`}
                                     style={
                                         isSelected
                                             ? {
                                                 borderColor: themeColor,
-                                                backgroundColor: `${themeColor}15`,
-                                                color: themeColor,
+                                                backgroundColor: `${themeColor}0a`,
+                                                boxShadow: `0 0 0 2px ${themeColor}40, 0 4px 12px ${themeColor}15`,
                                             }
                                             : {
-                                                backgroundColor: `${themeColor}05`,
-                                                borderColor: `${themeColor}20`
+                                                background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
                                             }
                                     }
                                 >
-                                    {(() => {
-                                        const matchingCatObj = Array.isArray((liveStore as any).categories) 
-                                            ? (liveStore as any).categories.find((c: any) => (typeof c === 'object' ? c?.name?.toLowerCase() === cat.toLowerCase() : c?.toLowerCase() === cat.toLowerCase()))
-                                            : null;
-                                        const catImageUrl = matchingCatObj && typeof matchingCatObj === 'object' ? matchingCatObj.image_url : null;
-                                        return catImageUrl ? (
+                                    <div className="flex items-start justify-between gap-2">
+                                        {catImageUrl ? (
                                             <img 
                                                 src={catImageUrl} 
                                                 alt={cat} 
-                                                className="size-8 sm:size-9 shrink-0 rounded-xl object-cover shadow-2xs" 
+                                                className="size-11 sm:size-12 shrink-0 rounded-2xl object-cover shadow-2xs group-hover:scale-105 transition-transform" 
                                             />
                                         ) : (
                                             <span 
-                                                className="grid size-8 sm:size-9 shrink-0 place-items-center rounded-xl text-xs font-black tracking-wider transition shadow-2xs"
+                                                className="grid size-11 sm:size-12 shrink-0 place-items-center rounded-2xl text-xs font-black tracking-wider transition-all duration-300 shadow-2xs group-hover:scale-105"
                                                 style={{
-                                                    backgroundColor: isSelected ? themeColor : `${themeColor}18`,
+                                                    backgroundColor: isSelected ? themeColor : `${themeColor}15`,
                                                     color: isSelected ? '#ffffff' : themeColor
                                                 }}
                                             >
                                                 {getCategorySymbol(cat)}
                                             </span>
-                                        );
-                                    })()}
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-xs sm:text-sm font-bold truncate leading-tight">{cat}</p>
-                                        <p className="text-[10px] text-slate-500 font-medium pt-0.5">{productCount} {productCount === 1 ? 'item' : 'items'}</p>
+                                        )}
+
+                                        <span 
+                                            className="rounded-full px-2 py-0.5 text-[10px] font-bold text-slate-500 bg-slate-100"
+                                            style={isSelected ? { backgroundColor: `${themeColor}20`, color: themeColor } : {}}
+                                        >
+                                            {productCount} {productCount === 1 ? 'item' : 'items'}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-3 min-w-0">
+                                        <p className="text-xs sm:text-sm font-extrabold truncate text-slate-900 group-hover:text-blue-600 transition-colors">
+                                            {cat}
+                                        </p>
+                                        <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1 pt-0.5">
+                                            <span>Explore collection</span>
+                                            <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                                        </p>
                                     </div>
                                 </button>
                             );
@@ -1220,58 +1154,63 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </section>
                 )}
 
-                {/* 2. Search & Category Bar */}
-                <section className="w-full px-2 sm:px-3 space-y-3">
-                    {/* Search Input */}
-                    <div className="relative">
-                        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search catalog by name or keyword..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-xs font-medium shadow-xs outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                        />
-                        {searchQuery && (
+                {/* 2. Compact Search & Filter Toolbar (Compact Search Button - No bulky wide input) */}
+                <section className="w-full px-3 sm:px-6 lg:px-8 pt-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5">
+                        {/* Scrollable Category Filter Pills */}
+                        {!isBasic && categories.length > 1 && (
+                            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1 min-w-0">
+                                {categories.map((cat) => {
+                                    const isSelected = selectedCategory === cat;
+                                    return (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setSelectedCategory(cat)}
+                                            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shadow-2xs active:scale-95 ${
+                                                isSelected
+                                                    ? 'text-white'
+                                                    : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                                            }`}
+                                            style={isSelected ? { backgroundColor: themeColor } : {}}
+                                        >
+                                            {cat === 'All' ? 'All Products' : cat}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Compact Search Trigger Button */}
+                        <div className="shrink-0 flex items-center gap-2">
                             <button
                                 type="button"
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-700"
+                                onClick={() => setIsSearchOpen(true)}
+                                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition active:scale-95"
+                                title="Click to search catalog"
                             >
-                                <X size={14} />
+                                <Search size={14} className="text-slate-400" />
+                                <span>{searchQuery ? `"${searchQuery}"` : 'Search products'}</span>
+                                {searchQuery && (
+                                    <span
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSearchQuery('');
+                                        }}
+                                        className="grid size-4 place-items-center rounded-full bg-slate-200 text-[10px] text-slate-700 hover:bg-slate-300"
+                                    >
+                                        ✕
+                                    </span>
+                                )}
                             </button>
-                        )}
+                        </div>
                     </div>
-
-                    {/* Category Scrollable Pills */}
-                    {!isBasic && categories.length > 1 && (
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none w-full">
-                        {categories.map((cat) => {
-                            const isSelected = selectedCategory === cat;
-                            return (
-                                <button
-                                    key={cat}
-                                    type="button"
-                                    onClick={() => setSelectedCategory(cat)}
-                                    className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition shadow-xs ${
-                                        isSelected
-                                            ? 'text-white'
-                                            : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                                    }`}
-                                    style={isSelected ? { backgroundColor: themeColor } : {}}
-                                >
-                                    {cat === 'All' ? 'All Products' : cat}
-                                </button>
-                            );
-                        })}
-                    </div>
-                    )}
                 </section>
 
                 {/* 3. Product Catalog Grid - Our Collection (Matching Hero Section Background) */}
                 <section 
                     id="products" 
-                    className="w-full space-y-3 sm:space-y-4"
+                    className="w-full space-y-3 sm:space-y-4 px-3 sm:px-6 lg:px-8"
                 >
                     <div className="flex items-center justify-between px-2 sm:px-3">
                         <div>
@@ -1348,18 +1287,6 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                                 +{product.image_url.split(',').length - 1} photos
                                             </span>
                                         )}
-
-                                        {displayTier === 'business' ? (
-                                            <span className="absolute top-2 left-2 rounded-full bg-slate-950/85 backdrop-blur-xs text-amber-300 border border-amber-500/30 text-[8px] sm:text-[9px] font-black px-2 py-0.5 flex items-center gap-1 shadow-xs">
-                                                <Crown size={9} className="text-amber-400" /> VIP
-                                            </span>
-                                        ) : displayTier === 'pro' ? (
-                                            <span className="absolute top-2 left-2 rounded-full bg-white/90 backdrop-blur-xs text-blue-700 border border-blue-200 text-[8px] sm:text-[9px] font-bold px-2 py-0.5 flex items-center gap-1 shadow-2xs">
-                                                <ShieldCheck size={9} /> PRO
-                                            </span>
-                                        ) : null}
-
-
                                     </div>
 
                                     {/* Product Details & Price */}
@@ -1427,19 +1354,42 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                     )}
                 </section>
 
-                {/* 4. About Store & Brand Story Section (Editable content with right-side box image) */}
+                {/* 4. Full-Width Edge-to-Edge About Store & Brand Story Section (Left and Right No Space) */}
                 {showAboutSection && (
-                <section id="about" className="mx-auto max-w-4xl my-8 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white/95 backdrop-blur-xs p-6 sm:p-10 shadow-sm overflow-hidden">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <section 
+                    id="about" 
+                    className="w-full my-8 sm:my-12 border-y py-12 sm:py-16 px-4 sm:px-8 lg:px-14 shadow-xs relative overflow-hidden"
+                    style={{
+                        background: `linear-gradient(135deg, ${themeColor}12 0%, #ffffff 50%, ${themeColor}0a 100%)`,
+                        borderColor: `${themeColor}25`,
+                    }}
+                >
+                    {/* Atmospheric Glow */}
+                    <div
+                        className="absolute -right-20 -top-20 size-80 rounded-full blur-3xl opacity-25 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+                    <div
+                        className="absolute -left-20 -bottom-20 size-80 rounded-full blur-3xl opacity-20 pointer-events-none"
+                        style={{ backgroundColor: themeColor }}
+                    />
+
+                    <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center relative z-10">
                         {/* Left Side: Story Text & Brand Mission */}
-                        <div className="lg:col-span-7 space-y-4">
-                            <div>
-                                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                        <div className="lg:col-span-7 space-y-5">
+                            <div className="space-y-2">
+                                <span 
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider border shadow-2xs"
+                                    style={{ backgroundColor: `${themeColor}18`, borderColor: `${themeColor}35`, color: themeColor }}
+                                >
+                                    <Sparkles size={12} /> Official Brand Atelier
+                                </span>
+                                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                                     {settings?.about_title || `About ${liveStore.name}`}
                                 </h3>
                             </div>
 
-                            <p className="text-xs sm:text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+                            <p className="text-xs sm:text-sm lg:text-base leading-relaxed text-slate-600 whitespace-pre-line font-medium">
                                 {settings?.about_text || (() => {
                                     const raw = (liveStore.tagline || liveStore.description || '').trim();
                                     if (raw && !raw.toLowerCase().startsWith('welcome to') && !raw.toLowerCase().includes('aura kicks')) {
@@ -1450,44 +1400,44 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                             </p>
 
                             {/* Value Highlights */}
-                            <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-slate-100">
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">💎</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">100% Authentic</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Guaranteed Quality</span>
+                            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-200/80">
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">💎</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">100% Authentic</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Guaranteed Quality</span>
                                 </div>
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">🚚</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Fast Courier</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Nationwide Delivery</span>
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">🚚</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">Fast Courier</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Nationwide Delivery</span>
                                 </div>
-                                <div className="rounded-xl bg-slate-50 p-2.5 text-center border border-slate-100">
-                                    <span className="text-base sm:text-lg block">💬</span>
-                                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 block mt-0.5">Direct WhatsApp</span>
-                                    <span className="text-[9px] text-slate-400 hidden sm:block">Instant Support</span>
+                                <div className="rounded-2xl bg-white/90 p-3 sm:p-4 text-center border border-slate-200/70 shadow-2xs">
+                                    <span className="text-xl sm:text-2xl block">💬</span>
+                                    <span className="text-[11px] sm:text-xs font-black text-slate-900 block mt-1">Direct WhatsApp</span>
+                                    <span className="text-[10px] text-slate-500 hidden sm:block">Instant Support</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Right Side: Box Image */}
-                        <div className="lg:col-span-5 flex justify-center">
-                            <div className="relative w-full max-w-md aspect-square rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-slate-100 shadow-lg bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group">
+                        <div className="lg:col-span-5 flex justify-center w-full">
+                            <div className="relative w-full max-w-md aspect-[4/3] sm:aspect-square rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-slate-200/90 shadow-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center group">
                                 {settings?.about_image ? (
                                     <img 
                                         src={settings.about_image} 
                                         alt={`${liveStore.name} Story Showcase`} 
-                                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className="size-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
                                 ) : (
-                                    <div className="size-full flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-2">
+                                    <div className="size-full flex flex-col items-center justify-center p-6 text-center text-slate-400 space-y-2.5">
                                         <div 
                                             className="size-16 rounded-2xl grid place-items-center shadow-xs"
                                             style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
                                         >
                                             <Store size={32} />
                                         </div>
-                                        <p className="text-xs font-bold text-slate-700">{liveStore.name} Atelier</p>
-                                        <p className="text-[10px] text-slate-400 max-w-[200px]">Merchant can customize this showcase box image in dashboard settings</p>
+                                        <p className="text-sm font-bold text-slate-800">{liveStore.name} Atelier</p>
+                                        <p className="text-[11px] text-slate-500 max-w-[220px]">Merchant can customize this showcase box image in dashboard settings</p>
                                     </div>
                                 )}
                                 <div className="absolute inset-0 ring-1 ring-inset ring-black/5 rounded-2xl sm:rounded-3xl pointer-events-none" />
@@ -1835,70 +1785,199 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL */}
+            {/* INTERACTIVE SEARCH MODAL */}
+            {isSearchOpen && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 sm:pt-24 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0" onClick={() => setIsSearchOpen(false)} />
+                    <div className="relative z-10 w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4">
+                        <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <span className="grid size-7 place-items-center rounded-xl text-white font-bold" style={{ backgroundColor: themeColor }}>
+                                    <Search size={14} />
+                                </span>
+                                <div>
+                                    <h4 className="text-sm font-extrabold text-slate-900">Search Store Catalog</h4>
+                                    <p className="text-[10px] text-slate-400">Search by product title, collection or keyword</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsSearchOpen(false)}
+                                className="grid size-7 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative">
+                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                autoFocus
+                                placeholder="Search sunglasses, clothes, shoes, perfumes, etc..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-10 text-xs font-medium text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                            />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-700"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Status & Quick Suggestions */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                            <span className="text-slate-500 text-[11px] font-medium">
+                                {searchQuery.trim() 
+                                    ? `Found ${filteredProducts.length} matching product${filteredProducts.length === 1 ? '' : 's'}`
+                                    : 'Quick categories:'
+                                }
+                            </span>
+                            {!searchQuery.trim() && categories.filter(c => c !== 'All').slice(0, 4).map((c) => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => {
+                                        setSearchQuery(c);
+                                    }}
+                                    className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-200 transition"
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                                >
+                                    Clear Search
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsSearchOpen(false);
+                                    const el = document.getElementById('products');
+                                    el?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="rounded-xl px-5 py-2 text-xs font-bold text-white shadow-xs transition hover:opacity-90 active:scale-95"
+                                style={{ backgroundColor: themeColor }}
+                            >
+                                View Results ({filteredProducts.length})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* BEXI AI ASSISTANT CHAT CONSOLE MODAL (MATCHING FRONTEND THEME) */}
             {isAiOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div 
                         className="fixed inset-0"
                         onClick={() => setIsAiOpen(false)}
                     />
-                    <div className="relative z-10 flex h-[520px] w-full max-w-md flex-col rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl overflow-hidden text-xs animate-in zoom-in-95 duration-200">
-                        {/* Chat Header */}
-                        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3 text-white shrink-0">
-                            <div className="flex items-center gap-2">
-                                <span className="grid size-7 place-items-center rounded-xl bg-emerald-500 text-slate-950 font-bold">
-                                    <Sparkles size={14} />
-                                </span>
+                    <div className="relative z-10 flex h-[540px] w-full max-w-md flex-col rounded-3xl border border-slate-200/90 bg-white shadow-2xl overflow-hidden text-xs animate-in zoom-in-95 duration-200">
+                        {/* Chat Header Styled in Store Theme */}
+                        <div 
+                            className="flex items-center justify-between px-4 py-3.5 text-white shrink-0 shadow-sm"
+                            style={{
+                                background: `linear-gradient(135deg, ${themeColor} 0%, ${themeColor}dd 100%)`
+                            }}
+                        >
+                            <div className="flex items-center gap-2.5">
+                                <div className="size-8 rounded-full bg-white p-0.5 shadow-xs overflow-hidden shrink-0">
+                                    <img
+                                        src={BEXI_ICON}
+                                        alt="Bexi AI"
+                                        className="size-full object-cover rounded-full"
+                                        style={BEXI_ICON_STYLE}
+                                    />
+                                </div>
                                 <div>
-                                    <p className="font-bold text-xs">{liveStore.name} Bexi AI</p>
-                                    <p className="text-[10px] text-emerald-400 font-mono">Roman Urdu & English Active</p>
+                                    <p className="font-extrabold text-xs text-white leading-tight">{liveStore.name} AI Assistant</p>
+                                    <div className="flex items-center gap-1.5 pt-0.5">
+                                        <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        <p className="text-[10px] text-white/90 font-medium">Online • Roman Urdu & English</p>
+                                    </div>
                                 </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsAiOpen(false)}
-                                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                                className="grid size-7 place-items-center rounded-full bg-white/20 text-white hover:bg-white/30 transition"
                             >
-                                <X size={16} />
+                                <X size={15} />
                             </button>
                         </div>
 
-                        {/* Chat Messages Body */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {/* Chat Messages Body (Clean White/Slate-50) */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/70">
                             {aiMessages.map((msg, i) => (
                                 <div
                                     key={i}
-                                    className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                                    className={`flex items-start gap-2 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                                 >
+                                    {msg.sender === "ai" && (
+                                        <div className="size-6 rounded-full overflow-hidden shrink-0 mt-0.5 border border-slate-200 bg-white">
+                                            <img
+                                                src={BEXI_ICON}
+                                                alt="Bexi"
+                                                className="size-full object-cover"
+                                                style={BEXI_ICON_STYLE}
+                                            />
+                                        </div>
+                                    )}
                                     <div
-                                        className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                                        className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap shadow-2xs ${
                                             msg.sender === "user"
-                                                ? "bg-emerald-600 text-white font-medium"
-                                                : "bg-slate-900 border border-slate-800 text-slate-200"
+                                                ? "text-white font-medium rounded-tr-xs"
+                                                : "bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs"
                                         }`}
+                                        style={msg.sender === "user" ? { backgroundColor: themeColor } : {}}
                                     >
                                         {msg.text}
                                     </div>
                                 </div>
                             ))}
                             {aiSending && (
-                                <div className="flex justify-start">
-                                    <div className="rounded-2xl bg-slate-900 border border-slate-800 p-3 text-xs text-slate-400 flex items-center gap-2">
-                                        <span className="size-2 animate-bounce rounded-full bg-emerald-400" />
-                                        <span className="size-2 animate-bounce rounded-full bg-emerald-400 [animation-delay:0.2s]" />
-                                        <span className="size-2 animate-bounce rounded-full bg-emerald-400 [animation-delay:0.4s]" />
+                                <div className="flex items-center gap-2 justify-start">
+                                    <div className="size-6 rounded-full overflow-hidden shrink-0 border border-slate-200 bg-white">
+                                        <img
+                                            src={BEXI_ICON}
+                                            alt="Bexi"
+                                            className="size-full object-cover"
+                                            style={BEXI_ICON_STYLE}
+                                        />
+                                    </div>
+                                    <div className="rounded-2xl rounded-tl-xs bg-white border border-slate-200/90 p-3 text-xs text-slate-500 flex items-center gap-1.5 shadow-2xs">
+                                        <span className="size-2 animate-bounce rounded-full" style={{ backgroundColor: themeColor }} />
+                                        <span className="size-2 animate-bounce rounded-full [animation-delay:0.2s]" style={{ backgroundColor: themeColor }} />
+                                        <span className="size-2 animate-bounce rounded-full [animation-delay:0.4s]" style={{ backgroundColor: themeColor }} />
                                     </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Quick Suggestion Questions */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 scrollbar-none border-t border-slate-800 bg-slate-900/50 shrink-0">
+                        <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 py-2 scrollbar-none border-t border-slate-200 bg-white shrink-0">
                             {[
                                 "Delivery timeline?",
                                 "Payment methods?",
                                 "Bestseller items?",
-                                "Order on WhatsApp?"
+                                "Order on WhatsApp?",
+                                "Return policy?"
                             ].map((q) => (
                                 <button
                                     key={q}
@@ -1906,7 +1985,7 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                                     onClick={() => {
                                         setAiInput(q);
                                     }}
-                                    className="shrink-0 rounded-full border border-slate-700 bg-slate-800/80 px-2.5 py-0.5 text-[10px] text-slate-300 hover:border-emerald-500 hover:text-white transition"
+                                    className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-100 transition"
                                 >
                                     {q}
                                 </button>
@@ -1914,20 +1993,21 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                         </div>
 
                         {/* Chat Input */}
-                        <form onSubmit={handleSendAiChat} className="border-t border-slate-800 bg-slate-900/60 p-3 flex gap-2 shrink-0">
+                        <form onSubmit={handleSendAiChat} className="border-t border-slate-200 bg-white p-3 flex gap-2 shrink-0">
                             <input
                                 type="text"
                                 value={aiInput}
                                 onChange={(e) => setAiInput(e.target.value)}
-                                placeholder="Poochiye (e.g. deliver kitne din me hogi?)..."
-                                className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs text-white placeholder:text-slate-500 outline-none focus:border-emerald-500"
+                                placeholder="Poochiye (e.g. delivery kab hogi?)..."
+                                className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-blue-400 focus:bg-white focus:ring-1 focus:ring-blue-100"
                             />
                             <button
                                 type="submit"
                                 disabled={!aiInput.trim() || aiSending}
-                                className="grid size-8 place-items-center rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-500 transition disabled:opacity-50"
+                                className="grid size-9 place-items-center rounded-2xl text-white shadow-xs transition hover:opacity-90 active:scale-95 disabled:opacity-40"
+                                style={{ backgroundColor: themeColor }}
                             >
-                                <Send size={13} />
+                                <Send size={14} />
                             </button>
                         </form>
                     </div>

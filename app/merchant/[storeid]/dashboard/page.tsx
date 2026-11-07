@@ -98,6 +98,8 @@ export default function MerchantDashboardMaster() {
     // Branding & Settings
     const [themeColor, setThemeColor] = useState('#1d7555');
     const [bannerText, setBannerText] = useState('');
+    const [announcementTags, setAnnouncementTags] = useState<string[]>([]);
+    const [newTagInput, setNewTagInput] = useState('');
     const [logoUrl, setLogoUrl] = useState('');
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -564,6 +566,16 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
             if (settingsData.settings) {
                 setBannerText(settingsData.settings.banner_text || '');
+                if (Array.isArray(settingsData.settings.announcement_tags)) {
+                    setAnnouncementTags(settingsData.settings.announcement_tags);
+                } else {
+                    setAnnouncementTags([
+                        'FAST NATIONWIDE DELIVERY',
+                        '100% QUALITY GUARANTEED',
+                        'FREE DELIVERY ABOVE RS. 3,000',
+                        'DIRECT WHATSAPP ORDERING',
+                    ]);
+                }
                 setLogoUrl(settingsData.settings.logo_url || '');
                 setAboutTitle(settingsData.settings.about_title || (storeData as any)?.payment_details?.about_title || '');
                 setAboutText(settingsData.settings.about_text || (storeData as any)?.payment_details?.about_text || (storeData as any)?.description || '');
@@ -695,6 +707,7 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                 settingsPayload.about_title = aboutTitle.trim();
                 settingsPayload.about_text = aboutText.trim();
                 settingsPayload.about_image = savedAboutImageUrl;
+                settingsPayload.announcement_tags = announcementTags;
             }
             const res = await fetch('/api/stores/settings', {
                 method: 'POST',
@@ -1628,9 +1641,63 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                         <div className="max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="mb-5"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Storefront appearance</p><h3 className="mt-1 text-base font-semibold text-slate-900">Branding and theme</h3><p className="mt-1 text-xs text-slate-500">Changes are reflected on your public storefront.</p></div>
                             <form onSubmit={handleSaveSettings} className="space-y-4">
-                                <div>
-                                    <label className="block text-[11px] font-bold mb-1">Banner Announcement</label>
-                                    <input type="text" value={bannerText} onChange={e => setBannerText(e.target.value)} className="w-full p-2.5 border rounded-lg text-xs" />
+                                {/* Travelling Announcement Bar & Custom Marquee Tags */}
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3.5">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-900">
+                                                Travelling Announcement Bar (Marquee Text)
+                                            </label>
+                                            <p className="text-[11px] text-slate-500">
+                                                Continuous text that travels smoothly across the top header of your storefront.
+                                            </p>
+                                        </div>
+                                        <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5">
+                                            Editable
+                                        </span>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                                Announcement Text / Message
+                                            </label>
+                                            <textarea 
+                                                rows={2}
+                                                value={bannerText} 
+                                                onChange={e => setBannerText(e.target.value)} 
+                                                placeholder="e.g. Free delivery nationwide on orders above Rs. 3,000! • Direct WhatsApp Ordering • 100% Quality Guaranteed"
+                                                className="w-full p-2.5 border border-slate-200 rounded-lg text-xs bg-white focus:border-blue-400 outline-none resize-none leading-relaxed" 
+                                            />
+                                            <p className="mt-1 text-[10px] text-slate-400">
+                                                This continuous text will travel seamlessly across the top of your store. Merchant can edit, update, or clear it anytime.
+                                            </p>
+                                        </div>
+
+                                        {/* Quick Suggestions (Click to apply) */}
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                                                Quick Preset Suggestions (Click to apply):
+                                            </span>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {[
+                                                    'Free delivery nationwide on orders above Rs. 3,000! • Cash on Delivery Available',
+                                                    '🔥 Mega Weekend Special Sale • Up to 25% Off • Instant WhatsApp Dispatch',
+                                                    'New Season Arrivals Now In Stock • Express Nationwide Delivery • 100% Authentic Quality',
+                                                    'Curated Collection • Direct WhatsApp Support • 7-Day Hassle-Free Exchange',
+                                                ].map((preset, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => setBannerText(preset)}
+                                                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-700 hover:border-blue-400 hover:text-blue-700 hover:bg-slate-50 transition text-left"
+                                                    >
+                                                        {preset.split('•')[0].trim()}...
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-[11px] font-semibold text-slate-700">Store logo</label>
@@ -1783,20 +1850,43 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                         />
                                     </label>
                                 </section>
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                                <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 p-4 space-y-3.5 shadow-2xs">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-900">Store Theme & Accent Color</label>
-                                            <p className="text-[11px] text-slate-500">Pick a professional niche preset or select custom brand hex:</p>
+                                            <label className="block text-xs font-bold text-slate-900">Store Theme Palette</label>
+                                            <p className="text-[11px] text-slate-500">Pick a minimalist color palette for your store:</p>
                                         </div>
-                                        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
-                                            <span className="size-3.5 rounded-full" style={{ backgroundColor: themeColor }} />
-                                            <span className="font-mono text-xs font-bold uppercase text-slate-800">{themeColor}</span>
-                                        </div>
+                                        <label
+                                            htmlFor="merchant-theme-picker"
+                                            className="cursor-pointer inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 shadow-2xs hover:border-blue-400 transition"
+                                        >
+                                            <span className="size-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: themeColor }} />
+                                            <span className="font-mono text-[11px] uppercase tracking-wider">{themeColor}</span>
+                                            <input 
+                                                id="merchant-theme-picker"
+                                                type="color" 
+                                                value={themeColor} 
+                                                onChange={e => {
+                                                    const newColor = e.target.value;
+                                                    setThemeColor(newColor);
+                                                    if (resolvedStoreId && /^#[0-9a-f]{6}$/i.test(newColor)) {
+                                                        fetch('/api/stores/settings', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                store_id: resolvedStoreId,
+                                                                theme_color: newColor,
+                                                            })
+                                                        }).catch(console.warn);
+                                                    }
+                                                }}
+                                                className="sr-only cursor-pointer"
+                                            />
+                                        </label>
                                     </div>
 
-                                    {/* Quick Preset Chips */}
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 pt-1">
+                                    {/* Minimalist Palettes Strip */}
+                                    <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 pt-1">
                                         {THEME_OPTIONS.map((opt) => {
                                             const isSelected = themeColor.toLowerCase() === opt.color.toLowerCase();
                                             return (
@@ -1817,14 +1907,26 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                                                             }).catch(console.warn);
                                                         }
                                                     }}
-                                                    className={`flex items-center gap-2 rounded-xl border p-2 text-left transition ${
-                                                        isSelected
-                                                            ? 'border-slate-900 bg-white shadow-xs ring-2 ring-slate-900'
-                                                            : 'border-slate-200 bg-white/80 hover:border-slate-300 hover:bg-white'
-                                                    }`}
+                                                    title={`${opt.name} (${opt.color})`}
+                                                    className="group flex flex-col items-center gap-1.5 focus:outline-none"
                                                 >
-                                                    <span className="size-4 shrink-0 rounded-full shadow-2xs" style={{ backgroundColor: opt.color }} />
-                                                    <span className="truncate text-[11px] font-semibold text-slate-800">{opt.name.split(' ')[0]}</span>
+                                                    <span
+                                                        className={`relative grid size-8 sm:size-9 place-items-center rounded-full transition-all duration-200 shadow-xs cursor-pointer group-hover:scale-110 ${
+                                                            isSelected
+                                                                ? 'ring-2 ring-offset-2 ring-slate-900 scale-105'
+                                                                : 'hover:shadow-md opacity-90 hover:opacity-100'
+                                                        }`}
+                                                        style={{ backgroundColor: opt.color }}
+                                                    >
+                                                        {isSelected && (
+                                                            <svg className="size-4 text-white drop-shadow-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </span>
+                                                    <span className="text-[10px] font-medium text-slate-600 truncate max-w-[50px] leading-tight">
+                                                        {opt.name.split(' ')[0]}
+                                                    </span>
                                                 </button>
                                             );
                                         })}

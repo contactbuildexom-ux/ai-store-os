@@ -7,14 +7,22 @@ import { storeRepo } from "@/lib/store-repository";
 export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   const supabase = createAdminClient();
-  if (!supabase) return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
 
-  const { data, error } = await supabase
-    .from("stores")
-    .select("id, name, slug, owner_email, whatsapp_number, plan, payment_status, created_at")
-    .order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ stores: data }, { status: 200 });
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from("stores")
+        .select("id, name, slug, owner_email, whatsapp_number, plan, payment_status, created_at")
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        return NextResponse.json({ stores: data }, { status: 200 });
+      }
+    } catch {}
+  }
+
+  // Fallback to store repository
+  const stores = await storeRepo.getAllStores();
+  return NextResponse.json({ stores }, { status: 200 });
 }
 
 export async function POST(request: Request) {
@@ -72,15 +80,25 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!(await isAdminRequest())) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  const supabase = createAdminClient();
-  if (!supabase) return NextResponse.json({ error: "Store database is not configured." }, { status: 503 });
+  const searchParams = new URL(request.url).searchParams;
+  const clearAllAi = searchParams.get("clear_all_ai") === "true" || searchParams.get("all_ai") === "true";
 
-  const id = new URL(request.url).searchParams.get("id");
+  // Bulk delete all AI generated stores
+  if (clearAllAi) {
+    const result = await storeRepo.deleteAllAiStores();
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted ${result.deletedCount} AI-generated store(s).`,
+      deletedStores: result.deletedStores,
+    });
+  }
+
+  const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
 
-  const { data, error } = await supabase.from("stores").delete().eq("id", id).select("id, slug").maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: "Store not found." }, { status: 404 });
-  await storeRepo.invalidateStore(data.id, data.slug);
-  return NextResponse.json({ success: true });
+  const deleted = await storeRepo.deleteStore(id);
+  if (!deleted) {
+    return NextResponse.json({ error: "Store not found." }, { status: 404 });
+  }
+  return NextResponse.json({ success: true, message: `Store ${id} deleted successfully.` });
 }

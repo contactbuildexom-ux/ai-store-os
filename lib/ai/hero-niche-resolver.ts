@@ -148,7 +148,7 @@ export const NICHE_HERO_ASSETS: Record<
     altText: 'Signature Luxury Fragrance Collection',
   },
   footwear: {
-    image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1000&q=85',
+    image: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1600&q=85',
     secondaryImage: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=800&q=80',
     tertiaryImage: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=800&q=80',
     badge: 'Performance Footwear • Modern Collection',
@@ -156,7 +156,7 @@ export const NICHE_HERO_ASSETS: Record<
     altText: 'Performance Footwear and Sneakers',
   },
   clothing: {
-    image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1000&q=85',
+    image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=1600&q=85',
     secondaryImage: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=800&q=80',
     tertiaryImage: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80',
     badge: 'Designer Pret • Modern Apparel',
@@ -196,7 +196,7 @@ export const NICHE_HERO_ASSETS: Record<
     altText: 'Luxury Bridal and Wedding Collection',
   },
   general: {
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=85',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1600&q=85',
     secondaryImage: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80',
     tertiaryImage: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
     badge: 'Official Store • Verified Collection',

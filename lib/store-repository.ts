@@ -362,6 +362,86 @@ class StoreRepository {
     this.persistLocalCache();
   }
 
+  async deleteStore(idOrSlug: string): Promise<boolean> {
+    await this.hydrateLocalCache();
+    const store = await this.getStore(idOrSlug);
+    if (!store) return false;
+    const targetId = store.id;
+    const targetSlug = store.slug;
+
+    this.clearCachedStore(targetId, targetSlug);
+    this.persistLocalCache();
+
+    const supabase = this.getSupabase();
+    if (supabase) {
+      try {
+        await Promise.allSettled([
+          supabase.from('store_products').delete().eq('store_id', targetId),
+          supabase.from('store_categories').delete().eq('store_id', targetId),
+          supabase.from('store_settings').delete().eq('store_id', targetId),
+          supabase.from('store_orders').delete().eq('store_id', targetId),
+          supabase.from('subscription_payment_requests').delete().eq('store_id', targetId),
+          supabase.from('products').delete().eq('store_id', targetId),
+          supabase.from('merchants').delete().eq('store_id', targetId),
+          supabase.from('stores').delete().eq('id', targetId),
+        ]);
+      } catch (err) {
+        console.warn('Supabase store delete warning:', err);
+      }
+    }
+    return true;
+  }
+
+  async deleteAllAiStores(): Promise<{ deletedCount: number; deletedStores: string[] }> {
+    await this.hydrateLocalCache();
+    const deletedStores: string[] = [];
+    const storesToDelete: StoreRecord[] = [];
+
+    // 1. Identify non-demo stores in memory repository
+    for (const store of new Set(memoryStores.values())) {
+      if (store.id !== 'store_demo_velvet_aura' && store.slug !== 'velvet-aura') {
+        storesToDelete.push(store);
+      }
+    }
+
+    for (const store of storesToDelete) {
+      deletedStores.push(`${store.name} (${store.slug})`);
+      this.clearCachedStore(store.id, store.slug);
+    }
+    this.persistLocalCache();
+
+    // 2. Query and delete from Supabase if configured
+    const supabase = this.getSupabase();
+    if (supabase) {
+      try {
+        const { data: dbStores } = await supabase.from('stores').select('id, name, slug');
+        if (dbStores) {
+          for (const s of dbStores) {
+            if (s.id !== 'store_demo_velvet_aura' && s.slug !== 'velvet-aura') {
+              if (!deletedStores.some(d => d.includes(s.slug))) {
+                deletedStores.push(`${s.name} (${s.slug})`);
+              }
+              await Promise.allSettled([
+                supabase.from('store_products').delete().eq('store_id', s.id),
+                supabase.from('store_categories').delete().eq('store_id', s.id),
+                supabase.from('store_settings').delete().eq('store_id', s.id),
+                supabase.from('store_orders').delete().eq('store_id', s.id),
+                supabase.from('subscription_payment_requests').delete().eq('store_id', s.id),
+                supabase.from('products').delete().eq('store_id', s.id),
+                supabase.from('merchants').delete().eq('store_id', s.id),
+                supabase.from('stores').delete().eq('id', s.id),
+              ]);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Supabase bulk delete warning:', err);
+      }
+    }
+
+    return { deletedCount: deletedStores.length, deletedStores };
+  }
+
   async getAllStores(): Promise<StoreRecord[]> {
     const supabase = this.getSupabase();
     if (supabase) {

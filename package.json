@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "clear:stores": "node scripts/clear-all-ai-stores.js",
     "lint": "eslint"
   },
   "dependencies": {

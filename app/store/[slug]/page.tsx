@@ -197,6 +197,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     about_title: settingsData.about_title || (store.payment_details as any)?.about_title || (repoStoreFallback as any)?.about_title || "",
     about_text: settingsData.about_text || (store.payment_details as any)?.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
     about_image: settingsData.about_image || (store.payment_details as any)?.about_image || (repoStoreFallback as any)?.about_image || "",
+    announcement_tags: (settingsData as any)?.announcement_tags || (store.payment_details as any)?.announcement_tags || (repoStoreFallback as any)?.announcement_tags || null,
   } : {
     theme_color: resolvedThemeColor,
     selected_theme: resolvedThemeId,
@@ -205,6 +206,7 @@ export default async function PublicStorePage({ params }: { params: Promise<{ sl
     about_title: (store.payment_details as any)?.about_title || (repoStoreFallback as any)?.about_title || "",
     about_text: (store.payment_details as any)?.about_text || (repoStoreFallback as any)?.about_text || safeStore.description || "",
     about_image: (store.payment_details as any)?.about_image || (repoStoreFallback as any)?.about_image || "",
+    announcement_tags: (store.payment_details as any)?.announcement_tags || (repoStoreFallback as any)?.announcement_tags || null,
   };
 
   const savedPaymentDetails = typeof store.payment_details === 'object' && store.payment_details !== null && !Array.isArray(store.payment_details)
