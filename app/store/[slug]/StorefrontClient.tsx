@@ -90,6 +90,8 @@ export type Props = {
         banner_text?: string | null; 
         announcement_tags?: string[] | null;
         logo_url?: string | null; 
+        hero_title?: string | null;
+        hero_subtitle?: string | null;
         hero_images?: string[] | null; 
         about_title?: string | null; 
         about_text?: string | null; 
@@ -258,6 +260,8 @@ export default function StorefrontClient({ store, settings, products, delivery, 
     const heroImage1 = settings?.hero_images?.[0] || heroInfo.heroImage;
     const heroImage2 = settings?.hero_images?.[1] || heroInfo.secondaryHeroImage || heroInfo.heroImage;
     const heroImage3 = settings?.hero_images?.[2] || heroInfo.tertiaryHeroImage || heroInfo.secondaryHeroImage || heroInfo.heroImage;
+    const heroTitle = settings?.hero_title?.trim() || liveStore.name;
+    const heroSubtitle = settings?.hero_subtitle?.trim() || liveStore.tagline || `Welcome to ${liveStore.name}`;
 
     // Bexi AI Chat states
     const [aiMessages, setAiMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string }>>([
@@ -924,12 +928,12 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 </div>
             )}
 
-            {/* 1. Full-Width Panoramic Hero Banner (Exact Boutique Reference Layout) */}
+            {/* 1. Full-Width Panoramic Hero Banner (Exact Dual Visual Style: Blurred Behind Text, Sharp Everywhere Else) */}
             <section
                 id="hero"
                 className="relative w-full h-[360px] sm:h-[420px] md:h-[460px] lg:h-[500px] overflow-hidden border-b border-slate-200/80 bg-slate-100 shadow-xs"
             >
-                {/* 1. Full-bleed Background Store Image (Sharp, Relatable to Niche/Idea) */}
+                {/* 1. Full-bleed Background Store Image (Sharp on right, Relatable to Niche/Idea) */}
                 <img
                     src={heroImage1}
                     alt={heroInfo.altText || liveStore.name}
@@ -938,41 +942,55 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 />
 
                 {/* 2. Soft Ambient Gradient Overlay for Contrast */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-black/10 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10 pointer-events-none" />
 
-                {/* 3. Curved Frosted Glass Backdrop on Left (Matching Reference Image) */}
+                {/* 3. Curved Mask Container on Left: Background behind text is prominently blurred, rest of banner is sharp */}
                 <div 
-                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[70%] md:w-[58%] lg:w-[48%] rounded-r-[130px] sm:rounded-r-[260px] md:rounded-r-[340px] lg:rounded-r-[420px] backdrop-blur-md sm:backdrop-blur-xl bg-white/55 sm:bg-white/50 border-r border-white/60 shadow-2xl flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8 z-10"
+                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[72%] md:w-[60%] lg:w-[50%] rounded-r-[130px] sm:rounded-r-[260px] md:rounded-r-[340px] lg:rounded-r-[420px] overflow-hidden z-10 border-r border-white/60 shadow-2xl flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8"
                     style={{
-                        boxShadow: '15px 0 35px -10px rgba(0, 0, 0, 0.08), inset 0 0 20px rgba(255, 255, 255, 0.4)'
+                        boxShadow: '15px 0 40px -10px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.5)'
                     }}
                 >
-                    {/* Main Title: Big, Bold, Clean (e.g. Store Name / "123") */}
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-1 sm:mb-2 line-clamp-2">
-                        {liveStore.name}
-                    </h1>
+                    {/* Blurred duplicate image layer to guarantee prominent blur effect matching user reference photo */}
+                    <img
+                        src={heroImage1}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 size-full object-cover object-left filter blur-xl sm:blur-2xl scale-125 pointer-events-none"
+                    />
 
-                    {/* Subtitle / Tagline: e.g. "Welcome to 123" */}
-                    <p className="text-sm sm:text-base md:text-lg text-slate-700 font-medium tracking-normal mb-5 sm:mb-7 max-w-md line-clamp-2">
-                        {liveStore.tagline ? liveStore.tagline : `Welcome to ${liveStore.name}`}
-                    </p>
+                    {/* Frosted translucent glass overlay */}
+                    <div className="absolute inset-0 bg-white/45 backdrop-blur-2xl pointer-events-none" />
 
-                    {/* Side-by-Side Action Buttons */}
-                    <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
-                        <a
-                            href="#products"
-                            className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-white shadow-md hover:bg-slate-800 transition active:scale-95"
-                        >
-                            Shop Collection →
-                        </a>
-                        <a
-                            href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center justify-center gap-2 rounded-full border border-white/80 bg-white/45 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-xs hover:bg-white/70 transition active:scale-95"
-                        >
-                            <MessageCircle size={16} className="text-emerald-600 fill-emerald-600" /> WhatsApp Support
-                        </a>
+                    {/* Content inside blurred mask */}
+                    <div className="relative z-10 flex flex-col justify-center">
+                        {/* Main Title: Big, Bold, Clean (Custom Hero Title or Store Name) */}
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-1 sm:mb-2 line-clamp-2">
+                            {heroTitle}
+                        </h1>
+
+                        {/* Subtitle / Tagline */}
+                        <p className="text-sm sm:text-base md:text-lg text-slate-700 font-medium tracking-normal mb-5 sm:mb-7 max-w-md line-clamp-2">
+                            {heroSubtitle}
+                        </p>
+
+                        {/* Side-by-Side Action Buttons */}
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
+                            <a
+                                href="#products"
+                                className="inline-flex items-center justify-center rounded-full bg-slate-950 px-5 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-extrabold text-white shadow-md hover:bg-slate-800 transition active:scale-95"
+                            >
+                                Shop Collection →
+                            </a>
+                            <a
+                                href={`https://wa.me/${whatsappPhone(liveStore.whatsapp_number || '923001234567')}?text=Hello%20${encodeURIComponent(liveStore.name)}!%20I%20want%20to%20place%20an%20order.`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/80 bg-white/45 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold text-slate-900 shadow-xs hover:bg-white/70 transition active:scale-95"
+                            >
+                                <MessageCircle size={16} className="text-emerald-600 fill-emerald-600" /> WhatsApp Support
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>

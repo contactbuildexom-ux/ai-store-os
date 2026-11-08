@@ -791,7 +791,7 @@ export async function generateStoreFromPrompt(options: {
     } else if (p.includes('warm') || p.includes('artisan') || p.includes('brown') || p.includes('earthy')) {
       themeKey = 'artisan-cream';
     } else {
-      themeKey = 'ocean-blue';
+      themeKey = plan === 'advanced' ? 'royal-gold' : plan === 'pro' ? 'velvet-rose' : 'emerald';
     }
   }
 
@@ -827,29 +827,80 @@ export async function generateStoreFromPrompt(options: {
     haircare: 'Botanical scalp therapies, sulfate-free cleansers, and intense argan masks for radiant, healthy bounce.'
   };
 
-  const tagline = taglines[niche] || 'Exquisite quality products handcrafted with passion and delivered swiftly to your doorstep.';
+  // Plan-specific storefront differentiation:
+  // - free / basic: 2-3 starter categories, clean straightforward branding, minimal theme
+  // - pro: 4-5 curated boutique categories, modern designer copy, boutique warm palette, atelier about story
+  // - advanced / business: 6-8 prestigious departments, ultra-luxury copy, royal gold/obsidian theme, heritage maison narrative
+
+  let planCategories: string[] = [];
+  let planTagline = taglines[niche] || `Exquisite quality ${niche} handcrafted with passion and delivered swiftly to your doorstep.`;
+  let planDescription = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
+  let planAboutTitle = `About ${finalName}`;
+  let planAboutText = `${finalName} is an emerging online boutique dedicated to bringing quality ${niche} essentials to your doorstep with direct WhatsApp customer care and nationwide fast shipping.`;
+
+  const baseCats = (nicheData.categories && nicheData.categories.length > 0) 
+    ? nicheData.categories 
+    : ['Bestsellers', 'New Arrivals', 'Essentials'];
+
+  if (plan === 'advanced') {
+    // Flagship Luxury Tier (6-8 prestigious departments)
+    planCategories = [
+      `Haute ${baseCats[0] || 'Reserve'}`,
+      `Limited VIP Editions`,
+      `Masterpiece Series`,
+      `Heritage ${baseCats[1] || 'Essentials'}`,
+      `VIP Bespoke Concierge`,
+      `Signature ${baseCats[2] || 'Collection'}`,
+      `Private Client Selection`,
+      `Accessories & Gift Suites`
+    ];
+    planTagline = `The premier luxury maison for ${niche}. Haute craftsmanship, bespoke commissions, and white-glove VIP concierge delivery nationwide.`;
+    planDescription = `Maison ${finalName} represents the pinnacle of uncompromising luxury and artisan excellence. Serving discerning connoisseurs across Pakistan with white-glove concierge ordering.`;
+    planAboutTitle = `The Heritage & Maison of ${finalName}`;
+    planAboutText = `Established as a benchmark of prestigious luxury, ${finalName} represents the apex of fine ${niche} design. Our flagship house unites timeless artisanal heritage with contemporary artistry, serving discerning clients worldwide. Enjoy bespoke commissions, authenticity certification, and dedicated VIP concierge care.`;
+  } else if (plan === 'pro') {
+    // Pro Boutique Tier (4-5 curated boutique collections)
+    planCategories = [
+      `Signature ${baseCats[0] || 'Edition'}`,
+      `Curated Boutique Pieces`,
+      `Seasonal Atelier`,
+      `Artisan Handcrafted`,
+      `Best Sellers`
+    ];
+    planTagline = `Curated designer ${niche} handcrafted with master craftsmanship for effortless everyday elegance.`;
+    planDescription = `${finalName} is a designer boutique celebrating authentic craftsmanship, elevated style, and seamless WhatsApp ordering.`;
+    planAboutTitle = `Our Atelier Story & Vision`;
+    planAboutText = `At ${finalName}, we believe elegance lives in the details. Founded with a passion for distinctive ${niche}, every item in our boutique is individually selected for enduring beauty, modern silhouette, and exceptional quality. Experience personal styling and express priority delivery nationwide.`;
+  } else {
+    // Free / Basic Tier (2-3 essential starter categories)
+    planCategories = baseCats.slice(0, 3);
+    if (planCategories.length === 0) planCategories = ['Bestsellers', 'New Arrivals', 'Essentials'];
+    planTagline = taglines[niche] || `Quality ${niche} essentials delivered swiftly to your doorstep with cash on delivery.`;
+    planDescription = `Welcome to ${finalName}. Your trusted online destination for authentic ${niche} at honest prices.`;
+    planAboutTitle = `About ${finalName}`;
+    planAboutText = `${finalName} brings you handpicked ${niche} essentials at great value. We focus on prompt WhatsApp support, honest pricing, and hassle-free delivery right to your doorstep.`;
+  }
+
   const header_title = `Welcome to ${finalName}`;
-  const description = `${finalName} brings you curated premium ${niche} collections. Designed with precision, tested for excellence, and packaged for perfection.`;
 
   // User explicitly requested: AI must NOT generate products into the store catalog at creation.
   // The store is created with available product slots (e.g. 20 slots on Basic, 75 on Pro, 100 on Business),
   // and the merchant adds their authentic products personally from the Merchant Dashboard.
-  const categories: string[] = nicheData.categories || [];
   const products: GeneratedProduct[] = [];
-
-
 
   return {
     name: finalName,
     slug,
-    tagline,
-    description,
+    tagline: planTagline,
+    description: planDescription,
     header_title,
+    about_title: planAboutTitle,
+    about_text: planAboutText,
     plan,
     whatsapp_number: whatsappNumber || '923001234567',
     owner_email: ownerEmail || `admin@${slug}.com`,
     theme,
-    categories,
+    categories: planCategories,
     products,
     social_links: normalizedSocialLinks,
     delivery: {

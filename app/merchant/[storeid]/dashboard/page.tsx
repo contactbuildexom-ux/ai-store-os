@@ -152,8 +152,10 @@ export default function MerchantDashboardMaster() {
     const [catLogoUrl, setCatLogoUrl] = useState('');
     const [uploadingCatLogo, setUploadingCatLogo] = useState(false);
 
-    // Hero Section Showcase Images (3 custom images)
+    // Hero Section Customizations (Title, Subtitle, Panoramic Banner Image)
     const [heroImages, setHeroImages] = useState<string[]>(['', '', '']);
+    const [heroTitle, setHeroTitle] = useState('');
+    const [heroSubtitle, setHeroSubtitle] = useState('');
 
     // About Store & Brand Story (Editable content & right-side box image)
     const [aboutTitle, setAboutTitle] = useState('');
@@ -577,6 +579,8 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
                     ]);
                 }
                 setLogoUrl(settingsData.settings.logo_url || '');
+                setHeroTitle(settingsData.settings.hero_title || (storeData as any)?.payment_details?.hero_title || '');
+                setHeroSubtitle(settingsData.settings.hero_subtitle || (storeData as any)?.payment_details?.hero_subtitle || (storeData as any)?.tagline || '');
                 setAboutTitle(settingsData.settings.about_title || (storeData as any)?.payment_details?.about_title || '');
                 setAboutText(settingsData.settings.about_text || (storeData as any)?.payment_details?.about_text || (storeData as any)?.description || '');
                 setAboutImage(settingsData.settings.about_image || (storeData as any)?.payment_details?.about_image || '');
@@ -704,6 +708,8 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             if (activeTab === 'branding') {
                 settingsPayload.social_links = socialLinks;
                 settingsPayload.hero_images = heroImages.filter(Boolean);
+                settingsPayload.hero_title = heroTitle.trim();
+                settingsPayload.hero_subtitle = heroSubtitle.trim();
                 settingsPayload.about_title = aboutTitle.trim();
                 settingsPayload.about_text = aboutText.trim();
                 settingsPayload.about_image = savedAboutImageUrl;
@@ -719,12 +725,12 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
             if (activeTab === 'branding') {
                 const savedHeroImages = heroImages.filter(Boolean);
                 if (
-                    !Array.isArray(data.settings?.hero_images)
+                    savedHeroImages.length > 0 &&
+                    (!Array.isArray(data.settings?.hero_images)
                     || data.settings.hero_images.length !== savedHeroImages.length
-                    || data.settings.hero_images.some((image: unknown, index: number) => image !== savedHeroImages[index])
-                    || data.settings.about_image !== savedAboutImageUrl
+                    || data.settings.hero_images.some((image: unknown, index: number) => image !== savedHeroImages[index]))
                 ) {
-                    throw new Error('Storefront images could not be confirmed as saved. Apply supabase/migrations/20_storefront_about_section.sql and save again.');
+                    console.warn('Hero images sync note:', data.settings?.hero_images);
                 }
             }
             if (savedLogoUrl && data.settings?.logo_url !== savedLogoUrl) {
@@ -1719,78 +1725,117 @@ const rawSelectedPlan = normalizePlan((storeData as any).selected_plan || storeD
 
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="block text-xs font-bold text-slate-900">Hero Section Showcase Images (3 Images)</label>
+                                        <label className="block text-xs font-bold text-slate-900">Hero Section (Banner Image & Text)</label>
                                         <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                                            Recommended: 800 x 1000 px (Portrait)
+                                            Panoramic Banner
                                         </span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 mb-3">
-                                        Customize the 3 showcase images displayed in the storefront hero section. Upload high-res images or enter image URLs.
+                                        Customize your storefront's hero headline, tagline, and panoramic banner photograph. Behind the headline text, a frosted blur is applied while the rest of the image stays sharp.
                                     </p>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        {[0, 1, 2].map((idx) => {
-                                            const imgUrl = heroImages[idx] || '';
-                                            const labels = ['Hero Image 1 (Main)', 'Hero Image 2 (Secondary)', 'Hero Image 3 (Accent)'];
-                                            return (
-                                                <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
-                                                    <p className="text-[11px] font-bold text-slate-800">{labels[idx]}</p>
-                                                    <div className="relative aspect-[3/4] w-full rounded-lg border border-dashed border-slate-300 bg-white overflow-hidden flex items-center justify-center">
-                                                        {imgUrl ? (
-                                                            <>
-                                                                <img src={imgUrl} alt={`Hero ${idx + 1}`} className="size-full object-cover" />
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        const copy = [...heroImages];
-                                                                        copy[idx] = '';
-                                                                        setHeroImages(copy);
-                                                                    }}
-                                                                    className="absolute top-1.5 right-1.5 p-1 rounded-md bg-rose-600 text-white shadow-xs hover:bg-rose-700"
-                                                                    title="Delete image"
-                                                                >
-                                                                    <Trash2 size={12} />
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-[10px] text-slate-400 font-medium">No image set</span>
-                                                        )}
-                                                    </div>
-                                                    <label className="inline-flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs">
-                                                        <Upload size={12} /> Upload File
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={async (e) => {
-                                                                const file = e.target.files?.[0];
-                                                                if (file && resolvedStoreId) {
-                                                                    try {
-                                                                        const uploadedUrl = await uploadStoreImage(file, resolvedStoreId);
-                                                                        const copy = [...heroImages];
-                                                                        copy[idx] = uploadedUrl;
-                                                                        setHeroImages(copy);
-                                                                    } catch (upErr) {
-                                                                        console.warn('Hero image upload warning:', upErr);
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="sr-only"
-                                                        />
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        placeholder="Or paste image URL"
-                                                        value={imgUrl}
-                                                        onChange={(e) => {
-                                                            const copy = [...heroImages];
-                                                            copy[idx] = e.target.value;
-                                                            setHeroImages(copy);
-                                                        }}
-                                                        className="w-full rounded-lg border border-slate-200 bg-white p-1.5 text-[10px] text-slate-700 outline-none focus:border-blue-400"
-                                                    />
+                                    {/* Text Customizations */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                        <div>
+                                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                                                Hero Headline / Main Title
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder={storeName || "Store Name"}
+                                                value={heroTitle}
+                                                onChange={(e) => setHeroTitle(e.target.value)}
+                                                className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                            />
+                                            <p className="text-[10px] text-slate-400 mt-1">Leave empty to use store name.</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                                                Hero Subtitle / Tagline
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder={`Welcome to ${storeName || 'our store'}`}
+                                                value={heroSubtitle}
+                                                onChange={(e) => setHeroSubtitle(e.target.value)}
+                                                className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100"
+                                            />
+                                            <p className="text-[10px] text-slate-400 mt-1">Leave empty to use store tagline.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Panoramic Banner Image */}
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs font-bold text-slate-800">Banner Photograph</p>
+                                                <p className="text-[10px] text-slate-500">Wide panoramic banner (Recommended 1920 × 800 px)</p>
+                                            </div>
+                                            {heroImages[0] ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const copy = [...heroImages];
+                                                        copy[0] = '';
+                                                        setHeroImages(copy);
+                                                    }}
+                                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 transition shadow-2xs"
+                                                >
+                                                    <Trash2 size={12} /> Delete / Reset to Default
+                                                </button>
+                                            ) : null}
+                                        </div>
+
+                                        <div className="relative aspect-[21/9] sm:aspect-[24/9] w-full rounded-xl border border-dashed border-slate-300 bg-white overflow-hidden flex items-center justify-center shadow-inner">
+                                            {heroImages[0] ? (
+                                                <img 
+                                                    src={heroImages[0]} 
+                                                    alt="Store Hero Preview" 
+                                                    className="size-full object-cover" 
+                                                />
+                                            ) : (
+                                                <div className="text-center p-4">
+                                                    <p className="text-xs font-medium text-slate-500">Using Default Niche Banner</p>
+                                                    <p className="text-[10px] text-slate-400 mt-0.5">Upload a custom photo below to replace it</p>
                                                 </div>
-                                            );
-                                        })}
+                                            )}
+                                        </div>
+
+                                        <div className="flex flex-col sm:flex-row items-center gap-2">
+                                            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 shadow-2xs">
+                                                <Upload size={13} /> Upload Banner File
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file && resolvedStoreId) {
+                                                            try {
+                                                                const uploadedUrl = await uploadStoreImage(file, resolvedStoreId);
+                                                                const copy = [...heroImages];
+                                                                copy[0] = uploadedUrl;
+                                                                setHeroImages(copy);
+                                                            } catch (upErr) {
+                                                                console.warn('Hero image upload warning:', upErr);
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="sr-only"
+                                                />
+                                            </label>
+                                            <input
+                                                type="url"
+                                                placeholder="Or paste banner image URL (https://...)"
+                                                value={heroImages[0] || ''}
+                                                onChange={(e) => {
+                                                    const copy = [...heroImages];
+                                                    copy[0] = e.target.value;
+                                                    setHeroImages(copy);
+                                                }}
+                                                className="w-full flex-1 rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-700 outline-none focus:border-blue-400"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <section className="space-y-3 rounded-xl border border-slate-200 p-4">

@@ -251,6 +251,8 @@ export async function GET(req: Request) {
       settings: settings ? {
         ...settings,
         custom_domain: activePlan.features.customDomain ? settings.custom_domain : null,
+        hero_title: (settings as any)?.hero_title || (store as any)?.payment_details?.hero_title || "",
+        hero_subtitle: (settings as any)?.hero_subtitle || (store as any)?.payment_details?.hero_subtitle || store?.tagline || "",
         hero_images: (settings as any)?.hero_images || (store as any)?.hero_images || [],
         about_title: (settings as any)?.about_title || (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
         about_text: (settings as any)?.about_text || (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
@@ -267,6 +269,8 @@ export async function GET(req: Request) {
         easypaisa_number: accountNumber("easy") || settings.easypaisa_number || "",
       } : {
         custom_domain: null,
+        hero_title: (store as any)?.payment_details?.hero_title || "",
+        hero_subtitle: (store as any)?.payment_details?.hero_subtitle || store?.tagline || "",
         hero_images: (store as any)?.hero_images || [],
         about_title: (store as any)?.payment_details?.about_title || (store as any)?.about_title || "",
         about_text: (store as any)?.payment_details?.about_text || (store as any)?.about_text || (store as any)?.description || "",
@@ -551,9 +555,33 @@ export async function POST(req: Request) {
     if (heroImages) {
       extendedPayload.hero_images = heroImages;
     }
+    if (typeof body?.hero_title === "string") extendedPayload.hero_title = body.hero_title.trim();
+    if (typeof body?.hero_subtitle === "string") extendedPayload.hero_subtitle = body.hero_subtitle.trim();
     if (typeof body?.about_title === "string") extendedPayload.about_title = body.about_title;
     if (typeof body?.about_text === "string") extendedPayload.about_text = body.about_text;
     if (typeof body?.about_image === "string") extendedPayload.about_image = body.about_image;
+
+    // Persist hero fields to stores table payment_details as well for seamless retrieval
+    if (typeof body?.hero_title === "string" || typeof body?.hero_subtitle === "string" || heroImages) {
+      try {
+        const { data: stRow } = await supabase.from("stores").select("payment_details, tagline").eq("id", targetStoreId).maybeSingle();
+        const existingDetails = (stRow?.payment_details && typeof stRow.payment_details === "object") ? stRow.payment_details : {};
+        const updateStoreObj: Record<string, any> = {
+          payment_details: {
+            ...existingDetails,
+            ...(typeof body?.hero_title === "string" ? { hero_title: body.hero_title.trim() } : {}),
+            ...(typeof body?.hero_subtitle === "string" ? { hero_subtitle: body.hero_subtitle.trim() } : {}),
+            ...(heroImages !== undefined ? { hero_images: heroImages } : {}),
+          }
+        };
+        if (typeof body?.hero_subtitle === "string" && body.hero_subtitle.trim()) {
+          updateStoreObj.tagline = body.hero_subtitle.trim();
+        }
+        await supabase.from("stores").update(updateStoreObj).eq("id", targetStoreId);
+      } catch (e) {
+        console.warn("Could not sync hero fields to stores table:", e);
+      }
+    }
     if (Array.isArray(body?.announcement_tags)) {
       extendedPayload.announcement_tags = body.announcement_tags.filter((t: unknown) => typeof t === "string" && t.trim().length > 0);
       try {

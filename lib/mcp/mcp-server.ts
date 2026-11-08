@@ -33,13 +33,17 @@ export interface McpResource {
 export const MCP_TOOLS: McpTool[] = [
   {
     name: 'create_ai_store',
-    description: 'Generates and persists a full-featured e-commerce store from a natural language prompt, including custom theme styling, catalog products with imagery, WhatsApp ordering, and admin credentials.',
+    description: 'Generates and persists a customized e-commerce store uniquely tailored to the subscription plan tier: \n- "free" / Basic: Clean starter store with 2-3 essential categories, clean minimal styling, and friendly starter copy.\n- "pro" / Boutique: Curated designer atelier with 4-5 boutique collections, warm artisan color palette, and bespoke brand story.\n- "advanced" / Business: Flagship luxury maison with 6-8 prestigious departments, royal gold / obsidian styling, and heritage VIP concierge narrative.\nIncludes WhatsApp ordering, responsive blurred-hero layout, and merchant credentials.',
     inputSchema: {
       type: 'object',
       properties: {
         prompt: { type: 'string', description: 'Customer prompt describing the desired store, e.g. "Luxury perfume store with emerald and gold theme"' },
-        plan: { type: 'string', enum: ['free', 'pro', 'advanced'], description: 'Subscription tier (free, pro, or advanced)' },
-        selected_theme: { type: 'string', description: 'Visual theme preset (emerald, royal-gold, velvet-rose, cyber-slate, artisan-cream)' },
+        plan: { 
+          type: 'string', 
+          enum: ['free', 'pro', 'advanced'], 
+          description: 'Subscription tier that determines store sophistication: "free" (starter 2-3 categories), "pro" (designer boutique 4-5 categories), "advanced" (flagship luxury maison 6-8 departments)' 
+        },
+        selected_theme: { type: 'string', description: 'Visual theme preset (emerald, royal-gold, velvet-rose, cyber-slate, artisan-cream). If omitted, automatically selected to best match the plan and niche.' },
         custom_store_name: { type: 'string', description: 'Optional explicit store name' },
         whatsapp_number: { type: 'string', description: 'Seller WhatsApp number for customer orders' },
         owner_email: { type: 'string', description: 'Email address of the customer / store admin' },

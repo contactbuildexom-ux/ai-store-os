@@ -558,9 +558,19 @@ export async function POST(request: Request) {
     const targetNiche = detectNiche(prompt, requestedNiche, requestedStoreName);
     const heroAssetForRepo = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
     const resolvedHeroImagesForRepo = [heroAssetForRepo.image, heroAssetForRepo.secondaryImage, heroAssetForRepo.tertiaryImage];
+
+    const planValue = text(targetStore?.plan ?? selectedPlan, 20).toLowerCase();
+    const planCategory: 'free' | 'pro' | 'advanced' = planValue === 'pro' ? 'pro' : (planValue === 'business' || planValue === 'advance' || planValue === 'advanced') ? 'advanced' : 'free';
+    const planGuidance = planCategory === 'advanced'
+      ? 'SUBSCRIPTION TIER: BUSINESS / ADVANCED (Flagship Luxury). Generate exactly 6 to 8 prestigious luxury departments (e.g. Haute Reserve, Limited VIP Editions, Bespoke Series), rich heritage brand copy, and dark/royal gold aesthetics.'
+      : planCategory === 'pro'
+      ? 'SUBSCRIPTION TIER: PRO BOUTIQUE (Curated Designer Atelier). Generate exactly 4 to 5 boutique collections (e.g. Signature Edition, Seasonal Atelier, Artisan Series), modern designer brand copy, and warm boutique aesthetics.'
+      : 'SUBSCRIPTION TIER: BASIC (Starter Store). Generate exactly 2 to 3 core essential categories (e.g. Bestsellers, New Arrivals, Essentials), straightforward copy, and minimal clean aesthetics.';
+
     const generationPrompt = [
       requestedStoreName ? `Use this exact store name: "${requestedStoreName}".` : "",
       targetNiche ? `Store Niche: "${targetNiche}". The store must specialize STRICTLY in this niche. All product names, descriptions, categories, banner text, and footer text must be exclusively for "${targetNiche}". Do not generate products outside of this niche.` : "",
+      planGuidance,
       `Store request details: ${prompt}`
     ].filter(Boolean).join("\n\n");
     const openAiKey = process.env.OPENAI_API_KEY;
@@ -582,8 +592,6 @@ export async function POST(request: Request) {
       }
     }
     if (!rawGenerated) {
-      const planValue = text(targetStore?.plan ?? selectedPlan, 20).toLowerCase();
-      const planCategory: 'free' | 'pro' | 'advanced' = planValue === 'pro' ? 'pro' : (planValue === 'business' || planValue === 'advance' || planValue === 'advanced') ? 'advanced' : 'free';
       const fallback = await generateStoreFromPrompt({
         prompt,
         niche: requestedNiche || targetNiche || undefined,
@@ -801,11 +809,16 @@ export async function POST(request: Request) {
         const heroAsset = (NICHE_HERO_ASSETS as Record<string, any>)[targetNiche] || NICHE_HERO_ASSETS.eyewear;
         const resolvedHeroImages = [heroAsset.image, heroAsset.secondaryImage, heroAsset.tertiaryImage];
 
+        const heroTitleForStore = requestedStoreName || generated.store_name;
+        const heroSubtitleForStore = generated.banner_text;
+
         const baseSettingsPayload = {
           store_id: resolvedStore.id,
           theme_color: generated.theme_color,
           selected_theme: generated.selected_theme,
           banner_text: generated.banner_text,
+          hero_title: heroTitleForStore,
+          hero_subtitle: heroSubtitleForStore,
           footer_text: generated.footer_text,
           social_links: socialLinks,
           updated_at: new Date().toISOString(),
@@ -835,6 +848,8 @@ export async function POST(request: Request) {
             ...(typeof (resolvedStore as any).payment_details === 'object' && (resolvedStore as any).payment_details ? (resolvedStore as any).payment_details : {}),
             ...(pendingUpgradeData ? { pending_upgrade: pendingUpgradeData } : {}),
             niche: targetNiche,
+            hero_title: heroTitleForStore,
+            hero_subtitle: heroSubtitleForStore,
             hero_images: resolvedHeroImagesForRepo,
           },
         };
