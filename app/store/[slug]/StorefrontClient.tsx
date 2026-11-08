@@ -944,25 +944,20 @@ export default function StorefrontClient({ store, settings, products, delivery, 
                 {/* 2. Soft Ambient Gradient Overlay for Contrast */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/25 via-transparent to-black/10 pointer-events-none" />
 
-                {/* 3. Curved Mask Container on Left: Background behind text is prominently blurred, rest of banner is sharp */}
+                {/* 3. Convex Frosted Oval Arch Lens on Left (Exact Reference Image: The store image is clearly visible behind the text, seamlessly aligned, with a frosted glass blur) */}
                 <div 
-                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[72%] md:w-[60%] lg:w-[50%] rounded-r-[130px] sm:rounded-r-[260px] md:rounded-r-[340px] lg:rounded-r-[420px] overflow-hidden z-10 border-r border-white/60 shadow-2xl flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8"
+                    className="absolute inset-y-0 left-0 w-[94%] sm:w-[75%] md:w-[62%] lg:w-[52%] z-10 flex flex-col justify-center px-6 sm:px-12 md:px-14 lg:px-16 py-8"
                     style={{
-                        boxShadow: '15px 0 40px -10px rgba(0, 0, 0, 0.12), inset 0 0 30px rgba(255, 255, 255, 0.5)'
+                        borderTopRightRadius: '140px 50%',
+                        borderBottomRightRadius: '140px 50%',
+                        borderRight: '1.5px solid rgba(255, 255, 255, 0.65)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.20)',
+                        boxShadow: '18px 0 45px -10px rgba(0, 0, 0, 0.14), inset -1px 0 2px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.15)'
                     }}
                 >
-                    {/* Blurred duplicate image layer to guarantee prominent blur effect matching user reference photo */}
-                    <img
-                        src={heroImage1}
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 size-full object-cover object-left filter blur-xl sm:blur-2xl scale-125 pointer-events-none"
-                    />
-
-                    {/* Frosted translucent glass overlay */}
-                    <div className="absolute inset-0 bg-white/45 backdrop-blur-2xl pointer-events-none" />
-
-                    {/* Content inside blurred mask */}
+                    {/* Content inside blurred oval lens */}
                     <div className="relative z-10 flex flex-col justify-center">
                         {/* Main Title: Big, Bold, Clean (Custom Hero Title or Store Name) */}
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-1 sm:mb-2 line-clamp-2">
