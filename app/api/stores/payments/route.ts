@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { canAccessStore } from '@/lib/merchant-api-auth';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 // GET: Store payment methods fetch karne ke liye
 export async function GET(req: Request) {
@@ -21,10 +22,13 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(store_id))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, store_id, 'id');
+    const resolvedStoreId = storeRow?.id || store_id;
+
     const { data, error } = await supabase
       .from('store_payments')
       .select('*')
-      .eq('store_id', store_id);
+      .eq('store_id', resolvedStoreId);
 
     if (error) throw error;
 
@@ -56,10 +60,13 @@ export async function POST(req: Request) {
     }
     if (!(await canAccessStore(String(store_id)))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, String(store_id), 'id');
+    const resolvedStoreId = storeRow?.id || String(store_id);
+
     const { data, error } = await supabase
       .from('store_payments')
       .insert([{
-        store_id,
+        store_id: resolvedStoreId,
         payment_method,
         transaction_id: String(transaction_id).trim(),
         amount,

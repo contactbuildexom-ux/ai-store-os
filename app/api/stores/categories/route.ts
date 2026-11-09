@@ -4,6 +4,7 @@ import { checkStoreLimits } from "@/lib/planLimits";
 import { canAccessStore } from "@/lib/merchant-api-auth";
 import { storeRepo } from "@/lib/store-repository";
 import { getActiveSubscriptionPlan, getSubscriptionPlan } from "@/lib/subscription-plans";
+import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 
 function textValue(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -28,18 +29,21 @@ export async function GET(req: Request) {
 
     const supabase = getSupabase();
     let storePlan = 'basic';
+    let resolvedStoreId = storeId;
     if (supabase) {
-      const { data: st, error } = await supabase
-        .from('stores')
-        .select('plan, payment_status')
-        .eq('id', storeId)
-        .maybeSingle();
+      const { data: st, error } = await fetchStoreByIdOrSlug<{ id: string; plan: string; payment_status?: string }>(
+        supabase,
+        storeId,
+        'id, plan, payment_status'
+      );
       if (error) throw error;
       if (!st) return NextResponse.json({ error: 'Store not found.' }, { status: 404 });
+      resolvedStoreId = st.id;
       storePlan = getActiveSubscriptionPlan(st.plan, st.payment_status).id;
     } else {
       const st = await storeRepo.getStore(storeId);
       if (st) {
+        resolvedStoreId = st.id;
         storePlan = getActiveSubscriptionPlan(st.plan, st.payment_status).id;
       }
     }
@@ -55,7 +59,7 @@ export async function GET(req: Request) {
         const { data, error } = await supabase
           .from("store_categories")
           .select("*")
-          .eq("store_id", storeId)
+          .eq("store_id", resolvedStoreId)
           .order("created_at", { ascending: false });
         if (!error && data) categories = data;
       } catch {
@@ -113,7 +117,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Category name is required." }, { status: 400 });
     }
 
-    const limitCheck = await checkStoreLimits(storeId, "category");
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, storeId, 'id');
+    const resolvedStoreId = storeRow?.id || storeId;
+
+    const limitCheck = await checkStoreLimits(resolvedStoreId, "category");
     if (!limitCheck.allowed) {
       return NextResponse.json({ error: limitCheck.message }, { status: 403 });
     }
@@ -124,7 +131,7 @@ export async function POST(req: Request) {
     const { data: existingCat } = await supabase
       .from("store_categories")
       .select("*")
-      .eq("store_id", storeId)
+      .eq("store_id", resolvedStoreId)
       .ilike("name", name)
       .maybeSingle();
 
@@ -138,7 +145,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, category: existingCat, message: "Category already exists." });
     }
 
-    let insertPayload: any = { store_id: storeId, name };
+    let insertPayload: any = { store_id: resolvedStoreId, name };
     if (imageUrl) insertPayload.image_url = imageUrl;
 
     let { data: category, error } = await supabase

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isAdminRequest } from '@/lib/admin-api-auth';
 import { storeRepo } from '@/lib/store-repository';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function POST(request: Request) {
   try {
@@ -19,17 +20,21 @@ export async function POST(request: Request) {
 
     // 1. Determine target plan from store's selected_plan
     let storePlan = 'pro';
+    let resolvedStoreId = store_id;
     try {
-      const { data: storeRow } = await supabase
-        .from('stores')
-        .select('selected_plan')
-        .eq('id', store_id)
-        .maybeSingle();
+      const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string; selected_plan?: string }>(
+        supabase,
+        store_id,
+        'id, selected_plan'
+      );
 
-      if (storeRow?.selected_plan === 'business') {
-        storePlan = 'business';
-      } else if (storeRow?.selected_plan === 'pro') {
-        storePlan = 'pro';
+      if (storeRow) {
+        resolvedStoreId = storeRow.id;
+        if (storeRow.selected_plan === 'business') {
+          storePlan = 'business';
+        } else if (storeRow.selected_plan === 'pro') {
+          storePlan = 'pro';
+        }
       }
     } catch {}
 
@@ -52,7 +57,7 @@ export async function POST(request: Request) {
         plan: resolvedPlan,
         payment_status: newStatus
       })
-      .eq('id', store_id);
+      .eq('id', resolvedStoreId);
 
     if (storeError) {
       return NextResponse.json({ error: storeError.message }, { status: 500 });

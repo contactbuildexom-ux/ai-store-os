@@ -1,27 +1,31 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { checkStoreLimits } from '@/lib/planLimits';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function POST(request: Request) {
   try {
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database is not configured.' }, { status: 503 });
+    }
+
     const body = await request.json();
     const { store_id, name, description, price, category } = body;
 
-    if (!store_id || !name || !price || !category) {
+    if (!store_id || !name || price === undefined || !category) {
       return NextResponse.json({ error: 'Tamam zaroori fields (store_id, name, price, category) lazmi hain.' }, { status: 400 });
     }
 
-    const limitCheck = await checkStoreLimits(String(store_id), 'product');
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, String(store_id), 'id');
+    const resolvedStoreId = storeRow?.id || String(store_id);
+
+    const limitCheck = await checkStoreLimits(resolvedStoreId, 'product');
     if (!limitCheck.allowed) {
       return NextResponse.json({ error: limitCheck.message }, { status: 403 });
     }
     if (String(category).trim().toLowerCase() !== 'general') {
-      const categoryLimitCheck = await checkStoreLimits(String(store_id), 'category', undefined, {
+      const categoryLimitCheck = await checkStoreLimits(resolvedStoreId, 'category', undefined, {
         categoryName: String(category),
       });
       if (!categoryLimitCheck.allowed) {
@@ -32,7 +36,7 @@ export async function POST(request: Request) {
     // 4. Product database mein insert kar dein
     const { data: newProduct, error: insertError } = await supabase
       .from('products')
-      .insert([{ store_id, name, description, price, category }])
+      .insert([{ store_id: resolvedStoreId, name, description, price, category }])
       .select()
       .single();
 

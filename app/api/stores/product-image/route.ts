@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchStoreByIdOrSlug } from "@/lib/store-id-slug";
 import { ADMIN_SESSION_COOKIE, verifyAdminSession } from "@/lib/admin-session";
 import { MERCHANT_SESSION_COOKIE, verifyMerchantSession } from "@/lib/merchant-session";
 
@@ -36,29 +37,7 @@ async function ensurePublicBucket(supabase: AdminSupabase) {
   }
 }
 
-async function userOwnsStore(supabase: AdminSupabase, storeId: string, userId: string) {
-  const byOwner = await supabase
-    .from("stores")
-    .select("id")
-    .eq("id", storeId)
-    .eq("owner_id", userId)
-    .maybeSingle();
-
-  if (byOwner.data) return true;
-  if (byOwner.error && !byOwner.error.message.toLowerCase().includes("owner_id")) throw byOwner.error;
-
-  const byUser = await supabase
-    .from("stores")
-    .select("id")
-    .eq("id", storeId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (byUser.error) throw byUser.error;
-  return Boolean(byUser.data);
-}
-
-async function canUploadForStore(request: Request, supabase: AdminSupabase, storeId: string) {
+async function canUploadForStore(request: Request, supabase: AdminSupabase, storeId: string, storeOwnerId?: string | null, storeUserId?: string | null) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (token) {
     const {
@@ -68,13 +47,13 @@ async function canUploadForStore(request: Request, supabase: AdminSupabase, stor
 
     if (!error && user) {
       if (user.app_metadata?.role === "super_admin") return true;
-      if (await userOwnsStore(supabase, storeId, user.id)) return true;
+      if ((storeOwnerId && user.id === storeOwnerId) || (storeUserId && user.id === storeUserId)) return true;
     }
   }
 
   const cookieStore = await cookies();
   const merchantSession = verifyMerchantSession(cookieStore.get(MERCHANT_SESSION_COOKIE)?.value);
-  if (merchantSession?.storeId === storeId) return true;
+  if (merchantSession && (merchantSession.storeId === storeId || merchantSession.slug === storeId)) return true;
 
   const adminSession = verifyAdminSession(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
   return Boolean(adminSession);
@@ -89,12 +68,26 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
-    const storeId = String(formData.get("store_id") ?? "").trim();
+    const rawStoreId = String(formData.get("store_id") ?? "").trim();
 
-    if (!storeId) {
+    if (!rawStoreId) {
       return NextResponse.json({ error: "Store ID is required." }, { status: 400 });
     }
-    if (!(await canUploadForStore(request, supabase, storeId))) {
+
+    const { data: store, error: storeError } = await fetchStoreByIdOrSlug<{ id: string; owner_id?: string | null; user_id?: string | null }>(
+      supabase,
+      rawStoreId,
+      "id, owner_id, user_id"
+    );
+
+    if (storeError) throw storeError;
+    if (!store) {
+      return NextResponse.json({ error: "Store not found." }, { status: 404 });
+    }
+
+    const storeId = store.id;
+
+    if (!(await canUploadForStore(request, supabase, storeId, store.owner_id, store.user_id))) {
       return NextResponse.json({ error: "You are not allowed to upload images for this store." }, { status: 403 });
     }
     if (!(file instanceof File)) {
@@ -105,17 +98,6 @@ export async function POST(request: Request) {
     }
     if (file.size > MAX_IMAGE_SIZE) {
       return NextResponse.json({ error: "Image must be 5MB or smaller." }, { status: 400 });
-    }
-
-    const { data: store, error: storeError } = await supabase
-      .from("stores")
-      .select("id")
-      .eq("id", storeId)
-      .maybeSingle();
-
-    if (storeError) throw storeError;
-    if (!store) {
-      return NextResponse.json({ error: "Store not found." }, { status: 404 });
     }
 
     await ensurePublicBucket(supabase);

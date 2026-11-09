@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { createMerchantSession, MERCHANT_SESSION_COOKIE } from '@/lib/merchant-session';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey || url.includes("placeholder-project") || url.includes("your-project")) {
-    return null;
-  }
-  return createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
-}
 
 export async function POST(request: Request) {
   try {
@@ -38,7 +28,7 @@ export async function POST(request: Request) {
       ? selected_theme
       : ({ emerald: '#1d7555', ocean: '#2563eb', rose: '#be185d', midnight: '#0f172a', amber: '#b45309', violet: '#6d28d9', fashion: '#4338ca', 'home-decor': '#b45309', electronics: '#1e40af', beauty: '#be185d' } as Record<string, string>)[selected_theme] || '#1976d2';
 
-    const supabase = getSupabase();
+    const supabase = createAdminClient();
     let data: { id: string; name: string; slug: string; owner_email: string; plan: string; payment_status: string; created_at: string } | null = null;
 
     if (supabase) {

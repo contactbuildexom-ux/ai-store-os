@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import bcrypt from 'bcryptjs';
 import { ADMIN_SESSION_COOKIE, createAdminSession } from '@/lib/admin-session';
 
@@ -13,18 +13,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email aur password dono lazmi hain.' }, { status: 400 });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const sessionSecret = process.env.ADMIN_SESSION_SECRET;
-    const missingConfig = [
-      !url && 'NEXT_PUBLIC_SUPABASE_URL',
-      !serviceRoleKey && 'SUPABASE_SERVICE_ROLE_KEY',
-      !sessionSecret && 'ADMIN_SESSION_SECRET',
-    ].filter(Boolean);
-    if (!url || !serviceRoleKey || !sessionSecret) {
-      return NextResponse.json({ error: `Admin login configuration is missing: ${missingConfig.join(', ')}.` }, { status: 503 });
+    if (!sessionSecret) {
+      return NextResponse.json({ error: 'ADMIN_SESSION_SECRET is missing.' }, { status: 503 });
     }
-    const supabase = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
+
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Admin database configuration is missing or invalid.' }, { status: 503 });
+    }
 
     const { data: admin, error } = await supabase
       .from('super_admins')

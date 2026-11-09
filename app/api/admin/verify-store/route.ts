@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { storeRepo } from '@/lib/store-repository';
 import { isAdminRequest } from '@/lib/admin-api-auth';
+import { isUuid } from '@/lib/store-id-slug';
 
 export async function GET() {
   if (!(await isAdminRequest())) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
@@ -81,20 +82,23 @@ export async function POST(req: Request) {
     const supabase = createAdminClient();
     if (supabase) {
       try {
-        await supabase
-          .from('stores')
-          .update({
-            is_verified: isVerified,
-            verification_status: status,
-          })
-          .eq('id', store_id);
-        await supabase
-          .from('stores')
-          .update({
-            is_verified: isVerified,
-            verification_status: status,
-          })
-          .eq('slug', store_id);
+        if (isUuid(store_id)) {
+          await supabase
+            .from('stores')
+            .update({
+              is_verified: isVerified,
+              verification_status: status,
+            })
+            .eq('id', store_id);
+        } else {
+          await supabase
+            .from('stores')
+            .update({
+              is_verified: isVerified,
+              verification_status: status,
+            })
+            .eq('slug', store_id);
+        }
       } catch (err) {
         console.warn('Supabase store verification update warning:', err);
       }

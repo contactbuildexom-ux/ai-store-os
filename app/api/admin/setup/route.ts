@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -9,15 +9,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceRoleKey) {
-      const missing = [!url && 'NEXT_PUBLIC_SUPABASE_URL', !serviceRoleKey && 'SUPABASE_SERVICE_ROLE_KEY'].filter(Boolean);
-      return NextResponse.json({ error: `Admin setup configuration is missing: ${missing.join(', ')}.` }, { status: 503 });
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Admin setup configuration is missing or invalid in .env.local.' }, { status: 503 });
     }
-    const supabase = createClient(url, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     const body: unknown = await request.json();
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {

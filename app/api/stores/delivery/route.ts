@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canAccessStore } from '@/lib/merchant-api-auth';
+import { fetchStoreByIdOrSlug } from '@/lib/store-id-slug';
 
 export async function GET(req: Request) {
   try {
@@ -14,10 +15,13 @@ export async function GET(req: Request) {
     }
     if (!(await canAccessStore(store_id))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, store_id, 'id');
+    const resolvedStoreId = storeRow?.id || store_id;
+
     const { data } = await supabase
       .from('delivery_settings')
       .select('*')
-      .eq('store_id', store_id)
+      .eq('store_id', resolvedStoreId)
       .maybeSingle();
 
     return NextResponse.json({ success: true, delivery: data });
@@ -38,11 +42,14 @@ export async function POST(req: Request) {
     }
     if (!(await canAccessStore(store_id))) return NextResponse.json({ error: 'You are not authorized to access this store.' }, { status: 403 });
 
+    const { data: storeRow } = await fetchStoreByIdOrSlug<{ id: string }>(supabase, store_id, 'id');
+    const resolvedStoreId = storeRow?.id || store_id;
+
     // Check if settings already exist for this store
     const { data: existing } = await supabase
       .from('delivery_settings')
       .select('id')
-      .eq('store_id', store_id)
+      .eq('store_id', resolvedStoreId)
       .maybeSingle();
 
     let result;
@@ -55,7 +62,7 @@ export async function POST(req: Request) {
           free_delivery_above: free_delivery_above || null, 
           estimated_days: estimated_days || '2-3 business days' 
         })
-        .eq('store_id', store_id)
+        .eq('store_id', resolvedStoreId)
         .select()
         .single();
 
@@ -66,7 +73,7 @@ export async function POST(req: Request) {
       const { data, error } = await supabase
         .from('delivery_settings')
         .insert([{ 
-          store_id, 
+          store_id: resolvedStoreId, 
           delivery_fee: delivery_fee ?? 200, 
           free_delivery_above: free_delivery_above || null, 
           estimated_days: estimated_days || '2-3 business days' 

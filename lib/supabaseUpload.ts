@@ -8,6 +8,7 @@ export async function uploadStoreImage(file: File, storeId: string): Promise<str
   const { data: { session } } = await createClient().auth.getSession();
   const response = await fetch('/api/stores/product-image', {
     method: 'POST',
+    credentials: 'include',
     headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     body: formData,
   });
